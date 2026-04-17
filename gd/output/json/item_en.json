@@ -1,8 +1,8 @@
 {
   "items": [
-    {"id": 1001, "name": "Sword", "price": 100.0, "rarity": "common", "item_type_id": 1, "drop_range": {"min": 1, "max": 1}, "tags": [1, 5], "is_active": true},
-    {"id": 1002, "name": "Wooden Shield", "price": 500.0, "rarity": "rare", "item_type_id": 1, "drop_range": {"min": 1, "max": 1}, "tags": [1, 5, 10], "is_active": true},
-    {"id": 1003, "name": "Healing Potion", "price": 5000.0, "rarity": "epic", "item_type_id": 1, "drop_range": {"min": 1, "max": 1}, "tags": [1, 5, 10, 15], "is_active": true},
+    {"id": 1001, "name": "Refined Iron Sword", "price": 100.0, "rarity": "common", "item_type_id": 1, "drop_range": {"min": 1, "max": 1}, "tags": [1, 5], "is_active": true},
+    {"id": 1002, "name": "Flame Longsword", "price": 500.0, "rarity": "rare", "item_type_id": 1, "drop_range": {"min": 1, "max": 1}, "tags": [1, 5, 10], "is_active": true},
+    {"id": 1003, "name": "传说之剑", "price": 5000.0, "rarity": "epic", "item_type_id": 1, "drop_range": {"min": 1, "max": 1}, "tags": [1, 5, 10, 15], "is_active": true},
     {"id": 2001, "name": "皮甲", "price": 80.0, "rarity": "common", "item_type_id": 2, "drop_range": {"min": 1, "max": 1}, "tags": [2, 6], "is_active": true},
     {"id": 2002, "name": "板甲", "price": 300.0, "rarity": "rare", "item_type_id": 2, "drop_range": {"min": 1, "max": 1}, "tags": [2, 6, 10], "is_active": true},
     {"id": 3001, "name": "治疗药水", "price": 20.0, "rarity": "common", "item_type_id": 3, "drop_range": {"min": 1, "max": 5}, "tags": [3, 7], "is_active": true},

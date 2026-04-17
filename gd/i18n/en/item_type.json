@@ -1,0 +1,6 @@
+{
+  "1.name": {"source": "武器", "text": "", "confirmed": false, "status": "missing"},
+  "2.name": {"source": "防具", "text": "", "confirmed": false, "status": "missing"},
+  "3.name": {"source": "消耗品", "text": "", "confirmed": false, "status": "missing"},
+  "4.name": {"source": "材料", "text": "", "confirmed": false, "status": "missing"}
+}

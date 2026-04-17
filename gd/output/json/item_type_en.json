@@ -1,8 +1,8 @@
 {
   "item_types": [
-    {"id": 1, "name": "Weapon", "code": "weapon"},
-    {"id": 2, "name": "Armor", "code": "armor"},
-    {"id": 3, "name": "Consumable", "code": "consumable"},
+    {"id": 1, "name": "武器", "code": "weapon"},
+    {"id": 2, "name": "防具", "code": "armor"},
+    {"id": 3, "name": "消耗品", "code": "consumable"},
     {"id": 4, "name": "材料", "code": "material"}
   ]
 }

@@ -11,6 +11,7 @@
 - [Schema 格式文档](#schema-格式文档)
 - [CLI 命令说明](#cli-命令说明)
 - [目录结构](#目录结构)
+- [i18n 翻译流程](#i18n-翻译流程)
 - [输出产物](#输出产物)
 
 ---
@@ -292,15 +293,28 @@ ct validate --table quest
 ct gen-template [OPTIONS]
 ```
 
-根据 Schema 定义生成带有表头的空白 Excel 模板文件，方便策划开始填表。
+根据 Schema 定义生成带表头与元数据（表名、表头行数、schema 哈希、生成时间）的 Excel 模板。**绝不静默丢失已填数据**：根据元数据状态自动决定行为。
 
-| 选项             | 说明                     |
-| ---------------- | ------------------------ |
-| `--all`          | 生成所有表的模板         |
-| `--table NAME`   | 只生成指定表的模板       |
-| `--root DIR`     | 项目根目录               |
+| 选项                 | 说明                                                                  |
+| -------------------- | --------------------------------------------------------------------- |
+| `--all`              | 生成所有表的模板                                                      |
+| `--table NAME`       | 只生成指定表的模板                                                    |
+| `--force`            | 文件已存在时强制全量覆盖（数据丢失，需用户显式确认）                  |
+| `--update-header`    | 文件已存在时保留旧数据行原样追加到新表头之下（推荐用于 schema 变更）  |
+| `--root DIR`         | 项目根目录                                                            |
 
 > 必须指定 `--all` 或 `--table` 之一。
+
+**决策矩阵：**
+
+| 文件状态                  | 默认行为              | `--force`        | `--update-header`         |
+| ------------------------- | --------------------- | ---------------- | ------------------------- |
+| 不存在                    | 生成新模板 + 元数据   | 同左             | 同左                      |
+| 无元数据（legacy 文件）   | 拒绝 + 提示二选一     | 全量覆盖         | 用当前 schema 推断保留数据 |
+| `ct_table_name` 不匹配    | 拒绝（任何 flag 拒绝） | 拒绝             | 拒绝                      |
+| hash 一致（无变化）       | 跳过                  | 重建             | 重建                      |
+| hash 不同 + 无数据        | 直接重建              | 重建             | 重建                      |
+| hash 不同 + 有数据        | 拒绝 + 提示二选一     | 全量覆盖         | 保留数据重建表头          |
 
 示例：
 
@@ -308,8 +322,11 @@ ct gen-template [OPTIONS]
 # 生成所有表的 Excel 模板
 ct gen-template --all
 
-# 只生成 item 表的模板
-ct gen-template --table item
+# Schema 改了？保留旧数据重建表头
+ct gen-template --table item --update-header
+
+# 强制全量覆盖（数据会丢失）
+ct gen-template --table item --force
 ```
 
 ### `ct status` - 查看变更状态
@@ -318,19 +335,84 @@ ct gen-template --table item
 ct status [OPTIONS]
 ```
 
-对比当前 Excel 文件的 hash 与缓存，列出哪些表发生了变更。
+同时检查两类状态：
+- **数据变更**：Excel 文件 hash 与缓存不一致（待导出）
+- **模板漂移**：当前 schema_hash 与 Excel 元数据中的 `ct_schema_hash` 不一致（schema 改了但模板未重建）
 
 | 选项         | 说明       |
 | ------------ | ---------- |
 | `--root DIR` | 项目根目录 |
 
-输出格式：
+输出示例：
 
 ```
-  [changed] item         # 有变化，需要重新导出
-  [  ok   ] quest        # 无变化
-  [missing] new_table    # Excel 文件不存在
+缺失文件:
+  [missing] new_table
+
+数据变更（待导出）:
+  [changed] item
+
+模板已过时（schema 修改后未重建）:
+  [template-stale] quest  (建议: ct gen-template --table quest --update-header)
+
+未跟踪元数据（legacy 文件）:
+  [template-untracked] shop
 ```
+
+无任何状态时输出 `[OK] 所有表已是最新（数据 + 模板）`。
+
+### `ct i18n` - 翻译骨架与状态管理
+
+`ct i18n` 子命令组用于维护 i18n 翻译文件。`ct export` 内部会自动调用 sync，确保 lang 骨架与最新 source 一致；以下命令用于翻译者独立操作。
+
+#### `ct i18n sync` - 刷新 source 与 lang 骨架
+
+```bash
+ct i18n sync [OPTIONS]
+```
+
+扫描所有 i18n 字段：写出 `i18n/source/{table}.json`（主语言原文），并为每个 secondary 语言生成或更新 `i18n/{lang}/{table}.json` 骨架。
+
+| 选项               | 说明                                          |
+| ------------------ | --------------------------------------------- |
+| `--lang LANG`      | 只处理指定语言的 lang 文件（source 仍全量刷新） |
+| `--table NAME`     | 只处理指定表                                  |
+| `--verbose`        | 打印每个写入文件的路径                        |
+| `--root DIR`       | 项目根目录                                    |
+
+#### `ct i18n status` - 翻译进度报告
+
+```bash
+ct i18n status [OPTIONS]
+```
+
+| 选项               | 说明                                       |
+| ------------------ | ------------------------------------------ |
+| `--lang LANG`      | 只显示指定语言                             |
+| `--by-table`       | 按表细分（每语言每表一行）                 |
+| `--json`           | 输出机器可读 JSON，供 CI 解析              |
+| `--root DIR`       | 项目根目录                                 |
+
+默认输出示例：
+
+```
+[en]   85% [########..] 170/200 translated, 12 missing, 8 stale, 10 orphan
+```
+
+#### `ct i18n compact` - 清理 orphan 条目
+
+```bash
+ct i18n compact [OPTIONS]
+```
+
+物理移除 lang 文件中所有 `status: orphan` 条目（其他状态不动）。
+
+| 选项               | 说明                                  |
+| ------------------ | ------------------------------------- |
+| `--lang LANG`      | 只处理指定语言                        |
+| `--table NAME`     | 只处理指定表                          |
+| `--dry-run`        | 仅打印将被删除的条目，不修改文件      |
+| `--root DIR`       | 项目根目录                            |
 
 ---
 
@@ -358,10 +440,15 @@ ct status [OPTIONS]
 │       ├── csharp/          #     C# Accessor
 │       └── lua/             #     Lua Accessor
 ├── cache/                   # 增量导出缓存（自动生成，勿手动编辑）
-│   └── export_cache.json    #   记录每张表的文件 hash 和 ID 集合
-├── i18n/                    # 国际化翻译文件
-│   ├── source.json          #   从 Excel 提取的源语言字符串
-│   └── en.json              #   英文翻译（人工或机翻填写）
+│   ├── state.json           #   每表的 Excel hash、ID 集合、schema_hash、fbs bytes hash
+│   └── fbs_bytes/           #   未变化表的 FlatBuffers bytes 缓存
+├── i18n/                    # 国际化翻译文件（按语言/表二维拆分）
+│   ├── source/              #   主语言原文快照（工具自动维护）
+│   │   ├── item.json        #     扁平 {"id.field": "text"} 格式
+│   │   └── quest.json
+│   └── en/                  #   英文译文骨架（翻译者维护 text/confirmed）
+│       ├── item.json        #     {"id.field": {source, text, confirmed, status}}
+│       └── quest.json
 ├── tools/                   # 外部工具
 │   └── flatc                #   FlatBuffers 编译器
 ├── ct/                      # 工具源码
@@ -375,7 +462,44 @@ ct status [OPTIONS]
 | `excel/`   | 策划维护的 Excel 数据表，文件名与 Schema 中的 `excel_file` 对应                              |
 | `output/`  | 所有导出产物的输出目录，包括 JSON、.fbs、Binary Bundle 和生成的 Accessor 代码                 |
 | `cache/`   | 增量导出的缓存数据，记录文件 hash 以判断哪些表有变化。由工具自动管理，不应手动修改            |
-| `i18n/`    | 国际化相关文件。源语言字符串自动提取，翻译文件由翻译人员维护                                  |
+| `i18n/`    | 国际化文件，按"语言/表"二维拆分。`source/` 由工具自动维护（主语言原文），`{lang}/` 由翻译者维护译文 |
+
+---
+
+## i18n 翻译流程
+
+每张含 `i18n: true` 字段的表会维护两类文件：
+
+- `i18n/source/{table}.json` — 主语言原文快照，扁平 `{"id.field": "text"}`，由 `ct i18n sync` / `ct export` 自动写出
+- `i18n/{lang}/{table}.json` — 每个 secondary 语言的译文骨架，每条目含四字段：
+
+```json
+{
+  "1001.name": {"source": "铁剑", "text": "Iron Sword", "confirmed": true, "status": "translated"}
+}
+```
+
+### 翻译者工作流
+
+1. 运行 `ct i18n sync` 生成或刷新所有 lang 文件骨架
+2. 打开 `i18n/{lang}/{table}.json`，找到 `status: "missing"` 或 `"stale"` 的条目
+3. 看 `source` 字段（永远是当前主语言原文），写 `text`，把 `confirmed` 改为 `true`
+4. 下次 sync 自动转为 `translated`，导出时即被 `ct export` 合并入译文
+
+### 状态机
+
+| 当前 source 中 | lang 中 | text | confirmed | → status      |
+| -------------- | ------- | ---- | --------- | ------------- |
+| ✗              | ✓       | —    | —         | `orphan`      |
+| ✓              | ✗       | —    | —         | `missing`（新建） |
+| ✓              | ✓       | 空   | 任意      | `missing`     |
+| ✓              | ✓       | 非空 | true      | `translated`  |
+| ✓              | ✓       | 非空 | false     | `stale`       |
+
+**关键规则：**
+- 主语言原文变化时，sync 会强制把 `confirmed` 重置为 `false`（条目变 `stale`），`text` 保留以便对照旧译文
+- 被删除的行/字段进入 `orphan` 状态，需要 `ct i18n compact` 显式清理
+- 仅 `confirmed=true` 且 `text` 非空的条目会被 `ct export` 用于次语言产物，其余回退主语言并输出 warning
 
 ---
 

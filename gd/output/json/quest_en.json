@@ -1,7 +1,7 @@
 {
   "quests": [
-    {"id": 1, "title": "First Quest", "description": "Defeat 10 Goblins", "reward_item_id": 3001, "required_level": 1},
-    {"id": 2, "title": "Defense Training", "description": "Equip a shield", "reward_item_id": 4001, "required_level": 5},
+    {"id": 1, "title": "新手试炼", "description": "击败 5 只史莱姆", "reward_item_id": 3001, "required_level": 1},
+    {"id": 2, "title": "材料收集", "description": "收集 10 块铁矿石", "reward_item_id": 4001, "required_level": 5},
     {"id": 3, "title": "装备打造", "description": "获得火焰长剑", "reward_item_id": 1002, "required_level": 10},
     {"id": 4, "title": "稀世挑战", "description": "获得传说之剑", "reward_item_id": 1003, "required_level": 30},
     {"id": 5, "title": "采矿专家", "description": "收集 5 颗魔晶石", "reward_item_id": 4002, "required_level": 20}

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import sys
 from pathlib import Path
@@ -28,12 +29,14 @@ from ct.export.binary_writer import (
     write_primary_bundle,
 )
 from ct.export.fbs_generator import generate_container_fbs, generate_fbs
-from ct.export.i18n.extractor import (
-    extract_i18n_strings,
-    load_source_strings,
-    save_source_strings,
-)
 from ct.export.i18n.merger import load_translation, merge_translations
+from ct.export.i18n.status import (
+    compute_status_report,
+    render_by_table,
+    render_default,
+    render_json,
+)
+from ct.export.i18n.sync import sync_all
 from ct.export.i18n.writer import report_stale_summary
 from ct.export.json_writer import write_json
 from ct.schema.hashing import compute_schema_hash
@@ -43,6 +46,8 @@ from ct.validate.refs import validate_refs
 from ct.validate.types import validate_table
 
 app = typer.Typer(help="配表导出工具")
+i18n_app = typer.Typer(help="i18n 翻译骨架与状态管理")
+app.add_typer(i18n_app, name="i18n")
 logger = logging.getLogger("ct")
 
 
@@ -53,6 +58,20 @@ def _setup_logging(verbose: bool = False) -> None:
         format="%(message)s",
         stream=sys.stderr,
     )
+
+
+def _print_sync_summary(summary, *, prefix: str = "[i18n sync]") -> None:
+    totals = summary.totals_by_lang()
+    if not totals:
+        typer.echo(f"{prefix} 无 secondary 语言或无 i18n 表，跳过", err=True)
+        return
+    parts = []
+    for lang, counts in sorted(totals.items()):
+        parts.append(
+            f"{lang}: translated={counts.translated}, missing={counts.missing}, "
+            f"stale={counts.stale}, orphan={counts.orphan}"
+        )
+    typer.echo(f"{prefix} " + "; ".join(parts), err=True)
 
 
 @app.command()
@@ -147,12 +166,11 @@ def export(
         report_errors(all_errors, verbose)
         raise typer.Exit(1)
 
-    # i18n 处理
-    source_strings = load_source_strings(i18n_dir)
-    for name, rows in parsed_data.items():
-        schema = schema_map[name]
-        source_strings = extract_i18n_strings(rows, schema, source_strings)
-    save_source_strings(source_strings, i18n_dir)
+    # i18n sync：只对本次解析的变更表刷新 source 与各 lang 骨架
+    changed_i18n_schemas = [schema_map[name] for name in parsed_data]
+    sync_summary = sync_all(cfg, changed_i18n_schemas, parsed_data)
+    if verbose:
+        _print_sync_summary(sync_summary)
 
     # 导出
     # 收集所有表的 FlatBuffers bytes（用于 Bundle 全量重写）
@@ -169,7 +187,7 @@ def export(
                 if l == cfg.primary_lang:
                     json_rows = rows
                 else:
-                    translations = load_translation(i18n_dir, l)
+                    translations = load_translation(i18n_dir, l, schema.table)
                     json_rows = merge_translations(
                         rows, schema, l, translations, cfg.primary_lang
                     )
@@ -190,7 +208,7 @@ def export(
                     if l == cfg.primary_lang:
                         i18n_bytes = build_i18n_table_bytes(rows, schema)
                     else:
-                        translations = load_translation(i18n_dir, l)
+                        translations = load_translation(i18n_dir, l, schema.table)
                         merged = merge_translations(
                             rows, schema, l, translations, cfg.primary_lang
                         )
@@ -254,8 +272,8 @@ def export(
             if path:
                 typer.echo(f"[bundle] {path.name}")
 
-    # stale 报告
-    report_stale_summary(source_strings)
+    # stale 报告（基于 lang 文件聚合）
+    report_stale_summary(cfg, schemas)
 
     save_cache(cache, cache_dir)
     typer.echo(f"\n导出完成: {len(tables_to_export)} 张表")
@@ -458,6 +476,157 @@ def status(
 
     if not has_anything:
         typer.echo("[OK] 所有表已是最新（数据 + 模板）")
+
+
+# ---------------------------------------------------------------- ct i18n group
+
+
+def _read_all_rows_for_sync(cfg, schemas) -> dict[str, list[dict]]:
+    """为 sync 命令读取所有 i18n 表的 Excel 行数据。"""
+    excel_dir = cfg.resolve("excel_dir")
+    rows_by_table: dict[str, list[dict]] = {}
+    for schema in schemas:
+        if not schema.has_i18n:
+            continue
+        xlsx_path = excel_dir / schema.resolved_excel_file
+        if not xlsx_path.exists():
+            typer.echo(f"[warn] {xlsx_path} 不存在，跳过 {schema.table}", err=True)
+            continue
+        rows_by_table[schema.table] = read_excel(xlsx_path, schema)
+    return rows_by_table
+
+
+@i18n_app.command("sync")
+def i18n_sync(
+    lang: Optional[str] = typer.Option(None, "--lang", help="只处理指定语言的 lang 文件"),
+    table: Optional[str] = typer.Option(None, "--table", help="只处理指定表"),
+    project_root: Optional[str] = typer.Option(None, "--root", help="项目根目录"),
+    verbose: bool = typer.Option(False, "--verbose", help="显示详细日志"),
+) -> None:
+    """刷新 i18n source 文件并为每个 secondary 语言生成/更新 lang 骨架。"""
+    _setup_logging(verbose)
+    root = Path(project_root) if project_root else Path(".")
+    cfg = load_config(root)
+    schemas, _ = load_and_sort_schemas(cfg.resolve("schemas_dir"))
+
+    target_schemas = schemas
+    if table:
+        target_schemas = [s for s in schemas if s.table == table]
+        if not target_schemas:
+            typer.echo(f"表 '{table}' 不存在", err=True)
+            raise typer.Exit(1)
+
+    rows_by_table = _read_all_rows_for_sync(cfg, target_schemas)
+    summary = sync_all(
+        cfg,
+        target_schemas,
+        rows_by_table,
+        lang_filter=lang,
+        table_filter=table,
+    )
+
+    if verbose:
+        resolved_root = root.resolve()
+        for path in summary.source_files_written:
+            try:
+                rel = path.relative_to(resolved_root)
+            except ValueError:
+                rel = path
+            typer.echo(f"[source] {rel}", err=True)
+        for path in summary.lang_files_written:
+            try:
+                rel = path.relative_to(resolved_root)
+            except ValueError:
+                rel = path
+            typer.echo(f"[lang]   {rel}", err=True)
+
+    _print_sync_summary(summary)
+    typer.echo(f"[i18n sync] 完成（{summary.elapsed:.2f}s）", err=True)
+
+
+@i18n_app.command("status")
+def i18n_status(
+    lang: Optional[str] = typer.Option(None, "--lang", help="只显示指定语言"),
+    by_table: bool = typer.Option(False, "--by-table", help="按表细分"),
+    json_out: bool = typer.Option(False, "--json", help="输出 JSON"),
+    project_root: Optional[str] = typer.Option(None, "--root", help="项目根目录"),
+) -> None:
+    """报告 i18n 翻译进度。"""
+    _setup_logging()
+    root = Path(project_root) if project_root else Path(".")
+    cfg = load_config(root)
+    schemas, _ = load_and_sort_schemas(cfg.resolve("schemas_dir"))
+
+    report = compute_status_report(cfg, schemas, lang_filter=lang)
+
+    if json_out:
+        sys.stdout.write(render_json(report))
+    elif by_table:
+        sys.stdout.write(render_by_table(report))
+    else:
+        sys.stdout.write(render_default(report))
+
+
+@i18n_app.command("compact")
+def i18n_compact(
+    lang: Optional[str] = typer.Option(None, "--lang", help="只处理指定语言"),
+    table: Optional[str] = typer.Option(None, "--table", help="只处理指定表"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="仅打印将被删除的条目，不修改文件"),
+    project_root: Optional[str] = typer.Option(None, "--root", help="项目根目录"),
+) -> None:
+    """物理移除 lang 文件中所有 status: orphan 的条目。"""
+    _setup_logging()
+    root = Path(project_root) if project_root else Path(".")
+    cfg = load_config(root)
+    schemas, _ = load_and_sort_schemas(cfg.resolve("schemas_dir"))
+    i18n_dir = cfg.resolve("i18n_dir")
+
+    langs = cfg.secondary_langs
+    if lang:
+        if lang not in langs:
+            typer.echo(f"语言 '{lang}' 不在 secondary_langs 中", err=True)
+            raise typer.Exit(1)
+        langs = [lang]
+
+    target_schemas = [s for s in schemas if s.has_i18n]
+    if table:
+        target_schemas = [s for s in target_schemas if s.table == table]
+
+    from ct.cli_helpers.i18n_json import dump_lang_file
+
+    total_removed = 0
+    touched = False
+
+    for l in langs:
+        for schema in target_schemas:
+            path = i18n_dir / l / f"{schema.table}.json"
+            if not path.exists():
+                continue
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+
+            orphan_keys = [k for k, v in data.items() if v.get("status") == "orphan"]
+            if not orphan_keys:
+                continue
+
+            touched = True
+            if dry_run:
+                typer.echo(f"[dry-run] {l}/{schema.table}: 将移除 {len(orphan_keys)} 条 orphan")
+                for k in orphan_keys:
+                    typer.echo(f"  - {k}")
+                continue
+
+            for k in orphan_keys:
+                del data[k]
+            field_order = [f.name for f in schema.i18n_fields]
+            dump_lang_file(data, path, field_order)
+            total_removed += len(orphan_keys)
+            typer.echo(f"[compact] {l}/{schema.table}: 移除 {len(orphan_keys)} 条 orphan")
+
+    if not touched:
+        typer.echo("[compact] 无 orphan 条目，无需操作")
+    elif not dry_run:
+        typer.echo(f"\n[compact] 总计移除 {total_removed} 条")
 
 
 if __name__ == "__main__":

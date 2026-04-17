@@ -68,7 +68,18 @@ ct gen-template --table item --force
 
 # 任意命令加 --verbose 显示详细日志
 ct export --verbose
+
+# i18n 翻译骨架与状态管理
+ct i18n sync                          # 刷新 source + 为每语言生成/更新 lang 骨架
+ct i18n sync --lang en --table item   # 缩小处理范围
+ct i18n status                        # 翻译进度（每语言一行）
+ct i18n status --by-table             # 按表细分
+ct i18n status --json                 # CI 友好的 JSON 输出
+ct i18n compact --dry-run             # 预览将被清理的 orphan 条目
+ct i18n compact                       # 物理删除所有 orphan 条目
 ```
+
+`ct export` 在校验通过后内部自动调用 sync，确保 lang 骨架与最新 source 一致。
 
 ### gen-template 决策矩阵
 
@@ -100,9 +111,38 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
                               │
                      ┌────────┴────────────────┐
                      ▼                         ▼
-              i18n 字符串提取            导出流水线
-         (i18n/strings_source.json)   JSON + FBS + Binary Bundle
+              i18n sync 流程              导出流水线
+       (i18n/source/{table}.json     JSON + FBS + Binary Bundle
+        + i18n/{lang}/{table}.json)
 ```
+
+### i18n 文件结构与状态机
+
+每张含 `i18n: true` 字段的表会维护两类文件：
+
+- `i18n/source/{table}.json` — 主语言原文快照，扁平 `{"id.field": "text"}` 格式
+- `i18n/{lang}/{table}.json` — 每个 secondary 语言的译文骨架，每条目含 `source/text/confirmed/status` 四字段
+
+写出格式紧凑（每个 key 占一行），便于翻译者扫读和 diff。key 排序按 id 数值升序、再按 schema 字段顺序。
+
+**翻译者工作流：**
+1. 打开 `i18n/{lang}/{table}.json`
+2. 找到 `status: "missing"` 或 `"stale"` 的条目
+3. 看 `source` 字段（永远是当前主语言原文）
+4. 写 `text`，把 `confirmed` 改为 `true`
+5. 下次 sync 自动转为 `translated`
+
+**状态机（sync 时计算）：**
+
+| 当前 source | lang 中 | text | confirmed | → status |
+|---|---|---|---|---|
+| ✗ | ✓ | — | — | `orphan` |
+| ✓ | ✗ | — | — | `missing`（新建） |
+| ✓ | ✓ | 空 | 任意 | `missing` |
+| ✓ | ✓ | 非空 | true | `translated` |
+| ✓ | ✓ | 非空 | false | `stale` |
+
+主语言原文变化时，sync 强制把 `confirmed` 重置为 `false`（条目变 stale），翻译者重新审视后再设回 `true`。被删除的行/字段进入 `orphan` 状态，需要 `ct i18n compact` 显式清理。
 
 ### 模块说明
 
@@ -122,9 +162,13 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
 | `ct/export/binary_writer.py` | 手动将行数据序列化为 FlatBuffers bytes（无生成的 Python Accessor）；打包为 `DataBundle` 二进制（`output/binary/data_{lang}.bin`） |
 | `ct/export/csharp_accessor_generator.py` | 生成 C# Accessor 类至 `output/generated/csharp/` |
 | `ct/export/lua_accessor_generator.py` | 生成 Lua Accessor 模块至 `output/generated/lua/` |
-| `ct/export/i18n/extractor.py` | 将 `i18n: true` 字段的值提取到 `i18n/strings_source.json`（key 格式：`table.id.field`）；标记条目状态为 `new`、`translated` 或 `stale` |
-| `ct/export/i18n/merger.py` | 将 `i18n/{lang}.json` 中的翻译合并回行数据，用于次语言导出 |
-| `ct/export/i18n/writer.py` | 汇报 stale/未翻译字符串摘要 |
+| `ct/export/i18n/extractor.py` | 将 `i18n: true` 字段的主语言原文提取为 `i18n/source/{table}.json`（扁平 `{"id.field": "text"}` 格式） |
+| `ct/export/i18n/state.py` | 翻译状态机：`LangStatus` 枚举 + `merge_lang_entry` / `sync_lang_table`（计算每条目的 `status` 与字段更新规则） |
+| `ct/export/i18n/sync.py` | sync 编排：刷新 source 文件 + 为每语言每表生成/更新 lang 骨架，返回 `SyncSummary` |
+| `ct/export/i18n/merger.py` | 将 `i18n/{lang}/{table}.json` 中 `confirmed=true` 的译文合并回行数据；其他状态回退主语言并 warning |
+| `ct/export/i18n/status.py` | 计算每语言每表的 missing/stale/translated/orphan 计数，提供 default/by-table/json 三种渲染 |
+| `ct/export/i18n/writer.py` | 导出后基于 lang 文件汇总各语言的 stale/missing/orphan 统计 |
+| `ct/cli_helpers/i18n_json.py` | 紧凑 JSON 写出（每个 key 一行）+ key 排序（id 数值升序 + schema 字段顺序） |
 | `ct/cache/state.py` | 读写 `cache/state.json`（每表存储文件 MD5 hash、ID 列表、fbs bytes hash）；同时在 `cache/fbs_bytes/*.bin` 中缓存原始 FlatBuffers bytes，未变化的表可复用 |
 
 ### 关键设计决策

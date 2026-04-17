@@ -1,0 +1,12 @@
+{
+  "1.title": {"source": "新手试炼", "text": "", "confirmed": false, "status": "missing"},
+  "1.description": {"source": "击败 5 只史莱姆", "text": "", "confirmed": false, "status": "missing"},
+  "2.title": {"source": "材料收集", "text": "", "confirmed": false, "status": "missing"},
+  "2.description": {"source": "收集 10 块铁矿石", "text": "", "confirmed": false, "status": "missing"},
+  "3.title": {"source": "装备打造", "text": "", "confirmed": false, "status": "missing"},
+  "3.description": {"source": "获得火焰长剑", "text": "", "confirmed": false, "status": "missing"},
+  "4.title": {"source": "稀世挑战", "text": "", "confirmed": false, "status": "missing"},
+  "4.description": {"source": "获得传说之剑", "text": "", "confirmed": false, "status": "missing"},
+  "5.title": {"source": "采矿专家", "text": "", "confirmed": false, "status": "missing"},
+  "5.description": {"source": "收集 5 颗魔晶石", "text": "", "confirmed": false, "status": "missing"}
+}

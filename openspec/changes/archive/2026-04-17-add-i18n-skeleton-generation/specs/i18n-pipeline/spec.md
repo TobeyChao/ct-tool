@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Extract i18n strings to source file
 导出和 sync 时工具 SHALL 收集所有标记为 `i18n: true` 字段的主语言原文，按表写入 `i18n/source/{table}.json`。文件格式为扁平对象 `{ "{id}.{field}": "原文" }`，**不含**状态字段（状态完全由 lang 文件承载）。
@@ -50,6 +50,8 @@ key 排序规则：先按 id 升序，再按 schema 中 i18n 字段的出现顺�
 #### Scenario: All translated reports clean
 - **WHEN** 所有次语言所有 i18n 字段都是 translated 状态
 - **THEN** 不输出 stale 摘要
+
+## ADDED Requirements
 
 ### Requirement: Generate language skeleton files
 sync 流程 SHALL 为每个 `secondary_langs` 中的语言、每张含 i18n 字段的表生成或更新 `i18n/{lang}/{table}.json` 骨架。
