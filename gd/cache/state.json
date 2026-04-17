@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "tables": {
+    "item_type": {
+      "hash": "8a5a0b7e6945cd8d7aa9e5402bea53be",
+      "ids": [],
+      "fbs_bytes_hash": "1958bff73670543ab0abee77906a8930",
+      "exported_at": "2026-04-17T05:30:47Z"
+    },
+    "item": {
+      "hash": "ffd2924bc3dcd7bfe81cef389f669f44",
+      "ids": [],
+      "fbs_bytes_hash": "1958bff73670543ab0abee77906a8930",
+      "exported_at": "2026-04-17T05:30:47Z"
+    },
+    "quest": {
+      "hash": "3a989b1a030701d76f891365e6d8d767",
+      "ids": [],
+      "fbs_bytes_hash": "1958bff73670543ab0abee77906a8930",
+      "exported_at": "2026-04-17T05:30:47Z"
+    }
+  }
+}

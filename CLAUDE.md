@@ -1,0 +1,158 @@
+# CLAUDE.md
+
+本文件为 Claude Code（claude.ai/code）在此仓库中工作时提供指引。
+
+---
+
+## 项目概述
+
+本仓库包含 `ct`（配表导出工具）。功能：将游戏策划数据从 **Excel + YAML Schema** 导出为 **JSON、FlatBuffers Binary 及 C#/Lua Accessor 代码**。
+
+- `ct-tool/` — 工具源码（Python package、打包配置、文档）
+- `gd/` — 数据工作空间（config、excel、output 等）
+- `openspec/` — 规格文档（设计文档和任务列表）
+
+---
+
+## 安装
+
+```bash
+cd ct-tool
+
+# 开发模式安装（推荐）
+pip install -e .
+
+# 或仅安装依赖
+pip install -r requirements.txt
+```
+
+需要 Python >= 3.10。
+
+将 `flatc.exe`（Windows）或 `flatc`（Linux/macOS）放入 `gd/tools/`。缺少时跳过 FlatBuffers 编译，但 JSON 导出不受影响。
+
+---
+
+## CLI 命令
+
+所有子命令均支持 `--root DIR` 指定项目根目录（默认当前目录，应为 `gd/`）。
+
+```bash
+# 增量导出（只导出有变化的表）
+ct export
+
+# 强制全量导出
+ct export --all
+
+# 只导出指定表
+ct export --table item
+
+# 只导出指定语言
+ct export --lang en
+
+# 只校验，不输出产物（适合 CI）
+ct validate
+ct validate --table quest
+
+# 查看哪些表有变化
+ct status
+
+# 根据 schema 生成空白 Excel 模板
+ct gen-template --all
+ct gen-template --table item
+
+# 任意命令加 --verbose 显示详细日志
+ct export --verbose
+```
+
+---
+
+## 架构
+
+### 数据流
+
+```
+config/schemas/*.yaml  ──►  Schema 加载 + 拓扑排序（按 ref 依赖关系）
+excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
+                              │
+                              ▼
+                        类型校验 + 引用校验
+                              │
+                     ┌────────┴────────────────┐
+                     ▼                         ▼
+              i18n 字符串提取            导出流水线
+         (i18n/strings_source.json)   JSON + FBS + Binary Bundle
+```
+
+### 模块说明
+
+| 模块 | 职责 |
+|------|------|
+| `ct/cli.py` | Typer CLI 入口；编排完整的导出/校验流水线 |
+| `ct/config.py` | 加载 `config/global.yaml` 为 `GlobalConfig` Pydantic 模型；所有路径相对项目根目录解析 |
+| `ct/schema/models.py` | Pydantic 模型：`TableSchema` 和 `FieldDef`。支持字段类型：`int32`、`int64`、`float`、`double`、`bool`、`string`、`enum`、`struct`、`array` |
+| `ct/schema/loader.py` | 加载所有 `*.yaml` schema，依据 `ref` 字段构建依赖图，以拓扑顺序返回 |
+| `ct/excel/reader.py` | 以只读模式读取 Excel。struct 字段展开为多列；array 字段在单元格内按 `separator` 分隔。表头行数 = `max_nesting_depth + 2` |
+| `ct/excel/template.py` | 根据 schema 生成带多行表头的空白 Excel 文件 |
+| `ct/validate/types.py` | 按字段类型逐一校验；主键唯一性检查 |
+| `ct/validate/refs.py` | 利用已解析行数据和缓存中的 ID 集合进行跨表外键校验 |
+| `ct/export/json_writer.py` | 写出 `output/json/{table}_{lang}.json`，根键为 `schema.resolved_json_key` |
+| `ct/export/fbs_generator.py` | 生成 `output/fbs/*.fbs` schema 文件；另生成 Bundle 容器 `container.fbs` |
+| `ct/export/flatc_runner.py` | 调用 `flatc` 编译 `.fbs` 为各语言 Accessor 代码 |
+| `ct/export/binary_writer.py` | 手动将行数据序列化为 FlatBuffers bytes（无生成的 Python Accessor）；打包为 `DataBundle` 二进制（`output/binary/data_{lang}.bin`） |
+| `ct/export/csharp_accessor_generator.py` | 生成 C# Accessor 类至 `output/generated/csharp/` |
+| `ct/export/lua_accessor_generator.py` | 生成 Lua Accessor 模块至 `output/generated/lua/` |
+| `ct/export/i18n/extractor.py` | 将 `i18n: true` 字段的值提取到 `i18n/strings_source.json`（key 格式：`table.id.field`）；标记条目状态为 `new`、`translated` 或 `stale` |
+| `ct/export/i18n/merger.py` | 将 `i18n/{lang}.json` 中的翻译合并回行数据，用于次语言导出 |
+| `ct/export/i18n/writer.py` | 汇报 stale/未翻译字符串摘要 |
+| `ct/cache/state.py` | 读写 `cache/state.json`（每表存储文件 MD5 hash、ID 列表、fbs bytes hash）；同时在 `cache/fbs_bytes/*.bin` 中缓存原始 FlatBuffers bytes，未变化的表可复用 |
+
+### 关键设计决策
+
+**增量导出**：缓存记录每个 Excel 文件的 MD5 hash。`ct export` 时只重新解析 hash 变化的文件；未变化的表直接复用缓存中的 FlatBuffers bytes。最终 Binary Bundle 始终全量重写（新鲜 bytes + 缓存 bytes 合并）。
+
+**Schema 依赖排序**：`ref` 字段定义跨表外键（`ref: 目标表名.字段名`）。loader 对所有 schema 做拓扑排序，确保被引用表先于引用表完成校验。
+
+**Excel 表头布局**：表头行数 = `max_nesting_depth + 2`。struct 字段按叶子字段展开为连续列（2 个子字段占 2 列）。
+
+**FlatBuffers Binary 格式**：每张表各自序列化为独立 bytes，随后打包为 `DataBundle`（见 `container.fbs`）。`server_only` 字段在客户端 Binary 中排除。次语言 Bundle（`data_{lang}.bin`）只包含主键 + i18n 字段变体。
+
+**配置路径解析**：`config/global.yaml` 中所有路径均相对于项目根目录（含 `config/` 的目录）。通过 `cfg.resolve("key")` 获取绝对 `Path`。
+
+---
+
+## Schema 文件格式
+
+Schema 存于 `config/schemas/*.yaml`，每文件定义一张表：
+
+```yaml
+table: item          # 唯一表名
+primary: id          # 主键字段名
+excel_file: item.xlsx  # 可选，默认 {table}.xlsx
+json_key: items        # 可选，默认 {table}s
+fields:
+  - name: id
+    type: int32
+  - name: name
+    type: string
+    i18n: true         # 提取为翻译源字符串
+  - name: item_type_id
+    type: int32
+    ref: item_type.id  # 外键；item_type 必须存在于 schemas
+  - name: rarity
+    type: enum
+    values: [common, rare, epic]
+  - name: drop_range
+    type: struct
+    fields:
+      - {name: min, type: int32}
+      - {name: max, type: int32}
+  - name: tags
+    type: array
+    element: int32
+    separator: ","
+  - name: is_active
+    type: bool
+    server_only: true  # 排除出客户端 FlatBuffers binary
+```
+
+约束：`i18n` 与 `server_only` 不可同时标记；`i18n` 只能用于 `string` 类型；不支持 `array<struct>`。

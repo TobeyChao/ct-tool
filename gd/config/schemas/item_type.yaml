@@ -1,0 +1,13 @@
+table: item_type
+primary: id
+fields:
+  - name: id
+    type: int32
+    comment: "类型唯一ID，禁止修改"
+  - name: name
+    type: string
+    i18n: true
+    comment: "类型名称（多语言）"
+  - name: code
+    type: string
+    comment: "类型代码，程序引用用"

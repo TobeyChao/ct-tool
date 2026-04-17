@@ -1,0 +1,31 @@
+enum Rarity : byte { common = 0, rare = 1, epic = 2 }
+
+table DropRange {
+  min: int32;
+  max: int32;
+}
+
+table Item {
+  id: int32;
+  name: string;
+  price: float32;
+  rarity: Rarity;
+  item_type_id: int32;
+  drop_range: DropRange;
+  tags: [int32];
+}
+
+table ItemTable {
+  items: [Item];
+}
+
+table ItemI18nEntry {
+  id: int32;
+  name: string;
+}
+
+table ItemI18nTable {
+  entries: [ItemI18nEntry];
+}
+
+root_type ItemTable;
