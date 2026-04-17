@@ -53,16 +53,37 @@ ct export --lang en
 ct validate
 ct validate --table quest
 
-# 查看哪些表有变化
+# 查看哪些表有变化（含模板漂移检测）
 ct status
 
-# 根据 schema 生成空白 Excel 模板
+# 根据 schema 生成 Excel 模板
 ct gen-template --all
 ct gen-template --table item
+
+# Schema 改了？保留旧数据重建表头
+ct gen-template --table item --update-header
+
+# 强制全量覆盖（数据会丢失）
+ct gen-template --table item --force
 
 # 任意命令加 --verbose 显示详细日志
 ct export --verbose
 ```
+
+### gen-template 决策矩阵
+
+模板会在 Excel 的 Custom Document Properties 中写入元数据（表名、表头行数、schema 哈希、生成时间）。`gen-template` 会根据元数据状态决定行为，**绝不静默丢失数据**：
+
+| 文件状态 | 默认行为 | `--force` | `--update-header` |
+|---------|---------|-----------|------------------|
+| 不存在 | 生成新模板 + 元数据 | 同左 | 同左 |
+| 无元数据（legacy） | 拒绝 + 提示二选一 | 全量覆盖 | 用当前 schema header_rows 推断保留数据 |
+| `ct_table_name` 不匹配 | 拒绝 | 拒绝 | 拒绝 |
+| hash 一致（无变化） | 跳过 | 重建 | 重建 |
+| hash 不同 + 无数据 | 直接重建 | 重建 | 重建 |
+| hash 不同 + 有数据 | 拒绝 + 提示二选一 | 全量覆盖 | 保留数据重建 |
+
+`ct status` 同时输出"数据变更"（Excel 文件 hash 与缓存不一致）与"模板漂移"（schema 修改后未重建模板）两类状态。
 
 ---
 

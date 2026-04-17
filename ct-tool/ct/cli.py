@@ -13,12 +13,14 @@ from ct.cache.state import (
     load_fbs_bytes,
     save_cache,
     save_fbs_bytes,
+    update_schema_hash,
     update_table_cache,
 )
+from ct.cli_helpers.template_action import Action, decide_template_action
 from ct.config import load_config
 from ct.excel.diff import file_hash, get_changed_tables
 from ct.excel.reader import read_excel
-from ct.excel.template import generate_template
+from ct.excel.template import generate_template, read_template_metadata, update_template
 from ct.export.binary_writer import (
     build_i18n_table_bytes,
     build_table_bytes,
@@ -34,6 +36,7 @@ from ct.export.i18n.extractor import (
 from ct.export.i18n.merger import load_translation, merge_translations
 from ct.export.i18n.writer import report_stale_summary
 from ct.export.json_writer import write_json
+from ct.schema.hashing import compute_schema_hash
 from ct.schema.loader import load_and_sort_schemas
 from ct.validate.errors import report_errors
 from ct.validate.refs import validate_refs
@@ -313,6 +316,14 @@ def validate(
 def gen_template(
     all_tables: bool = typer.Option(False, "--all", help="生成所有表模板"),
     table: Optional[str] = typer.Option(None, "--table", help="只生成指定表模板"),
+    force: bool = typer.Option(
+        False, "--force",
+        help="强制全量覆盖（数据丢失）。无元数据 / hash 一致 / hash 不同有数据 时需要。",
+    ),
+    update_header: bool = typer.Option(
+        False, "--update-header",
+        help="重建表头并保留旧数据行原样追加（推荐用于 schema 变更）。",
+    ),
     project_root: Optional[str] = typer.Option(None, "--root", help="项目根目录"),
 ) -> None:
     """根据 schema 生成 Excel 模板头部。"""
@@ -324,27 +335,67 @@ def gen_template(
     schema_map = {s.table: s for s in schemas}
     excel_dir = cfg.resolve("excel_dir")
     excel_dir.mkdir(parents=True, exist_ok=True)
+    cache_dir = cfg.resolve("cache_dir")
+    cache = load_cache(cache_dir)
 
     targets = [table] if table else [s.table for s in schemas] if all_tables else []
     if not targets:
         typer.echo("请指定 --all 或 --table <表名>", err=True)
         raise typer.Exit(1)
 
+    refused = 0
+    cache_dirty = False
     for name in targets:
         if name not in schema_map:
             typer.echo(f"表 '{name}' 不存在", err=True)
+            refused += 1
             continue
         schema = schema_map[name]
         out_path = excel_dir / schema.resolved_excel_file
+
+        decision = decide_template_action(
+            schema, out_path, force=force, update_header=update_header,
+        )
+
+        if decision.action == Action.REFUSE:
+            typer.echo(decision.message, err=True)
+            refused += 1
+            continue
+
+        if decision.action == Action.SKIP:
+            typer.echo(decision.message)
+            continue
+
+        if decision.action == Action.UPDATE_PRESERVE:
+            preserved = update_template(schema, out_path)
+            typer.echo(f"{decision.message} (保留 {preserved} 行数据)")
+            update_schema_hash(cache, name, compute_schema_hash(schema))
+            cache_dirty = True
+            continue
+
+        # CREATE_NEW or REBUILD: same code path, different message.
         generate_template(schema, out_path)
-        typer.echo(f"[template] {out_path}")
+        typer.echo(decision.message)
+        update_schema_hash(cache, name, compute_schema_hash(schema))
+        cache_dirty = True
+
+    if cache_dirty:
+        save_cache(cache, cache_dir)
+
+    if refused > 0:
+        raise typer.Exit(1)
 
 
 @app.command()
 def status(
     project_root: Optional[str] = typer.Option(None, "--root", help="项目根目录"),
 ) -> None:
-    """对比当前 hash 与缓存，列出变更和未变更的表。"""
+    """对比当前 hash 与缓存，列出变更和未变更的表。
+
+    输出两类状态：
+      - 数据变更：Excel 文件 hash 与缓存不一致（待导出）
+      - 模板漂移：当前 schema_hash 与模板元数据不一致（建议重建模板）
+    """
     _setup_logging()
     root = Path(project_root) if project_root else Path(".")
     cfg = load_config(root)
@@ -356,14 +407,57 @@ def status(
     changed = get_changed_tables(schemas, cache, excel_dir)
     changed_set = set(changed)
 
+    # Classify each table's template state.
+    drifted: list[str] = []
+    untracked: list[str] = []
+    missing: list[str] = []
     for s in schemas:
         xlsx_path = excel_dir / s.resolved_excel_file
         if not xlsx_path.exists():
-            typer.echo(f"  [missing] {s.table}")
-        elif s.table in changed_set:
-            typer.echo(f"  [changed] {s.table}")
-        else:
-            typer.echo(f"  [  ok   ] {s.table}")
+            missing.append(s.table)
+            continue
+        current_hash = compute_schema_hash(s)
+        cached = cache.tables.get(s.table)
+        # Fast path: cached hash matches → template is up-to-date, no Excel read needed.
+        if cached is not None and cached.schema_hash == current_hash:
+            continue
+        # Slow path: confirm by reading the file's metadata.
+        meta = read_template_metadata(xlsx_path)
+        if meta is None:
+            untracked.append(s.table)
+            continue
+        if meta.schema_hash != current_hash:
+            drifted.append(s.table)
+
+    # Render output: each section only appears if it has entries.
+    has_anything = bool(changed_set or drifted or untracked or missing)
+
+    if missing:
+        typer.echo("缺失文件:")
+        for name in missing:
+            typer.echo(f"  [missing] {name}")
+
+    if changed_set:
+        typer.echo("数据变更（待导出）:")
+        for s in schemas:
+            if s.table in changed_set:
+                typer.echo(f"  [changed] {s.table}")
+
+    if drifted:
+        typer.echo("模板已过时（schema 修改后未重建）:")
+        for name in drifted:
+            typer.echo(
+                f"  [template-stale] {name}  "
+                f"(建议: ct gen-template --table {name} --update-header)"
+            )
+
+    if untracked:
+        typer.echo("未跟踪元数据（legacy 文件）:")
+        for name in untracked:
+            typer.echo(f"  [template-untracked] {name}")
+
+    if not has_anything:
+        typer.echo("[OK] 所有表已是最新（数据 + 模板）")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,8 @@
 {
   "item_types": [
-    
+    {"id": 1, "name": "Weapon", "code": "weapon"},
+    {"id": 2, "name": "Armor", "code": "armor"},
+    {"id": 3, "name": "Consumable", "code": "consumable"},
+    {"id": 4, "name": "材料", "code": "material"}
   ]
 }

@@ -1,19 +1,4 @@
-## ADDED Requirements
-
-### Requirement: Read Excel data according to schema
-工具 SHALL 使用 openpyxl 读取 Excel 文件，从 schema 定义的起始数据行开始解析，忽略模板头部行（前 N 行由工具生成）。
-
-#### Scenario: Data parsed correctly
-- **WHEN** Excel 文件包含正确的列头和数据行
-- **THEN** 工具按字段顺序解析每行数据，空行自动跳过
-
-#### Scenario: Extra columns ignored
-- **WHEN** Excel 中存在 schema 未定义的列
-- **THEN** 工具记录 warning 但继续处理，忽略多余列
-
-#### Scenario: Excel file not found
-- **WHEN** schema 引用的 Excel 文件不存在
-- **THEN** 工具报错指明文件路径，终止该表的处理
+## MODIFIED Requirements
 
 ### Requirement: Generate Excel template headers from schema
 `ct gen-template` 命令 SHALL 根据 schema 生成或更新 Excel 文件的模板头部，行数为 `max_nesting_depth + 2`（类型行 + 注释行）。当目标文件已存在且通过 `--update-header` 模式更新时，工具 SHALL 保留原有数据行原样追加到新表头之下，不丢失任何已填数据。非嵌套列跨多余行垂直合并，struct 分组列水平合并。
@@ -57,6 +42,8 @@
 #### Scenario: Update header on legacy file uses new schema header_rows
 - **WHEN** 目标 Excel 已有数据但**无元数据**，`--update-header` 被指定
 - **THEN** 工具用当前 schema 的 `header_rows` 推断旧表头行数，跳过该行数后保留剩余行；CLI 提示用户检查首尾行是否被误跳/误带
+
+## ADDED Requirements
 
 ### Requirement: Write template metadata to Excel custom document properties
 `generate_template` 与 `update_template` SHALL 在保存 Excel 时向 Workbook 的 Custom Document Properties 写入下列字段，作为模板"自描述"信息：
@@ -131,33 +118,3 @@
 #### Scenario: Missing metadata reports untracked
 - **WHEN** 模板文件存在但 `read_template_metadata` 返回 None
 - **THEN** 状态为 `untracked`
-
-### Requirement: Read Excel data with struct and array fields
-工具 SHALL 根据 schema 将展开的 struct 多列数据重组为嵌套对象，将 array 单列按分隔符拆分为列表。
-
-#### Scenario: Struct columns reassembled
-- **WHEN** Excel 中 `drop_range.min=10`, `drop_range.max=20`
-- **THEN** 解析结果为 `{"drop_range": {"min": 10, "max": 20}}`
-
-#### Scenario: Array parsed with separator
-- **WHEN** Excel 中 tags 列值为 `"1,2,5"`，separator 为 `,`
-- **THEN** 解析结果为 `{"tags": [1, 2, 5]}`
-
-#### Scenario: Array with custom separator
-- **WHEN** schema 定义 `separator: "|"`，Excel 填写 `"1|2|5"`
-- **THEN** 解析结果为 `{"tags": [1, 2, 5]}`
-
-#### Scenario: Array element type validated
-- **WHEN** array<int32> 的单元格填写 `"1,abc,5"`
-- **THEN** 报错：`[item.xlsx] 第N行 tags：第2个元素 "abc" 无法转换为 int32`
-
-### Requirement: Detect changes via file hash
-工具 SHALL 对每个 Excel 文件计算 MD5 hash，与缓存中的上次 hash 比对，确定是否需要重新导出。
-
-#### Scenario: File unchanged
-- **WHEN** Excel 文件内容与缓存 hash 一致
-- **THEN** 跳过该表的导出，输出 "unchanged: item" 提示
-
-#### Scenario: File changed
-- **WHEN** Excel 文件 hash 与缓存不一致
-- **THEN** 将该表加入待导出队列

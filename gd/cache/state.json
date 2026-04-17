@@ -1,23 +1,47 @@
 {
-  "version": 1,
+  "version": 2,
   "tables": {
     "item_type": {
-      "hash": "8a5a0b7e6945cd8d7aa9e5402bea53be",
-      "ids": [],
-      "fbs_bytes_hash": "1958bff73670543ab0abee77906a8930",
-      "exported_at": "2026-04-17T05:30:47Z"
+      "hash": "5384b5d4fb260bd8ac7d817baf812f24",
+      "ids": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "fbs_bytes_hash": "6aa54726c45a08f4d1f06fa5541dbf76",
+      "schema_hash": "8d46369cdeaf2799",
+      "exported_at": "2026-04-17T15:26:00Z"
     },
     "item": {
-      "hash": "ffd2924bc3dcd7bfe81cef389f669f44",
-      "ids": [],
-      "fbs_bytes_hash": "1958bff73670543ab0abee77906a8930",
-      "exported_at": "2026-04-17T05:30:47Z"
+      "hash": "ebd8f1483032d34541276303f6303880",
+      "ids": [
+        1001,
+        1002,
+        1003,
+        2001,
+        2002,
+        3001,
+        3002,
+        4001,
+        4002
+      ],
+      "fbs_bytes_hash": "987a0fc1669f11d5df62af5dd2408933",
+      "schema_hash": "54dc3fc199b9252a",
+      "exported_at": "2026-04-17T15:26:00Z"
     },
     "quest": {
-      "hash": "3a989b1a030701d76f891365e6d8d767",
-      "ids": [],
-      "fbs_bytes_hash": "1958bff73670543ab0abee77906a8930",
-      "exported_at": "2026-04-17T05:30:47Z"
+      "hash": "7e8a2238a87b57e04e005cef2f522e0a",
+      "ids": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fbs_bytes_hash": "1dd5ce306a13da48f31b411560f6ef00",
+      "schema_hash": "e8141fddb5cc34f5",
+      "exported_at": "2026-04-17T15:26:00Z"
     }
   }
 }

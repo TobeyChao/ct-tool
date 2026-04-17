@@ -1,1 +1,163 @@
-{}
+{
+  "item_type.1.name": {
+    "table": "item_type",
+    "id": 1,
+    "field": "name",
+    "text": "武器",
+    "status": "new"
+  },
+  "item_type.2.name": {
+    "table": "item_type",
+    "id": 2,
+    "field": "name",
+    "text": "防具",
+    "status": "new"
+  },
+  "item_type.3.name": {
+    "table": "item_type",
+    "id": 3,
+    "field": "name",
+    "text": "消耗品",
+    "status": "new"
+  },
+  "item_type.4.name": {
+    "table": "item_type",
+    "id": 4,
+    "field": "name",
+    "text": "材料",
+    "status": "new"
+  },
+  "item.1001.name": {
+    "table": "item",
+    "id": 1001,
+    "field": "name",
+    "text": "铁剑",
+    "status": "new"
+  },
+  "item.1002.name": {
+    "table": "item",
+    "id": 1002,
+    "field": "name",
+    "text": "火焰长剑",
+    "status": "new"
+  },
+  "item.1003.name": {
+    "table": "item",
+    "id": 1003,
+    "field": "name",
+    "text": "传说之剑",
+    "status": "new"
+  },
+  "item.2001.name": {
+    "table": "item",
+    "id": 2001,
+    "field": "name",
+    "text": "皮甲",
+    "status": "new"
+  },
+  "item.2002.name": {
+    "table": "item",
+    "id": 2002,
+    "field": "name",
+    "text": "板甲",
+    "status": "new"
+  },
+  "item.3001.name": {
+    "table": "item",
+    "id": 3001,
+    "field": "name",
+    "text": "治疗药水",
+    "status": "new"
+  },
+  "item.3002.name": {
+    "table": "item",
+    "id": 3002,
+    "field": "name",
+    "text": "大型治疗药水",
+    "status": "new"
+  },
+  "item.4001.name": {
+    "table": "item",
+    "id": 4001,
+    "field": "name",
+    "text": "铁矿石",
+    "status": "new"
+  },
+  "item.4002.name": {
+    "table": "item",
+    "id": 4002,
+    "field": "name",
+    "text": "魔晶石",
+    "status": "new"
+  },
+  "quest.1.title": {
+    "table": "quest",
+    "id": 1,
+    "field": "title",
+    "text": "新手试炼",
+    "status": "new"
+  },
+  "quest.1.description": {
+    "table": "quest",
+    "id": 1,
+    "field": "description",
+    "text": "击败 5 只史莱姆",
+    "status": "new"
+  },
+  "quest.2.title": {
+    "table": "quest",
+    "id": 2,
+    "field": "title",
+    "text": "材料收集",
+    "status": "new"
+  },
+  "quest.2.description": {
+    "table": "quest",
+    "id": 2,
+    "field": "description",
+    "text": "收集 10 块铁矿石",
+    "status": "new"
+  },
+  "quest.3.title": {
+    "table": "quest",
+    "id": 3,
+    "field": "title",
+    "text": "装备打造",
+    "status": "new"
+  },
+  "quest.3.description": {
+    "table": "quest",
+    "id": 3,
+    "field": "description",
+    "text": "获得火焰长剑",
+    "status": "new"
+  },
+  "quest.4.title": {
+    "table": "quest",
+    "id": 4,
+    "field": "title",
+    "text": "稀世挑战",
+    "status": "new"
+  },
+  "quest.4.description": {
+    "table": "quest",
+    "id": 4,
+    "field": "description",
+    "text": "获得传说之剑",
+    "status": "new"
+  },
+  "quest.5.title": {
+    "table": "quest",
+    "id": 5,
+    "field": "title",
+    "text": "采矿专家",
+    "status": "new"
+  },
+  "quest.5.description": {
+    "table": "quest",
+    "id": 5,
+    "field": "description",
+    "text": "收集 5 颗魔晶石",
+    "status": "new"
+  }
+}

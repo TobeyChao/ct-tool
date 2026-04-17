@@ -18,14 +18,23 @@ Header layout (total rows = ``schema.header_rows`` = max_nesting_depth + 2):
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from importlib import metadata as importlib_metadata
 from pathlib import Path
 
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.formatting.rule import FormulaRule
+from openpyxl.packaging.custom import (
+    DateTimeProperty,
+    IntProperty,
+    StringProperty,
+)
 from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
+from ct.schema.hashing import compute_schema_hash
 from ct.schema.models import FieldDef, TableSchema
 
 logger = logging.getLogger(__name__)
@@ -227,6 +236,104 @@ def _write_field_headers(
 # Public API
 # ---------------------------------------------------------------------------
 
+# Metadata field names stored in Excel Custom Document Properties.
+_META_TOOL_VERSION = "ct_tool_version"
+_META_TABLE_NAME = "ct_table_name"
+_META_HEADER_ROWS = "ct_header_rows"
+_META_SCHEMA_HASH = "ct_schema_hash"
+_META_GENERATED_AT = "ct_generated_at"
+
+_META_REQUIRED = (
+    _META_TOOL_VERSION,
+    _META_TABLE_NAME,
+    _META_HEADER_ROWS,
+    _META_SCHEMA_HASH,
+    _META_GENERATED_AT,
+)
+
+
+@dataclass(frozen=True)
+class TemplateMetadata:
+    """Self-describing metadata embedded in a generated Excel template."""
+
+    tool_version: str
+    table_name: str
+    header_rows: int
+    schema_hash: str
+    generated_at: str
+
+
+def _tool_version() -> str:
+    try:
+        return importlib_metadata.version("ct-tool")
+    except importlib_metadata.PackageNotFoundError:
+        return "unknown"
+
+
+def _write_metadata(wb: Workbook, schema: TableSchema) -> None:
+    """Write the five ct_* properties to the workbook's custom doc props."""
+    props = wb.custom_doc_props
+    # Drop any pre-existing ct_* entries so we never end up with duplicates.
+    for name in _META_REQUIRED:
+        try:
+            del props[name]
+        except (KeyError, AttributeError):
+            pass
+
+    now = datetime.now(timezone.utc)
+    props.append(StringProperty(name=_META_TOOL_VERSION, value=_tool_version()))
+    props.append(StringProperty(name=_META_TABLE_NAME, value=schema.table))
+    props.append(IntProperty(name=_META_HEADER_ROWS, value=schema.header_rows))
+    props.append(StringProperty(name=_META_SCHEMA_HASH, value=compute_schema_hash(schema)))
+    props.append(DateTimeProperty(name=_META_GENERATED_AT, value=now))
+
+
+def read_template_metadata(path: Path) -> TemplateMetadata | None:
+    """Read ct_* metadata from an existing Excel file.
+
+    Returns ``None`` for any failure mode: file missing, file corrupted,
+    metadata missing, partial metadata, or unexpected types. The caller
+    should treat ``None`` as "untracked / legacy" and fall back accordingly.
+    """
+    if not path.exists():
+        return None
+    try:
+        wb = load_workbook(str(path), read_only=True, data_only=True)
+    except Exception:
+        return None
+    try:
+        props = wb.custom_doc_props
+        values: dict[str, object] = {}
+        for prop in props:
+            if prop.name in _META_REQUIRED:
+                values[prop.name] = prop.value
+        if not all(name in values for name in _META_REQUIRED):
+            return None
+        try:
+            header_rows = int(values[_META_HEADER_ROWS])  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            return None
+        generated_at = values[_META_GENERATED_AT]
+        if isinstance(generated_at, datetime):
+            generated_at_str = generated_at.isoformat()
+        else:
+            generated_at_str = str(generated_at)
+        return TemplateMetadata(
+            tool_version=str(values[_META_TOOL_VERSION]),
+            table_name=str(values[_META_TABLE_NAME]),
+            header_rows=header_rows,
+            schema_hash=str(values[_META_SCHEMA_HASH]),
+            generated_at=generated_at_str,
+        )
+    except Exception:
+        return None
+    finally:
+        try:
+            wb.close()
+        except Exception:
+            pass
+
+
 def generate_template(schema: TableSchema, output_path: Path) -> None:
     """Create an Excel template workbook with structured headers."""
     total_rows = schema.header_rows  # max_nesting_depth + 2
@@ -292,6 +399,57 @@ def generate_template(schema: TableSchema, output_path: Path) -> None:
     )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    _write_metadata(wb, schema)
     wb.save(str(output_path))
     logger.info("模板已生成: %s (%d 列, %d 行表头)",
                 output_path, total_cols, total_rows)
+
+
+def update_template(schema: TableSchema, output_path: Path) -> int:
+    """Rebuild the header rows of an existing template, preserving data rows.
+
+    Reads the file's metadata to determine where the old header ended, captures
+    every non-empty row below it, regenerates the template (which writes fresh
+    metadata), and appends the captured rows back below the new header.
+
+    Returns the number of data rows that were preserved.
+
+    For legacy files (no metadata) the current schema's ``header_rows`` is used
+    as the best guess for where the old header ended — if the old schema's
+    nesting depth differed, the caller is expected to warn the user.
+    """
+    meta = read_template_metadata(output_path)
+    old_header_rows = meta.header_rows if meta is not None else schema.header_rows
+
+    # 1. Snapshot data rows from the existing file.
+    data_rows: list[tuple] = []
+    old_wb = load_workbook(str(output_path), read_only=True, data_only=True)
+    try:
+        old_ws = old_wb.active
+        for idx, row in enumerate(old_ws.iter_rows(values_only=True), start=1):
+            if idx <= old_header_rows:
+                continue
+            if any(cell is not None for cell in row):
+                data_rows.append(row)
+    finally:
+        old_wb.close()
+
+    # 2. Regenerate the template with fresh headers + metadata.
+    generate_template(schema, output_path)
+
+    # 3. Append preserved data rows under the new header.
+    if data_rows:
+        new_wb = load_workbook(str(output_path))
+        try:
+            new_ws = new_wb.active
+            for row in data_rows:
+                new_ws.append(list(row))
+            new_wb.save(str(output_path))
+        finally:
+            new_wb.close()
+
+    logger.info(
+        "模板已更新: %s (保留 %d 行数据，旧表头 %d 行)",
+        output_path, len(data_rows), old_header_rows,
+    )
+    return len(data_rows)
