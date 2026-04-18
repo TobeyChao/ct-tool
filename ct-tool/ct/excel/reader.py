@@ -2,7 +2,7 @@
 according to a TableSchema definition.
 
 Key concepts:
-- Header rows are determined by ``schema.header_rows`` (max_nesting_depth + 2).
+- Header rows are determined by ``schema.header_rows`` (max_nesting_depth + 1).
 - Struct fields are expanded into multiple contiguous columns.  A struct with
   two sub-fields occupies two columns; nested structs expand recursively.
 - Array fields occupy a single cell whose value is split by

@@ -177,7 +177,7 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
 
 **Schema 依赖排序**：`ref` 字段定义跨表外键（`ref: 目标表名.字段名`）。loader 对所有 schema 做拓扑排序，确保被引用表先于引用表完成校验。
 
-**Excel 表头布局**：表头行数 = `max_nesting_depth + 2`。struct 字段按叶子字段展开为连续列（2 个子字段占 2 列）。
+**Excel 表头布局**：表头行数 = `max_nesting_depth + 1`。前 `max_nesting_depth` 行是"字段名+类型"行——每个单元格内用富文本（`CellRichText`）堆两段：上面字段名（12pt 粗体白），下面类型注解（9pt 斜体浅绿 `D8F3DC`）。struct 单元格的类型显示 `to_pascal_case(field.name)`，与 FBS 生成的 table 名一致（如 `drop_range` → `DropRange`）。最后一行是注释行。struct 字段按叶子字段展开为连续列（2 个子字段占 2 列）。
 
 **FlatBuffers Binary 格式**：每张表各自序列化为独立 bytes，随后打包为 `DataBundle`（见 `container.fbs`）。`server_only` 字段在客户端 Binary 中排除。次语言 Bundle（`data_{lang}.bin`）只包含主键 + i18n 字段变体。
 

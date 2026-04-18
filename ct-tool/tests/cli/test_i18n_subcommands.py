@@ -49,11 +49,10 @@ def _build_minimal_project(root: Path, *, secondary: list[str] | None = None) ->
         yaml.safe_dump(schema, allow_unicode=True), encoding="utf-8"
     )
 
-    # 简易 Excel：表头 3 行 + 数据
+    # 简易 Excel：表头 2 行（名字+类型合并 / 注释）+ 数据
     wb = Workbook()
     ws = wb.active
     ws.append(["id", "name", "price"])
-    ws.append(["int32", "string", "float"])
     ws.append(["主键", "名称", "价格"])
     ws.append([1001, "铁剑", 100.0])
     ws.append([1002, "魔杖", 200.0])

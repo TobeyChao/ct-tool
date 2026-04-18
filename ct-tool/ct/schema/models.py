@@ -108,7 +108,7 @@ class TableSchema(BaseModel):
 
     @property
     def header_rows(self) -> int:
-        return self.max_nesting_depth + 2
+        return self.max_nesting_depth + 1
 
     @property
     def resolved_excel_file(self) -> str:

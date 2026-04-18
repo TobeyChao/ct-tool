@@ -93,19 +93,19 @@ Schema 中每个字段 SHALL 声明合法的类型（`int32`, `int64`, `float`, 
 - **THEN** 工具在 schema 加载阶段报错：`字段 {name} 不能同时标记 i18n 和 server_only（i18n 字段用于客户端 UI，server_only 字段不进入 Binary）`
 
 ### Requirement: Calculate maximum nesting depth
-工具 SHALL 根据 schema 计算每张表的最大嵌套深度，用于确定 Excel 模板头部行数（`max_nesting_depth + 2`）。
+工具 SHALL 根据 schema 计算每张表的最大嵌套深度，用于确定 Excel 模板头部行数（`max_nesting_depth + 1`）。
 
 #### Scenario: Flat table depth
 - **WHEN** 所有字段均为基础类型、enum 或 array
-- **THEN** `max_nesting_depth = 1`，头部行数 = 3
+- **THEN** `max_nesting_depth = 1`，头部行数 = 2
 
 #### Scenario: Single level struct depth
 - **WHEN** 表含 `drop_range: struct{min: int32, max: int32}`，无更深嵌套
-- **THEN** `max_nesting_depth = 2`，头部行数 = 4
+- **THEN** `max_nesting_depth = 2`，头部行数 = 3
 
 #### Scenario: Nested struct depth
 - **WHEN** 表含 `position: struct{area: struct{x: float, y: float}, z: float}`
-- **THEN** `max_nesting_depth = 3`，头部行数 = 5
+- **THEN** `max_nesting_depth = 3`，头部行数 = 4
 
 #### Scenario: Depth calculation rule
 - **WHEN** 计算字段深度

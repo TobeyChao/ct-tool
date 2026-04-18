@@ -1,11 +1,11 @@
 {
-  "1001.name": {"source": "精铁剑", "text": "Refined Iron Sword", "confirmed": true, "status": "translated"},
-  "1002.name": {"source": "火焰长剑", "text": "Flame Longsword", "confirmed": true, "status": "translated"},
-  "1003.name": {"source": "传说之剑", "text": "", "confirmed": false, "status": "missing"},
-  "2001.name": {"source": "皮甲", "text": "", "confirmed": false, "status": "missing"},
-  "2002.name": {"source": "板甲", "text": "", "confirmed": false, "status": "missing"},
-  "3001.name": {"source": "治疗药水", "text": "", "confirmed": false, "status": "missing"},
-  "3002.name": {"source": "大型治疗药水", "text": "", "confirmed": false, "status": "missing"},
-  "4001.name": {"source": "铁矿石", "text": "", "confirmed": false, "status": "missing"},
-  "4002.name": {"source": "魔晶石", "text": "", "confirmed": false, "status": "missing"}
+  "1001.name": {"source": "精铁剑", "text": "Refined Iron Sword", "confirmed": true, "status": "orphan"},
+  "1002.name": {"source": "火焰长剑", "text": "Flame Longsword", "confirmed": true, "status": "orphan"},
+  "1003.name": {"source": "传说之剑", "text": "", "confirmed": false, "status": "orphan"},
+  "2001.name": {"source": "皮甲", "text": "", "confirmed": false, "status": "orphan"},
+  "2002.name": {"source": "板甲", "text": "", "confirmed": false, "status": "orphan"},
+  "3001.name": {"source": "治疗药水", "text": "", "confirmed": false, "status": "orphan"},
+  "3002.name": {"source": "大型治疗药水", "text": "", "confirmed": false, "status": "orphan"},
+  "4001.name": {"source": "铁矿石", "text": "", "confirmed": false, "status": "orphan"},
+  "4002.name": {"source": "魔晶石", "text": "", "confirmed": false, "status": "orphan"}
 }

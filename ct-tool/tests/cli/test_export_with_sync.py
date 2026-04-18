@@ -49,7 +49,6 @@ def _build_project(root: Path) -> None:
     wb = Workbook()
     ws = wb.active
     ws.append(["id", "name", "price"])
-    ws.append(["int32", "string", "float"])
     ws.append(["主键", "名称", "价格"])
     ws.append([1001, "铁剑", 100.0])
     wb.save(root / "excel" / "item.xlsx")

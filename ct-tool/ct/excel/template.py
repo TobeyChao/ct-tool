@@ -1,18 +1,19 @@
 """Generate Excel template workbooks with structured, multi-row headers
 derived from a ``TableSchema``.
 
-Header layout (total rows = ``schema.header_rows`` = max_nesting_depth + 2):
+Header layout (total rows = ``schema.header_rows`` = max_nesting_depth + 1):
 
-1. The first ``max_nesting_depth`` rows are **group / name rows**.
-   - Non-struct fields write their name in the first group row and merge
-     vertically downward through all remaining group rows.
-   - Struct fields write the struct name in their group row, merged
-     horizontally across the span of their sub-fields, then recurse into
-     the next group row for sub-field names.
-2. The **type row** (second-to-last) shows type annotations such as
-   ``enum[v1,v2]``, ``int32[ref:table]``, ``string[i18n]``,
-   ``array<int32>``.
-3. The **comment row** (last) shows ``field.comment``.
+1. The first ``max_nesting_depth`` rows are **name+type rows**. Each cell uses
+   openpyxl's ``CellRichText`` to stack two text runs:
+   - line 1: field name (12pt bold white, on the cell's name fill)
+   - line 2: type annotation (9pt italic light green ``D8F3DC``)
+
+   Non-struct fields write into the first name row and merge vertically
+   downward through the remaining name rows. Struct fields merge horizontally
+   across the span of their sub-fields and recurse one row deeper. Struct
+   cells display ``to_pascal_case(field.name)`` as their type, matching the
+   FBS-generated table name (e.g., ``drop_range`` → ``DropRange``).
+2. The **comment row** (last) shows ``field.comment``.
 """
 
 from __future__ import annotations
@@ -24,6 +25,8 @@ from importlib import metadata as importlib_metadata
 from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
+from openpyxl.cell.rich_text import CellRichText, TextBlock
+from openpyxl.cell.text import InlineFont
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.packaging.custom import (
     DateTimeProperty,
@@ -36,6 +39,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 from ct.schema.hashing import compute_schema_hash
 from ct.schema.models import FieldDef, TableSchema
+from ct.schema.naming import to_pascal_case
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +47,14 @@ logger = logging.getLogger(__name__)
 # Styling constants
 # ---------------------------------------------------------------------------
 
-# Name-row fonts: white bold on dark backgrounds
+# Cell-level font (used by openpyxl for default rendering; rich-text runs
+# carry their own InlineFont below).
 _HEADER_FONT = Font(name="Segoe UI", bold=True, size=12, color="FFFFFF")
-# Annotation-row fonts
-_TYPE_FONT = Font(name="Consolas", italic=True, size=10, color="1B4332")
 _COMMENT_FONT = Font(name="微软雅黑", italic=True, size=9, color="888888")
+
+# Rich-text inline fonts for the two stacked runs inside each header cell.
+_NAME_RUN_FONT = InlineFont(rFont="Segoe UI", b=True, sz=12, color="FFFFFF")
+_TYPE_RUN_FONT = InlineFont(rFont="Consolas", i=True, sz=9, color="D8F3DC")
 
 _CENTER = Alignment(horizontal="center", vertical="center", wrap_text=True)
 _THIN_BORDER = Border(
@@ -57,11 +64,10 @@ _THIN_BORDER = Border(
     bottom=Side(style="thin"),
 )
 
-# Header row fills — deep green hierarchy (dark → mid → annotation)
+# Header row fills — deep green hierarchy (dark → mid → primary)
 _NORMAL_FILL  = PatternFill(start_color="1B4332", end_color="1B4332", fill_type="solid")  # deep forest green
 _STRUCT_FILL  = PatternFill(start_color="40916C", end_color="40916C", fill_type="solid")  # mid green
 _PRIMARY_FILL = PatternFill(start_color="C9A227", end_color="C9A227", fill_type="solid")  # warm gold (primary key)
-_TYPE_FILL    = PatternFill(start_color="D8F3DC", end_color="D8F3DC", fill_type="solid")  # pale green
 _COMMENT_FILL = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")  # light gray
 
 # Data-row zebra fills
@@ -71,6 +77,10 @@ _COL_BORDER = Border(
     left=Side(style="thin", color="CCCCCC"),
     right=Side(style="thin", color="CCCCCC"),
 )
+
+# Explicit row height for name+type rows so the two-line rich text is not
+# clipped on viewers that ignore wrap_text auto-fit (WPS, Excel for Mac).
+_NAME_ROW_HEIGHT = 36
 
 
 # ---------------------------------------------------------------------------
@@ -132,6 +142,29 @@ def _type_annotation(field: FieldDef) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Rich-text builder for the merged name + type cell
+# ---------------------------------------------------------------------------
+
+def _make_name_type_richtext(name: str, type_text: str) -> CellRichText:
+    """Two-line rich text: name (bold white) on top, type (italic light) below.
+
+    The newline is embedded at the end of the name run. A standalone
+    whitespace-only ``TextBlock`` would be serialized as ``<t>\\n</t>`` without
+    ``xml:space="preserve"``, which Excel strips per XML default whitespace
+    handling — the result would render on a single line.
+    """
+    return CellRichText([
+        TextBlock(_NAME_RUN_FONT, f"{name}\n"),
+        TextBlock(_TYPE_RUN_FONT, type_text),
+    ])
+
+
+def _struct_type_label(field: FieldDef) -> str:
+    """Type label shown beneath a struct field's name (matches FBS table name)."""
+    return to_pascal_case(field.name)
+
+
+# ---------------------------------------------------------------------------
 # Recursive header writer
 # ---------------------------------------------------------------------------
 
@@ -141,7 +174,6 @@ def _write_field_headers(
     start_col: int,
     group_row_start: int,
     group_row_end: int,
-    type_row: int,
     comment_row: int,
     primary_key: str = "",
 ) -> int:
@@ -154,9 +186,8 @@ def _write_field_headers(
     ws : Worksheet
     fields : list of field definitions at this nesting level
     start_col : 1-based column index to start writing
-    group_row_start : 1-based row for this nesting level's names
-    group_row_end : 1-based row of the last group row (before the type row)
-    type_row : 1-based row index for type annotations
+    group_row_start : 1-based row for this nesting level's name+type cell
+    group_row_end : 1-based row of the last name+type row (before comment)
     comment_row : 1-based row index for comments
     """
     col = start_col
@@ -171,7 +202,8 @@ def _write_field_headers(
                     start_row=group_row_start, start_column=col,
                     end_row=group_row_start, end_column=end_col,
                 )
-            cell = ws.cell(row=group_row_start, column=col, value=field.name)
+            cell = ws.cell(row=group_row_start, column=col)
+            cell.value = _make_name_type_richtext(field.name, _struct_type_label(field))
             cell.font = _HEADER_FONT
             cell.alignment = _CENTER
             cell.fill = _STRUCT_FILL
@@ -186,7 +218,6 @@ def _write_field_headers(
                 start_col=col,
                 group_row_start=group_row_start + 1,
                 group_row_end=group_row_end,
-                type_row=type_row,
                 comment_row=comment_row,
                 primary_key=primary_key,
             )
@@ -202,7 +233,8 @@ def _write_field_headers(
                     start_row=group_row_start, start_column=col,
                     end_row=group_row_end, end_column=col,
                 )
-            cell = ws.cell(row=group_row_start, column=col, value=field.name)
+            cell = ws.cell(row=group_row_start, column=col)
+            cell.value = _make_name_type_richtext(field.name, _type_annotation(field))
             cell.font = _HEADER_FONT
             cell.alignment = _CENTER
             cell.fill = name_fill
@@ -210,14 +242,6 @@ def _write_field_headers(
 
             for r in range(group_row_start, group_row_end + 1):
                 ws.cell(row=r, column=col).border = _THIN_BORDER
-
-            # Type row
-            type_cell = ws.cell(row=type_row, column=col,
-                                value=_type_annotation(field))
-            type_cell.font = _TYPE_FONT
-            type_cell.alignment = _CENTER
-            type_cell.fill = _TYPE_FILL
-            type_cell.border = _THIN_BORDER
 
             # Comment row
             comment_cell = ws.cell(row=comment_row, column=col,
@@ -336,10 +360,9 @@ def read_template_metadata(path: Path) -> TemplateMetadata | None:
 
 def generate_template(schema: TableSchema, output_path: Path) -> None:
     """Create an Excel template workbook with structured headers."""
-    total_rows = schema.header_rows  # max_nesting_depth + 2
+    total_rows = schema.header_rows  # max_nesting_depth + 1
     group_rows = schema.max_nesting_depth
-    type_row = group_rows + 1
-    comment_row = group_rows + 2
+    comment_row = group_rows + 1
 
     wb = Workbook()
     ws = wb.active
@@ -351,7 +374,6 @@ def generate_template(schema: TableSchema, output_path: Path) -> None:
         start_col=1,
         group_row_start=1,
         group_row_end=group_rows,
-        type_row=type_row,
         comment_row=comment_row,
         primary_key=schema.primary,
     )
@@ -362,6 +384,11 @@ def generate_template(schema: TableSchema, output_path: Path) -> None:
     # Fixed column width
     for c in range(1, total_cols + 1):
         ws.column_dimensions[get_column_letter(c)].width = 16  # type: ignore[union-attr]
+
+    # Explicit row height for the name+type rows so the two-line rich text
+    # is fully visible on viewers that ignore wrap_text auto-fit.
+    for r in range(1, group_rows + 1):
+        ws.row_dimensions[r].height = _NAME_ROW_HEIGHT  # type: ignore[union-attr]
 
     # Freeze panes below the header
     ws.freeze_panes = ws.cell(row=total_rows + 1, column=1)  # type: ignore[union-attr]
