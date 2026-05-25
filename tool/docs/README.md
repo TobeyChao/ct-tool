@@ -18,12 +18,12 @@
 
 ## 安装说明
 
-工具源码位于 `ct-tool/`，工作空间（Excel 数据、配置、导出产物）位于 `gd/`。
+工具源码位于 `tool/`，工作空间（Excel 数据、配置、导出产物）位于 `gd/`。
 
 ### 方式一：开发模式安装（推荐）
 
 ```bash
-cd ct-tool
+cd tool
 pip install -e .
 ```
 
@@ -32,7 +32,7 @@ pip install -e .
 ### 方式二：仅安装依赖
 
 ```bash
-cd ct-tool
+cd tool
 pip install -r requirements.txt
 ```
 

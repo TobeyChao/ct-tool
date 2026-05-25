@@ -8,16 +8,49 @@
 
 本仓库包含 `ct`（配表导出工具）。功能：将游戏策划数据从 **Excel + YAML Schema** 导出为 **JSON、FlatBuffers Binary 及 C#/Lua Accessor 代码**。
 
-- `ct-tool/` — 工具源码（Python package、打包配置、文档）
+- `tool/` — 工具源码（Python package、打包配置、文档）
 - `gd/` — 数据工作空间（config、excel、output 等）
 - `openspec/` — 规格文档（设计文档和任务列表）
+
+### 命名缩写
+
+| 缩写 | 全称 | 说明 |
+|------|------|------|
+| `ct` | **C**onfig **T**able | 配表导出工具名 |
+| `gd` | **G**ame **D**ata | 游戏数据工作空间，CLI 的 `--root` 默认指向这里 |
+| `fbs` | **F**lat**B**uffers **S**chema | FlatBuffers schema 文件（`.fbs`） |
+| `i18n` | **i**nternationalizatio**n** | 国际化（i 和 n 之间 18 个字母） |
+| `cli` | **C**ommand **L**ine **I**nterface | 命令行接口 |
+
+### 目录结构
+
+```
+仓库根目录/
+├── tool/                 # 工具源码
+│   ├── ct/               #   Python 包 (cli, schema, excel, export, validate, cache)
+│   ├── tests/            #   pytest 测试
+│   └── docs/             #   用户文档
+├── gd/                   # 游戏数据工作空间 (--root)
+│   ├── config/           #   global.yaml + schemas/*.yaml
+│   ├── excel/            #   策划填写的 Excel 数据表
+│   ├── output/           #   导出产物
+│   │   ├── json/         #     JSON (按语言分目录)
+│   │   ├── fbs/          #     FlatBuffers Schema
+│   │   ├── binary/       #     Binary Bundle (.bin)
+│   │   └── generated/    #     C# / Lua Accessor
+│   ├── cache/            #   增量缓存 (自动维护)
+│   ├── i18n/             #   翻译文件 (source/ 原文 + {lang}/ 译文)
+│   ├── tools/            #   flatc 等外部工具
+│   └── scripts/          #   辅助脚本
+└── openspec/             # 设计文档和任务列表
+```
 
 ---
 
 ## 安装
 
 ```bash
-cd ct-tool
+cd tool
 
 # 开发模式安装（推荐）
 pip install -e .
@@ -29,6 +62,35 @@ pip install -r requirements.txt
 需要 Python >= 3.10。
 
 将 `flatc.exe`（Windows）或 `flatc`（Linux/macOS）放入 `gd/tools/`。缺少时跳过 FlatBuffers 编译，但 JSON 导出不受影响。
+
+---
+
+## 测试
+
+```bash
+cd tool
+
+# 运行全部测试
+pytest
+
+# 只跑某个子模块的测试
+pytest tests/i18n/
+pytest tests/cli/
+
+# 只跑单个测试文件
+pytest tests/i18n/test_sync.py
+
+# 只跑单个测试函数
+pytest tests/i18n/test_sync.py::test_xxx -v
+
+# 带详细输出
+pytest -v
+
+# 显示警告/日志
+pytest -p no:warnings
+```
+
+测试使用 `pytest` + `typer.testing.CliRunner`。每个测试通过 `_build_project(tmp_path)` 构造临时项目目录（schemas、excel、config），以 `CliRunner` 调用 `ct` 命令并断言退出码与输出产物。
 
 ---
 
@@ -152,7 +214,10 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
 | `ct/config.py` | 加载 `config/global.yaml` 为 `GlobalConfig` Pydantic 模型；所有路径相对项目根目录解析 |
 | `ct/schema/models.py` | Pydantic 模型：`TableSchema` 和 `FieldDef`。支持字段类型：`int32`、`int64`、`float`、`double`、`bool`、`string`、`enum`、`struct`、`array` |
 | `ct/schema/loader.py` | 加载所有 `*.yaml` schema，依据 `ref` 字段构建依赖图，以拓扑顺序返回 |
+| `ct/schema/hashing.py` | 计算 TableSchema 的稳定 hash（sha256 前 16 位 hex），用于模板元数据比对检测 schema 漂移 |
+| `ct/schema/naming.py` | `to_pascal_case` 单一声源：snake_case → PascalCase，用于 FBS/Accessor 类型命名 |
 | `ct/excel/reader.py` | 以只读模式读取 Excel。struct 字段展开为多列；array 字段在单元格内按 `separator` 分隔。表头行数 = `max_nesting_depth + 2` |
+| `ct/excel/diff.py` | 对比 Excel 文件 MD5 hash 与缓存，输出已变更的表名列表 |
 | `ct/excel/template.py` | 根据 schema 生成带多行表头的空白 Excel 文件 |
 | `ct/validate/types.py` | 按字段类型逐一校验；主键唯一性检查 |
 | `ct/validate/refs.py` | 利用已解析行数据和缓存中的 ID 集合进行跨表外键校验 |
@@ -169,6 +234,7 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
 | `ct/export/i18n/status.py` | 计算每语言每表的 missing/stale/translated/orphan 计数，提供 default/by-table/json 三种渲染 |
 | `ct/export/i18n/writer.py` | 导出后基于 lang 文件汇总各语言的 stale/missing/orphan 统计 |
 | `ct/cli_helpers/i18n_json.py` | 紧凑 JSON 写出（每个 key 一行）+ key 排序（id 数值升序 + schema 字段顺序） |
+| `ct/cli_helpers/template_action.py` | `gen-template` 决策矩阵集中实现：根据文件状态 × 用户 flag 输出 Action 枚举与说明信息 |
 | `ct/cache/state.py` | 读写 `cache/state.json`（每表存储文件 MD5 hash、ID 列表、fbs bytes hash）；同时在 `cache/fbs_bytes/*.bin` 中缓存原始 FlatBuffers bytes，未变化的表可复用 |
 
 ### 关键设计决策
