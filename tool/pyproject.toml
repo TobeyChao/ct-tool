@@ -9,7 +9,7 @@ description = "配表导出工具 - Excel → JSON / FlatBuffers Binary"
 requires-python = ">=3.10"
 dependencies = [
     "openpyxl>=3.1.0",
-    "flatbuffers>=24.0",
+    "flatbuffers==25.12.19",
     "typer>=0.9.0",
     "pydantic>=2.0",
     "pyyaml>=6.0",

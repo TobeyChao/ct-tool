@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import subprocess
+import sys
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -13,14 +14,47 @@ _TARGETS = [
 ]
 
 
+def _resolve_flatc(flatc_path: Path) -> Path:
+    """Resolve flatc path with platform-aware extension (Windows: .exe)."""
+    # On Windows, prefer .exe extension even if a bare file exists
+    # (e.g., both "flatc" Linux binary and "flatc.exe" may be present)
+    if sys.platform == "win32" and not flatc_path.suffix:
+        exe_path = flatc_path.with_suffix(".exe")
+        if exe_path.exists():
+            return exe_path
+    if flatc_path.exists():
+        return flatc_path
+    return flatc_path
+
+
 def check_flatc(flatc_path: Path) -> bool:
-    if not flatc_path.exists():
+    resolved = _resolve_flatc(flatc_path)
+    if not resolved.exists():
         logger.error(
             f"flatc 未找到: {flatc_path}\n"
             f"请将 flatc 可执行文件放入项目目录（如 tools/flatc），"
             f"并在 config/global.yaml 中配置 flatc_path"
         )
         return False
+    try:
+        result = subprocess.run(
+            [str(resolved), "--version"],
+            capture_output=True, text=True, timeout=5,
+        )
+        flatc_ver = result.stdout.strip().split()[-1] if result.stdout.strip() else ""
+    except Exception:
+        logger.warning("无法检测 flatc 版本，跳过版本检查")
+        return True
+    from importlib.metadata import version as pkg_version
+    try:
+        py_ver = pkg_version("flatbuffers")
+    except Exception:
+        py_ver = None
+    if flatc_ver and py_ver and flatc_ver != py_ver:
+        logger.warning(
+            f"flatc 版本 ({flatc_ver}) 与 Python flatbuffers ({py_ver}) 不一致，"
+            f"binary 格式可能不兼容"
+        )
     return True
 
 
@@ -29,6 +63,7 @@ def compile_fbs(
     fbs_dir: Path,
     output_dir: Path,
 ) -> bool:
+    resolved = _resolve_flatc(flatc_path)
     if not check_flatc(flatc_path):
         return False
 
@@ -42,7 +77,7 @@ def compile_fbs(
         out = output_dir / "generated" / subdir
         out.mkdir(parents=True, exist_ok=True)
         for fbs_file in fbs_files:
-            cmd = [str(flatc_path), flag, "-o", str(out), str(fbs_file)]
+            cmd = [str(resolved), flag, "-o", str(out), str(fbs_file)]
             try:
                 result = subprocess.run(
                     cmd,
