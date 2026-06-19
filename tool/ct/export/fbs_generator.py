@@ -100,23 +100,6 @@ def generate_fbs(schema: TableSchema, output_dir: Path) -> Path:
     lines.append("}")
     lines.append("")
 
-    # i18n 变体
-    if schema.has_i18n:
-        pk_field = schema.primary_field
-        pk_type = _TYPE_MAP.get(pk_field.type, pk_field.type)
-
-        lines.append(f"table {table_name}I18nEntry {{")
-        lines.append(f"  {pk_field.name}: {pk_type};")
-        for f in schema.i18n_fields:
-            lines.append(f"  {f.name}: string;")
-        lines.append("}")
-        lines.append("")
-
-        lines.append(f"table {table_name}I18nTable {{")
-        lines.append(f"  entries: [{table_name}I18nEntry];")
-        lines.append("}")
-        lines.append("")
-
     # root_type
     lines.append(f"root_type {table_name}Table;")
     lines.append("")
@@ -124,6 +107,29 @@ def generate_fbs(schema: TableSchema, output_dir: Path) -> Path:
     out_path = fbs_dir / f"{schema.table}.fbs"
     with open(out_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
+
+    # i18n 变体 — 独立 .fbs，只有 string 字段，零外部依赖，自带 root_type
+    if schema.has_i18n:
+        pk_field = schema.primary_field
+        pk_type = _TYPE_MAP.get(pk_field.type, pk_field.type)
+
+        i18n_lines: list[str] = []
+        i18n_lines.append(f"table {table_name}I18nEntry {{")
+        i18n_lines.append(f"  {pk_field.name}: {pk_type};")
+        for f in schema.i18n_fields:
+            i18n_lines.append(f"  {f.name}: string;")
+        i18n_lines.append("}")
+        i18n_lines.append("")
+        i18n_lines.append(f"table {table_name}I18nTable {{")
+        i18n_lines.append(f"  entries: [{table_name}I18nEntry];")
+        i18n_lines.append("}")
+        i18n_lines.append("")
+        i18n_lines.append(f"root_type {table_name}I18nTable;")
+        i18n_lines.append("")
+
+        i18n_path = fbs_dir / f"{schema.table}_i18n.fbs"
+        with open(i18n_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(i18n_lines))
 
     return out_path
 

@@ -175,7 +175,8 @@ def export(
     # 导出
     # 收集所有表的 FlatBuffers bytes（用于 Bundle 全量重写）
     all_table_bytes: dict[str, bytes] = {}
-    all_i18n_bytes: dict[str, bytes] = {}
+    # {lang: {table_i18n_key: bytes}}  每种语言独立存，避免多语言覆盖
+    all_i18n_bytes: dict[str, dict[str, bytes]] = {}
 
     for name in order:
         schema = schema_map[name]
@@ -202,18 +203,19 @@ def export(
             save_fbs_bytes(cache_dir, name, fbs_bytes)
             fbs_hash = hashlib.md5(fbs_bytes).hexdigest()
 
-            # i18n bytes
+            # i18n bytes（只缓存 secondary 语言，主语言已在主线 bundle 中）
             if schema.has_i18n:
                 for l in langs:
                     if l == cfg.primary_lang:
-                        i18n_bytes = build_i18n_table_bytes(rows, schema)
-                    else:
-                        translations = load_translation(i18n_dir, l, schema.table)
-                        merged = merge_translations(
-                            rows, schema, l, translations, cfg.primary_lang
-                        )
-                        i18n_bytes = build_i18n_table_bytes(merged, schema)
-                    all_i18n_bytes[f"{name}_i18n"] = i18n_bytes
+                        continue  # 主语言 i18n 数据已在 data_{primary}.bin 中，无需单独缓存
+                    translations = load_translation(i18n_dir, l, schema.table)
+                    merged = merge_translations(
+                        rows, schema, l, translations, cfg.primary_lang
+                    )
+                    i18n_bytes = build_i18n_table_bytes(merged, schema)
+                    all_i18n_bytes.setdefault(l, {})[f"{name}_i18n"] = i18n_bytes
+                    # 按语言缓存 i18n bytes，供增量导出时复用
+                    save_fbs_bytes(cache_dir, f"{name}_i18n_{l}", i18n_bytes)
 
             # 更新 cache
             xlsx_path = excel_dir / schema.resolved_excel_file
@@ -230,6 +232,14 @@ def export(
             if cached_bytes:
                 all_table_bytes[name] = cached_bytes
                 typer.echo(f"[skip] {name} (unchanged)")
+            # 同时尝试加载各 secondary 语言的 i18n bytes 缓存
+            if schema.has_i18n:
+                for l in langs:
+                    if l == cfg.primary_lang:
+                        continue
+                    cached_i18n = load_fbs_bytes(cache_dir, f"{name}_i18n_{l}")
+                    if cached_i18n:
+                        all_i18n_bytes.setdefault(l, {})[f"{name}_i18n"] = cached_i18n
 
     # 生成 .fbs 文件
     for name in order:
@@ -268,7 +278,7 @@ def export(
 
     for l in langs:
         if l != cfg.primary_lang:
-            path = write_i18n_bundle(all_i18n_bytes, l, output_dir)
+            path = write_i18n_bundle(all_i18n_bytes.get(l, {}), l, output_dir)
             if path:
                 typer.echo(f"[bundle] {path.name}")
 
