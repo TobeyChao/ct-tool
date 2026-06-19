@@ -156,6 +156,13 @@ def generate_csharp_accessor(schema: TableSchema, output_dir: Path) -> Path:
     # -- Preload --------------------------------------------------------------
     w("    public static void Preload()")
     w("    {")
+    if schema.has_i18n:
+        w("        // Reset i18n fields (reload-safe: Preload may be called to switch language)")
+        w("        _i18nBb = null;")
+        w(f"        _i18nIndex = null;")
+        for sf in schema.i18n_fields:
+            w(f"        _i18nStr_{sf.name} = null;")
+        w("")
     w("        // ---- main bundle ----")
     w("        byte[] mainBytes = GDNative.GetMainBytes();")
     w("        var bundleBb = new ByteBuffer(mainBytes);")
