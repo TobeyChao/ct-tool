@@ -10,7 +10,7 @@ public struct ItemTypeTable : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_24_3_25(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_25_12_19(); }
   public static ItemTypeTable GetRootAsItemTypeTable(ByteBuffer _bb) { return GetRootAsItemTypeTable(_bb, new ItemTypeTable()); }
   public static ItemTypeTable GetRootAsItemTypeTable(ByteBuffer _bb, ItemTypeTable obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public static bool VerifyItemTypeTable(ByteBuffer _bb) {Google.FlatBuffers.Verifier verifier = new Google.FlatBuffers.Verifier(_bb); return verifier.VerifyBuffer("", false, ItemTypeTableVerify.Verify); }

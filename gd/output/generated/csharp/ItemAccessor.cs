@@ -15,11 +15,35 @@ public static class ItemAccessor
     private static Dictionary<int, int> _i18nIndex;
     private static string[] _i18nStr_name;
 
+    private static ByteBuffer _FindTableBytes(ByteBuffer bundleBb, string tableName)
+    {
+        var bundle = DataBundle.GetRootAsDataBundle(bundleBb);
+        for (int i = 0; i < bundle.TablesLength; i++)
+        {
+            var bt = bundle.Tables(i).Value;
+            if (bt.Name == tableName)
+            {
+                int len = bt.DataLength;
+                byte[] data = new byte[len];
+                for (int j = 0; j < len; j++)
+                    data[j] = bt.Data(j);
+                return new ByteBuffer(data);
+            }
+        }
+        throw new InvalidOperationException($"Table '{tableName}' not found in config bundle.");
+    }
+
     public static void Preload()
     {
+        // Reset i18n fields (reload-safe: Preload may be called to switch language)
+        _i18nBb = null;
+        _i18nIndex = null;
+        _i18nStr_name = null;
+
         // ---- main bundle ----
         byte[] mainBytes = GDNative.GetMainBytes();
-        _bb = new ByteBuffer(mainBytes);
+        var bundleBb = new ByteBuffer(mainBytes);
+        _bb = _FindTableBytes(bundleBb, "item");
         var root = ItemTable.GetRootAsItemTable(_bb);
         int count = root.ItemsLength;
 
@@ -37,7 +61,8 @@ public static class ItemAccessor
         byte[] i18nBytes = GDNative.GetI18nBytes();
         if (i18nBytes != null && i18nBytes.Length > 0)
         {
-            _i18nBb = new ByteBuffer(i18nBytes);
+            var i18nBundleBb = new ByteBuffer(i18nBytes);
+            _i18nBb = _FindTableBytes(i18nBundleBb, "item_i18n");
             var i18nRoot = ItemI18nTable.GetRootAsItemI18nTable(_i18nBb);
             int i18nCount = i18nRoot.EntriesLength;
 

@@ -19,13 +19,4 @@ table ItemTable {
   items: [Item];
 }
 
-table ItemI18nEntry {
-  id: int32;
-  name: string;
-}
-
-table ItemI18nTable {
-  entries: [ItemI18nEntry];
-}
-
 root_type ItemTable;

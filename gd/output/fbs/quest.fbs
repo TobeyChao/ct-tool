@@ -10,14 +10,4 @@ table QuestTable {
   items: [Quest];
 }
 
-table QuestI18nEntry {
-  id: int32;
-  title: string;
-  description: string;
-}
-
-table QuestI18nTable {
-  entries: [QuestI18nEntry];
-}
-
 root_type QuestTable;

@@ -8,13 +8,4 @@ table ItemTypeTable {
   items: [ItemType];
 }
 
-table ItemTypeI18nEntry {
-  id: int32;
-  name: string;
-}
-
-table ItemTypeI18nTable {
-  entries: [ItemTypeI18nEntry];
-}
-
 root_type ItemTypeTable;

@@ -8,9 +8,9 @@
 
 // Ensure the included flatbuffers.h is the same version as when this file was
 // generated, otherwise it may not be compatible.
-static_assert(FLATBUFFERS_VERSION_MAJOR == 24 &&
-              FLATBUFFERS_VERSION_MINOR == 3 &&
-              FLATBUFFERS_VERSION_REVISION == 25,
+static_assert(FLATBUFFERS_VERSION_MAJOR == 25 &&
+              FLATBUFFERS_VERSION_MINOR == 12 &&
+              FLATBUFFERS_VERSION_REVISION == 19,
              "Non-compatible flatbuffers version included");
 
 struct ItemType;
@@ -18,12 +18,6 @@ struct ItemTypeBuilder;
 
 struct ItemTypeTable;
 struct ItemTypeTableBuilder;
-
-struct ItemTypeI18nEntry;
-struct ItemTypeI18nEntryBuilder;
-
-struct ItemTypeI18nTable;
-struct ItemTypeI18nTableBuilder;
 
 struct ItemType FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef ItemTypeBuilder Builder;
@@ -41,7 +35,8 @@ struct ItemType FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   const ::flatbuffers::String *code() const {
     return GetPointer<const ::flatbuffers::String *>(VT_CODE);
   }
-  bool Verify(::flatbuffers::Verifier &verifier) const {
+  template <bool B = false>
+  bool Verify(::flatbuffers::VerifierTemplate<B> &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID, 4) &&
            VerifyOffset(verifier, VT_NAME) &&
@@ -110,7 +105,8 @@ struct ItemTypeTable FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   const ::flatbuffers::Vector<::flatbuffers::Offset<ItemType>> *items() const {
     return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<ItemType>> *>(VT_ITEMS);
   }
-  bool Verify(::flatbuffers::Verifier &verifier) const {
+  template <bool B = false>
+  bool Verify(::flatbuffers::VerifierTemplate<B> &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_ITEMS) &&
            verifier.VerifyVector(items()) &&
@@ -154,121 +150,6 @@ inline ::flatbuffers::Offset<ItemTypeTable> CreateItemTypeTableDirect(
       items__);
 }
 
-struct ItemTypeI18nEntry FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef ItemTypeI18nEntryBuilder Builder;
-  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_ID = 4,
-    VT_NAME = 6
-  };
-  int32_t id() const {
-    return GetField<int32_t>(VT_ID, 0);
-  }
-  const ::flatbuffers::String *name() const {
-    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
-  }
-  bool Verify(::flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_ID, 4) &&
-           VerifyOffset(verifier, VT_NAME) &&
-           verifier.VerifyString(name()) &&
-           verifier.EndTable();
-  }
-};
-
-struct ItemTypeI18nEntryBuilder {
-  typedef ItemTypeI18nEntry Table;
-  ::flatbuffers::FlatBufferBuilder &fbb_;
-  ::flatbuffers::uoffset_t start_;
-  void add_id(int32_t id) {
-    fbb_.AddElement<int32_t>(ItemTypeI18nEntry::VT_ID, id, 0);
-  }
-  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
-    fbb_.AddOffset(ItemTypeI18nEntry::VT_NAME, name);
-  }
-  explicit ItemTypeI18nEntryBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  ::flatbuffers::Offset<ItemTypeI18nEntry> Finish() {
-    const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<ItemTypeI18nEntry>(end);
-    return o;
-  }
-};
-
-inline ::flatbuffers::Offset<ItemTypeI18nEntry> CreateItemTypeI18nEntry(
-    ::flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t id = 0,
-    ::flatbuffers::Offset<::flatbuffers::String> name = 0) {
-  ItemTypeI18nEntryBuilder builder_(_fbb);
-  builder_.add_name(name);
-  builder_.add_id(id);
-  return builder_.Finish();
-}
-
-inline ::flatbuffers::Offset<ItemTypeI18nEntry> CreateItemTypeI18nEntryDirect(
-    ::flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t id = 0,
-    const char *name = nullptr) {
-  auto name__ = name ? _fbb.CreateString(name) : 0;
-  return CreateItemTypeI18nEntry(
-      _fbb,
-      id,
-      name__);
-}
-
-struct ItemTypeI18nTable FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef ItemTypeI18nTableBuilder Builder;
-  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_ENTRIES = 4
-  };
-  const ::flatbuffers::Vector<::flatbuffers::Offset<ItemTypeI18nEntry>> *entries() const {
-    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<ItemTypeI18nEntry>> *>(VT_ENTRIES);
-  }
-  bool Verify(::flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyOffset(verifier, VT_ENTRIES) &&
-           verifier.VerifyVector(entries()) &&
-           verifier.VerifyVectorOfTables(entries()) &&
-           verifier.EndTable();
-  }
-};
-
-struct ItemTypeI18nTableBuilder {
-  typedef ItemTypeI18nTable Table;
-  ::flatbuffers::FlatBufferBuilder &fbb_;
-  ::flatbuffers::uoffset_t start_;
-  void add_entries(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<ItemTypeI18nEntry>>> entries) {
-    fbb_.AddOffset(ItemTypeI18nTable::VT_ENTRIES, entries);
-  }
-  explicit ItemTypeI18nTableBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  ::flatbuffers::Offset<ItemTypeI18nTable> Finish() {
-    const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<ItemTypeI18nTable>(end);
-    return o;
-  }
-};
-
-inline ::flatbuffers::Offset<ItemTypeI18nTable> CreateItemTypeI18nTable(
-    ::flatbuffers::FlatBufferBuilder &_fbb,
-    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<ItemTypeI18nEntry>>> entries = 0) {
-  ItemTypeI18nTableBuilder builder_(_fbb);
-  builder_.add_entries(entries);
-  return builder_.Finish();
-}
-
-inline ::flatbuffers::Offset<ItemTypeI18nTable> CreateItemTypeI18nTableDirect(
-    ::flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<::flatbuffers::Offset<ItemTypeI18nEntry>> *entries = nullptr) {
-  auto entries__ = entries ? _fbb.CreateVector<::flatbuffers::Offset<ItemTypeI18nEntry>>(*entries) : 0;
-  return CreateItemTypeI18nTable(
-      _fbb,
-      entries__);
-}
-
 inline const ItemTypeTable *GetItemTypeTable(const void *buf) {
   return ::flatbuffers::GetRoot<ItemTypeTable>(buf);
 }
@@ -277,14 +158,16 @@ inline const ItemTypeTable *GetSizePrefixedItemTypeTable(const void *buf) {
   return ::flatbuffers::GetSizePrefixedRoot<ItemTypeTable>(buf);
 }
 
+template <bool B = false>
 inline bool VerifyItemTypeTableBuffer(
-    ::flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<ItemTypeTable>(nullptr);
+    ::flatbuffers::VerifierTemplate<B> &verifier) {
+  return verifier.template VerifyBuffer<ItemTypeTable>(nullptr);
 }
 
+template <bool B = false>
 inline bool VerifySizePrefixedItemTypeTableBuffer(
-    ::flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<ItemTypeTable>(nullptr);
+    ::flatbuffers::VerifierTemplate<B> &verifier) {
+  return verifier.template VerifySizePrefixedBuffer<ItemTypeTable>(nullptr);
 }
 
 inline void FinishItemTypeTableBuffer(

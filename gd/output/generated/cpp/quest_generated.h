@@ -8,9 +8,9 @@
 
 // Ensure the included flatbuffers.h is the same version as when this file was
 // generated, otherwise it may not be compatible.
-static_assert(FLATBUFFERS_VERSION_MAJOR == 24 &&
-              FLATBUFFERS_VERSION_MINOR == 3 &&
-              FLATBUFFERS_VERSION_REVISION == 25,
+static_assert(FLATBUFFERS_VERSION_MAJOR == 25 &&
+              FLATBUFFERS_VERSION_MINOR == 12 &&
+              FLATBUFFERS_VERSION_REVISION == 19,
              "Non-compatible flatbuffers version included");
 
 struct Quest;
@@ -18,12 +18,6 @@ struct QuestBuilder;
 
 struct QuestTable;
 struct QuestTableBuilder;
-
-struct QuestI18nEntry;
-struct QuestI18nEntryBuilder;
-
-struct QuestI18nTable;
-struct QuestI18nTableBuilder;
 
 struct Quest FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef QuestBuilder Builder;
@@ -49,7 +43,8 @@ struct Quest FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   int32_t required_level() const {
     return GetField<int32_t>(VT_REQUIRED_LEVEL, 0);
   }
-  bool Verify(::flatbuffers::Verifier &verifier) const {
+  template <bool B = false>
+  bool Verify(::flatbuffers::VerifierTemplate<B> &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID, 4) &&
            VerifyOffset(verifier, VT_TITLE) &&
@@ -134,7 +129,8 @@ struct QuestTable FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   const ::flatbuffers::Vector<::flatbuffers::Offset<Quest>> *items() const {
     return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<Quest>> *>(VT_ITEMS);
   }
-  bool Verify(::flatbuffers::Verifier &verifier) const {
+  template <bool B = false>
+  bool Verify(::flatbuffers::VerifierTemplate<B> &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_ITEMS) &&
            verifier.VerifyVector(items()) &&
@@ -178,135 +174,6 @@ inline ::flatbuffers::Offset<QuestTable> CreateQuestTableDirect(
       items__);
 }
 
-struct QuestI18nEntry FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef QuestI18nEntryBuilder Builder;
-  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_ID = 4,
-    VT_TITLE = 6,
-    VT_DESCRIPTION = 8
-  };
-  int32_t id() const {
-    return GetField<int32_t>(VT_ID, 0);
-  }
-  const ::flatbuffers::String *title() const {
-    return GetPointer<const ::flatbuffers::String *>(VT_TITLE);
-  }
-  const ::flatbuffers::String *description() const {
-    return GetPointer<const ::flatbuffers::String *>(VT_DESCRIPTION);
-  }
-  bool Verify(::flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_ID, 4) &&
-           VerifyOffset(verifier, VT_TITLE) &&
-           verifier.VerifyString(title()) &&
-           VerifyOffset(verifier, VT_DESCRIPTION) &&
-           verifier.VerifyString(description()) &&
-           verifier.EndTable();
-  }
-};
-
-struct QuestI18nEntryBuilder {
-  typedef QuestI18nEntry Table;
-  ::flatbuffers::FlatBufferBuilder &fbb_;
-  ::flatbuffers::uoffset_t start_;
-  void add_id(int32_t id) {
-    fbb_.AddElement<int32_t>(QuestI18nEntry::VT_ID, id, 0);
-  }
-  void add_title(::flatbuffers::Offset<::flatbuffers::String> title) {
-    fbb_.AddOffset(QuestI18nEntry::VT_TITLE, title);
-  }
-  void add_description(::flatbuffers::Offset<::flatbuffers::String> description) {
-    fbb_.AddOffset(QuestI18nEntry::VT_DESCRIPTION, description);
-  }
-  explicit QuestI18nEntryBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  ::flatbuffers::Offset<QuestI18nEntry> Finish() {
-    const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<QuestI18nEntry>(end);
-    return o;
-  }
-};
-
-inline ::flatbuffers::Offset<QuestI18nEntry> CreateQuestI18nEntry(
-    ::flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t id = 0,
-    ::flatbuffers::Offset<::flatbuffers::String> title = 0,
-    ::flatbuffers::Offset<::flatbuffers::String> description = 0) {
-  QuestI18nEntryBuilder builder_(_fbb);
-  builder_.add_description(description);
-  builder_.add_title(title);
-  builder_.add_id(id);
-  return builder_.Finish();
-}
-
-inline ::flatbuffers::Offset<QuestI18nEntry> CreateQuestI18nEntryDirect(
-    ::flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t id = 0,
-    const char *title = nullptr,
-    const char *description = nullptr) {
-  auto title__ = title ? _fbb.CreateString(title) : 0;
-  auto description__ = description ? _fbb.CreateString(description) : 0;
-  return CreateQuestI18nEntry(
-      _fbb,
-      id,
-      title__,
-      description__);
-}
-
-struct QuestI18nTable FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef QuestI18nTableBuilder Builder;
-  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_ENTRIES = 4
-  };
-  const ::flatbuffers::Vector<::flatbuffers::Offset<QuestI18nEntry>> *entries() const {
-    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<QuestI18nEntry>> *>(VT_ENTRIES);
-  }
-  bool Verify(::flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyOffset(verifier, VT_ENTRIES) &&
-           verifier.VerifyVector(entries()) &&
-           verifier.VerifyVectorOfTables(entries()) &&
-           verifier.EndTable();
-  }
-};
-
-struct QuestI18nTableBuilder {
-  typedef QuestI18nTable Table;
-  ::flatbuffers::FlatBufferBuilder &fbb_;
-  ::flatbuffers::uoffset_t start_;
-  void add_entries(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<QuestI18nEntry>>> entries) {
-    fbb_.AddOffset(QuestI18nTable::VT_ENTRIES, entries);
-  }
-  explicit QuestI18nTableBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  ::flatbuffers::Offset<QuestI18nTable> Finish() {
-    const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<QuestI18nTable>(end);
-    return o;
-  }
-};
-
-inline ::flatbuffers::Offset<QuestI18nTable> CreateQuestI18nTable(
-    ::flatbuffers::FlatBufferBuilder &_fbb,
-    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<QuestI18nEntry>>> entries = 0) {
-  QuestI18nTableBuilder builder_(_fbb);
-  builder_.add_entries(entries);
-  return builder_.Finish();
-}
-
-inline ::flatbuffers::Offset<QuestI18nTable> CreateQuestI18nTableDirect(
-    ::flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<::flatbuffers::Offset<QuestI18nEntry>> *entries = nullptr) {
-  auto entries__ = entries ? _fbb.CreateVector<::flatbuffers::Offset<QuestI18nEntry>>(*entries) : 0;
-  return CreateQuestI18nTable(
-      _fbb,
-      entries__);
-}
-
 inline const QuestTable *GetQuestTable(const void *buf) {
   return ::flatbuffers::GetRoot<QuestTable>(buf);
 }
@@ -315,14 +182,16 @@ inline const QuestTable *GetSizePrefixedQuestTable(const void *buf) {
   return ::flatbuffers::GetSizePrefixedRoot<QuestTable>(buf);
 }
 
+template <bool B = false>
 inline bool VerifyQuestTableBuffer(
-    ::flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<QuestTable>(nullptr);
+    ::flatbuffers::VerifierTemplate<B> &verifier) {
+  return verifier.template VerifyBuffer<QuestTable>(nullptr);
 }
 
+template <bool B = false>
 inline bool VerifySizePrefixedQuestTableBuffer(
-    ::flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<QuestTable>(nullptr);
+    ::flatbuffers::VerifierTemplate<B> &verifier) {
+  return verifier.template VerifySizePrefixedBuffer<QuestTable>(nullptr);
 }
 
 inline void FinishQuestTableBuffer(

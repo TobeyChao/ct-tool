@@ -10,9 +10,10 @@ public struct ItemI18nTable : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_24_3_25(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_25_12_19(); }
   public static ItemI18nTable GetRootAsItemI18nTable(ByteBuffer _bb) { return GetRootAsItemI18nTable(_bb, new ItemI18nTable()); }
   public static ItemI18nTable GetRootAsItemI18nTable(ByteBuffer _bb, ItemI18nTable obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
+  public static bool VerifyItemI18nTable(ByteBuffer _bb) {Google.FlatBuffers.Verifier verifier = new Google.FlatBuffers.Verifier(_bb); return verifier.VerifyBuffer("", false, ItemI18nTableVerify.Verify); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
   public ItemI18nTable __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
@@ -37,6 +38,8 @@ public struct ItemI18nTable : IFlatbufferObject
     int o = builder.EndTable();
     return new Offset<ItemI18nTable>(o);
   }
+  public static void FinishItemI18nTableBuffer(FlatBufferBuilder builder, Offset<ItemI18nTable> offset) { builder.Finish(offset.Value); }
+  public static void FinishSizePrefixedItemI18nTableBuffer(FlatBufferBuilder builder, Offset<ItemI18nTable> offset) { builder.FinishSizePrefixed(offset.Value); }
 }
 
 
