@@ -6,39 +6,39 @@ using global::System;
 using global::System.Collections.Generic;
 using global::Google.FlatBuffers;
 
-public struct DropRange : IFlatbufferObject
+public struct DropRangeStruct : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_24_3_25(); }
-  public static DropRange GetRootAsDropRange(ByteBuffer _bb) { return GetRootAsDropRange(_bb, new DropRange()); }
-  public static DropRange GetRootAsDropRange(ByteBuffer _bb, DropRange obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_25_12_19(); }
+  public static DropRangeStruct GetRootAsDropRangeStruct(ByteBuffer _bb) { return GetRootAsDropRangeStruct(_bb, new DropRangeStruct()); }
+  public static DropRangeStruct GetRootAsDropRangeStruct(ByteBuffer _bb, DropRangeStruct obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
-  public DropRange __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
+  public DropRangeStruct __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public int Min { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public int Max { get { int o = __p.__offset(6); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
 
-  public static Offset<DropRange> CreateDropRange(FlatBufferBuilder builder,
-      int min = 0,
-      int max = 0) {
+  public static Offset<DropRangeStruct> CreateDropRangeStruct(FlatBufferBuilder builder,
+      int Min = 0,
+      int Max = 0) {
     builder.StartTable(2);
-    DropRange.AddMax(builder, max);
-    DropRange.AddMin(builder, min);
-    return DropRange.EndDropRange(builder);
+    DropRangeStruct.AddMax(builder, Max);
+    DropRangeStruct.AddMin(builder, Min);
+    return DropRangeStruct.EndDropRangeStruct(builder);
   }
 
-  public static void StartDropRange(FlatBufferBuilder builder) { builder.StartTable(2); }
+  public static void StartDropRangeStruct(FlatBufferBuilder builder) { builder.StartTable(2); }
   public static void AddMin(FlatBufferBuilder builder, int min) { builder.AddInt(0, min, 0); }
   public static void AddMax(FlatBufferBuilder builder, int max) { builder.AddInt(1, max, 0); }
-  public static Offset<DropRange> EndDropRange(FlatBufferBuilder builder) {
+  public static Offset<DropRangeStruct> EndDropRangeStruct(FlatBufferBuilder builder) {
     int o = builder.EndTable();
-    return new Offset<DropRange>(o);
+    return new Offset<DropRangeStruct>(o);
   }
 }
 
 
-static public class DropRangeVerify
+static public class DropRangeStructVerify
 {
   static public bool Verify(Google.FlatBuffers.Verifier verifier, uint tablePos)
   {

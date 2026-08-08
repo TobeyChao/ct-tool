@@ -8,7 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.FlatBuffers" Version="24.3.25" />
+    <!-- 说明：NuGet 的 Google.FlatBuffers 停留在 25.2.10，而 flatc 25.12.19 生成的代码引用
+         FLATBUFFERS_25_12_19 常量，因此本项目直接编译 vendor/FlatBuffers/ 下的官方
+         v25.12.19 C# runtime 源码（SDK 默认 glob 会自动包含，无需显式 Compile）。 -->
   </ItemGroup>
 
 </Project>

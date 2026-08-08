@@ -31,6 +31,7 @@ int failures = 0;
 failures += TestItemTable(bundle);
 failures += TestItemTypeTable(bundle);
 failures += TestQuestTable(bundle);
+failures += TestUIConfigTable(bundle);
 
 if (failures == 0)
     Console.WriteLine("All tests passed.");
@@ -67,27 +68,27 @@ static int TestItemTable(DataBundle bundle)
 {
     int failures = 0;
 
-    var bb = FindTable(bundle, "item");
+    var bb = FindTable(bundle, "Item");
     if (bb == null)
     {
-        Console.WriteLine("[FAIL] item table: not found in bundle");
+        Console.WriteLine("[FAIL] Item table: not found in bundle");
         return 1;
     }
 
     var table = ItemTable.GetRootAsItemTable(bb);
     if (table.ItemsLength == 0)
     {
-        Console.WriteLine("[FAIL] item table: ItemsLength == 0");
+        Console.WriteLine("[FAIL] Item table: ItemsLength == 0");
         return 1;
     }
 
     var row = table.Items(0);
-    if (!row.HasValue) { Console.WriteLine("[FAIL] item table: row 0 is null"); return 1; }
+    if (!row.HasValue) { Console.WriteLine("[FAIL] Item table: row 0 is null"); return 1; }
     var item = row.Value;
 
-    if (item.Id <= 0)  { Console.WriteLine($"[FAIL] item[0].Id <= 0 (got {item.Id})"); failures++; }
-    if (string.IsNullOrEmpty(item.Name)) { Console.WriteLine($"[FAIL] item[0].Name is empty"); failures++; }
-    if (item.Price < 0) { Console.WriteLine($"[FAIL] item[0].Price < 0 (got {item.Price})"); failures++; }
+    if (item.Id <= 0)  { Console.WriteLine($"[FAIL] Item[0].Id <= 0 (got {item.Id})"); failures++; }
+    if (string.IsNullOrEmpty(item.Name)) { Console.WriteLine($"[FAIL] Item[0].Name is empty"); failures++; }
+    if (item.Price < 0) { Console.WriteLine($"[FAIL] Item[0].Price < 0 (got {item.Price})"); failures++; }
 
     // struct: DropRange
     if (item.DropRange.HasValue)
@@ -95,7 +96,7 @@ static int TestItemTable(DataBundle bundle)
         var dr = item.DropRange.Value;
         if (dr.Min > dr.Max)
         {
-            Console.WriteLine($"[FAIL] item[0].DropRange.Min ({dr.Min}) > Max ({dr.Max})");
+            Console.WriteLine($"[FAIL] Item[0].DropRange.Min ({dr.Min}) > Max ({dr.Max})");
             failures++;
         }
     }
@@ -105,39 +106,58 @@ static int TestItemTable(DataBundle bundle)
     _ = tagLen;
 
     if (failures == 0)
-        Console.WriteLine($"[PASS] item table  ({table.ItemsLength} rows, id={item.Id}, name={item.Name}, price={item.Price}, tags={item.TagsLength})");
+        Console.WriteLine($"[PASS] Item table  ({table.ItemsLength} rows, id={item.Id}, name={item.Name}, price={item.Price}, tags={item.TagsLength})");
 
     return failures;
 }
 
 static int TestItemTypeTable(DataBundle bundle)
 {
-    var bb = FindTable(bundle, "item_type");
-    if (bb == null) { Console.WriteLine("[FAIL] item_type table: not found in bundle"); return 1; }
+    var bb = FindTable(bundle, "ItemType");
+    if (bb == null) { Console.WriteLine("[FAIL] ItemType table: not found in bundle"); return 1; }
 
     var table = ItemTypeTable.GetRootAsItemTypeTable(bb);
-    if (table.ItemsLength == 0) { Console.WriteLine("[FAIL] item_type table: ItemsLength == 0"); return 1; }
+    if (table.ItemsLength == 0) { Console.WriteLine("[FAIL] ItemType table: ItemsLength == 0"); return 1; }
 
     var row = table.Items(0);
-    if (!row.HasValue) { Console.WriteLine("[FAIL] item_type table: row 0 is null"); return 1; }
-    if (row.Value.Id <= 0) { Console.WriteLine($"[FAIL] item_type[0].Id <= 0 (got {row.Value.Id})"); return 1; }
+    if (!row.HasValue) { Console.WriteLine("[FAIL] ItemType table: row 0 is null"); return 1; }
+    if (row.Value.Id <= 0) { Console.WriteLine($"[FAIL] ItemType[0].Id <= 0 (got {row.Value.Id})"); return 1; }
 
-    Console.WriteLine($"[PASS] item_type table ({table.ItemsLength} rows, id={row.Value.Id})");
+    Console.WriteLine($"[PASS] ItemType table ({table.ItemsLength} rows, id={row.Value.Id})");
     return 0;
 }
 
 static int TestQuestTable(DataBundle bundle)
 {
-    var bb = FindTable(bundle, "quest");
-    if (bb == null) { Console.WriteLine("[FAIL] quest table: not found in bundle"); return 1; }
+    var bb = FindTable(bundle, "Quest");
+    if (bb == null) { Console.WriteLine("[FAIL] Quest table: not found in bundle"); return 1; }
 
     var table = QuestTable.GetRootAsQuestTable(bb);
-    if (table.ItemsLength == 0) { Console.WriteLine("[FAIL] quest table: ItemsLength == 0"); return 1; }
+    if (table.ItemsLength == 0) { Console.WriteLine("[FAIL] Quest table: ItemsLength == 0"); return 1; }
 
     var row = table.Items(0);
-    if (!row.HasValue) { Console.WriteLine("[FAIL] quest table: row 0 is null"); return 1; }
-    if (row.Value.Id <= 0) { Console.WriteLine($"[FAIL] quest[0].Id <= 0 (got {row.Value.Id})"); return 1; }
+    if (!row.HasValue) { Console.WriteLine("[FAIL] Quest table: row 0 is null"); return 1; }
+    if (row.Value.Id <= 0) { Console.WriteLine($"[FAIL] Quest[0].Id <= 0 (got {row.Value.Id})"); return 1; }
 
-    Console.WriteLine($"[PASS] quest table ({table.ItemsLength} rows, id={row.Value.Id})");
+    Console.WriteLine($"[PASS] Quest table ({table.ItemsLength} rows, id={row.Value.Id})");
+    return 0;
+}
+
+static int TestUIConfigTable(DataBundle bundle)
+{
+    var bb = FindTable(bundle, "UIConfig");
+    if (bb == null) { Console.WriteLine("[FAIL] UIConfig table: not found in bundle"); return 1; }
+
+    var table = UIConfigTable.GetRootAsUIConfigTable(bb);
+    if (table.ItemsLength == 0) { Console.WriteLine("[FAIL] UIConfig table: ItemsLength == 0"); return 1; }
+
+    var row = table.Items(0);
+    if (!row.HasValue) { Console.WriteLine("[FAIL] UIConfig table: row 0 is null"); return 1; }
+    var cfg = row.Value;
+
+    if (cfg.Id <= 0) { Console.WriteLine($"[FAIL] UIConfig[0].Id <= 0 (got {cfg.Id})"); return 1; }
+    if (string.IsNullOrEmpty(cfg.ResourceKey)) { Console.WriteLine("[FAIL] UIConfig[0].ResourceKey is empty"); return 1; }
+
+    Console.WriteLine($"[PASS] UIConfig table ({table.ItemsLength} rows, id={cfg.Id}, layer={cfg.Layer}, key={cfg.ResourceKey})");
     return 0;
 }

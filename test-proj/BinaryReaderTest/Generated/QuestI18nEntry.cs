@@ -10,7 +10,7 @@ public struct QuestI18nEntry : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_24_3_25(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_25_12_19(); }
   public static QuestI18nEntry GetRootAsQuestI18nEntry(ByteBuffer _bb) { return GetRootAsQuestI18nEntry(_bb, new QuestI18nEntry()); }
   public static QuestI18nEntry GetRootAsQuestI18nEntry(ByteBuffer _bb, QuestI18nEntry obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
@@ -33,13 +33,13 @@ public struct QuestI18nEntry : IFlatbufferObject
   public byte[] GetDescriptionArray() { return __p.__vector_as_array<byte>(8); }
 
   public static Offset<QuestI18nEntry> CreateQuestI18nEntry(FlatBufferBuilder builder,
-      int id = 0,
-      StringOffset titleOffset = default(StringOffset),
-      StringOffset descriptionOffset = default(StringOffset)) {
+      int Id = 0,
+      StringOffset TitleOffset = default(StringOffset),
+      StringOffset DescriptionOffset = default(StringOffset)) {
     builder.StartTable(3);
-    QuestI18nEntry.AddDescription(builder, descriptionOffset);
-    QuestI18nEntry.AddTitle(builder, titleOffset);
-    QuestI18nEntry.AddId(builder, id);
+    QuestI18nEntry.AddDescription(builder, DescriptionOffset);
+    QuestI18nEntry.AddTitle(builder, TitleOffset);
+    QuestI18nEntry.AddId(builder, Id);
     return QuestI18nEntry.EndQuestI18nEntry(builder);
   }
 

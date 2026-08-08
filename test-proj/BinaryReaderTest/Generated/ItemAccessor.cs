@@ -9,46 +9,71 @@ public static class ItemAccessor
 {
     private static ByteBuffer _bb;
     private static Dictionary<int, int> _mainIndex;
-    private static string[] _str_name;
+    private static string[] _str_Name;
 
     private static ByteBuffer _i18nBb;
     private static Dictionary<int, int> _i18nIndex;
-    private static string[] _i18nStr_name;
+    private static string[] _i18nStr_Name;
+
+    private static ByteBuffer _FindTableBytes(ByteBuffer bundleBb, string tableName)
+    {
+        var bundle = DataBundle.GetRootAsDataBundle(bundleBb);
+        for (int i = 0; i < bundle.TablesLength; i++)
+        {
+            var bt = bundle.Tables(i).Value;
+            if (bt.Name == tableName)
+            {
+                int len = bt.DataLength;
+                byte[] data = new byte[len];
+                for (int j = 0; j < len; j++)
+                    data[j] = bt.Data(j);
+                return new ByteBuffer(data);
+            }
+        }
+        throw new InvalidOperationException($"Table '{tableName}' not found in config bundle.");
+    }
 
     public static void Preload()
     {
+        // Reset i18n fields (reload-safe: Preload may be called to switch language)
+        _i18nBb = null;
+        _i18nIndex = null;
+        _i18nStr_Name = null;
+
         // ---- main bundle ----
         byte[] mainBytes = GDNative.GetMainBytes();
-        _bb = new ByteBuffer(mainBytes);
+        var bundleBb = new ByteBuffer(mainBytes);
+        _bb = _FindTableBytes(bundleBb, "Item");
         var root = ItemTable.GetRootAsItemTable(_bb);
         int count = root.ItemsLength;
 
         _mainIndex = new Dictionary<int, int>(count);
-        _str_name = new string[count];
+        _str_Name = new string[count];
 
         for (int i = 0; i < count; i++)
         {
             var row = root.Items(i).Value;
             _mainIndex[row.Id] = i;
-            _str_name[i] = row.Name;
+            _str_Name[i] = row.Name;
         }
 
         // ---- i18n bundle ----
         byte[] i18nBytes = GDNative.GetI18nBytes();
         if (i18nBytes != null && i18nBytes.Length > 0)
         {
-            _i18nBb = new ByteBuffer(i18nBytes);
+            var i18nBundleBb = new ByteBuffer(i18nBytes);
+            _i18nBb = _FindTableBytes(i18nBundleBb, "Item_i18n");
             var i18nRoot = ItemI18nTable.GetRootAsItemI18nTable(_i18nBb);
             int i18nCount = i18nRoot.EntriesLength;
 
             _i18nIndex = new Dictionary<int, int>(i18nCount);
-            _i18nStr_name = new string[i18nCount];
+            _i18nStr_Name = new string[i18nCount];
 
             for (int j = 0; j < i18nCount; j++)
             {
                 var entry = i18nRoot.Entries(j).Value;
                 _i18nIndex[entry.Id] = j;
-                _i18nStr_name[j] = entry.Name;
+                _i18nStr_Name[j] = entry.Name;
             }
         }
     }
@@ -81,11 +106,11 @@ public static class ItemAccessor
         // i18n: check i18n array first, fallback to main
         if (_i18nIndex != null && _i18nIndex.TryGetValue(id, out int i18nIdx))
         {
-            string i18nVal = _i18nStr_name[i18nIdx];
+            string i18nVal = _i18nStr_Name[i18nIdx];
             if (i18nVal != null)
                 return i18nVal;
         }
-        return _str_name[idx];
+        return _str_Name[idx];
     }
 
     public static float GetPrice(int id)
@@ -109,7 +134,7 @@ public static class ItemAccessor
         return root.Items(idx).Value.ItemTypeId;
     }
 
-    public static DropRange GetDropRange(int id)
+    public static DropRangeStruct GetDropRange(int id)
     {
         int idx = _GetRowIndex(id);
         var root = ItemTable.GetRootAsItemTable(_bb);

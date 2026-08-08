@@ -10,7 +10,7 @@ public struct ItemTypeI18nEntry : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_24_3_25(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_25_12_19(); }
   public static ItemTypeI18nEntry GetRootAsItemTypeI18nEntry(ByteBuffer _bb) { return GetRootAsItemTypeI18nEntry(_bb, new ItemTypeI18nEntry()); }
   public static ItemTypeI18nEntry GetRootAsItemTypeI18nEntry(ByteBuffer _bb, ItemTypeI18nEntry obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
@@ -26,11 +26,11 @@ public struct ItemTypeI18nEntry : IFlatbufferObject
   public byte[] GetNameArray() { return __p.__vector_as_array<byte>(6); }
 
   public static Offset<ItemTypeI18nEntry> CreateItemTypeI18nEntry(FlatBufferBuilder builder,
-      int id = 0,
-      StringOffset nameOffset = default(StringOffset)) {
+      int Id = 0,
+      StringOffset NameOffset = default(StringOffset)) {
     builder.StartTable(2);
-    ItemTypeI18nEntry.AddName(builder, nameOffset);
-    ItemTypeI18nEntry.AddId(builder, id);
+    ItemTypeI18nEntry.AddName(builder, NameOffset);
+    ItemTypeI18nEntry.AddId(builder, Id);
     return ItemTypeI18nEntry.EndItemTypeI18nEntry(builder);
   }
 

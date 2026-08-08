@@ -10,7 +10,7 @@ public struct DataBundle : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_24_3_25(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_25_12_19(); }
   public static DataBundle GetRootAsDataBundle(ByteBuffer _bb) { return GetRootAsDataBundle(_bb, new DataBundle()); }
   public static DataBundle GetRootAsDataBundle(ByteBuffer _bb, DataBundle obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public static bool VerifyDataBundle(ByteBuffer _bb) {Google.FlatBuffers.Verifier verifier = new Google.FlatBuffers.Verifier(_bb); return verifier.VerifyBuffer("", false, DataBundleVerify.Verify); }
