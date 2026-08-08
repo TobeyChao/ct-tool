@@ -1,16 +1,15 @@
-# CLAUDE.md
+# AGENTS.md
 
-本文件为 Claude Code（claude.ai/code）在此仓库中工作时提供指引。
+本文件为 Codex 与 Claude Code 提供该目录的工作指南。
 
 ---
 
 ## 项目概述
 
-本仓库包含 `ct`（配表导出工具）。功能：将游戏策划数据从 **Excel + YAML Schema** 导出为 **JSON、FlatBuffers Binary 及 C#/Lua Accessor 代码**。
+本仓库是 `ct`（配表导出工具）的工作空间。功能：将游戏策划数据从 **Excel + YAML Schema** 导出为 **JSON、FlatBuffers Binary 及 C#/Lua Accessor 代码**。
 
 - `tool/` — 工具源码（Python package、打包配置、文档）
 - `gd/` — 数据工作空间（config、excel、output 等）
-- `openspec/` — 规格文档（设计文档和任务列表）
 
 ### 命名缩写
 
@@ -49,17 +48,31 @@
 
 ## 安装
 
+**统一使用项目 venv，不要全局安装**（macOS 上 Homebrew Python 是 PEP 668 托管环境，Windows 上全局安装易出现 pydantic 版本错配）。
+
 ```bash
 cd tool
 
-# 开发模式安装（推荐）
+# macOS
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -e .
 
-# 或仅安装依赖
-pip install -r requirements.txt
+# Windows（PowerShell）
+py -3 -m venv .venv
+.venv\Scripts\activate
+pip install -e .
 ```
 
-需要 Python >= 3.10。
+需要 Python >= 3.10（Windows 建议 3.11–3.13）。每次使用前先激活 venv 再运行 `ct` 命令。
+
+**Windows 报错 `pydantic-core` 与 `pydantic` 不匹配：**
+- 若 `.venv` 是从 Mac 拷贝来的：先 `Remove-Item -Recurse -Force .venv`，再按上面重建
+- 否则在 venv 内重装匹配版本：
+  ```powershell
+  python -m pip uninstall -y pydantic pydantic-core
+  python -m pip install "pydantic==2.13.4"
+  ```
 
 将 `flatc.exe`（Windows）或 `flatc`（Linux/macOS）放入 `gd/tools/`。缺少时跳过 FlatBuffers 编译，但 JSON 导出不受影响。
 
@@ -215,7 +228,7 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
 | `ct/schema/models.py` | Pydantic 模型：`TableSchema` 和 `FieldDef`。支持字段类型：`int32`、`int64`、`float`、`double`、`bool`、`string`、`enum`、`struct`、`array` |
 | `ct/schema/loader.py` | 加载所有 `*.yaml` schema，依据 `ref` 字段构建依赖图，以拓扑顺序返回 |
 | `ct/schema/hashing.py` | 计算 TableSchema 的稳定 hash（sha256 前 16 位 hex），用于模板元数据比对检测 schema 漂移 |
-| `ct/schema/naming.py` | `to_pascal_case` 单一声源：snake_case → PascalCase，用于 FBS/Accessor 类型命名 |
+| `ct/schema/naming.py` | 命名校验器 `validate_name`：表/字段名必须首字符大写、不以 `_` 开头/结尾（WYSIWYG 恒等域，schema 加载即校验，不再做任何大小写转换） |
 | `ct/excel/reader.py` | 以只读模式读取 Excel。struct 字段展开为多列；array 字段在单元格内按 `separator` 分隔。表头行数 = `max_nesting_depth + 2` |
 | `ct/excel/diff.py` | 对比 Excel 文件 MD5 hash 与缓存，输出已变更的表名列表 |
 | `ct/excel/template.py` | 根据 schema 生成带多行表头的空白 Excel 文件 |
@@ -243,7 +256,7 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
 
 **Schema 依赖排序**：`ref` 字段定义跨表外键（`ref: 目标表名.字段名`）。loader 对所有 schema 做拓扑排序，确保被引用表先于引用表完成校验。
 
-**Excel 表头布局**：表头行数 = `max_nesting_depth + 1`。前 `max_nesting_depth` 行是"字段名+类型"行——每个单元格内用富文本（`CellRichText`）堆两段：上面字段名（12pt 粗体白），下面类型注解（9pt 斜体浅绿 `D8F3DC`）。struct 单元格的类型显示 `to_pascal_case(field.name)`，与 FBS 生成的 table 名一致（如 `drop_range` → `DropRange`）。最后一行是注释行。struct 字段按叶子字段展开为连续列（2 个子字段占 2 列）。
+**Excel 表头布局**：表头行数 = `max_nesting_depth + 1`。前 `max_nesting_depth` 行是"字段名+类型"行——每个单元格内用富文本（`CellRichText`）堆两段：上面字段名（12pt 粗体白），下面类型注解（9pt 斜体浅绿 `D8F3DC`）。struct 单元格的类型显示 `{field.name}Struct`，与 FBS 生成的 table 名一致。最后一行是注释行。struct 字段按叶子字段展开为连续列（2 个子字段占 2 列）。
 
 **FlatBuffers Binary 格式**：每张表各自序列化为独立 bytes，随后打包为 `DataBundle`（见 `container.fbs`）。`server_only` 字段在客户端 Binary 中排除。次语言 Bundle（`data_{lang}.bin`）只包含主键 + i18n 字段变体。
 

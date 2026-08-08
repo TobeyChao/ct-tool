@@ -2,6 +2,7 @@
 primary_lang: zh
 secondary_langs:
   - en
+  - ja
 
 # 路径配置（相对于项目根目录）
 flatc_path: tools/flatc

@@ -28,21 +28,21 @@ from ct.excel.template import generate_template
 from ct.schema.models import FieldDef, TableSchema
 
 
-def _schema(table: str = "item") -> TableSchema:
+def _schema(table: str = "Item") -> TableSchema:
     return TableSchema(
         table=table,
-        primary="id",
+        primary="Id",
         fields=[
-            FieldDef(name="id", type="int32", comment="主键"),
-            FieldDef(name="name", type="string", comment="名称"),
-            FieldDef(name="price", type="int32", comment="价格"),
+            FieldDef(name="Id", type="int32", comment="主键"),
+            FieldDef(name="Name", type="string", comment="名称"),
+            FieldDef(name="Price", type="int32", comment="价格"),
         ],
     )
 
 
-def _schema_with_extra_field(table: str = "item") -> TableSchema:
+def _schema_with_extra_field(table: str = "Item") -> TableSchema:
     s = _schema(table)
-    s.fields.append(FieldDef(name="rarity", type="enum", values=["common", "rare"]))
+    s.fields.append(FieldDef(name="Rarity", type="enum", values=["common", "rare"]))
     return s
 
 
@@ -55,7 +55,7 @@ def _fill_data(path: Path, header_rows: int, rows: list[tuple]) -> None:
     wb.save(str(path))
 
 
-def _make_legacy_file(path: Path, table: str = "item") -> None:
+def _make_legacy_file(path: Path, table: str = "Item") -> None:
     """Build a workbook with no ct_* metadata."""
     wb = Workbook()
     wb.active.title = table  # type: ignore[union-attr]
@@ -175,31 +175,31 @@ def test_legacy_file_force_rebuilds(tmp_path: Path) -> None:
 
 def test_table_name_mismatch_refuses_default(tmp_path: Path) -> None:
     out = tmp_path / "item.xlsx"
-    generate_template(_schema("quest"), out)  # File belongs to 'quest'
+    generate_template(_schema("Quest"), out)  # File belongs to 'quest'
 
     decision = decide_template_action(
-        _schema("item"), out, force=False, update_header=False,
+        _schema("Item"), out, force=False, update_header=False,
     )
     assert decision.action == Action.REFUSE
-    assert "'quest'" in decision.message
-    assert "'item'" in decision.message
+    assert "Quest" in decision.message
+    assert "Item" in decision.message
 
 
 def test_table_name_mismatch_refuses_even_with_force(tmp_path: Path) -> None:
     out = tmp_path / "item.xlsx"
-    generate_template(_schema("quest"), out)
+    generate_template(_schema("Quest"), out)
 
     decision = decide_template_action(
-        _schema("item"), out, force=True, update_header=False,
+        _schema("Item"), out, force=True, update_header=False,
     )
     assert decision.action == Action.REFUSE
 
 
 def test_table_name_mismatch_refuses_even_with_update_header(tmp_path: Path) -> None:
     out = tmp_path / "item.xlsx"
-    generate_template(_schema("quest"), out)
+    generate_template(_schema("Quest"), out)
 
     decision = decide_template_action(
-        _schema("item"), out, force=False, update_header=True,
+        _schema("Item"), out, force=False, update_header=True,
     )
     assert decision.action == Action.REFUSE

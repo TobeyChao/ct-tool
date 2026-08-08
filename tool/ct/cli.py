@@ -14,7 +14,6 @@ from ct.cache.state import (
     load_fbs_bytes,
     save_cache,
     save_fbs_bytes,
-    update_schema_hash,
     update_table_cache,
 )
 from ct.cli_helpers.template_action import Action, decide_template_action
@@ -201,7 +200,6 @@ def export(
 
             # 缓存 fbs bytes
             save_fbs_bytes(cache_dir, name, fbs_bytes)
-            fbs_hash = hashlib.md5(fbs_bytes).hexdigest()
 
             # i18n bytes（只缓存 secondary 语言，主语言已在主线 bundle 中）
             if schema.has_i18n:
@@ -224,7 +222,6 @@ def export(
                 cache, name,
                 hash=h,
                 ids=sorted(id_sets.get(name, set())),
-                fbs_bytes_hash=fbs_hash,
             )
         else:
             # 未变化的表：从 cache 复用 bytes
@@ -363,8 +360,6 @@ def gen_template(
     schema_map = {s.table: s for s in schemas}
     excel_dir = cfg.resolve("excel_dir")
     excel_dir.mkdir(parents=True, exist_ok=True)
-    cache_dir = cfg.resolve("cache_dir")
-    cache = load_cache(cache_dir)
 
     targets = [table] if table else [s.table for s in schemas] if all_tables else []
     if not targets:
@@ -372,7 +367,6 @@ def gen_template(
         raise typer.Exit(1)
 
     refused = 0
-    cache_dirty = False
     for name in targets:
         if name not in schema_map:
             typer.echo(f"表 '{name}' 不存在", err=True)
@@ -397,18 +391,11 @@ def gen_template(
         if decision.action == Action.UPDATE_PRESERVE:
             preserved = update_template(schema, out_path)
             typer.echo(f"{decision.message} (保留 {preserved} 行数据)")
-            update_schema_hash(cache, name, compute_schema_hash(schema))
-            cache_dirty = True
             continue
 
         # CREATE_NEW or REBUILD: same code path, different message.
         generate_template(schema, out_path)
         typer.echo(decision.message)
-        update_schema_hash(cache, name, compute_schema_hash(schema))
-        cache_dirty = True
-
-    if cache_dirty:
-        save_cache(cache, cache_dir)
 
     if refused > 0:
         raise typer.Exit(1)
@@ -445,11 +432,7 @@ def status(
             missing.append(s.table)
             continue
         current_hash = compute_schema_hash(s)
-        cached = cache.tables.get(s.table)
-        # Fast path: cached hash matches → template is up-to-date, no Excel read needed.
-        if cached is not None and cached.schema_hash == current_hash:
-            continue
-        # Slow path: confirm by reading the file's metadata.
+        # 真源：Excel 模板元数据里的 ct_schema_hash（生成模板时写入）
         meta = read_template_metadata(xlsx_path)
         if meta is None:
             untracked.append(s.table)

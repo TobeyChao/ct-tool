@@ -1,7 +1,7 @@
 table QuestI18nEntry {
-  id: int32;
-  title: string;
-  description: string;
+  Id: int32;
+  Title: string;
+  Description: string;
 }
 
 table QuestI18nTable {

@@ -5,8 +5,8 @@
 
   flatc version: 25.12.19
 
-  Declared by  : //item_i18n.fbs
-  Rooting type : ItemI18nTable (//item_i18n.fbs)
+  Declared by  : //Item_i18n.fbs
+  Rooting type : ItemI18nTable (//Item_i18n.fbs)
 
 --]]
 

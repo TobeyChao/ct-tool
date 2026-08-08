@@ -26,13 +26,13 @@ struct ItemType FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_NAME = 6,
     VT_CODE = 8
   };
-  int32_t id() const {
+  int32_t Id() const {
     return GetField<int32_t>(VT_ID, 0);
   }
-  const ::flatbuffers::String *name() const {
+  const ::flatbuffers::String *Name() const {
     return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
-  const ::flatbuffers::String *code() const {
+  const ::flatbuffers::String *Code() const {
     return GetPointer<const ::flatbuffers::String *>(VT_CODE);
   }
   template <bool B = false>
@@ -40,9 +40,9 @@ struct ItemType FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID, 4) &&
            VerifyOffset(verifier, VT_NAME) &&
-           verifier.VerifyString(name()) &&
+           verifier.VerifyString(Name()) &&
            VerifyOffset(verifier, VT_CODE) &&
-           verifier.VerifyString(code()) &&
+           verifier.VerifyString(Code()) &&
            verifier.EndTable();
   }
 };
@@ -51,14 +51,14 @@ struct ItemTypeBuilder {
   typedef ItemType Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
-  void add_id(int32_t id) {
-    fbb_.AddElement<int32_t>(ItemType::VT_ID, id, 0);
+  void add_Id(int32_t Id) {
+    fbb_.AddElement<int32_t>(ItemType::VT_ID, Id, 0);
   }
-  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
-    fbb_.AddOffset(ItemType::VT_NAME, name);
+  void add_Name(::flatbuffers::Offset<::flatbuffers::String> Name) {
+    fbb_.AddOffset(ItemType::VT_NAME, Name);
   }
-  void add_code(::flatbuffers::Offset<::flatbuffers::String> code) {
-    fbb_.AddOffset(ItemType::VT_CODE, code);
+  void add_Code(::flatbuffers::Offset<::flatbuffers::String> Code) {
+    fbb_.AddOffset(ItemType::VT_CODE, Code);
   }
   explicit ItemTypeBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -73,28 +73,28 @@ struct ItemTypeBuilder {
 
 inline ::flatbuffers::Offset<ItemType> CreateItemType(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t id = 0,
-    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
-    ::flatbuffers::Offset<::flatbuffers::String> code = 0) {
+    int32_t Id = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> Name = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> Code = 0) {
   ItemTypeBuilder builder_(_fbb);
-  builder_.add_code(code);
-  builder_.add_name(name);
-  builder_.add_id(id);
+  builder_.add_Code(Code);
+  builder_.add_Name(Name);
+  builder_.add_Id(Id);
   return builder_.Finish();
 }
 
 inline ::flatbuffers::Offset<ItemType> CreateItemTypeDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t id = 0,
-    const char *name = nullptr,
-    const char *code = nullptr) {
-  auto name__ = name ? _fbb.CreateString(name) : 0;
-  auto code__ = code ? _fbb.CreateString(code) : 0;
+    int32_t Id = 0,
+    const char *Name = nullptr,
+    const char *Code = nullptr) {
+  auto Name__ = Name ? _fbb.CreateString(Name) : 0;
+  auto Code__ = Code ? _fbb.CreateString(Code) : 0;
   return CreateItemType(
       _fbb,
-      id,
-      name__,
-      code__);
+      Id,
+      Name__,
+      Code__);
 }
 
 struct ItemTypeTable FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {

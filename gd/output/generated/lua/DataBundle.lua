@@ -73,4 +73,12 @@ function DataBundle.End(builder)
   return builder:EndObject()
 end
 
+function DataBundle.FinishDataBundleBuffer(builder, offset)
+  builder:Finish(offset)
+end
+
+function DataBundle.FinishSizePrefixedDataBundleBuffer(builder, offset)
+  builder:FinishSizePrefixed(offset)
+end
+
 return DataBundle

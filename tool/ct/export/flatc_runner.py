@@ -76,8 +76,19 @@ def compile_fbs(
     for flag, subdir in _TARGETS:
         out = output_dir / "generated" / subdir
         out.mkdir(parents=True, exist_ok=True)
+        # 清空目标目录，防止旧产物残留（flatc 只写新文件、不删旧文件，
+        # 命名变更后旧名文件会一直堆在目录里）
+        for old in out.iterdir():
+            if old.is_file():
+                old.unlink()
         for fbs_file in fbs_files:
             cmd = [str(resolved), flag, "-o", str(out), str(fbs_file)]
+            # PascalCase 字段名会触发 flatc 的 snake_case 提示，纯噪声
+            cmd.insert(1, "--no-warnings")
+            if flag == "--lua":
+                # WYSIWYG: 字段名按 snake_case 解读，无下划线名（如 UIConfig）
+                # 原样透传，不做 lowerCamel 往返（见 flatbuffers fork）
+                cmd.insert(1, "--lua-snake-input")
             try:
                 result = subprocess.run(
                     cmd,

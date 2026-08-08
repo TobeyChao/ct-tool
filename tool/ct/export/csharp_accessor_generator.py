@@ -12,8 +12,6 @@ from pathlib import Path
 from ct.schema.models import FieldDef, TableSchema
 
 
-def _pascal_case(name: str) -> str:
-    return "".join(part.capitalize() for part in name.split("_"))
 
 
 # Schema type -> C# type used in accessor return values
@@ -46,7 +44,7 @@ def _cs_return_type(field: FieldDef) -> str:
             elem_type = "byte"
         return f"{elem_type}[]"
     if field.type == "struct":
-        return _pascal_case(field.name)  # FlatBuffers table type
+        return f"{field.name}Struct"  # FlatBuffers table type
     return _CS_TYPE_MAP.get(field.type, "int")
 
 
@@ -90,7 +88,7 @@ def generate_csharp_accessor(schema: TableSchema, output_dir: Path) -> Path:
     """
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    table_pascal = _pascal_case(schema.table)
+    table_pascal = schema.table
     class_name = f"{table_pascal}Accessor"
 
     # Collect non-server_only fields
@@ -178,11 +176,11 @@ def generate_csharp_accessor(schema: TableSchema, output_dir: Path) -> Path:
     w("        {")
     w(f"            var row = root.Items(i).Value;")
 
-    pk_accessor = _pascal_case(pk.name)
+    pk_accessor = pk.name
     w(f"            _mainIndex[row.{pk_accessor}] = i;")
 
     for sf in string_fields:
-        sf_accessor = _pascal_case(sf.name)
+        sf_accessor = sf.name
         w(f"            _str_{sf.name}[i] = row.{sf_accessor};")
 
     w("        }")
@@ -208,7 +206,7 @@ def generate_csharp_accessor(schema: TableSchema, output_dir: Path) -> Path:
         w(f"                var entry = i18nRoot.Entries(j).Value;")
         w(f"                _i18nIndex[entry.{pk_accessor}] = j;")
         for sf in schema.i18n_fields:
-            sf_accessor = _pascal_case(sf.name)
+            sf_accessor = sf.name
             w(f"                _i18nStr_{sf.name}[j] = entry.{sf_accessor};")
         w("            }")
         w("        }")
@@ -258,7 +256,7 @@ def _emit_field_accessor(
     pk_cs_type: str,
 ) -> None:
     """Emit a ``Get{FieldName}(id)`` static method for *field*."""
-    method_name = f"Get{_pascal_case(field.name)}"
+    method_name = f"Get{field.name}"
     ret_type = _cs_return_type(field)
 
     w(f"    public static {ret_type} {method_name}({pk_cs_type} id)")
@@ -279,23 +277,23 @@ def _emit_field_accessor(
 
     elif field.type in ("int32", "int64", "float", "double", "bool"):
         # Scalar fields: read from ByteBuffer via FlatBuffers row accessor
-        accessor = _pascal_case(field.name)
+        accessor = field.name
         w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
         w(f"        return root.Items(idx).Value.{accessor};")
 
     elif field.type == "enum":
         # Enum: return byte value via FlatBuffers row accessor
-        accessor = _pascal_case(field.name)
+        accessor = field.name
         w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
         w(f"        return (byte)root.Items(idx).Value.{accessor};")
 
     elif field.type == "struct":
-        accessor = _pascal_case(field.name)
+        accessor = field.name
         w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
         w(f"        return root.Items(idx).Value.{accessor}.Value;")
 
     elif field.type == "array":
-        accessor = _pascal_case(field.name)
+        accessor = field.name
         elem_cs = _CS_TYPE_MAP.get(field.element or "", "int")
         if field.element == "enum":
             elem_cs = "byte"

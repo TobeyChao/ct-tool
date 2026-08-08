@@ -5,12 +5,12 @@
 
   flatc version: 25.12.19
 
-  Declared by  : //item.fbs
-  Rooting type : ItemTable (//item.fbs)
+  Declared by  : //Item.fbs
+  Rooting type : ItemTable (//Item.fbs)
 
 --]]
 
-local __DropRange = require('DropRange')
+local __DropRangeStruct = require('DropRangeStruct')
 local flatbuffers = require('flatbuffers')
 
 local Item = {}
@@ -69,7 +69,7 @@ function mt:DropRange()
   local o = self.view:Offset(14)
   if o ~= 0 then
     local x = self.view:Indirect(self.view.pos + o)
-    local obj = __DropRange.New()
+    local obj = __DropRangeStruct.New()
     obj:Init(self.view.bytes, x)
     return obj
   end

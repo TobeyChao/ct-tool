@@ -8,12 +8,12 @@ from ct.schema.models import FieldDef, TableSchema
 
 def _base_schema() -> TableSchema:
     return TableSchema(
-        table="item",
-        primary="id",
+        table="Item",
+        primary="Id",
         fields=[
-            FieldDef(name="id", type="int32", comment="主键"),
-            FieldDef(name="name", type="string", i18n=True, comment="名称"),
-            FieldDef(name="price", type="int32", comment="价格"),
+            FieldDef(name="Id", type="int32", comment="主键"),
+            FieldDef(name="Name", type="string", i18n=True, comment="名称"),
+            FieldDef(name="Price", type="int32", comment="价格"),
         ],
     )
 
@@ -27,7 +27,7 @@ def test_hash_is_deterministic() -> None:
 def test_hash_changes_when_field_added() -> None:
     base = _base_schema()
     extended = base.model_copy(deep=True)
-    extended.fields.append(FieldDef(name="rarity", type="enum", values=["common", "rare"]))
+    extended.fields.append(FieldDef(name="Rarity", type="enum", values=["common", "rare"]))
     assert compute_schema_hash(base) != compute_schema_hash(extended)
 
 

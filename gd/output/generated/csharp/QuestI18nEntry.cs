@@ -33,13 +33,13 @@ public struct QuestI18nEntry : IFlatbufferObject
   public byte[] GetDescriptionArray() { return __p.__vector_as_array<byte>(8); }
 
   public static Offset<QuestI18nEntry> CreateQuestI18nEntry(FlatBufferBuilder builder,
-      int id = 0,
-      StringOffset titleOffset = default(StringOffset),
-      StringOffset descriptionOffset = default(StringOffset)) {
+      int Id = 0,
+      StringOffset TitleOffset = default(StringOffset),
+      StringOffset DescriptionOffset = default(StringOffset)) {
     builder.StartTable(3);
-    QuestI18nEntry.AddDescription(builder, descriptionOffset);
-    QuestI18nEntry.AddTitle(builder, titleOffset);
-    QuestI18nEntry.AddId(builder, id);
+    QuestI18nEntry.AddDescription(builder, DescriptionOffset);
+    QuestI18nEntry.AddTitle(builder, TitleOffset);
+    QuestI18nEntry.AddId(builder, Id);
     return QuestI18nEntry.EndQuestI18nEntry(builder);
   }
 

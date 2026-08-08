@@ -26,11 +26,11 @@ public struct ItemI18nEntry : IFlatbufferObject
   public byte[] GetNameArray() { return __p.__vector_as_array<byte>(6); }
 
   public static Offset<ItemI18nEntry> CreateItemI18nEntry(FlatBufferBuilder builder,
-      int id = 0,
-      StringOffset nameOffset = default(StringOffset)) {
+      int Id = 0,
+      StringOffset NameOffset = default(StringOffset)) {
     builder.StartTable(2);
-    ItemI18nEntry.AddName(builder, nameOffset);
-    ItemI18nEntry.AddId(builder, id);
+    ItemI18nEntry.AddName(builder, NameOffset);
+    ItemI18nEntry.AddId(builder, Id);
     return ItemI18nEntry.EndItemI18nEntry(builder);
   }
 

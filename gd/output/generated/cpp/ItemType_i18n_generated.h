@@ -25,10 +25,10 @@ struct ItemTypeI18nEntry FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table 
     VT_ID = 4,
     VT_NAME = 6
   };
-  int32_t id() const {
+  int32_t Id() const {
     return GetField<int32_t>(VT_ID, 0);
   }
-  const ::flatbuffers::String *name() const {
+  const ::flatbuffers::String *Name() const {
     return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
   template <bool B = false>
@@ -36,7 +36,7 @@ struct ItemTypeI18nEntry FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table 
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID, 4) &&
            VerifyOffset(verifier, VT_NAME) &&
-           verifier.VerifyString(name()) &&
+           verifier.VerifyString(Name()) &&
            verifier.EndTable();
   }
 };
@@ -45,11 +45,11 @@ struct ItemTypeI18nEntryBuilder {
   typedef ItemTypeI18nEntry Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
-  void add_id(int32_t id) {
-    fbb_.AddElement<int32_t>(ItemTypeI18nEntry::VT_ID, id, 0);
+  void add_Id(int32_t Id) {
+    fbb_.AddElement<int32_t>(ItemTypeI18nEntry::VT_ID, Id, 0);
   }
-  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
-    fbb_.AddOffset(ItemTypeI18nEntry::VT_NAME, name);
+  void add_Name(::flatbuffers::Offset<::flatbuffers::String> Name) {
+    fbb_.AddOffset(ItemTypeI18nEntry::VT_NAME, Name);
   }
   explicit ItemTypeI18nEntryBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -64,23 +64,23 @@ struct ItemTypeI18nEntryBuilder {
 
 inline ::flatbuffers::Offset<ItemTypeI18nEntry> CreateItemTypeI18nEntry(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t id = 0,
-    ::flatbuffers::Offset<::flatbuffers::String> name = 0) {
+    int32_t Id = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> Name = 0) {
   ItemTypeI18nEntryBuilder builder_(_fbb);
-  builder_.add_name(name);
-  builder_.add_id(id);
+  builder_.add_Name(Name);
+  builder_.add_Id(Id);
   return builder_.Finish();
 }
 
 inline ::flatbuffers::Offset<ItemTypeI18nEntry> CreateItemTypeI18nEntryDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t id = 0,
-    const char *name = nullptr) {
-  auto name__ = name ? _fbb.CreateString(name) : 0;
+    int32_t Id = 0,
+    const char *Name = nullptr) {
+  auto Name__ = Name ? _fbb.CreateString(Name) : 0;
   return CreateItemTypeI18nEntry(
       _fbb,
-      id,
-      name__);
+      Id,
+      Name__);
 }
 
 struct ItemTypeI18nTable FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {

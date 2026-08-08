@@ -21,49 +21,49 @@ def _cfg(tmp_path: Path, secondary: list[str]) -> GlobalConfig:
 
 def _item_schema() -> TableSchema:
     return TableSchema(
-        table="item",
-        primary="id",
+        table="Item",
+        primary="Id",
         fields=[
-            FieldDef(name="id", type="int32"),
-            FieldDef(name="name", type="string", i18n=True),
-            FieldDef(name="desc", type="string", i18n=True),
+            FieldDef(name="Id", type="int32"),
+            FieldDef(name="Name", type="string", i18n=True),
+            FieldDef(name="Desc", type="string", i18n=True),
         ],
     )
 
 
 def _no_i18n_schema() -> TableSchema:
     return TableSchema(
-        table="config",
-        primary="id",
-        fields=[FieldDef(name="id", type="int32"), FieldDef(name="value", type="float")],
+        table="Config",
+        primary="Id",
+        fields=[FieldDef(name="Id", type="int32"), FieldDef(name="Value", type="float")],
     )
 
 
 def test_first_sync_creates_dirs_and_files(tmp_path: Path) -> None:
     cfg = _cfg(tmp_path, ["en"])
     schema = _item_schema()
-    rows = [{"id": 1, "name": "甲", "desc": "X"}]
+    rows = [{"Id": 1, "Name": "甲", "Desc": "X"}]
 
-    summary = sync_all(cfg, [schema], {"item": rows})
+    summary = sync_all(cfg, [schema], {"Item": rows})
 
-    assert (tmp_path / "i18n" / "source" / "item.json").exists()
-    assert (tmp_path / "i18n" / "en" / "item.json").exists()
-    assert summary.per_lang_table[("en", "item")].created == 2
-    assert summary.per_lang_table[("en", "item")].missing == 2
+    assert (tmp_path / "i18n" / "source" / "Item.json").exists()
+    assert (tmp_path / "i18n" / "en" / "Item.json").exists()
+    assert summary.per_lang_table[("en", "Item")].created == 2
+    assert summary.per_lang_table[("en", "Item")].missing == 2
 
 
 def test_idempotent(tmp_path: Path) -> None:
     cfg = _cfg(tmp_path, ["en"])
     schema = _item_schema()
-    rows = [{"id": 1, "name": "甲", "desc": "X"}]
+    rows = [{"Id": 1, "Name": "甲", "Desc": "X"}]
 
-    sync_all(cfg, [schema], {"item": rows})
-    src1 = (tmp_path / "i18n" / "source" / "item.json").read_text(encoding="utf-8")
-    lang1 = (tmp_path / "i18n" / "en" / "item.json").read_text(encoding="utf-8")
+    sync_all(cfg, [schema], {"Item": rows})
+    src1 = (tmp_path / "i18n" / "source" / "Item.json").read_text(encoding="utf-8")
+    lang1 = (tmp_path / "i18n" / "en" / "Item.json").read_text(encoding="utf-8")
 
-    sync_all(cfg, [schema], {"item": rows})
-    src2 = (tmp_path / "i18n" / "source" / "item.json").read_text(encoding="utf-8")
-    lang2 = (tmp_path / "i18n" / "en" / "item.json").read_text(encoding="utf-8")
+    sync_all(cfg, [schema], {"Item": rows})
+    src2 = (tmp_path / "i18n" / "source" / "Item.json").read_text(encoding="utf-8")
+    lang2 = (tmp_path / "i18n" / "en" / "Item.json").read_text(encoding="utf-8")
 
     assert src1 == src2
     assert lang1 == lang2
@@ -72,40 +72,40 @@ def test_idempotent(tmp_path: Path) -> None:
 def test_lang_filter_limits_lang_files(tmp_path: Path) -> None:
     cfg = _cfg(tmp_path, ["en", "ja"])
     schema = _item_schema()
-    rows = [{"id": 1, "name": "甲", "desc": "X"}]
+    rows = [{"Id": 1, "Name": "甲", "Desc": "X"}]
 
-    sync_all(cfg, [schema], {"item": rows}, lang_filter="en")
-    assert (tmp_path / "i18n" / "en" / "item.json").exists()
+    sync_all(cfg, [schema], {"Item": rows}, lang_filter="en")
+    assert (tmp_path / "i18n" / "en" / "Item.json").exists()
     assert not (tmp_path / "i18n" / "ja").exists()
     # source 仍然全量刷新
-    assert (tmp_path / "i18n" / "source" / "item.json").exists()
+    assert (tmp_path / "i18n" / "source" / "Item.json").exists()
 
 
 def test_table_filter_limits_both(tmp_path: Path) -> None:
     cfg = _cfg(tmp_path, ["en"])
     item_schema = _item_schema()
     other = TableSchema(
-        table="quest",
-        primary="id",
+        table="Quest",
+        primary="Id",
         fields=[
-            FieldDef(name="id", type="int32"),
-            FieldDef(name="name", type="string", i18n=True),
+            FieldDef(name="Id", type="int32"),
+            FieldDef(name="Name", type="string", i18n=True),
         ],
     )
 
     sync_all(
         cfg,
         [item_schema, other],
-        {"item": [{"id": 1, "name": "甲", "desc": "X"}], "quest": [{"id": 1, "name": "Q1"}]},
-        table_filter="item",
+        {"Item": [{"Id": 1, "Name": "甲", "Desc": "X"}], "Quest": [{"Id": 1, "Name": "Q1"}]},
+        table_filter="Item",
     )
-    assert (tmp_path / "i18n" / "source" / "item.json").exists()
+    assert (tmp_path / "i18n" / "source" / "Item.json").exists()
     assert not (tmp_path / "i18n" / "source" / "quest.json").exists()
 
 
 def test_skips_non_i18n_tables(tmp_path: Path) -> None:
     cfg = _cfg(tmp_path, ["en"])
-    sync_all(cfg, [_no_i18n_schema()], {"config": [{"id": 1, "value": 1.0}]})
+    sync_all(cfg, [_no_i18n_schema()], {"config": [{"Id": 1, "value": 1.0}]})
     assert not (tmp_path / "i18n").exists() or not list((tmp_path / "i18n").rglob("*.json"))
 
 
@@ -113,41 +113,41 @@ def test_source_change_marks_existing_translation_stale(tmp_path: Path) -> None:
     cfg = _cfg(tmp_path, ["en"])
     schema = _item_schema()
 
-    sync_all(cfg, [schema], {"item": [{"id": 1, "name": "旧", "desc": "x"}]})
-    lang_path = tmp_path / "i18n" / "en" / "item.json"
+    sync_all(cfg, [schema], {"Item": [{"Id": 1, "Name": "旧", "Desc": "x"}]})
+    lang_path = tmp_path / "i18n" / "en" / "Item.json"
     data = json.loads(lang_path.read_text(encoding="utf-8"))
-    data["1.name"]["text"] = "Old"
-    data["1.name"]["confirmed"] = True
-    data["1.name"]["status"] = "translated"
+    data["1.Name"]["text"] = "Old"
+    data["1.Name"]["confirmed"] = True
+    data["1.Name"]["status"] = "translated"
     lang_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
 
-    sync_all(cfg, [schema], {"item": [{"id": 1, "name": "新", "desc": "x"}]})
+    sync_all(cfg, [schema], {"Item": [{"Id": 1, "Name": "新", "Desc": "x"}]})
     data = json.loads(lang_path.read_text(encoding="utf-8"))
-    assert data["1.name"]["status"] == "stale"
-    assert data["1.name"]["confirmed"] is False
-    assert data["1.name"]["text"] == "Old"
-    assert data["1.name"]["source"] == "新"
+    assert data["1.Name"]["status"] == "stale"
+    assert data["1.Name"]["confirmed"] is False
+    assert data["1.Name"]["text"] == "Old"
+    assert data["1.Name"]["source"] == "新"
 
 
 def test_deleted_row_becomes_orphan(tmp_path: Path) -> None:
     cfg = _cfg(tmp_path, ["en"])
     schema = _item_schema()
 
-    sync_all(cfg, [schema], {"item": [{"id": 1, "name": "甲", "desc": "X"}, {"id": 2, "name": "乙", "desc": "Y"}]})
-    sync_all(cfg, [schema], {"item": [{"id": 1, "name": "甲", "desc": "X"}]})
+    sync_all(cfg, [schema], {"Item": [{"Id": 1, "Name": "甲", "Desc": "X"}, {"Id": 2, "Name": "乙", "Desc": "Y"}]})
+    sync_all(cfg, [schema], {"Item": [{"Id": 1, "Name": "甲", "Desc": "X"}]})
 
-    data = json.loads((tmp_path / "i18n" / "en" / "item.json").read_text(encoding="utf-8"))
-    assert data["2.name"]["status"] == "orphan"
-    assert data["2.desc"]["status"] == "orphan"
+    data = json.loads((tmp_path / "i18n" / "en" / "Item.json").read_text(encoding="utf-8"))
+    assert data["2.Name"]["status"] == "orphan"
+    assert data["2.Desc"]["status"] == "orphan"
 
 
 def test_summary_counts(tmp_path: Path) -> None:
     cfg = _cfg(tmp_path, ["en"])
     schema = _item_schema()
-    rows = [{"id": 1, "name": "甲", "desc": "X"}, {"id": 2, "name": "乙", "desc": "Y"}]
+    rows = [{"Id": 1, "Name": "甲", "Desc": "X"}, {"Id": 2, "Name": "乙", "Desc": "Y"}]
 
-    summary = sync_all(cfg, [schema], {"item": rows})
-    stats = summary.per_lang_table[("en", "item")]
+    summary = sync_all(cfg, [schema], {"Item": rows})
+    stats = summary.per_lang_table[("en", "Item")]
     assert stats.missing == 4
     assert stats.translated == 0
     totals = summary.totals_by_lang()

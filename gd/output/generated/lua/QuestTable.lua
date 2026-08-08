@@ -5,8 +5,8 @@
 
   flatc version: 25.12.19
 
-  Declared by  : //quest.fbs
-  Rooting type : QuestTable (//quest.fbs)
+  Declared by  : //Quest.fbs
+  Rooting type : QuestTable (//Quest.fbs)
 
 --]]
 
@@ -71,6 +71,14 @@ end
 
 function QuestTable.End(builder)
   return builder:EndObject()
+end
+
+function QuestTable.FinishQuestTableBuffer(builder, offset)
+  builder:Finish(offset)
+end
+
+function QuestTable.FinishSizePrefixedQuestTableBuffer(builder, offset)
+  builder:FinishSizePrefixed(offset)
 end
 
 return QuestTable

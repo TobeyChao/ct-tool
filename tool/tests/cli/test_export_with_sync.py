@@ -34,15 +34,15 @@ def _build_project(root: Path) -> None:
         yaml.safe_dump(cfg, allow_unicode=True), encoding="utf-8"
     )
     schema = {
-        "table": "item",
-        "primary": "id",
+        "table": "Item",
+        "primary": "Id",
         "fields": [
-            {"name": "id", "type": "int32"},
-            {"name": "name", "type": "string", "i18n": True},
-            {"name": "price", "type": "float"},
+            {"name": "Id", "type": "int32"},
+            {"name": "Name", "type": "string", "i18n": True},
+            {"name": "Price", "type": "float"},
         ],
     }
-    (root / "config" / "schemas" / "item.yaml").write_text(
+    (root / "config" / "schemas" / "Item.yaml").write_text(
         yaml.safe_dump(schema, allow_unicode=True), encoding="utf-8"
     )
 
@@ -68,11 +68,11 @@ def test_export_runs_internal_sync_creating_lang_files(tmp_path: Path) -> None:
     result = runner.invoke(app, ["export", "--all", "--root", str(tmp_path)])
     assert result.exit_code == 0, result.output
 
-    en = tmp_path / "i18n" / "en" / "item.json"
+    en = tmp_path / "i18n" / "en" / "Item.json"
     assert en.exists()
     data = json.loads(en.read_text(encoding="utf-8"))
-    assert "1001.name" in data
-    assert data["1001.name"]["status"] == "missing"
+    assert "1001.Name" in data
+    assert data["1001.Name"]["status"] == "missing"
 
 
 def test_export_after_new_row_adds_missing_entry(tmp_path: Path) -> None:
@@ -83,9 +83,9 @@ def test_export_after_new_row_adds_missing_entry(tmp_path: Path) -> None:
     result = runner.invoke(app, ["export", "--all", "--root", str(tmp_path)])
     assert result.exit_code == 0, result.output
 
-    data = json.loads((tmp_path / "i18n" / "en" / "item.json").read_text(encoding="utf-8"))
-    assert "1002.name" in data
-    assert data["1002.name"]["status"] == "missing"
+    data = json.loads((tmp_path / "i18n" / "en" / "Item.json").read_text(encoding="utf-8"))
+    assert "1002.Name" in data
+    assert data["1002.Name"]["status"] == "missing"
 
 
 def test_export_verbose_emits_sync_summary(tmp_path: Path) -> None:

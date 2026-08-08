@@ -93,8 +93,10 @@ def _validate_array(value: Any, field: FieldDef) -> list[str]:
             # Build a temporary FieldDef-like object for scalar validation.
             validator = _SCALAR_VALIDATORS.get(element_type)
             if validator:
-                # Create a minimal FieldDef for the element type.
-                elem_field = FieldDef(name=f"{field.name}[{idx}]", type=element_type)  # type: ignore[arg-type]
+                # Create a minimal FieldDef for the element type (model_construct
+                # 跳过校验：临时对象不做命名校验）。
+                elem_field = FieldDef.model_construct(
+                    name=f"{field.name}[{idx}]", type=element_type)  # type: ignore[arg-type]
                 err = validator(elem, elem_field)
                 if err:
                     errors.append(f"数组第{idx + 1}个元素{err}")

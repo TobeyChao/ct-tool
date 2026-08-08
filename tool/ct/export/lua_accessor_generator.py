@@ -11,7 +11,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from ct.schema.models import FieldDef, TableSchema
-from ct.schema.naming import to_pascal_case
 
 
 def generate_lua_accessor(schema: TableSchema, output_dir: Path) -> Path:
@@ -21,7 +20,7 @@ def generate_lua_accessor(schema: TableSchema, output_dir: Path) -> Path:
     """
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    table_pascal = to_pascal_case(schema.table)
+    table_pascal = schema.table
     client_fields: list[FieldDef] = [f for f in schema.fields if not f.server_only]
     pk = schema.primary_field
     string_fields = [f for f in client_fields if f.type == "string"]
@@ -41,7 +40,7 @@ def generate_lua_accessor(schema: TableSchema, output_dir: Path) -> Path:
         if f.i18n:
             flags.append("i18n")
         flag_str = f", {', '.join(flags)}" if flags else ""
-        pascal = to_pascal_case(f.name)
+        pascal = f.name
         w(f"--   .{pascal} ({f.type}{flag_str})")
     w("")
     w('local flatbuffers = require("flatbuffers")')
@@ -95,11 +94,11 @@ def generate_lua_accessor(schema: TableSchema, output_dir: Path) -> Path:
         w("    _i18n_strings = {}")
         w("    for j = 1, i18n_count do")
         w("        local entry = i18n_root:Entries(j)")
-        pk_getter = to_pascal_case(pk.name)
+        pk_getter = pk.name
         w(f"        local pk = entry:{pk_getter}()")
         w("        _i18n_strings[pk] = {}")
         for sf in i18n_str_fields:
-            sf_getter = to_pascal_case(sf.name)
+            sf_getter = sf.name
             w(f'        _i18n_strings[pk]["{sf_getter}"] = entry:{sf_getter}()')
         w("    end")
         w("end")
@@ -109,7 +108,7 @@ def generate_lua_accessor(schema: TableSchema, output_dir: Path) -> Path:
     if schema.has_i18n:
         w("local function _get_i18n_string(idx, key)")
         w("    local row = _main_root:Items(idx)")
-        pk_getter = to_pascal_case(pk.name)
+        pk_getter = pk.name
         w(f"    local id = row:{pk_getter}()")
         w("    if _i18n_strings[id] and _i18n_strings[id][key] ~= nil then")
         w("        return _i18n_strings[id][key]")
@@ -131,7 +130,7 @@ def generate_lua_accessor(schema: TableSchema, output_dir: Path) -> Path:
     w("")
     w("    for i = 1, main_count do")
     w("        local row = _main_root:Items(i)")
-    pk_getter = to_pascal_case(pk.name)
+    pk_getter = pk.name
     w(f"        local pk = row:{pk_getter}()")
     w("        _main_index[pk] = i")
     w("    end")

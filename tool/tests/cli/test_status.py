@@ -47,22 +47,22 @@ def _setup_project(tmp_path: Path, schemas: dict[str, str]) -> Path:
 
 
 _ITEM_SCHEMA_YAML = """
-table: item
-primary: id
+table: Item
+primary: Id
 fields:
-  - {name: id, type: int32, comment: 主键}
-  - {name: name, type: string, comment: 名称}
-  - {name: price, type: int32, comment: 价格}
+  - {name: Id, type: int32, comment: 主键}
+  - {name: Name, type: string, comment: 名称}
+  - {name: Price, type: int32, comment: 价格}
 """
 
 _ITEM_SCHEMA_YAML_V2 = """
-table: item
-primary: id
+table: Item
+primary: Id
 fields:
-  - {name: id, type: int32, comment: 主键}
-  - {name: name, type: string, comment: 名称}
-  - {name: price, type: int32, comment: 价格}
-  - {name: rarity, type: enum, values: [common, rare]}
+  - {name: Id, type: int32, comment: 主键}
+  - {name: Name, type: string, comment: 名称}
+  - {name: Price, type: int32, comment: 价格}
+  - {name: Rarity, type: enum, values: [common, rare]}
 """
 
 
@@ -72,9 +72,9 @@ def _build_schema_from_yaml(yaml_text: str) -> TableSchema:
 
 
 def test_all_clean_reports_nothing_pending(tmp_path: Path) -> None:
-    root = _setup_project(tmp_path, {"item": _ITEM_SCHEMA_YAML})
+    root = _setup_project(tmp_path, {"Item": _ITEM_SCHEMA_YAML})
     schema = _build_schema_from_yaml(_ITEM_SCHEMA_YAML)
-    xlsx = root / "excel" / "item.xlsx"
+    xlsx = root / "excel" / "Item.xlsx"
     generate_template(schema, xlsx)
 
     # Seed cache so the file's current hash is "known" — otherwise it shows as [changed].
@@ -82,7 +82,7 @@ def test_all_clean_reports_nothing_pending(tmp_path: Path) -> None:
     from ct.excel.diff import file_hash
 
     cache = CacheState()
-    update_table_cache(cache, "item", hash=file_hash(xlsx), ids=[])
+    update_table_cache(cache, "Item", hash=file_hash(xlsx), ids=[])
     save_cache(cache, root / "cache")
 
     result = runner.invoke(app, ["status", "--root", str(root)])
@@ -91,36 +91,36 @@ def test_all_clean_reports_nothing_pending(tmp_path: Path) -> None:
 
 
 def test_drifted_template_is_reported(tmp_path: Path) -> None:
-    root = _setup_project(tmp_path, {"item": _ITEM_SCHEMA_YAML})
+    root = _setup_project(tmp_path, {"Item": _ITEM_SCHEMA_YAML})
     # Generate template with v1 schema...
     schema_v1 = _build_schema_from_yaml(_ITEM_SCHEMA_YAML)
-    generate_template(schema_v1, root / "excel" / "item.xlsx")
+    generate_template(schema_v1, root / "excel" / "Item.xlsx")
     # ...then upgrade the schema yaml to v2 (mismatch with template metadata).
-    (root / "config" / "schemas" / "item.yaml").write_text(_ITEM_SCHEMA_YAML_V2, encoding="utf-8")
+    (root / "config" / "schemas" / "Item.yaml").write_text(_ITEM_SCHEMA_YAML_V2, encoding="utf-8")
 
     result = runner.invoke(app, ["status", "--root", str(root)])
     assert result.exit_code == 0, result.stdout
-    assert "[template-stale] item" in result.stdout
-    assert "ct gen-template --table item --update-header" in result.stdout
+    assert "[template-stale] Item" in result.stdout
+    assert "ct gen-template --table Item --update-header" in result.stdout
 
 
 def test_untracked_template_is_reported(tmp_path: Path) -> None:
-    root = _setup_project(tmp_path, {"item": _ITEM_SCHEMA_YAML})
+    root = _setup_project(tmp_path, {"Item": _ITEM_SCHEMA_YAML})
     # Build a workbook with NO ct_* metadata.
     wb = Workbook()
-    wb.active.title = "item"  # type: ignore[union-attr]
-    wb.save(str(root / "excel" / "item.xlsx"))
+    wb.active.title = "Item"  # type: ignore[union-attr]
+    wb.save(str(root / "excel" / "Item.xlsx"))
 
     result = runner.invoke(app, ["status", "--root", str(root)])
     assert result.exit_code == 0, result.stdout
-    assert "[template-untracked] item" in result.stdout
+    assert "[template-untracked] Item" in result.stdout
 
 
 def test_data_change_is_reported(tmp_path: Path) -> None:
     """If excel changes after a baseline cache, status shows [changed]."""
-    root = _setup_project(tmp_path, {"item": _ITEM_SCHEMA_YAML})
+    root = _setup_project(tmp_path, {"Item": _ITEM_SCHEMA_YAML})
     schema = _build_schema_from_yaml(_ITEM_SCHEMA_YAML)
-    xlsx = root / "excel" / "item.xlsx"
+    xlsx = root / "excel" / "Item.xlsx"
     generate_template(schema, xlsx)
 
     # Seed cache with the current file hash so a subsequent edit is "changed".
@@ -128,7 +128,7 @@ def test_data_change_is_reported(tmp_path: Path) -> None:
     from ct.excel.diff import file_hash
 
     cache = CacheState()
-    update_table_cache(cache, "item", hash=file_hash(xlsx), ids=[])
+    update_table_cache(cache, "Item", hash=file_hash(xlsx), ids=[])
     save_cache(cache, root / "cache")
 
     # Mutate the file to bump its hash.
@@ -140,4 +140,4 @@ def test_data_change_is_reported(tmp_path: Path) -> None:
 
     result = runner.invoke(app, ["status", "--root", str(root)])
     assert result.exit_code == 0, result.stdout
-    assert "[changed] item" in result.stdout
+    assert "[changed] Item" in result.stdout

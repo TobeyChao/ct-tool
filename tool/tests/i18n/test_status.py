@@ -25,13 +25,13 @@ def _cfg(tmp_path: Path, langs: list[str]) -> GlobalConfig:
     )
 
 
-def _schema(name: str = "item") -> TableSchema:
+def _schema(name: str = "Item") -> TableSchema:
     return TableSchema(
         table=name,
-        primary="id",
+        primary="Id",
         fields=[
-            FieldDef(name="id", type="int32"),
-            FieldDef(name="name", type="string", i18n=True),
+            FieldDef(name="Id", type="int32"),
+            FieldDef(name="Name", type="string", i18n=True),
         ],
     )
 
@@ -51,11 +51,11 @@ def _entry(status: str) -> dict:
 
 def test_compute_counts_per_lang(tmp_path: Path) -> None:
     cfg = _cfg(tmp_path, ["en"])
-    _seed(tmp_path, "en", "item", {
-        "1.name": _entry("translated"),
-        "2.name": _entry("missing"),
-        "3.name": _entry("stale"),
-        "4.name": _entry("orphan"),
+    _seed(tmp_path, "en", "Item", {
+        "1.Name": _entry("translated"),
+        "2.Name": _entry("missing"),
+        "3.Name": _entry("stale"),
+        "4.Name": _entry("orphan"),
     })
 
     report = compute_status_report(cfg, [_schema()])
@@ -71,7 +71,7 @@ def test_compute_counts_per_lang(tmp_path: Path) -> None:
 
 def test_render_default_format(tmp_path: Path) -> None:
     cfg = _cfg(tmp_path, ["en"])
-    _seed(tmp_path, "en", "item", {"1.name": _entry("translated")})
+    _seed(tmp_path, "en", "Item", {"1.Name": _entry("translated")})
     report = compute_status_report(cfg, [_schema()])
     out = render_default(report)
     assert "[en]" in out
@@ -81,17 +81,17 @@ def test_render_default_format(tmp_path: Path) -> None:
 
 def test_render_by_table_lists_each_table(tmp_path: Path) -> None:
     cfg = _cfg(tmp_path, ["en"])
-    _seed(tmp_path, "en", "item", {"1.name": _entry("translated")})
-    _seed(tmp_path, "en", "quest", {"1.name": _entry("missing")})
-    report = compute_status_report(cfg, [_schema("item"), _schema("quest")])
+    _seed(tmp_path, "en", "Item", {"1.Name": _entry("translated")})
+    _seed(tmp_path, "en", "Quest", {"1.Name": _entry("missing")})
+    report = compute_status_report(cfg, [_schema("Item"), _schema("Quest")])
     out = render_by_table(report)
-    assert "item" in out
-    assert "quest" in out
+    assert "Item" in out
+    assert "Quest" in out
 
 
 def test_render_json_structure(tmp_path: Path) -> None:
     cfg = _cfg(tmp_path, ["en"])
-    _seed(tmp_path, "en", "item", {"1.name": _entry("translated")})
+    _seed(tmp_path, "en", "Item", {"1.Name": _entry("translated")})
     report = compute_status_report(cfg, [_schema()])
     parsed = json.loads(render_json(report))
     assert "langs" in parsed
@@ -102,8 +102,8 @@ def test_render_json_structure(tmp_path: Path) -> None:
 
 def test_lang_filter(tmp_path: Path) -> None:
     cfg = _cfg(tmp_path, ["en", "ja"])
-    _seed(tmp_path, "en", "item", {"1.name": _entry("translated")})
-    _seed(tmp_path, "ja", "item", {"1.name": _entry("missing")})
+    _seed(tmp_path, "en", "Item", {"1.Name": _entry("translated")})
+    _seed(tmp_path, "ja", "Item", {"1.Name": _entry("missing")})
     report = compute_status_report(cfg, [_schema()], lang_filter="en")
     assert "en" in report.langs
     assert "ja" not in report.langs

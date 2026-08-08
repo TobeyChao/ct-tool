@@ -5,8 +5,8 @@
 
   flatc version: 25.12.19
 
-  Declared by  : //quest_i18n.fbs
-  Rooting type : QuestI18nTable (//quest_i18n.fbs)
+  Declared by  : //Quest_i18n.fbs
+  Rooting type : QuestI18nTable (//Quest_i18n.fbs)
 
 --]]
 
@@ -71,6 +71,14 @@ end
 
 function QuestI18nTable.End(builder)
   return builder:EndObject()
+end
+
+function QuestI18nTable.FinishQuestI18nTableBuffer(builder, offset)
+  builder:Finish(offset)
+end
+
+function QuestI18nTable.FinishSizePrefixedQuestI18nTableBuffer(builder, offset)
+  builder:FinishSizePrefixed(offset)
 end
 
 return QuestI18nTable

@@ -1,1 +1,6 @@
-{}
+{
+  "1.Title": {"source": "新手冒险", "text": "Novice Adventure", "confirmed": true, "status": "translated"},
+  "1.Description": {"source": "完成你的第一次冒险", "text": "Complete your first adventure", "confirmed": true, "status": "translated"},
+  "2.Title": {"source": "屠龙勇士", "text": "Dragon Slayer", "confirmed": true, "status": "translated"},
+  "2.Description": {"source": "击败邪恶的巨龙", "text": "Defeat the evil dragon", "confirmed": true, "status": "translated"}
+}

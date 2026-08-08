@@ -1,0 +1,15 @@
+enum LayerEnum : byte { Page = 0, Modal = 1, Panel = 2, Overlay = 3 }
+
+table UIConfig {
+  Id: int32;
+  Layer: LayerEnum;
+  ResourceKey: string;
+  BlocksRaycast: bool;
+  Stack: bool;
+}
+
+table UIConfigTable {
+  items: [UIConfig];
+}
+
+root_type UIConfigTable;

@@ -37,12 +37,12 @@ def _build_minimal_project(root: Path, *, secondary: list[str] | None = None) ->
     )
 
     schema = {
-        "table": "item",
-        "primary": "id",
+        "table": "Item",
+        "primary": "Id",
         "fields": [
-            {"name": "id", "type": "int32"},
-            {"name": "name", "type": "string", "i18n": True},
-            {"name": "price", "type": "float"},
+            {"name": "Id", "type": "int32"},
+            {"name": "Name", "type": "string", "i18n": True},
+            {"name": "Price", "type": "float"},
         ],
     }
     (root / "config" / "schemas" / "item.yaml").write_text(
@@ -70,8 +70,8 @@ def test_sync_creates_lang_skeleton(tmp_path: Path) -> None:
     assert en.exists()
     src_data = json.loads(src.read_text(encoding="utf-8"))
     en_data = json.loads(en.read_text(encoding="utf-8"))
-    assert src_data == {"1001.name": "铁剑", "1002.name": "魔杖"}
-    assert en_data["1001.name"]["status"] == "missing"
+    assert src_data == {"1001.Name": "铁剑", "1002.Name": "魔杖"}
+    assert en_data["1001.Name"]["status"] == "missing"
 
 
 def test_sync_filter_by_lang(tmp_path: Path) -> None:
@@ -87,7 +87,7 @@ def test_sync_filter_by_lang(tmp_path: Path) -> None:
 def test_sync_filter_by_table(tmp_path: Path) -> None:
     _build_minimal_project(tmp_path)
     result = runner.invoke(
-        app, ["i18n", "sync", "--table", "item", "--root", str(tmp_path)]
+        app, ["i18n", "sync", "--table", "Item", "--root", str(tmp_path)]
     )
     assert result.exit_code == 0
 
@@ -127,7 +127,7 @@ def test_status_by_table(tmp_path: Path) -> None:
         app, ["i18n", "status", "--by-table", "--root", str(tmp_path)]
     )
     assert result.exit_code == 0
-    assert "item" in result.output
+    assert "Item" in result.output
 
 
 def test_compact_dry_run_does_not_write(tmp_path: Path) -> None:
@@ -137,7 +137,7 @@ def test_compact_dry_run_does_not_write(tmp_path: Path) -> None:
     # 手动给 lang 文件加一条 orphan
     en = tmp_path / "i18n" / "en" / "item.json"
     data = json.loads(en.read_text(encoding="utf-8"))
-    data["9999.name"] = {
+    data["9999.Name"] = {
         "source": "old",
         "text": "Old",
         "confirmed": True,
@@ -149,11 +149,11 @@ def test_compact_dry_run_does_not_write(tmp_path: Path) -> None:
         app, ["i18n", "compact", "--dry-run", "--root", str(tmp_path)]
     )
     assert result.exit_code == 0
-    assert "9999.name" in result.output
+    assert "9999.Name" in result.output
 
     # 文件未被修改
     after = json.loads(en.read_text(encoding="utf-8"))
-    assert "9999.name" in after
+    assert "9999.Name" in after
 
 
 def test_compact_removes_orphans(tmp_path: Path) -> None:
@@ -162,7 +162,7 @@ def test_compact_removes_orphans(tmp_path: Path) -> None:
 
     en = tmp_path / "i18n" / "en" / "item.json"
     data = json.loads(en.read_text(encoding="utf-8"))
-    data["9999.name"] = {
+    data["9999.Name"] = {
         "source": "old",
         "text": "Old",
         "confirmed": True,
@@ -175,8 +175,8 @@ def test_compact_removes_orphans(tmp_path: Path) -> None:
     assert "移除 1" in result.output
 
     after = json.loads(en.read_text(encoding="utf-8"))
-    assert "9999.name" not in after
-    assert "1001.name" in after
+    assert "9999.Name" not in after
+    assert "1001.Name" in after
 
 
 def test_compact_no_orphans(tmp_path: Path) -> None:

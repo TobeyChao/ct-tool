@@ -4,6 +4,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, model_validator
 
+from ct.schema.naming import validate_name
+
 BASIC_TYPES = frozenset({"int32", "int64", "float", "double", "bool", "string"})
 ALL_FIELD_TYPES = BASIC_TYPES | {"enum", "struct", "array"}
 ARRAY_ELEMENT_TYPES = BASIC_TYPES | {"enum"}
@@ -29,6 +31,10 @@ class FieldDef(BaseModel):
 
     @model_validator(mode="after")
     def _validate_field(self) -> FieldDef:
+        # 命名校验（WYSIWYG 恒等域，见 ct.schema.naming）
+        name_err = validate_name(self.name)
+        if name_err:
+            raise ValueError(f"字段 {self.name}: {name_err}")
         # i18n + server_only 禁止同时标记
         if self.i18n and self.server_only:
             raise ValueError(
@@ -89,6 +95,10 @@ class TableSchema(BaseModel):
 
     @model_validator(mode="after")
     def _validate_table(self) -> TableSchema:
+        # 命名校验（WYSIWYG 恒等域，见 ct.schema.naming）
+        name_err = validate_name(self.table)
+        if name_err:
+            raise ValueError(f"表 {self.table}: {name_err}")
         field_names = [f.name for f in self.fields]
         if self.primary not in field_names:
             raise ValueError(

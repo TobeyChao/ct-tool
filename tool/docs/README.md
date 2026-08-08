@@ -56,17 +56,27 @@ pip install -r requirements.txt
 
 ### 步骤
 
-1. **下载 flatc**
-   前往 [FlatBuffers GitHub Releases](https://github.com/google/flatbuffers/releases) 页面，下载与操作系统对应的预编译 `flatc` 可执行文件。
+`flatc` 使用**本地编译**的自研 fork（[TobeyChao/flatbuffers](https://github.com/TobeyChao/flatbuffers)，
+commit `6c035fc9`，含 `--lua-snake-input` 选项），不再使用官方预编译产物。
+
+1. **编译 flatc**
+   克隆 fork 后在仓库根目录执行：
+   ```bash
+   cmake -S . -B build -G "Visual Studio 18 2026" -A x64
+   cmake --build build --target flatc --config Release
+   ```
+   （macOS/Linux 去掉 `-G`/`-A` 参数即可；产物位于 `build/Release/flatc.exe` 或 `build/flatc`）
 
 2. **放入 `tools/` 目录**
-   将下载的 `flatc`（Windows 下为 `flatc.exe`）放入项目根目录的 `tools/` 文件夹中：
+   将编译出的 `flatc`（Windows 下为 `flatc.exe`）放入项目根目录的 `tools/` 文件夹中：
    ```
    项目根目录/
    └── tools/
        └── flatc        # Linux / macOS
        └── flatc.exe    # Windows
    ```
+   > 注：ct 的 Lua 目标依赖 fork 的 `--lua-snake-input` 选项，官方原版 flatc 缺少该选项，
+   > 请勿用官方二进制覆盖。
 
 3. **配置路径**
    在 `config/global.yaml` 中确认 `flatc_path` 指向正确路径：
@@ -83,6 +93,20 @@ pip install -r requirements.txt
 ## Schema 格式文档
 
 每张数据表对应一个 YAML schema 文件，存放在 `config/schemas/` 目录下。
+
+### 命名规范（所写即所得）
+
+工具**不做任何大小写转换**：schema 里写的名字（表名、字段名）原样出现在
+C#/Lua/JSON/Excel 全部产物中。命名必须满足（schema 加载时校验，违规直接报错）：
+
+- 表名、字段名使用 **PascalCase**（首字符大写，如 `Item`、`ItemTypeId`）
+- 不得以 `_` 开头或结尾
+- enum 值保持原样（如 `common`、`Page`），不做转换
+
+> 命名校验由 `ct/schema/naming.py` 的 `validate_name` 在加载时执行。
+> 类型名（enum/struct 的 FBS 类型）自动加后缀：enum → `{字段名}Enum`、
+> struct → `{字段名}Struct`（如 `Rarity` 字段 → `RarityEnum`），避免字段名与
+> 类型名同名（flatc 拒绝字段名 == 类型名）。
 
 ### 基本结构
 

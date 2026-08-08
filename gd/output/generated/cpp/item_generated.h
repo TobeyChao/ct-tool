@@ -13,8 +13,8 @@ static_assert(FLATBUFFERS_VERSION_MAJOR == 25 &&
               FLATBUFFERS_VERSION_REVISION == 19,
              "Non-compatible flatbuffers version included");
 
-struct DropRange;
-struct DropRangeBuilder;
+struct DropRangeStruct;
+struct DropRangeStructBuilder;
 
 struct Item;
 struct ItemBuilder;
@@ -22,24 +22,24 @@ struct ItemBuilder;
 struct ItemTable;
 struct ItemTableBuilder;
 
-enum Rarity : int8_t {
-  Rarity_common = 0,
-  Rarity_rare = 1,
-  Rarity_epic = 2,
-  Rarity_MIN = Rarity_common,
-  Rarity_MAX = Rarity_epic
+enum RarityEnum : int8_t {
+  RarityEnum_common = 0,
+  RarityEnum_rare = 1,
+  RarityEnum_epic = 2,
+  RarityEnum_MIN = RarityEnum_common,
+  RarityEnum_MAX = RarityEnum_epic
 };
 
-inline const Rarity (&EnumValuesRarity())[3] {
-  static const Rarity values[] = {
-    Rarity_common,
-    Rarity_rare,
-    Rarity_epic
+inline const RarityEnum (&EnumValuesRarityEnum())[3] {
+  static const RarityEnum values[] = {
+    RarityEnum_common,
+    RarityEnum_rare,
+    RarityEnum_epic
   };
   return values;
 }
 
-inline const char * const *EnumNamesRarity() {
+inline const char * const *EnumNamesRarityEnum() {
   static const char * const names[4] = {
     "common",
     "rare",
@@ -49,22 +49,22 @@ inline const char * const *EnumNamesRarity() {
   return names;
 }
 
-inline const char *EnumNameRarity(Rarity e) {
-  if (::flatbuffers::IsOutRange(e, Rarity_common, Rarity_epic)) return "";
+inline const char *EnumNameRarityEnum(RarityEnum e) {
+  if (::flatbuffers::IsOutRange(e, RarityEnum_common, RarityEnum_epic)) return "";
   const size_t index = static_cast<size_t>(e);
-  return EnumNamesRarity()[index];
+  return EnumNamesRarityEnum()[index];
 }
 
-struct DropRange FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef DropRangeBuilder Builder;
+struct DropRangeStruct FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef DropRangeStructBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_MIN = 4,
     VT_MAX = 6
   };
-  int32_t min() const {
+  int32_t Min() const {
     return GetField<int32_t>(VT_MIN, 0);
   }
-  int32_t max() const {
+  int32_t Max() const {
     return GetField<int32_t>(VT_MAX, 0);
   }
   template <bool B = false>
@@ -76,34 +76,34 @@ struct DropRange FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   }
 };
 
-struct DropRangeBuilder {
-  typedef DropRange Table;
+struct DropRangeStructBuilder {
+  typedef DropRangeStruct Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
-  void add_min(int32_t min) {
-    fbb_.AddElement<int32_t>(DropRange::VT_MIN, min, 0);
+  void add_Min(int32_t Min) {
+    fbb_.AddElement<int32_t>(DropRangeStruct::VT_MIN, Min, 0);
   }
-  void add_max(int32_t max) {
-    fbb_.AddElement<int32_t>(DropRange::VT_MAX, max, 0);
+  void add_Max(int32_t Max) {
+    fbb_.AddElement<int32_t>(DropRangeStruct::VT_MAX, Max, 0);
   }
-  explicit DropRangeBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit DropRangeStructBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::flatbuffers::Offset<DropRange> Finish() {
+  ::flatbuffers::Offset<DropRangeStruct> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<DropRange>(end);
+    auto o = ::flatbuffers::Offset<DropRangeStruct>(end);
     return o;
   }
 };
 
-inline ::flatbuffers::Offset<DropRange> CreateDropRange(
+inline ::flatbuffers::Offset<DropRangeStruct> CreateDropRangeStruct(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t min = 0,
-    int32_t max = 0) {
-  DropRangeBuilder builder_(_fbb);
-  builder_.add_max(max);
-  builder_.add_min(min);
+    int32_t Min = 0,
+    int32_t Max = 0) {
+  DropRangeStructBuilder builder_(_fbb);
+  builder_.add_Max(Max);
+  builder_.add_Min(Min);
   return builder_.Finish();
 }
 
@@ -114,29 +114,29 @@ struct Item FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_NAME = 6,
     VT_PRICE = 8,
     VT_RARITY = 10,
-    VT_ITEM_TYPE_ID = 12,
-    VT_DROP_RANGE = 14,
+    VT_ITEMTYPEID = 12,
+    VT_DROPRANGE = 14,
     VT_TAGS = 16
   };
-  int32_t id() const {
+  int32_t Id() const {
     return GetField<int32_t>(VT_ID, 0);
   }
-  const ::flatbuffers::String *name() const {
+  const ::flatbuffers::String *Name() const {
     return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
-  float price() const {
+  float Price() const {
     return GetField<float>(VT_PRICE, 0.0f);
   }
-  Rarity rarity() const {
-    return static_cast<Rarity>(GetField<int8_t>(VT_RARITY, 0));
+  RarityEnum Rarity() const {
+    return static_cast<RarityEnum>(GetField<int8_t>(VT_RARITY, 0));
   }
-  int32_t item_type_id() const {
-    return GetField<int32_t>(VT_ITEM_TYPE_ID, 0);
+  int32_t ItemTypeId() const {
+    return GetField<int32_t>(VT_ITEMTYPEID, 0);
   }
-  const DropRange *drop_range() const {
-    return GetPointer<const DropRange *>(VT_DROP_RANGE);
+  const DropRangeStruct *DropRange() const {
+    return GetPointer<const DropRangeStruct *>(VT_DROPRANGE);
   }
-  const ::flatbuffers::Vector<int32_t> *tags() const {
+  const ::flatbuffers::Vector<int32_t> *Tags() const {
     return GetPointer<const ::flatbuffers::Vector<int32_t> *>(VT_TAGS);
   }
   template <bool B = false>
@@ -144,14 +144,14 @@ struct Item FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID, 4) &&
            VerifyOffset(verifier, VT_NAME) &&
-           verifier.VerifyString(name()) &&
+           verifier.VerifyString(Name()) &&
            VerifyField<float>(verifier, VT_PRICE, 4) &&
            VerifyField<int8_t>(verifier, VT_RARITY, 1) &&
-           VerifyField<int32_t>(verifier, VT_ITEM_TYPE_ID, 4) &&
-           VerifyOffset(verifier, VT_DROP_RANGE) &&
-           verifier.VerifyTable(drop_range()) &&
+           VerifyField<int32_t>(verifier, VT_ITEMTYPEID, 4) &&
+           VerifyOffset(verifier, VT_DROPRANGE) &&
+           verifier.VerifyTable(DropRange()) &&
            VerifyOffset(verifier, VT_TAGS) &&
-           verifier.VerifyVector(tags()) &&
+           verifier.VerifyVector(Tags()) &&
            verifier.EndTable();
   }
 };
@@ -160,26 +160,26 @@ struct ItemBuilder {
   typedef Item Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
-  void add_id(int32_t id) {
-    fbb_.AddElement<int32_t>(Item::VT_ID, id, 0);
+  void add_Id(int32_t Id) {
+    fbb_.AddElement<int32_t>(Item::VT_ID, Id, 0);
   }
-  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
-    fbb_.AddOffset(Item::VT_NAME, name);
+  void add_Name(::flatbuffers::Offset<::flatbuffers::String> Name) {
+    fbb_.AddOffset(Item::VT_NAME, Name);
   }
-  void add_price(float price) {
-    fbb_.AddElement<float>(Item::VT_PRICE, price, 0.0f);
+  void add_Price(float Price) {
+    fbb_.AddElement<float>(Item::VT_PRICE, Price, 0.0f);
   }
-  void add_rarity(Rarity rarity) {
-    fbb_.AddElement<int8_t>(Item::VT_RARITY, static_cast<int8_t>(rarity), 0);
+  void add_Rarity(RarityEnum Rarity) {
+    fbb_.AddElement<int8_t>(Item::VT_RARITY, static_cast<int8_t>(Rarity), 0);
   }
-  void add_item_type_id(int32_t item_type_id) {
-    fbb_.AddElement<int32_t>(Item::VT_ITEM_TYPE_ID, item_type_id, 0);
+  void add_ItemTypeId(int32_t ItemTypeId) {
+    fbb_.AddElement<int32_t>(Item::VT_ITEMTYPEID, ItemTypeId, 0);
   }
-  void add_drop_range(::flatbuffers::Offset<DropRange> drop_range) {
-    fbb_.AddOffset(Item::VT_DROP_RANGE, drop_range);
+  void add_DropRange(::flatbuffers::Offset<DropRangeStruct> DropRange) {
+    fbb_.AddOffset(Item::VT_DROPRANGE, DropRange);
   }
-  void add_tags(::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> tags) {
-    fbb_.AddOffset(Item::VT_TAGS, tags);
+  void add_Tags(::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> Tags) {
+    fbb_.AddOffset(Item::VT_TAGS, Tags);
   }
   explicit ItemBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -194,44 +194,44 @@ struct ItemBuilder {
 
 inline ::flatbuffers::Offset<Item> CreateItem(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t id = 0,
-    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
-    float price = 0.0f,
-    Rarity rarity = Rarity_common,
-    int32_t item_type_id = 0,
-    ::flatbuffers::Offset<DropRange> drop_range = 0,
-    ::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> tags = 0) {
+    int32_t Id = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> Name = 0,
+    float Price = 0.0f,
+    RarityEnum Rarity = RarityEnum_common,
+    int32_t ItemTypeId = 0,
+    ::flatbuffers::Offset<DropRangeStruct> DropRange = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> Tags = 0) {
   ItemBuilder builder_(_fbb);
-  builder_.add_tags(tags);
-  builder_.add_drop_range(drop_range);
-  builder_.add_item_type_id(item_type_id);
-  builder_.add_price(price);
-  builder_.add_name(name);
-  builder_.add_id(id);
-  builder_.add_rarity(rarity);
+  builder_.add_Tags(Tags);
+  builder_.add_DropRange(DropRange);
+  builder_.add_ItemTypeId(ItemTypeId);
+  builder_.add_Price(Price);
+  builder_.add_Name(Name);
+  builder_.add_Id(Id);
+  builder_.add_Rarity(Rarity);
   return builder_.Finish();
 }
 
 inline ::flatbuffers::Offset<Item> CreateItemDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t id = 0,
-    const char *name = nullptr,
-    float price = 0.0f,
-    Rarity rarity = Rarity_common,
-    int32_t item_type_id = 0,
-    ::flatbuffers::Offset<DropRange> drop_range = 0,
-    const std::vector<int32_t> *tags = nullptr) {
-  auto name__ = name ? _fbb.CreateString(name) : 0;
-  auto tags__ = tags ? _fbb.CreateVector<int32_t>(*tags) : 0;
+    int32_t Id = 0,
+    const char *Name = nullptr,
+    float Price = 0.0f,
+    RarityEnum Rarity = RarityEnum_common,
+    int32_t ItemTypeId = 0,
+    ::flatbuffers::Offset<DropRangeStruct> DropRange = 0,
+    const std::vector<int32_t> *Tags = nullptr) {
+  auto Name__ = Name ? _fbb.CreateString(Name) : 0;
+  auto Tags__ = Tags ? _fbb.CreateVector<int32_t>(*Tags) : 0;
   return CreateItem(
       _fbb,
-      id,
-      name__,
-      price,
-      rarity,
-      item_type_id,
-      drop_range,
-      tags__);
+      Id,
+      Name__,
+      Price,
+      Rarity,
+      ItemTypeId,
+      DropRange,
+      Tags__);
 }
 
 struct ItemTable FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {

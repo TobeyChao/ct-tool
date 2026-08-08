@@ -16,12 +16,12 @@ from ct.schema.models import FieldDef, TableSchema
 
 def _schema_v1() -> TableSchema:
     return TableSchema(
-        table="item",
-        primary="id",
+        table="Item",
+        primary="Id",
         fields=[
-            FieldDef(name="id", type="int32", comment="主键"),
-            FieldDef(name="name", type="string", comment="名称"),
-            FieldDef(name="price", type="int32", comment="价格"),
+            FieldDef(name="Id", type="int32", comment="主键"),
+            FieldDef(name="Name", type="string", comment="名称"),
+            FieldDef(name="Price", type="int32", comment="价格"),
         ],
     )
 
@@ -29,7 +29,7 @@ def _schema_v1() -> TableSchema:
 def _schema_v2_with_extra_field() -> TableSchema:
     """Same nesting depth as v1, just one extra column."""
     s = _schema_v1()
-    s.fields.append(FieldDef(name="rarity", type="enum", values=["common", "rare"]))
+    s.fields.append(FieldDef(name="Rarity", type="enum", values=["common", "rare"]))
     return s
 
 
@@ -125,7 +125,7 @@ def test_update_legacy_file_uses_current_schema_header_rows(tmp_path: Path) -> N
     # File now carries metadata.
     meta = read_template_metadata(out)
     assert meta is not None
-    assert meta.table_name == "item"
+    assert meta.table_name == "Item"
 
 
 def test_update_with_no_data_rows_is_clean_rebuild(tmp_path: Path) -> None:

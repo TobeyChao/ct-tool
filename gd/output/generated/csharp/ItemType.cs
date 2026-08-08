@@ -33,13 +33,13 @@ public struct ItemType : IFlatbufferObject
   public byte[] GetCodeArray() { return __p.__vector_as_array<byte>(8); }
 
   public static Offset<ItemType> CreateItemType(FlatBufferBuilder builder,
-      int id = 0,
-      StringOffset nameOffset = default(StringOffset),
-      StringOffset codeOffset = default(StringOffset)) {
+      int Id = 0,
+      StringOffset NameOffset = default(StringOffset),
+      StringOffset CodeOffset = default(StringOffset)) {
     builder.StartTable(3);
-    ItemType.AddCode(builder, codeOffset);
-    ItemType.AddName(builder, nameOffset);
-    ItemType.AddId(builder, id);
+    ItemType.AddCode(builder, CodeOffset);
+    ItemType.AddName(builder, NameOffset);
+    ItemType.AddId(builder, Id);
     return ItemType.EndItemType(builder);
   }
 

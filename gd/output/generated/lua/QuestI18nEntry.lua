@@ -5,8 +5,8 @@
 
   flatc version: 25.12.19
 
-  Declared by  : //quest_i18n.fbs
-  Rooting type : QuestI18nTable (//quest_i18n.fbs)
+  Declared by  : //Quest_i18n.fbs
+  Rooting type : QuestI18nTable (//Quest_i18n.fbs)
 
 --]]
 

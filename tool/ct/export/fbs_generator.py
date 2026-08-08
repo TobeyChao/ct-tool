@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from ct.schema.models import FieldDef, TableSchema
-from ct.schema.naming import to_pascal_case
 
 # Schema type → FlatBuffers type
 _TYPE_MAP = {
@@ -17,7 +16,8 @@ _TYPE_MAP = {
 
 
 def _generate_enum(field: FieldDef) -> str:
-    name = to_pascal_case(field.name)
+    # 类型名加 Enum 后缀，避免与字段名同名（flatc 拒绝字段名 == 类型名）
+    name = f"{field.name}Enum"
     values = field.values or []
     entries = ", ".join(f"{v} = {i}" for i, v in enumerate(values))
     return f"enum {name} : byte {{ {entries} }}"
@@ -25,7 +25,8 @@ def _generate_enum(field: FieldDef) -> str:
 
 def _generate_struct_table(field: FieldDef, enums: list[str]) -> str:
     """为 struct 生成 FlatBuffers table（非 struct）定义。"""
-    name = to_pascal_case(field.name)
+    # 类型名加 Struct 后缀，避免与字段名同名（flatc 拒绝字段名 == 类型名）
+    name = f"{field.name}Struct"
     lines = [f"table {name} {{"]
     for sf in field.fields or []:
         fb_type = _resolve_field_type(sf, enums)
@@ -37,12 +38,12 @@ def _generate_struct_table(field: FieldDef, enums: list[str]) -> str:
 def _resolve_field_type(field: FieldDef, enums: list[str]) -> str:
     """解析字段的 FlatBuffers 类型。"""
     if field.type == "enum":
-        return to_pascal_case(field.name)
+        return f"{field.name}Enum"
     elif field.type == "struct":
-        return to_pascal_case(field.name)
+        return f"{field.name}Struct"
     elif field.type == "array":
         if field.element == "enum":
-            return f"[{to_pascal_case(field.name)}Elem]"
+            return f"[{field.name}Elem]"
         else:
             return f"[{_TYPE_MAP.get(field.element, field.element)}]"
     else:
@@ -54,7 +55,7 @@ def generate_fbs(schema: TableSchema, output_dir: Path) -> Path:
     fbs_dir = output_dir / "fbs"
     fbs_dir.mkdir(parents=True, exist_ok=True)
 
-    table_name = to_pascal_case(schema.table)
+    table_name = schema.table
     lines: list[str] = []
     enums: list[str] = []
     struct_tables: list[str] = []
@@ -69,7 +70,7 @@ def generate_fbs(schema: TableSchema, output_dir: Path) -> Path:
             _collect_nested(field, enums, struct_tables)
         elif field.type == "array" and field.element == "enum":
             # array<enum> 需要单独的 enum 定义
-            elem_name = f"{to_pascal_case(field.name)}Elem"
+            elem_name = f"{field.name}Elem"
             values = field.element_values or []
             entries = ", ".join(f"{v} = {i}" for i, v in enumerate(values))
             enums.append(f"enum {elem_name} : byte {{ {entries} }}")

@@ -35,17 +35,17 @@ public struct Quest : IFlatbufferObject
   public int RequiredLevel { get { int o = __p.__offset(12); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
 
   public static Offset<Quest> CreateQuest(FlatBufferBuilder builder,
-      int id = 0,
-      StringOffset titleOffset = default(StringOffset),
-      StringOffset descriptionOffset = default(StringOffset),
-      int reward_item_id = 0,
-      int required_level = 0) {
+      int Id = 0,
+      StringOffset TitleOffset = default(StringOffset),
+      StringOffset DescriptionOffset = default(StringOffset),
+      int RewardItemId = 0,
+      int RequiredLevel = 0) {
     builder.StartTable(5);
-    Quest.AddRequiredLevel(builder, required_level);
-    Quest.AddRewardItemId(builder, reward_item_id);
-    Quest.AddDescription(builder, descriptionOffset);
-    Quest.AddTitle(builder, titleOffset);
-    Quest.AddId(builder, id);
+    Quest.AddRequiredLevel(builder, RequiredLevel);
+    Quest.AddRewardItemId(builder, RewardItemId);
+    Quest.AddDescription(builder, DescriptionOffset);
+    Quest.AddTitle(builder, TitleOffset);
+    Quest.AddId(builder, Id);
     return Quest.EndQuest(builder);
   }
 

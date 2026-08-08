@@ -25,9 +25,9 @@ public struct Item : IFlatbufferObject
 #endif
   public byte[] GetNameArray() { return __p.__vector_as_array<byte>(6); }
   public float Price { get { int o = __p.__offset(8); return o != 0 ? __p.bb.GetFloat(o + __p.bb_pos) : (float)0.0f; } }
-  public Rarity Rarity { get { int o = __p.__offset(10); return o != 0 ? (Rarity)__p.bb.GetSbyte(o + __p.bb_pos) : Rarity.common; } }
+  public RarityEnum Rarity { get { int o = __p.__offset(10); return o != 0 ? (RarityEnum)__p.bb.GetSbyte(o + __p.bb_pos) : RarityEnum.common; } }
   public int ItemTypeId { get { int o = __p.__offset(12); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
-  public DropRange? DropRange { get { int o = __p.__offset(14); return o != 0 ? (DropRange?)(new DropRange()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
+  public DropRangeStruct? DropRange { get { int o = __p.__offset(14); return o != 0 ? (DropRangeStruct?)(new DropRangeStruct()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
   public int Tags(int j) { int o = __p.__offset(16); return o != 0 ? __p.bb.GetInt(__p.__vector(o) + j * 4) : (int)0; }
   public int TagsLength { get { int o = __p.__offset(16); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
@@ -38,21 +38,21 @@ public struct Item : IFlatbufferObject
   public int[] GetTagsArray() { return __p.__vector_as_array<int>(16); }
 
   public static Offset<Item> CreateItem(FlatBufferBuilder builder,
-      int id = 0,
-      StringOffset nameOffset = default(StringOffset),
-      float price = 0.0f,
-      Rarity rarity = Rarity.common,
-      int item_type_id = 0,
-      Offset<DropRange> drop_rangeOffset = default(Offset<DropRange>),
-      VectorOffset tagsOffset = default(VectorOffset)) {
+      int Id = 0,
+      StringOffset NameOffset = default(StringOffset),
+      float Price = 0.0f,
+      RarityEnum Rarity = RarityEnum.common,
+      int ItemTypeId = 0,
+      Offset<DropRangeStruct> DropRangeOffset = default(Offset<DropRangeStruct>),
+      VectorOffset TagsOffset = default(VectorOffset)) {
     builder.StartTable(7);
-    Item.AddTags(builder, tagsOffset);
-    Item.AddDropRange(builder, drop_rangeOffset);
-    Item.AddItemTypeId(builder, item_type_id);
-    Item.AddPrice(builder, price);
-    Item.AddName(builder, nameOffset);
-    Item.AddId(builder, id);
-    Item.AddRarity(builder, rarity);
+    Item.AddTags(builder, TagsOffset);
+    Item.AddDropRange(builder, DropRangeOffset);
+    Item.AddItemTypeId(builder, ItemTypeId);
+    Item.AddPrice(builder, Price);
+    Item.AddName(builder, NameOffset);
+    Item.AddId(builder, Id);
+    Item.AddRarity(builder, Rarity);
     return Item.EndItem(builder);
   }
 
@@ -60,9 +60,9 @@ public struct Item : IFlatbufferObject
   public static void AddId(FlatBufferBuilder builder, int id) { builder.AddInt(0, id, 0); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(1, nameOffset.Value, 0); }
   public static void AddPrice(FlatBufferBuilder builder, float price) { builder.AddFloat(2, price, 0.0f); }
-  public static void AddRarity(FlatBufferBuilder builder, Rarity rarity) { builder.AddSbyte(3, (sbyte)rarity, 0); }
+  public static void AddRarity(FlatBufferBuilder builder, RarityEnum rarity) { builder.AddSbyte(3, (sbyte)rarity, 0); }
   public static void AddItemTypeId(FlatBufferBuilder builder, int itemTypeId) { builder.AddInt(4, itemTypeId, 0); }
-  public static void AddDropRange(FlatBufferBuilder builder, Offset<DropRange> dropRangeOffset) { builder.AddOffset(5, dropRangeOffset.Value, 0); }
+  public static void AddDropRange(FlatBufferBuilder builder, Offset<DropRangeStruct> dropRangeOffset) { builder.AddOffset(5, dropRangeOffset.Value, 0); }
   public static void AddTags(FlatBufferBuilder builder, VectorOffset tagsOffset) { builder.AddOffset(6, tagsOffset.Value, 0); }
   public static VectorOffset CreateTagsVector(FlatBufferBuilder builder, int[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddInt(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateTagsVectorBlock(FlatBufferBuilder builder, int[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
@@ -84,9 +84,9 @@ static public class ItemVerify
       && verifier.VerifyField(tablePos, 4 /*Id*/, 4 /*int*/, 4, false)
       && verifier.VerifyString(tablePos, 6 /*Name*/, false)
       && verifier.VerifyField(tablePos, 8 /*Price*/, 4 /*float*/, 4, false)
-      && verifier.VerifyField(tablePos, 10 /*Rarity*/, 1 /*Rarity*/, 1, false)
+      && verifier.VerifyField(tablePos, 10 /*Rarity*/, 1 /*RarityEnum*/, 1, false)
       && verifier.VerifyField(tablePos, 12 /*ItemTypeId*/, 4 /*int*/, 4, false)
-      && verifier.VerifyTable(tablePos, 14 /*DropRange*/, DropRangeVerify.Verify, false)
+      && verifier.VerifyTable(tablePos, 14 /*DropRange*/, DropRangeStructVerify.Verify, false)
       && verifier.VerifyVectorOfData(tablePos, 16 /*Tags*/, 4 /*int*/, false)
       && verifier.VerifyTableEnd(tablePos);
   }

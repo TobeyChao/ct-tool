@@ -1,6 +1,6 @@
 table ItemTypeI18nEntry {
-  id: int32;
-  name: string;
+  Id: int32;
+  Name: string;
 }
 
 table ItemTypeI18nTable {

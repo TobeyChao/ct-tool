@@ -5,8 +5,8 @@
 
   flatc version: 25.12.19
 
-  Declared by  : //item_type.fbs
-  Rooting type : ItemTypeTable (//item_type.fbs)
+  Declared by  : //ItemType.fbs
+  Rooting type : ItemTypeTable (//ItemType.fbs)
 
 --]]
 
@@ -71,6 +71,14 @@ end
 
 function ItemTypeTable.End(builder)
   return builder:EndObject()
+end
+
+function ItemTypeTable.FinishItemTypeTableBuffer(builder, offset)
+  builder:Finish(offset)
+end
+
+function ItemTypeTable.FinishSizePrefixedItemTypeTableBuffer(builder, offset)
+  builder:FinishSizePrefixed(offset)
 end
 
 return ItemTypeTable

@@ -25,34 +25,34 @@ struct Quest FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_ID = 4,
     VT_TITLE = 6,
     VT_DESCRIPTION = 8,
-    VT_REWARD_ITEM_ID = 10,
-    VT_REQUIRED_LEVEL = 12
+    VT_REWARDITEMID = 10,
+    VT_REQUIREDLEVEL = 12
   };
-  int32_t id() const {
+  int32_t Id() const {
     return GetField<int32_t>(VT_ID, 0);
   }
-  const ::flatbuffers::String *title() const {
+  const ::flatbuffers::String *Title() const {
     return GetPointer<const ::flatbuffers::String *>(VT_TITLE);
   }
-  const ::flatbuffers::String *description() const {
+  const ::flatbuffers::String *Description() const {
     return GetPointer<const ::flatbuffers::String *>(VT_DESCRIPTION);
   }
-  int32_t reward_item_id() const {
-    return GetField<int32_t>(VT_REWARD_ITEM_ID, 0);
+  int32_t RewardItemId() const {
+    return GetField<int32_t>(VT_REWARDITEMID, 0);
   }
-  int32_t required_level() const {
-    return GetField<int32_t>(VT_REQUIRED_LEVEL, 0);
+  int32_t RequiredLevel() const {
+    return GetField<int32_t>(VT_REQUIREDLEVEL, 0);
   }
   template <bool B = false>
   bool Verify(::flatbuffers::VerifierTemplate<B> &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID, 4) &&
            VerifyOffset(verifier, VT_TITLE) &&
-           verifier.VerifyString(title()) &&
+           verifier.VerifyString(Title()) &&
            VerifyOffset(verifier, VT_DESCRIPTION) &&
-           verifier.VerifyString(description()) &&
-           VerifyField<int32_t>(verifier, VT_REWARD_ITEM_ID, 4) &&
-           VerifyField<int32_t>(verifier, VT_REQUIRED_LEVEL, 4) &&
+           verifier.VerifyString(Description()) &&
+           VerifyField<int32_t>(verifier, VT_REWARDITEMID, 4) &&
+           VerifyField<int32_t>(verifier, VT_REQUIREDLEVEL, 4) &&
            verifier.EndTable();
   }
 };
@@ -61,20 +61,20 @@ struct QuestBuilder {
   typedef Quest Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
-  void add_id(int32_t id) {
-    fbb_.AddElement<int32_t>(Quest::VT_ID, id, 0);
+  void add_Id(int32_t Id) {
+    fbb_.AddElement<int32_t>(Quest::VT_ID, Id, 0);
   }
-  void add_title(::flatbuffers::Offset<::flatbuffers::String> title) {
-    fbb_.AddOffset(Quest::VT_TITLE, title);
+  void add_Title(::flatbuffers::Offset<::flatbuffers::String> Title) {
+    fbb_.AddOffset(Quest::VT_TITLE, Title);
   }
-  void add_description(::flatbuffers::Offset<::flatbuffers::String> description) {
-    fbb_.AddOffset(Quest::VT_DESCRIPTION, description);
+  void add_Description(::flatbuffers::Offset<::flatbuffers::String> Description) {
+    fbb_.AddOffset(Quest::VT_DESCRIPTION, Description);
   }
-  void add_reward_item_id(int32_t reward_item_id) {
-    fbb_.AddElement<int32_t>(Quest::VT_REWARD_ITEM_ID, reward_item_id, 0);
+  void add_RewardItemId(int32_t RewardItemId) {
+    fbb_.AddElement<int32_t>(Quest::VT_REWARDITEMID, RewardItemId, 0);
   }
-  void add_required_level(int32_t required_level) {
-    fbb_.AddElement<int32_t>(Quest::VT_REQUIRED_LEVEL, required_level, 0);
+  void add_RequiredLevel(int32_t RequiredLevel) {
+    fbb_.AddElement<int32_t>(Quest::VT_REQUIREDLEVEL, RequiredLevel, 0);
   }
   explicit QuestBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -89,36 +89,36 @@ struct QuestBuilder {
 
 inline ::flatbuffers::Offset<Quest> CreateQuest(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t id = 0,
-    ::flatbuffers::Offset<::flatbuffers::String> title = 0,
-    ::flatbuffers::Offset<::flatbuffers::String> description = 0,
-    int32_t reward_item_id = 0,
-    int32_t required_level = 0) {
+    int32_t Id = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> Title = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> Description = 0,
+    int32_t RewardItemId = 0,
+    int32_t RequiredLevel = 0) {
   QuestBuilder builder_(_fbb);
-  builder_.add_required_level(required_level);
-  builder_.add_reward_item_id(reward_item_id);
-  builder_.add_description(description);
-  builder_.add_title(title);
-  builder_.add_id(id);
+  builder_.add_RequiredLevel(RequiredLevel);
+  builder_.add_RewardItemId(RewardItemId);
+  builder_.add_Description(Description);
+  builder_.add_Title(Title);
+  builder_.add_Id(Id);
   return builder_.Finish();
 }
 
 inline ::flatbuffers::Offset<Quest> CreateQuestDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t id = 0,
-    const char *title = nullptr,
-    const char *description = nullptr,
-    int32_t reward_item_id = 0,
-    int32_t required_level = 0) {
-  auto title__ = title ? _fbb.CreateString(title) : 0;
-  auto description__ = description ? _fbb.CreateString(description) : 0;
+    int32_t Id = 0,
+    const char *Title = nullptr,
+    const char *Description = nullptr,
+    int32_t RewardItemId = 0,
+    int32_t RequiredLevel = 0) {
+  auto Title__ = Title ? _fbb.CreateString(Title) : 0;
+  auto Description__ = Description ? _fbb.CreateString(Description) : 0;
   return CreateQuest(
       _fbb,
-      id,
-      title__,
-      description__,
-      reward_item_id,
-      required_level);
+      Id,
+      Title__,
+      Description__,
+      RewardItemId,
+      RequiredLevel);
 }
 
 struct QuestTable FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {

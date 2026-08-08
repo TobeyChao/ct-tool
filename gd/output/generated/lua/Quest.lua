@@ -5,8 +5,8 @@
 
   flatc version: 25.12.19
 
-  Declared by  : //quest.fbs
-  Rooting type : QuestTable (//quest.fbs)
+  Declared by  : //Quest.fbs
+  Rooting type : QuestTable (//Quest.fbs)
 
 --]]
 

@@ -11,8 +11,6 @@ from ct.schema.models import FieldDef, TableSchema
 logger = logging.getLogger(__name__)
 
 
-def _pascal_case(name: str) -> str:
-    return "".join(part.capitalize() for part in name.split("_"))
 
 
 def _build_string(builder: flatbuffers.Builder, s: str | None) -> int | None:

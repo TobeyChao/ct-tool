@@ -1,39 +1,39 @@
-table: item
-primary: id
+table: Item
+primary: Id
 fields:
-  - name: id
+  - name: Id
     type: int32
     comment: "道具唯一ID，禁止修改"
-  - name: name
+  - name: Name
     type: string
     i18n: true
     comment: "道具名称（多语言）"
-  - name: price
+  - name: Price
     type: float
     comment: "售价（金币），0=不可出售"
-  - name: rarity
+  - name: Rarity
     type: enum
     values: [common, rare, epic]
     comment: "稀有度"
-  - name: item_type_id
+  - name: ItemTypeId
     type: int32
-    ref: item_type.id
-    comment: "道具类型，关联 item_type.id"
-  - name: drop_range
+    ref: ItemType.Id
+    comment: "道具类型，关联 ItemType.Id"
+  - name: DropRange
     type: struct
     fields:
-      - name: min
+      - name: Min
         type: int32
         comment: "掉落数量下限"
-      - name: max
+      - name: Max
         type: int32
         comment: "掉落数量上限"
-  - name: tags
+  - name: Tags
     type: array
     element: int32
     separator: ","
     comment: "标签列表，逗号分隔"
-  - name: is_active
+  - name: IsActive
     type: bool
     server_only: true
     comment: "是否启用（仅服务端）"

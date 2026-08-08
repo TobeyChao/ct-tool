@@ -26,13 +26,13 @@ struct QuestI18nEntry FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_TITLE = 6,
     VT_DESCRIPTION = 8
   };
-  int32_t id() const {
+  int32_t Id() const {
     return GetField<int32_t>(VT_ID, 0);
   }
-  const ::flatbuffers::String *title() const {
+  const ::flatbuffers::String *Title() const {
     return GetPointer<const ::flatbuffers::String *>(VT_TITLE);
   }
-  const ::flatbuffers::String *description() const {
+  const ::flatbuffers::String *Description() const {
     return GetPointer<const ::flatbuffers::String *>(VT_DESCRIPTION);
   }
   template <bool B = false>
@@ -40,9 +40,9 @@ struct QuestI18nEntry FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID, 4) &&
            VerifyOffset(verifier, VT_TITLE) &&
-           verifier.VerifyString(title()) &&
+           verifier.VerifyString(Title()) &&
            VerifyOffset(verifier, VT_DESCRIPTION) &&
-           verifier.VerifyString(description()) &&
+           verifier.VerifyString(Description()) &&
            verifier.EndTable();
   }
 };
@@ -51,14 +51,14 @@ struct QuestI18nEntryBuilder {
   typedef QuestI18nEntry Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
-  void add_id(int32_t id) {
-    fbb_.AddElement<int32_t>(QuestI18nEntry::VT_ID, id, 0);
+  void add_Id(int32_t Id) {
+    fbb_.AddElement<int32_t>(QuestI18nEntry::VT_ID, Id, 0);
   }
-  void add_title(::flatbuffers::Offset<::flatbuffers::String> title) {
-    fbb_.AddOffset(QuestI18nEntry::VT_TITLE, title);
+  void add_Title(::flatbuffers::Offset<::flatbuffers::String> Title) {
+    fbb_.AddOffset(QuestI18nEntry::VT_TITLE, Title);
   }
-  void add_description(::flatbuffers::Offset<::flatbuffers::String> description) {
-    fbb_.AddOffset(QuestI18nEntry::VT_DESCRIPTION, description);
+  void add_Description(::flatbuffers::Offset<::flatbuffers::String> Description) {
+    fbb_.AddOffset(QuestI18nEntry::VT_DESCRIPTION, Description);
   }
   explicit QuestI18nEntryBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -73,28 +73,28 @@ struct QuestI18nEntryBuilder {
 
 inline ::flatbuffers::Offset<QuestI18nEntry> CreateQuestI18nEntry(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t id = 0,
-    ::flatbuffers::Offset<::flatbuffers::String> title = 0,
-    ::flatbuffers::Offset<::flatbuffers::String> description = 0) {
+    int32_t Id = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> Title = 0,
+    ::flatbuffers::Offset<::flatbuffers::String> Description = 0) {
   QuestI18nEntryBuilder builder_(_fbb);
-  builder_.add_description(description);
-  builder_.add_title(title);
-  builder_.add_id(id);
+  builder_.add_Description(Description);
+  builder_.add_Title(Title);
+  builder_.add_Id(Id);
   return builder_.Finish();
 }
 
 inline ::flatbuffers::Offset<QuestI18nEntry> CreateQuestI18nEntryDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t id = 0,
-    const char *title = nullptr,
-    const char *description = nullptr) {
-  auto title__ = title ? _fbb.CreateString(title) : 0;
-  auto description__ = description ? _fbb.CreateString(description) : 0;
+    int32_t Id = 0,
+    const char *Title = nullptr,
+    const char *Description = nullptr) {
+  auto Title__ = Title ? _fbb.CreateString(Title) : 0;
+  auto Description__ = Description ? _fbb.CreateString(Description) : 0;
   return CreateQuestI18nEntry(
       _fbb,
-      id,
-      title__,
-      description__);
+      Id,
+      Title__,
+      Description__);
 }
 
 struct QuestI18nTable FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {

@@ -121,5 +121,18 @@ def sync_all(
             dump_lang_file(new_lang, lang_path, field_order)
             summary.lang_files_written.append(lang_path)
 
+    # 清理：删除无对应表的 i18n 文件（表名变更/删除后的残留）。
+    # 仅在非 table_filter 时执行（局部操作不做全局清理）。
+    if not table_filter:
+        valid_tables = {s.table for s in i18n_schemas}
+        cleanup_dirs = [i18n_dir / "source"]
+        cleanup_dirs += [i18n_dir / lang for lang in secondary_langs]
+        for d in cleanup_dirs:
+            if not d.exists():
+                continue
+            for f in d.glob("*.json"):
+                if f.stem not in valid_tables:
+                    f.unlink()
+
     summary.elapsed = time.perf_counter() - started
     return summary

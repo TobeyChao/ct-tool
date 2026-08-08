@@ -9,13 +9,13 @@ public static class QuestAccessor
 {
     private static ByteBuffer _bb;
     private static Dictionary<int, int> _mainIndex;
-    private static string[] _str_title;
-    private static string[] _str_description;
+    private static string[] _str_Title;
+    private static string[] _str_Description;
 
     private static ByteBuffer _i18nBb;
     private static Dictionary<int, int> _i18nIndex;
-    private static string[] _i18nStr_title;
-    private static string[] _i18nStr_description;
+    private static string[] _i18nStr_Title;
+    private static string[] _i18nStr_Description;
 
     private static ByteBuffer _FindTableBytes(ByteBuffer bundleBb, string tableName)
     {
@@ -40,26 +40,26 @@ public static class QuestAccessor
         // Reset i18n fields (reload-safe: Preload may be called to switch language)
         _i18nBb = null;
         _i18nIndex = null;
-        _i18nStr_title = null;
-        _i18nStr_description = null;
+        _i18nStr_Title = null;
+        _i18nStr_Description = null;
 
         // ---- main bundle ----
         byte[] mainBytes = GDNative.GetMainBytes();
         var bundleBb = new ByteBuffer(mainBytes);
-        _bb = _FindTableBytes(bundleBb, "quest");
+        _bb = _FindTableBytes(bundleBb, "Quest");
         var root = QuestTable.GetRootAsQuestTable(_bb);
         int count = root.ItemsLength;
 
         _mainIndex = new Dictionary<int, int>(count);
-        _str_title = new string[count];
-        _str_description = new string[count];
+        _str_Title = new string[count];
+        _str_Description = new string[count];
 
         for (int i = 0; i < count; i++)
         {
             var row = root.Items(i).Value;
             _mainIndex[row.Id] = i;
-            _str_title[i] = row.Title;
-            _str_description[i] = row.Description;
+            _str_Title[i] = row.Title;
+            _str_Description[i] = row.Description;
         }
 
         // ---- i18n bundle ----
@@ -67,20 +67,20 @@ public static class QuestAccessor
         if (i18nBytes != null && i18nBytes.Length > 0)
         {
             var i18nBundleBb = new ByteBuffer(i18nBytes);
-            _i18nBb = _FindTableBytes(i18nBundleBb, "quest_i18n");
+            _i18nBb = _FindTableBytes(i18nBundleBb, "Quest_i18n");
             var i18nRoot = QuestI18nTable.GetRootAsQuestI18nTable(_i18nBb);
             int i18nCount = i18nRoot.EntriesLength;
 
             _i18nIndex = new Dictionary<int, int>(i18nCount);
-            _i18nStr_title = new string[i18nCount];
-            _i18nStr_description = new string[i18nCount];
+            _i18nStr_Title = new string[i18nCount];
+            _i18nStr_Description = new string[i18nCount];
 
             for (int j = 0; j < i18nCount; j++)
             {
                 var entry = i18nRoot.Entries(j).Value;
                 _i18nIndex[entry.Id] = j;
-                _i18nStr_title[j] = entry.Title;
-                _i18nStr_description[j] = entry.Description;
+                _i18nStr_Title[j] = entry.Title;
+                _i18nStr_Description[j] = entry.Description;
             }
         }
     }
@@ -113,11 +113,11 @@ public static class QuestAccessor
         // i18n: check i18n array first, fallback to main
         if (_i18nIndex != null && _i18nIndex.TryGetValue(id, out int i18nIdx))
         {
-            string i18nVal = _i18nStr_title[i18nIdx];
+            string i18nVal = _i18nStr_Title[i18nIdx];
             if (i18nVal != null)
                 return i18nVal;
         }
-        return _str_title[idx];
+        return _str_Title[idx];
     }
 
     public static string GetDescription(int id)
@@ -126,11 +126,11 @@ public static class QuestAccessor
         // i18n: check i18n array first, fallback to main
         if (_i18nIndex != null && _i18nIndex.TryGetValue(id, out int i18nIdx))
         {
-            string i18nVal = _i18nStr_description[i18nIdx];
+            string i18nVal = _i18nStr_Description[i18nIdx];
             if (i18nVal != null)
                 return i18nVal;
         }
-        return _str_description[idx];
+        return _str_Description[idx];
     }
 
     public static int GetRewardItemId(int id)

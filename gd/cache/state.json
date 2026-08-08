@@ -1,26 +1,44 @@
 {
   "version": 2,
   "tables": {
-    "item_type": {
-      "hash": "79f4ddd115d4fdee1f212d6cfbe9adec",
-      "ids": [],
-      "fbs_bytes_hash": "1958bff73670543ab0abee77906a8930",
-      "schema_hash": "8d46369cdeaf2799",
-      "exported_at": "2026-06-19T16:16:21Z"
+    "ItemType": {
+      "hash": "9f64d9bc98f7364b9e70d985394ab786",
+      "ids": [
+        1,
+        2,
+        3
+      ],
+      "exported_at": "2026-08-08T11:32:04Z"
     },
-    "item": {
-      "hash": "10382a46a6b1f5e53bbc6bc7f69730a5",
-      "ids": [],
-      "fbs_bytes_hash": "1958bff73670543ab0abee77906a8930",
-      "schema_hash": "54dc3fc199b9252a",
-      "exported_at": "2026-06-19T16:16:21Z"
+    "UIConfig": {
+      "hash": "4908b26e269ad127bc3a5354fb935800",
+      "ids": [
+        10001,
+        10002,
+        11001,
+        12001,
+        13001,
+        13002
+      ],
+      "exported_at": "2026-08-08T11:32:04Z"
     },
-    "quest": {
-      "hash": "b774d08b882b3b43762cbd691df4d869",
-      "ids": [],
-      "fbs_bytes_hash": "1958bff73670543ab0abee77906a8930",
-      "schema_hash": "e8141fddb5cc34f5",
-      "exported_at": "2026-06-19T16:16:21Z"
+    "Item": {
+      "hash": "35101811b5ad5fb80d7dfb5a2d6a4c40",
+      "ids": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "exported_at": "2026-08-08T11:32:04Z"
+    },
+    "Quest": {
+      "hash": "b326f389ec8c701a93f9cb53d32238f2",
+      "ids": [
+        1,
+        2
+      ],
+      "exported_at": "2026-08-08T11:32:04Z"
     }
   }
 }

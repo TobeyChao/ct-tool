@@ -11,8 +11,8 @@ Header layout (total rows = ``schema.header_rows`` = max_nesting_depth + 1):
    Non-struct fields write into the first name row and merge vertically
    downward through the remaining name rows. Struct fields merge horizontally
    across the span of their sub-fields and recurse one row deeper. Struct
-   cells display ``to_pascal_case(field.name)`` as their type, matching the
-   FBS-generated table name (e.g., ``drop_range`` → ``DropRange``).
+   cells display ``field.name`` as their type, matching the FBS-generated
+   table name (schema names pass through verbatim).
 2. The **comment row** (last) shows ``field.comment``.
 """
 
@@ -39,7 +39,6 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 from ct.schema.hashing import compute_schema_hash
 from ct.schema.models import FieldDef, TableSchema
-from ct.schema.naming import to_pascal_case
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +160,7 @@ def _make_name_type_richtext(name: str, type_text: str) -> CellRichText:
 
 def _struct_type_label(field: FieldDef) -> str:
     """Type label shown beneath a struct field's name (matches FBS table name)."""
-    return to_pascal_case(field.name)
+    return f"{field.name}Struct"
 
 
 # ---------------------------------------------------------------------------

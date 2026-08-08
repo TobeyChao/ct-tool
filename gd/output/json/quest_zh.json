@@ -1,5 +1,6 @@
 {
-  "quests": [
-    
+  "Quests": [
+    {"Id": 1, "Title": "新手冒险", "Description": "完成你的第一次冒险", "RewardItemId": 1, "RequiredLevel": 1},
+    {"Id": 2, "Title": "屠龙勇士", "Description": "击败邪恶的巨龙", "RewardItemId": 2, "RequiredLevel": 10}
   ]
 }
