@@ -422,6 +422,11 @@ Vue.createApp({
       const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
       this.followLatest = atBottom;
     },
+    jumpToBottom() {
+      const el = this.$refs.logList;
+      if (el) el.scrollTop = el.scrollHeight;
+      this.followLatest = true;
+    },
     async loadHistory() {
       try {
         this.history = await this.api("/api/history");
@@ -666,19 +671,20 @@ Vue.createApp({
         <div class="panel-body">
           <div class="log-toolbar">
             <button v-for="m in ['all','导出','校验','i18n','模板','系统']" :key="m" class="pill" :class="{active: logModule===m}" @click="logModule = m; loadLogs()">{{ m === 'all' ? '全部' : m }}</button>
-            <span style="flex:1"></span>
-            <label class="cmd-check"><input type="checkbox" v-model="followLatest">跟随最新</label>
           </div>
-          <div class="log-list" ref="logList" @scroll="onLogScroll">
-            <div v-for="(r, i) in logs" :key="i" class="log-row">
-              <span class="log-time">{{ r.time }}</span>
-              <span class="log-module">{{ r.module }}</span>
-              <span class="log-level" :class="r.level.toLowerCase()">{{ r.level }}</span>
-              <span class="log-msg">{{ r.message }}</span>
+          <div class="log-wrap">
+            <div class="log-list" ref="logList" @scroll="onLogScroll">
+              <div v-for="(r, i) in logs" :key="i" class="log-row">
+                <span class="log-time">{{ r.time }}</span>
+                <span class="log-module">{{ r.module }}</span>
+                <span class="log-level" :class="r.level.toLowerCase()">{{ r.level }}</span>
+                <span class="log-msg">{{ r.message }}</span>
+              </div>
+              <div v-if="!logs.length" class="empty-state">
+                <div class="empty-title">暂无日志</div>
+              </div>
             </div>
-            <div v-if="!logs.length" class="empty-state">
-              <div class="empty-title">暂无日志</div>
-            </div>
+            <button v-if="!followLatest" class="btn btn-sm btn-ghost btn-jump-bottom" @click="jumpToBottom">回到底部 ↓</button>
           </div>
         </div>
       </div>
