@@ -1,0 +1,1941 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ct 配表工具 · 面板原型</title>
+<style>
+/* ==========================================================================
+   ct 配表工具 面板原型（静态高保真）
+   设计判读：内部工具型操作面板 / 策划用户 / 沉稳、清晰、数据密集
+   DESIGN_VARIANCE 4 · MOTION_INTENSITY 2 · VISUAL_DENSITY 7
+   调色板延续 Excel 模板品牌：深林绿 + 中绿 + 金（主键语义）
+   注意：这是设计预览，最终 Vue 实现会按正式设计系统落地
+   ========================================================================== */
+:root {
+  /* 中性 */
+  --bg: #F5F6F4;
+  --surface: #FFFFFF;
+  --surface-2: #F0F2EE;
+  --border: #E1E6DD;
+  --border-strong: #CBD2C6;
+  --ink: #1B241F;
+  --ink-2: #5A645E;
+  --ink-3: #8B948E;
+
+  /* 品牌绿（唯一主色系） */
+  --primary: #1B4332;
+  --primary-hover: #153728;
+  --accent: #2F7A56;
+  --accent-hover: #266544;
+  --accent-soft: #D8F3DC;
+  --accent-softer: #ECF7ED;
+
+  /* 语义色（一致使用） */
+  --gold: #C9A227;      /* 主键标识 */
+  --gold-soft: #F7EECB;
+  --danger: #B23B3B;
+  --danger-soft: #F9E8E8;
+  --warn: #B7791F;
+  --warn-soft: #F9EFD9;
+
+  /* 字形 */
+  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC",
+               "Microsoft YaHei", "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+
+  /* 形状规则：面板/按钮/输入/模态统一 8px；徽章与进度条为 pill（状态类） */
+  --r: 8px;
+
+  --shadow-panel: 0 1px 2px rgba(27, 36, 31, 0.04), 0 8px 28px rgba(27, 36, 31, 0.05);
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- 顶栏 ---------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 56px;
+  padding: 0 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.brand-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: var(--primary);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.brand-name { font-size: 14px; }
+.brand-sub {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.topbar-spacer { flex: 1; }
+
+.workspace-path {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 6px 12px;
+  white-space: nowrap;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: var(--surface);
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ---------- 页签 ---------- */
+.tabs {
+  position: sticky;
+  top: 56px;
+  z-index: 18;
+  display: flex;
+  gap: 6px;
+  padding: 0 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink-2);
+  padding: 13px 16px 11px;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab:hover { color: var(--ink); }
+.tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: 2px;
+}
+
+.tab.active {
+  color: var(--primary);
+  font-weight: 600;
+  border-bottom-color: var(--primary);
+}
+
+.tab-count {
+  display: inline-block;
+  min-width: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 11px;
+  text-align: center;
+}
+
+.tab.active .tab-count {
+  background: var(--accent-soft);
+  color: var(--primary);
+}
+
+/* ---------- 布局 ---------- */
+.layout {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 22px;
+  display: grid;
+  gap: 20px;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-panel);
+}
+
+.panel-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 16px 20px 0;
+}
+
+.panel-title {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.panel-sub {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.panel-body { padding: 16px 20px 20px; }
+
+.grid-2col {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .grid-2col { grid-template-columns: 1fr; }
+}
+
+/* ---------- 表单控件 ---------- */
+.field { margin-bottom: 16px; }
+
+.field-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+}
+
+.radio-row, .check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.radio-row input, .check-row input {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.scope-select {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 2px 24px;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 4px;
+}
+
+/* 表选择弹窗 */
+.pick-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  margin-bottom: 6px;
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.pick-row:hover { background: var(--surface-2); }
+.pick-row input { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; cursor: pointer; }
+.pick-row input:disabled { cursor: not-allowed; }
+.pick-row .opt-meta {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.pick-row.auto { background: var(--accent-softer); border-color: var(--accent-soft); }
+.pick-row.auto .opt-meta { color: var(--accent); }
+
+.select-tag {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 5px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.trans-input {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 5px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.trans-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.trans-input.is-area {
+  min-height: 64px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.src-cell {
+  width: 240px;
+  min-width: 160px;
+}
+.src-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  color: var(--ink-2);
+}
+.src-text.expanded {
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+.trans-cell { min-width: 200px; }
+
+.trans-preview {
+  min-height: 30px;
+  padding: 4px 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  line-height: 1.5;
+  border-radius: 4px;
+}
+.trans-preview:hover { background: var(--surface-2); }
+.trans-preview.placeholder { color: var(--ink-3); }
+
+/* ---------- 按钮 ---------- */
+.btn {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.06s ease;
+}
+
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--primary-hover); }
+
+.btn-accent {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-accent:hover { background: var(--accent-hover); }
+
+.btn-ghost {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--ink);
+}
+.btn-ghost:hover { background: var(--surface-2); }
+
+.btn-danger {
+  background: var(--surface);
+  border-color: #D9A6A6;
+  color: var(--danger);
+}
+.btn-danger:hover { background: var(--danger-soft); }
+
+.btn-sm { padding: 5px 10px; font-size: 12.5px; }
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-row { display: flex; gap: 8px; align-items: center; }
+
+/* ---------- 进度 ---------- */
+/* ---------- 进度（横向单元格） ---------- */
+.cell-progress {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.prog-cell {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r);
+  background: var(--surface);
+  padding: 9px 4px 8px;
+  text-align: center;
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+.prog-cell .p-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+.prog-cell .p-name {
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.prog-cell.done {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.prog-cell.done .p-num,
+.prog-cell.done .p-name { color: #fff; }
+
+.prog-cell.done .p-name::after {
+  content: " ✓";
+}
+
+.prog-cell.error {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.prog-cell.error .p-num,
+.prog-cell.error .p-name { color: #fff; }
+
+.prog-cell.error .p-name::after {
+  content: " ✗";
+}
+
+.prog-cell.current {
+  border-color: var(--gold);
+  border-width: 2px;
+  background: var(--gold-soft);
+}
+
+.prog-cell.current .p-num {
+  color: #7A6214;
+  font-weight: 700;
+}
+
+.prog-cell.current .p-name {
+  color: #6B5410;
+  font-weight: 650;
+}
+
+.prog-cell.current { animation: pulse 1.4s ease-in-out infinite; }
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 162, 39, 0.28); }
+  50% { box-shadow: 0 0 0 5px rgba(201, 162, 39, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prog-cell.current { animation: none; }
+}
+
+.progress-line {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  margin-top: 10px;
+}
+
+.progress-line b { color: #7A6214; font-weight: 700; }
+
+/* ---------- 摘要（单行） / 徽章 ---------- */
+.summary-line {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.summary-line b { color: var(--primary); font-weight: 700; }
+
+/* 将产出文件清单（填满右栏） */
+.output-list {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.ol-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.ol-row:last-child { border-bottom: 0; }
+.ol-name { color: var(--ink-2); font-weight: 600; }
+.ol-kinds { color: var(--ink-3); }
+
+/* 产物目录行（导出页底部信息带） */
+.output-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-2);
+  flex-wrap: wrap;
+}
+
+.output-line .field-label { margin-bottom: 0; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+
+.badge-ok { background: var(--accent-soft); color: var(--primary); }
+.badge-warn { background: var(--warn-soft); color: var(--warn); }
+.badge-err { background: var(--danger-soft); color: var(--danger); }
+.badge-mute { background: var(--surface-2); color: var(--ink-2); }
+
+/* ---------- 表格 ---------- */
+.table-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin-top: 14px;
+}
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+table.data th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+table.data td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+table.data tr:last-child td { border-bottom: 0; }
+table.data tbody tr:hover { background: var(--accent-softer); }
+
+.mono { font-family: var(--font-mono); font-size: 12.5px; }
+
+.pk-cell {
+  font-family: var(--font-mono);
+  font-weight: 650;
+  color: #7A6214;
+  background: var(--gold-soft);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 8px;
+  line-height: 20px;
+}
+
+/* ---------- 全局错误横幅（任何页面出错时显示，指向日志页） ---------- */
+.banner-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--danger-soft);
+  border-left: 3px solid var(--danger);
+  border-radius: var(--r);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.banner-error .banner-fix { color: var(--ink-2); font-size: 12.5px; }
+.banner-error .btn { margin-left: auto; }
+.banner-error .btn-ghost { margin-left: 8px; }
+
+/* ---------- 空状态 / 骨架 ---------- */
+.empty {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  padding: 48px 20px;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.empty-title { font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.empty-sub { font-size: 12.5px; max-width: 360px; }
+
+.skeleton {
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, #E4E8E1 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* ---------- 历史 ---------- */
+.history-item {
+  display: grid;
+  grid-template-columns: 130px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-item:last-child { border-bottom: 0; }
+.history-time { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); }
+.history-scope { font-size: 13px; }
+.history-scope small { color: var(--ink-3); }
+
+/* ---------- 工具条 ---------- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.toolbar .spacer { flex: 1; }
+
+/* ---------- 表格管理卡片 ---------- */
+.schema-list { margin-top: 14px; display: grid; gap: 10px; }
+
+.schema-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 13px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.schema-row:hover { border-color: var(--border-strong); }
+.schema-row .schema-id { min-width: 150px; }
+.schema-row .row-meta { color: var(--ink-3); }
+.schema-row .btn-row-detail { margin-left: auto; }
+
+.schema-name { font-weight: 650; font-size: 14px; }
+.schema-pk { font-size: 12px; color: var(--ink-3); }
+
+.cmd-search {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--ink);
+  width: 180px;
+}
+.cmd-search::placeholder { color: var(--ink-3); }
+
+.kv-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 10px 20px;
+  margin-bottom: 16px;
+}
+.kv-label { display: block; font-size: 11px; color: var(--ink-3); margin-bottom: 3px; }
+.kv-value { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink); }
+
+.field-list { display: grid; gap: 6px; }
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+.field-row .mono { flex: 1; min-width: 0; }
+.f-meta { font-size: 11.5px; color: var(--ink-3); }
+
+.form-input {
+  width: 100%;
+  padding: 7px 10px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--ink);
+}
+.form-area { height: 150px; resize: vertical; line-height: 1.55; }
+.modal-lg { width: min(680px, calc(100vw - 40px)); }
+.modal-body-lg { max-height: 70vh; }
+
+.empty-state { text-align: center; padding: 30px 12px; }
+.empty-state .empty-title { font-weight: 600; color: var(--ink-2); }
+.empty-state .empty-sub { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+.empty-cell { text-align: center; color: var(--ink-3); padding: 26px 0; }
+
+/* ---------- 模态（compact 确认） ---------- */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(27, 36, 31, 0.35);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+}
+
+.modal {
+  width: min(560px, calc(100vw - 40px));
+  background: var(--surface);
+  border-radius: var(--r);
+  box-shadow: 0 20px 60px rgba(27, 36, 31, 0.25);
+  overflow: hidden;
+}
+
+.modal-head {
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.modal-body { padding: 18px 22px; max-height: 320px; overflow: auto; }
+.modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--border);
+}
+
+.orphan-line {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  background: var(--warn-soft);
+  color: var(--warn);
+  margin-bottom: 5px;
+}
+
+/* ---------- 日志页 ---------- */
+.log-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  appearance: none;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
+.pill:hover { background: var(--surface-2); }
+.pill.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- 导出命令条（常驻主操作） ---------- */
+.cmd-bar {
+  position: sticky;
+  top: 105px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  min-height: 64px;
+  padding: 12px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-panel);
+}
+
+.cmd-group { display: flex; align-items: center; gap: 8px; }
+.cmd-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.seg { display: inline-flex; gap: 4px; }
+
+.cmd-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cmd-check input { accent-color: var(--accent); width: 14px; height: 14px; margin: 0; }
+.cmd-spacer { flex: 1; }
+.cmd-value {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--ink);
+}
+.cmd-vsep { width: 1px; height: 22px; background: var(--border); }
+.panel-head-toolbar { align-items: center; }
+
+.cmd-footnote {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+/* ---------- 翻译进度（弹窗内列表） ---------- */
+.side-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 2px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+
+.side-row:last-child { border-bottom: 0; }
+.side-name { color: var(--ink-2); }
+.side-val {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.side-val small { color: var(--ink-3); }
+.side-badges {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.log-list {
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.log-row {
+  display: grid;
+  grid-template-columns: 130px 64px 64px 1fr;
+  gap: 12px;
+  align-items: baseline;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+
+.log-row:last-child { border-bottom: 0; }
+.log-row[hidden] { display: none; }
+
+.log-time { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-3); }
+.log-module { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-2); font-weight: 600; }
+.log-level { font-size: 11px; font-weight: 700; }
+.log-level.info { color: var(--ink-3); }
+.log-level.warn { color: var(--warn); }
+.log-level.error { color: var(--danger); }
+.log-msg { color: var(--ink); }
+
+/* ---------- 切换显隐 ---------- */
+.tab-page { display: none; }
+.tab-page.active { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ================= 顶栏 ================= -->
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">ct</span>
+    <span>
+      <div class="brand-name">配表工具</div>
+      <div class="brand-sub">Config Table Panel</div>
+    </span>
+  </div>
+  <div class="topbar-spacer"></div>
+  <span class="workspace-path">~/Projects/ct-tool/gd</span>
+  <span class="status-pill"><span class="status-dot" style="background:var(--warn)"></span>2 条错误 · 1 张表模板漂移</span>
+</header>
+
+<!-- ================= 页签 ================= -->
+<nav class="tabs" role="tablist">
+  <button class="tab active" data-tab="export" role="tab">导出</button>
+  <button class="tab" data-tab="i18n" role="tab">翻译 i18n <span class="tab-count">2</span></button>
+  <button class="tab" data-tab="tables" role="tab">表格管理</button>
+  <button class="tab" data-tab="logs" role="tab">日志 <span class="tab-count">2</span></button>
+  <button class="tab" data-tab="history" role="tab">历史</button>
+</nav>
+
+<!-- ================= 导出 ================= -->
+<main class="layout">
+  <!-- 全局错误横幅：任何页面有错误时显示，一键跳日志页 -->
+  <div class="banner-error" id="global-error-banner">
+    <span>有 <b>2</b> 条错误待处理（校验 · 导出）</span>
+    <span class="banner-fix">操作已中止，修正数据后重试</span>
+    <a class="btn btn-sm btn-danger" href="#logs" onclick="activateTab('logs')">查看日志</a>
+    <button class="btn btn-sm btn-ghost" id="banner-dismiss">忽略</button>
+  </div>
+
+<section class="tab-page active" id="page-export">
+  <!-- 常驻命令条：全量导出（指定表/指定语言后续按需再加） -->
+  <div class="cmd-bar" id="cmd-bar">
+    <span class="cmd-spacer"></span>
+    <label class="cmd-check"><input type="checkbox">强制重建</label>
+    <button class="btn btn-primary" id="btn-export">开始导出</button>
+  </div>
+
+  <!-- 进度面板 -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">导出进度</span>
+      <span class="panel-sub">job #2026-08-09T18:32</span>
+      <span style="flex:1"></span>
+      <span class="badge badge-err">已中止</span>
+    </div>
+    <div class="panel-body">
+      <div class="cell-progress">
+        <div class="prog-cell done"><span class="p-num">1</span><span class="p-name">解析</span></div>
+        <div class="prog-cell error"><span class="p-num">2</span><span class="p-name">校验</span></div>
+        <div class="prog-cell"><span class="p-num">3</span><span class="p-name">i18n</span></div>
+        <div class="prog-cell"><span class="p-num">4</span><span class="p-name">JSON</span></div>
+        <div class="prog-cell"><span class="p-num">5</span><span class="p-name">FBS</span></div>
+        <div class="prog-cell"><span class="p-num">6</span><span class="p-name">Accessor</span></div>
+        <div class="prog-cell"><span class="p-num">7</span><span class="p-name">Bundle</span></div>
+      </div>
+      <div class="progress-line">校验未通过（<b>2</b> 处错误），导出中止</div>
+
+      <div class="summary-line">
+        <span>已导出 <b>0 / 4</b> 张表</span>
+        <span>状态 <b>已中止</b></span>
+        <span>耗时 <b>0.4s</b></span>
+      </div>
+      <div class="cmd-footnote">
+        <span class="mono">上次导出 2026-08-09 18:32 · 失败 · 2 处错误</span>
+        <span>·</span>
+        <span class="mono">产物目录 ~/Projects/ct-tool/gd/output</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= i18n ================= -->
+<section class="tab-page" id="page-i18n">
+  <!-- 命令条：表（定义当前表作用域）+ 操作（当前表 / 全部表） -->
+  <div class="cmd-bar" id="cmd-bar-i18n">
+    <div class="cmd-group">
+      <span class="cmd-label">表</span>
+      <button class="btn btn-sm btn-ghost" id="btn-pick-itable">选择表</button>
+      <span class="cmd-value" id="itable-current">Item</span>
+    </div>
+    <span class="cmd-spacer"></span>
+    <button class="btn btn-sm btn-ghost" id="btn-progress" title="查看所有表 × 所有语言的翻译进度总览">全部表进度</button>
+    <span class="cmd-vsep"></span>
+    <button class="btn btn-sm btn-danger" id="btn-compact" title="删除原文中已消失、不再需要的残留译文条目（当前 2 条）">清理无主条目（2）</button>
+    <button class="btn btn-primary" id="btn-sync-all" title="刷新当前表的原文快照，并为所有语言（en/ja…）更新骨架：新增→missing、原文变更→stale、已删除→无主">同步全部语言</button>
+  </div>
+
+  <!-- 主翻译表 -->
+  <div class="panel">
+      <div class="panel-head panel-head-toolbar">
+        <span class="panel-title">翻译表 · <span id="trans-table-name">Item</span></span>
+        <span style="flex:1"></span>
+        <span class="cmd-label">语言</span>
+        <div class="seg" role="group">
+          <button class="pill active" data-iseg="lang" data-value="en">en</button>
+          <button class="pill" data-iseg="lang" data-value="ja">ja</button>
+        </div>
+        <span class="cmd-label">状态</span>
+        <div class="seg" role="group">
+          <button class="pill active" data-iseg="status" data-value="all">全部</button>
+          <button class="pill" data-iseg="status" data-value="missing">missing</button>
+          <button class="pill" data-iseg="status" data-value="stale">stale</button>
+          <button class="pill" data-iseg="status" data-value="translated">translated</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="table-wrap">
+          <table class="data">
+            <thead>
+              <tr><th>主键</th><th>字段</th><th>zh 原文</th><th style="min-width:190px"><span id="trans-lang-col">en</span> 译文</th><th>状态</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr data-status="translated">
+                <td><span class="pk-cell">1</span></td>
+                <td class="mono">Name</td>
+                <td>药水</td>
+                <td class="mono">Potion</td>
+                <td><span class="badge badge-ok">translated</span></td>
+                <td><span class="tag">已确认</span></td>
+              </tr>
+              <tr data-status="translated">
+                <td><span class="pk-cell">2</span></td>
+                <td class="mono">Name</td>
+                <td>铁剑</td>
+                <td class="mono">Iron Sword</td>
+                <td><span class="badge badge-ok">translated</span></td>
+                <td><span class="tag">已确认</span></td>
+              </tr>
+              <tr data-status="missing">
+                <td><span class="pk-cell">3</span></td>
+                <td class="mono">Name</td>
+                <td>魔法石</td>
+                <td><input class="trans-input" placeholder="填写译文…"></td>
+                <td><span class="badge badge-warn">missing</span></td>
+                <td><button class="btn btn-sm btn-ghost save-trans">保存</button></td>
+              </tr>
+              <tr data-status="stale">
+                <td><span class="pk-cell">4</span></td>
+                <td class="mono">Desc</td>
+                <td>恢复少量生命</td>
+                <td><input class="trans-input" value="Heal a little HP"></td>
+                <td><span class="badge badge-warn">stale</span></td>
+                <td><button class="btn btn-sm btn-accent save-trans">确认并保存</button></td>
+              </tr>
+              <tr data-status="missing">
+                <td><span class="pk-cell">5</span></td>
+                <td class="mono">Desc</td>
+                <td class="src-cell"><span class="src-text" title="这款药水由秘银矿洞深处的蓝色蘑菇提炼而成，饮用后将在 30 分钟内缓慢恢复生命，并在夜间提供微弱的蓝色荧光，适合探险者在黑暗地下城使用。">这款药水由秘银矿洞深处的蓝色蘑菇提炼而成，饮用后将在 30 分钟内缓慢恢复生命，并在夜间提供微弱的蓝色荧光，适合探险者在黑暗地下城使用。</span></td>
+                <td class="trans-cell">
+                  <div class="trans-preview placeholder">点击填写译文…</div>
+                  <textarea class="trans-input is-area" hidden></textarea>
+                </td>
+                <td><span class="badge badge-warn">missing</span></td>
+                <td><button class="btn btn-sm btn-ghost save-trans">保存</button></td>
+              </tr>
+              <tr id="i18n-empty-row" hidden>
+                <td colspan="6" class="empty-cell">该状态下暂无译文条目</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="hint" style="margin-top:10px">
+          译文保存在 <span class="mono">i18n/en/Item.json</span>；填写后点"保存 / 确认并保存"，下次导出自动合并。
+        </div>
+      </div>
+    </div>
+</section>
+
+<!-- ================= 表格管理 ================= -->
+<section class="tab-page" id="page-tables">
+  <!-- 命令条：搜索 / 状态筛选 + 新增表 -->
+  <div class="cmd-bar" id="cmd-bar-tables">
+    <div class="cmd-group">
+      <span class="cmd-label">表名</span>
+      <input class="cmd-search" id="tbl-search" placeholder="搜索…">
+    </div>
+    <div class="cmd-group">
+      <span class="cmd-label">状态</span>
+      <div class="seg" role="group">
+        <button class="pill active" data-seg="tbl-status" data-value="all">全部</button>
+        <button class="pill" data-seg="tbl-status" data-value="ok">模板已同步</button>
+        <button class="pill" data-seg="tbl-status" data-value="drift">模板漂移</button>
+      </div>
+    </div>
+    <span class="cmd-spacer"></span>
+    <button class="btn btn-primary" id="btn-create-table">新增表</button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">Schema 表</span>
+      <span class="panel-sub">4 张 · 1 漂移</span>
+    </div>
+    <div class="panel-body">
+      <div class="schema-list">
+        <div class="schema-row" data-name="Item" data-badge="ok">
+          <div class="schema-id"><div class="schema-name">Item</div><div class="schema-pk">item.xlsx</div></div>
+          <span class="mono row-meta">9 字段 · i18n 2</span>
+          <span class="badge badge-ok">模板已同步</span>
+          <button class="btn btn-sm btn-ghost btn-row-detail">详情</button>
+        </div>
+        <div class="schema-row" data-name="Quest" data-badge="drift">
+          <div class="schema-id"><div class="schema-name">Quest</div><div class="schema-pk">quest.xlsx</div></div>
+          <span class="mono row-meta">6 字段 · i18n 2</span>
+          <span class="badge badge-warn">模板漂移</span>
+          <button class="btn btn-sm btn-ghost btn-row-detail">详情</button>
+        </div>
+        <div class="schema-row" data-name="ItemType" data-badge="ok">
+          <div class="schema-id"><div class="schema-name">ItemType</div><div class="schema-pk">item_type.xlsx</div></div>
+          <span class="mono row-meta">3 字段 · i18n 1</span>
+          <span class="badge badge-ok">模板已同步</span>
+          <button class="btn btn-sm btn-ghost btn-row-detail">详情</button>
+        </div>
+        <div class="schema-row" data-name="UIConfig" data-badge="ok">
+          <div class="schema-id"><div class="schema-name">UIConfig</div><div class="schema-pk">ui_config.xlsx</div></div>
+          <span class="mono row-meta">4 字段</span>
+          <span class="badge badge-ok">模板已同步</span>
+          <button class="btn btn-sm btn-ghost btn-row-detail">详情</button>
+        </div>
+      </div>
+      <div class="empty-state" id="tbl-empty" hidden>
+        <div class="empty-title">没有匹配的表</div>
+        <div class="empty-sub">试试其他关键词，或调整状态筛选</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 日志 ================= -->
+<section class="tab-page" id="page-logs">
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">运行日志</span>
+      <span class="panel-sub">按模块过滤 · 实时追加</span>
+    </div>
+    <div class="panel-body">
+      <div class="log-toolbar">
+        <button class="pill active" data-module="all">全部</button>
+        <button class="pill" data-module="export">导出</button>
+        <button class="pill" data-module="validate">校验</button>
+        <button class="pill" data-module="i18n">i18n</button>
+        <button class="pill" data-module="template">模板</button>
+        <button class="pill" data-module="system">系统</button>
+        <span style="flex:1"></span>
+        <label class="check-row" style="font-size:12px"><input type="checkbox" checked>跟随最新</label>
+        <button class="btn btn-sm btn-ghost">清空</button>
+      </div>
+      <div class="log-list" id="log-list">
+        <div class="log-row" data-module="export">
+          <span class="log-time">18:32:05.214</span>
+          <span class="log-module">导出</span>
+          <span class="log-level info">INFO</span>
+          <span class="log-msg">开始导出 job #2026-08-09T18:32 · 4 张表 · 全量语言</span>
+        </div>
+        <div class="log-row" data-module="validate">
+          <span class="log-time">18:32:05.462</span>
+          <span class="log-module">校验</span>
+          <span class="log-level warn">WARN</span>
+          <span class="log-msg">Quest.xlsx 第5行 Id 重复（首次出现在第2行）</span>
+        </div>
+        <div class="log-row" data-module="validate">
+          <span class="log-time">18:32:05.463</span>
+          <span class="log-module">校验</span>
+          <span class="log-level error">ERROR</span>
+          <span class="log-msg">发现 2 处校验错误，导出中止（修正后重新导出）</span>
+        </div>
+        <div class="log-row" data-module="i18n">
+          <span class="log-time">18:32:05.510</span>
+          <span class="log-module">i18n</span>
+          <span class="log-level info">INFO</span>
+          <span class="log-msg">source 已刷新 · 11 条 · en 3 missing</span>
+        </div>
+        <div class="log-row" data-module="template">
+          <span class="log-time">18:32:05.522</span>
+          <span class="log-module">模板</span>
+          <span class="log-level info">INFO</span>
+          <span class="log-msg">Item 模板无变化，跳过重建</span>
+        </div>
+        <div class="log-row" data-module="export">
+          <span class="log-time">18:32:05.530</span>
+          <span class="log-module">导出</span>
+          <span class="log-level error">ERROR</span>
+          <span class="log-msg">导出已中止 · 0 张表写出</span>
+        </div>
+        <div class="log-row" data-module="system">
+          <span class="log-time">18:32:05.541</span>
+          <span class="log-module">系统</span>
+          <span class="log-level info">INFO</span>
+          <span class="log-msg">缓存状态未写入（取消/失败时不更新 state.json）</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 历史 ================= -->
+<section class="tab-page" id="page-history">
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">导出历史</span>
+      <span class="panel-sub">保留最近 5 次</span>
+    </div>
+    <div class="panel-body">
+      <div class="history-item">
+        <span class="history-time">2026-08-09 18:32</span>
+        <span class="history-scope">全部表 · 全量语言 <small>· 强制重建</small></span>
+        <span class="badge badge-ok">成功 · 4 张表</span>
+      </div>
+      <div class="history-item">
+        <span class="history-time">2026-08-09 17:58</span>
+        <span class="history-scope">Item · en <small>· 增量</small></span>
+        <span class="badge badge-err">失败 · 2 处校验错误</span>
+      </div>
+      <div class="history-item">
+        <span class="history-time">2026-08-09 17:21</span>
+        <span class="history-scope">Quest · ja <small>· 增量</small></span>
+        <span class="badge badge-ok">成功 · 1 张表</span>
+      </div>
+      <div class="history-item">
+        <span class="history-time">2026-08-09 16:44</span>
+        <span class="history-scope">全部表 · 全量语言 <small>· 增量</small></span>
+        <span class="badge badge-ok">成功 · 4 张表</span>
+      </div>
+      <div class="history-item">
+        <span class="history-time">2026-08-09 16:10</span>
+        <span class="history-scope">ItemType · 全量语言 <small>· 增量</small></span>
+        <span class="badge badge-ok">成功 · 1 张表</span>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ================= 翻译表选择模态 ================= -->
+<div class="modal-mask" id="itable-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="itable-title">
+    <div class="modal-head">
+      <span id="itable-title">选择翻译表</span>
+      <span class="mono">含 i18n 字段</span>
+    </div>
+    <div class="modal-body">
+      <label class="pick-row"><input type="radio" name="itable" value="Item" checked>Item <span class="opt-meta">9 字段 · i18n 2</span></label>
+      <label class="pick-row"><input type="radio" name="itable" value="Quest">Quest <span class="opt-meta">6 字段 · i18n 2</span></label>
+      <label class="pick-row"><input type="radio" name="itable" value="ItemType">ItemType <span class="opt-meta">3 字段 · i18n 1</span></label>
+      <label class="pick-row"><input type="radio" name="itable" value="UIConfig" disabled>UIConfig <span class="opt-meta">无 i18n 字段</span></label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close-itable>取消</button>
+      <button class="btn btn-accent" data-close-itable id="confirm-itable">打开翻译表</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 翻译进度模态 ================= -->
+<div class="modal-mask" id="progress-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="progress-title">
+    <div class="modal-head">
+      <span id="progress-title">翻译进度</span>
+      <span class="mono">source = zh</span>
+      <span style="flex:1"></span>
+      <button class="pill active" data-progress-view="lang">语言</button>
+      <button class="pill" data-progress-view="table">按表</button>
+    </div>
+    <div class="modal-body">
+      <div id="lang-progress">
+        <div class="side-row">
+          <span class="badge badge-mute">zh</span><span class="side-name">主语言</span>
+          <span class="side-val">100%</span>
+        </div>
+        <div class="side-row">
+          <span class="badge badge-mute">en</span><span class="side-name">英文</span>
+          <span class="side-val">73% <small>3 missing</small></span>
+          <button class="btn btn-sm btn-ghost open-lang" data-lang="en">打开</button>
+        </div>
+        <div class="side-row">
+          <span class="badge badge-mute">ja</span><span class="side-name">日文</span>
+          <span class="side-val">100%</span>
+          <button class="btn btn-sm btn-ghost open-lang" data-lang="ja">打开</button>
+        </div>
+      </div>
+      <div id="table-progress" hidden>
+        <div class="side-row">
+          <span class="mono side-name">Item</span>
+          <span class="side-badges">
+            <span class="badge badge-ok">zh 4/4</span>
+            <span class="badge badge-warn">en 2/4</span>
+            <span class="badge badge-ok">ja 4/4</span>
+          </span>
+        </div>
+        <div class="side-row">
+          <span class="mono side-name">Quest</span>
+          <span class="side-badges">
+            <span class="badge badge-ok">zh 4/4</span>
+            <span class="badge badge-warn">en 3/4</span>
+            <span class="badge badge-ok">ja 4/4</span>
+          </span>
+        </div>
+        <div class="side-row">
+          <span class="mono side-name">ItemType</span>
+          <span class="side-badges">
+            <span class="badge badge-ok">zh 3/3</span>
+            <span class="badge badge-ok">en 3/3</span>
+            <span class="badge badge-ok">ja 3/3</span>
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close-progress>关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 新增表模态 ================= -->
+<div class="modal-mask" id="table-create-modal" hidden>
+  <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="tc-title">
+    <div class="modal-head">
+      <span id="tc-title">新增表</span>
+      <span class="mono" style="margin-left:10px; font-size:12px; color:var(--ink-3)">由程序建表 · schema 自动校验</span>
+    </div>
+    <div class="modal-body modal-body-lg">
+      <div class="field">
+        <label class="field-label" for="tc-name">表名</label>
+        <input id="tc-name" class="form-input" placeholder="Item">
+        <div class="hint">首字符大写，不含下划线（WYSIWYG 恒等域）</div>
+      </div>
+      <div class="field">
+        <label class="field-label" for="tc-pk">主键字段</label>
+        <input id="tc-pk" class="form-input" value="Id">
+        <div class="hint">类型必须为 int32 或 int64</div>
+      </div>
+      <div class="field">
+        <span class="field-label">字段定义（YAML）</span>
+        <textarea id="tc-fields" class="form-input form-area" placeholder="- name: Id&#10;  type: int32&#10;- name: Name&#10;  type: string&#10;  i18n: true"></textarea>
+        <div class="hint">类型映射与 fbs 结构约定自动校验，命名违规会当场报错</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close-tc>取消</button>
+      <button class="btn btn-ghost">校验 schema</button>
+      <button class="btn btn-primary" data-close-tc id="confirm-tc">创建表格与模板</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 编辑表模态 ================= -->
+<div class="modal-mask" id="table-edit-modal" hidden>
+  <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="te-title">
+    <div class="modal-head">
+      <span id="te-title">编辑表 · <span id="te-name-label">Item</span></span>
+      <span class="mono" style="margin-left:10px; font-size:12px; color:var(--ink-3)">保存后自动校验</span>
+    </div>
+    <div class="modal-body modal-body-lg">
+      <div class="field">
+        <label class="field-label" for="te-name">表名</label>
+        <input id="te-name" class="form-input">
+        <div class="hint">改名会影响 schema 文件与 Excel 文件名，请谨慎</div>
+      </div>
+      <div class="field">
+        <label class="field-label" for="te-pk">主键字段</label>
+        <input id="te-pk" class="form-input">
+        <div class="hint">类型必须为 int32 或 int64</div>
+      </div>
+      <div class="field">
+        <span class="field-label">字段定义（YAML）</span>
+        <textarea id="te-fields" class="form-input form-area"></textarea>
+        <div class="hint">保存修改会自动按新 schema 重建表头并保留已有数据（update-header），保存后即回到“模板已同步”</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close-te>取消</button>
+      <button class="btn btn-primary" data-close-te id="confirm-te">保存修改</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 表详情模态 ================= -->
+<div class="modal-mask" id="table-detail-modal" hidden>
+  <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="tdet-title">
+    <div class="modal-head">
+      <span id="tdet-title">表详情 · <span id="tbl-detail-name">Item</span></span>
+      <span style="flex:1"></span>
+      <span class="badge badge-ok" id="tbl-detail-badge">模板已同步</span>
+    </div>
+    <div class="modal-body modal-body-lg">
+      <div class="kv-grid">
+        <div class="kv-item"><span class="kv-label">主键</span><span class="kv-value" id="kv-pk">Id · int32</span></div>
+        <div class="kv-item"><span class="kv-label">Excel 文件</span><span class="kv-value" id="kv-excel">item.xlsx</span></div>
+        <div class="kv-item"><span class="kv-label">JSON 键</span><span class="kv-value" id="kv-json">items</span></div>
+        <div class="kv-item"><span class="kv-label">规模</span><span class="kv-value" id="kv-count">9 字段 · i18n 2</span></div>
+      </div>
+      <div class="field">
+        <span class="field-label">字段定义</span>
+        <div class="field-list" id="tbl-detail-fields"></div>
+      </div>
+      <div class="hint" id="tbl-drift-hint" hidden style="margin-top:12px">
+        此漂移来自面板外的 schema 变更（如手动修改 YAML 或拉取他人提交）；点击“重建模板（保留数据）”对齐。
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close-tdet>关闭</button>
+      <span style="flex:1"></span>
+      <button class="btn btn-ghost" id="btn-gen-template">生成模板</button>
+      <button class="btn btn-primary" id="btn-edit-table">编辑</button>
+      <button class="btn btn-danger" id="btn-delete-table">删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 删除表确认模态 ================= -->
+<div class="modal-mask" id="table-delete-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="td-title">
+    <div class="modal-head"><span id="td-title">删除表</span></div>
+    <div class="modal-body">
+      <p>将删除 <b id="td-target">Item</b> 的 schema 定义与 Excel 模板，此操作不可恢复。</p>
+      <div class="hint">已导出的产物与翻译文件不受影响；如确认删除，请一并移除 Excel 数据文件。</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close-td>取消</button>
+      <button class="btn btn-danger" data-close-td id="confirm-td">删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= compact 确认模态 ================= -->
+<div class="modal-mask" id="compact-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="compact-title">
+    <div class="modal-head" id="compact-title">确认清理 2 条 orphan 条目</div>
+    <div class="modal-body">
+      <div class="orphan-line">Item.en → "9.Name"（行 9 已删除）</div>
+      <div class="orphan-line">Quest.ja → "3.RewardDesc"（字段已移除）</div>
+      <div class="hint" style="margin-top:8px">删除后不可恢复，翻译文件将从语言包中移除这些 key。</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>取消</button>
+      <button class="btn btn-danger" data-close>确认清理</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// 原型交互：页签切换 + compact 确认模态（最终 Vue 实现会替代）
+function activateTab(name) {
+  document.querySelectorAll('.tab').forEach(function (t) {
+    t.classList.toggle('active', t.dataset.tab === name);
+  });
+  document.querySelectorAll('.tab-page').forEach(function (p) {
+    p.classList.toggle('active', p.id === 'page-' + name);
+  });
+}
+
+document.querySelectorAll('.tab').forEach(function (tab) {
+  tab.addEventListener('click', function () {
+    activateTab(tab.dataset.tab);
+  });
+});
+
+document.getElementById('btn-compact').addEventListener('click', function () {
+  document.getElementById('compact-modal').hidden = false;
+});
+
+document.querySelectorAll('[data-close]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    document.getElementById('compact-modal').hidden = true;
+  });
+});
+
+// 翻译进度弹窗
+var progressBtn = document.getElementById('btn-progress');
+if (progressBtn) {
+  progressBtn.addEventListener('click', function () {
+    document.getElementById('progress-modal').hidden = false;
+  });
+}
+document.querySelectorAll('[data-close-progress]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    document.getElementById('progress-modal').hidden = true;
+  });
+});
+
+// 翻译表选择弹窗（单选）
+var itableBtn = document.getElementById('btn-pick-itable');
+if (itableBtn) {
+  itableBtn.addEventListener('click', function () {
+    var cur = document.getElementById('itable-current').textContent;
+    document.querySelectorAll('input[name="itable"]').forEach(function (r) {
+      r.checked = (r.value === cur);
+    });
+    document.getElementById('itable-modal').hidden = false;
+  });
+}
+document.querySelectorAll('[data-close-itable]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    document.getElementById('itable-modal').hidden = true;
+  });
+});
+var confirmITable = document.getElementById('confirm-itable');
+if (confirmITable) {
+  confirmITable.addEventListener('click', function () {
+    var checked = document.querySelector('input[name="itable"]:checked');
+    if (!checked) { return; }
+    var v = checked.value;
+    document.getElementById('itable-current').textContent = v;
+    document.getElementById('trans-table-name').textContent = v;
+    document.getElementById('itable-modal').hidden = true;
+  });
+}
+
+// 分段控件（表格管理状态筛选）
+document.querySelectorAll('.seg .pill[data-seg]').forEach(function (pill) {
+  pill.addEventListener('click', function () {
+    var group = pill.dataset.seg;
+    document.querySelectorAll('.seg .pill[data-seg="' + group + '"]').forEach(function (x) {
+      x.classList.remove('active');
+    });
+    pill.classList.add('active');
+  });
+});
+
+// hash 直达（供截图/演示）：#export #i18n #tables #logs #history #compact #create-table #edit-table #delete-table
+var initialHash = location.hash.replace('#', '');
+if (['export', 'i18n', 'tables', 'logs', 'history'].indexOf(initialHash) !== -1) {
+  activateTab(initialHash);
+}
+if (initialHash === 'compact') {
+  document.getElementById('compact-modal').hidden = false;
+}
+if (initialHash === 'i18n-table') {
+  activateTab('i18n');
+  document.querySelector('[data-progress-view="table"]').classList.add('active');
+  document.querySelector('[data-progress-view="lang"]').classList.remove('active');
+  document.getElementById('lang-progress').hidden = true;
+  document.getElementById('table-progress').hidden = false;
+  document.getElementById('progress-modal').hidden = false;
+}
+if (initialHash === 'i18n-progress') {
+  activateTab('i18n');
+  document.getElementById('progress-modal').hidden = false;
+}
+if (initialHash === 'i18n-picktable') {
+  activateTab('i18n');
+  document.getElementById('itable-modal').hidden = false;
+}
+// 日志模块筛选
+document.querySelectorAll('.pill[data-module]').forEach(function (pill) {
+  pill.addEventListener('click', function () {
+    document.querySelectorAll('.pill').forEach(function (p) { p.classList.remove('active'); });
+    pill.classList.add('active');
+    var mod = pill.dataset.module;
+    document.querySelectorAll('#log-list .log-row').forEach(function (row) {
+      row.hidden = mod !== 'all' && row.dataset.module !== mod;
+    });
+  });
+});
+
+// ---- 翻译页交互 ----
+// 进度视图：按语言 / 按表
+document.querySelectorAll('[data-progress-view]').forEach(function (p) {
+  p.addEventListener('click', function () {
+    document.querySelectorAll('[data-progress-view]').forEach(function (x) { x.classList.remove('active'); });
+    p.classList.add('active');
+    var view = p.dataset.progressView;
+    document.getElementById('lang-progress').hidden = view !== 'lang';
+    document.getElementById('table-progress').hidden = view !== 'table';
+  });
+});
+
+// 打开翻译 → 切换下方翻译表语言
+document.querySelectorAll('.open-lang').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var v = btn.dataset.lang;
+    document.getElementById('trans-lang-col').textContent = v;
+    document.querySelectorAll('[data-iseg="lang"]').forEach(function (p) {
+      p.classList.toggle('active', p.dataset.value === v);
+    });
+  });
+});
+
+// 翻译页筛选：语言 / 状态（位于翻译表模块头部）
+function bindISeg(seg, fn) {
+  document.querySelectorAll('[data-iseg="' + seg + '"]').forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      document.querySelectorAll('[data-iseg="' + seg + '"]').forEach(function (x) {
+        x.classList.remove('active');
+      });
+      pill.classList.add('active');
+      fn(pill.dataset.value);
+    });
+  });
+}
+bindISeg('lang', function (v) {
+  document.getElementById('trans-lang-col').textContent = v;
+});
+bindISeg('status', function (v) {
+  var any = false;
+  document.querySelectorAll('#page-i18n tbody tr[data-status]').forEach(function (row) {
+    row.hidden = v !== 'all' && row.dataset.status !== v;
+    if (!row.hidden) { any = true; }
+  });
+  document.getElementById('i18n-empty-row').hidden = any;
+});
+
+// 同步全部语言（mock 反馈）
+function flashSync(btn) {
+  var old = btn.textContent;
+  btn.textContent = '已同步 ✓';
+  setTimeout(function () { btn.textContent = old; }, 1200);
+}
+document.getElementById('btn-sync-all').addEventListener('click', function () { flashSync(this); });
+
+// ---- 表格管理页 ----
+var TABLE_DATA = {
+  Item: {
+    pk: 'Id · int32', excel: 'item.xlsx', jsonKey: 'items', count: '9 字段 · i18n 2',
+    badge: 'ok', badgeText: '模板已同步',
+    fields: [['Id', 'int32', '主键'], ['Name', 'string', 'i18n'], ['ItemTypeId', 'int32', 'ref item_type.id'],
+      ['Rarity', 'enum', 'common / rare / epic'], ['DropRange', 'struct', 'min · max'],
+      ['Tags', 'array&lt;int32&gt;', ', 分隔'], ['IsActive', 'bool', 'server_only']],
+    yaml: '- name: Id\n  type: int32\n- name: Name\n  type: string\n  i18n: true\n- name: ItemTypeId\n  type: int32\n  ref: item_type.id\n- name: Rarity\n  type: enum\n  values: [common, rare, epic]\n- name: DropRange\n  type: struct\n  fields:\n    - {name: min, type: int32}\n    - {name: max, type: int32}\n- name: Tags\n  type: array\n  element: int32\n  separator: ","\n- name: IsActive\n  type: bool\n  server_only: true'
+  },
+  Quest: {
+    pk: 'Id · int32', excel: 'quest.xlsx', jsonKey: 'quests', count: '6 字段 · i18n 2',
+    badge: 'warn', badgeText: '模板漂移',
+    fields: [['Id', 'int32', '主键'], ['Name', 'string', 'i18n'], ['Desc', 'string', 'i18n'],
+      ['Level', 'int32', ''], ['Reward', 'struct', 'item · count'], ['IsActive', 'bool', '']],
+    yaml: '- name: Id\n  type: int32\n- name: Name\n  type: string\n  i18n: true\n- name: Desc\n  type: string\n  i18n: true\n- name: Level\n  type: int32\n- name: Reward\n  type: struct\n  fields:\n    - {name: item, type: int32}\n    - {name: count, type: int32}\n- name: IsActive\n  type: bool'
+  },
+  ItemType: {
+    pk: 'Id · int32', excel: 'item_type.xlsx', jsonKey: 'item_types', count: '3 字段 · i18n 1',
+    badge: 'ok', badgeText: '模板已同步',
+    fields: [['Id', 'int32', '主键'], ['Name', 'string', 'i18n'], ['Order', 'int32', '']],
+    yaml: '- name: Id\n  type: int32\n- name: Name\n  type: string\n  i18n: true\n- name: Order\n  type: int32'
+  },
+  UIConfig: {
+    pk: 'Id · int32', excel: 'ui_config.xlsx', jsonKey: 'ui_configs', count: '4 字段',
+    badge: 'ok', badgeText: '模板已同步',
+    fields: [['Id', 'int32', '主键'], ['Key', 'string', ''], ['Value', 'string', ''], ['IsActive', 'bool', '']],
+    yaml: '- name: Id\n  type: int32\n- name: Key\n  type: string\n- name: Value\n  type: string\n- name: IsActive\n  type: bool'
+  }
+};
+
+function renderTableDetail(name) {
+  var d = TABLE_DATA[name];
+  document.getElementById('tbl-detail-name').textContent = name;
+  var badge = document.getElementById('tbl-detail-badge');
+  badge.className = 'badge ' + (d.badge === 'ok' ? 'badge-ok' : 'badge-warn');
+  badge.textContent = d.badgeText;
+  document.getElementById('kv-pk').textContent = d.pk;
+  document.getElementById('kv-excel').textContent = d.excel;
+  document.getElementById('kv-json').textContent = d.jsonKey;
+  document.getElementById('kv-count').textContent = d.count;
+  document.getElementById('tbl-drift-hint').hidden = d.badge !== 'warn';
+  var genBtn = document.getElementById('btn-gen-template');
+  if (d.badge === 'ok') {
+    genBtn.disabled = true;
+    genBtn.textContent = '模板已同步';
+    genBtn.title = 'schema 与 Excel 表头一致，无需重建';
+  } else {
+    genBtn.disabled = false;
+    genBtn.textContent = '重建模板（保留数据）';
+    genBtn.title = '按最新 schema 重建表头，已有数据保留（update-header）';
+  }
+  document.getElementById('tbl-detail-fields').innerHTML = d.fields.map(function (f) {
+    return '<div class="field-row"><span class="mono">' + f[0] + '</span><span class="tag">' + f[1] +
+      '</span><span class="f-meta">' + f[2] + '</span></div>';
+  }).join('');
+}
+
+function openTableDetail(name) {
+  renderTableDetail(name);
+  document.getElementById('table-detail-modal').hidden = false;
+}
+
+function openEditModal(name) {
+  var d = TABLE_DATA[name];
+  document.getElementById('te-name-label').textContent = name;
+  document.getElementById('te-name').value = name;
+  document.getElementById('te-pk').value = d.pk.split(' · ')[0];
+  document.getElementById('te-fields').value = d.yaml;
+  document.getElementById('table-edit-modal').hidden = false;
+}
+
+function openDeleteModal(name) {
+  document.getElementById('td-target').textContent = name;
+  document.getElementById('table-delete-modal').hidden = false;
+}
+
+document.querySelectorAll('#page-tables .schema-row').forEach(function (row) {
+  row.addEventListener('click', function () { openTableDetail(row.dataset.name); });
+});
+document.querySelectorAll('#page-tables .btn-row-detail').forEach(function (btn) {
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    openTableDetail(btn.closest('.schema-row').dataset.name);
+  });
+});
+
+function applyTblFilters() {
+  var q = document.getElementById('tbl-search').value.trim().toLowerCase();
+  var active = document.querySelector('[data-seg="tbl-status"].active');
+  var sv = active ? active.dataset.value : 'all';
+  var any = false;
+  document.querySelectorAll('#page-tables .schema-row').forEach(function (row) {
+    var hitName = q === '' || row.dataset.name.toLowerCase().indexOf(q) !== -1;
+    var hitStatus = sv === 'all' || row.dataset.badge === sv;
+    row.hidden = !(hitName && hitStatus);
+    if (!row.hidden) { any = true; }
+  });
+  document.getElementById('tbl-empty').hidden = any;
+}
+document.getElementById('tbl-search').addEventListener('input', applyTblFilters);
+
+document.querySelectorAll('[data-seg="tbl-status"]').forEach(function (pill) {
+  pill.addEventListener('click', applyTblFilters);
+});
+
+document.getElementById('btn-create-table').addEventListener('click', function () {
+  document.getElementById('table-create-modal').hidden = false;
+});
+document.querySelectorAll('[data-close-tc]').forEach(function (btn) {
+  btn.addEventListener('click', function () { document.getElementById('table-create-modal').hidden = true; });
+});
+document.querySelectorAll('[data-close-te]').forEach(function (btn) {
+  btn.addEventListener('click', function () { document.getElementById('table-edit-modal').hidden = true; });
+});
+document.querySelectorAll('[data-close-td]').forEach(function (btn) {
+  btn.addEventListener('click', function () { document.getElementById('table-delete-modal').hidden = true; });
+});
+document.querySelectorAll('[data-close-tdet]').forEach(function (btn) {
+  btn.addEventListener('click', function () { document.getElementById('table-detail-modal').hidden = true; });
+});
+document.getElementById('btn-edit-table').addEventListener('click', function () {
+  var name = document.getElementById('tbl-detail-name').textContent;
+  document.getElementById('table-detail-modal').hidden = true;
+  openEditModal(name);
+});
+document.getElementById('btn-delete-table').addEventListener('click', function () {
+  var name = document.getElementById('tbl-detail-name').textContent;
+  document.getElementById('table-detail-modal').hidden = true;
+  openDeleteModal(name);
+});
+
+// 长译文：两行预览 + 点击展开编辑（失焦收起）
+function autoGrow(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
+}
+function expandRowSource(row) {
+  var src = row.querySelector('.src-text');
+  if (src) { src.classList.add('expanded'); }
+}
+function collapseRowSource(row) {
+  var src = row.querySelector('.src-text');
+  if (src) { src.classList.remove('expanded'); }
+}
+document.querySelectorAll('.trans-preview').forEach(function (pv) {
+  pv.addEventListener('click', function () {
+    var cell = pv.closest('.trans-cell');
+    var ta = cell.querySelector('.trans-input');
+    if (!ta) { return; }
+    ta.value = pv.classList.contains('placeholder') ? '' : pv.textContent;
+    expandRowSource(pv.closest('tr'));
+    pv.hidden = true;
+    ta.hidden = false;
+    ta.focus();
+    autoGrow(ta);
+  });
+});
+document.querySelectorAll('.trans-cell .trans-input').forEach(function (ta) {
+  ta.addEventListener('input', function () { autoGrow(ta); });
+  ta.addEventListener('blur', function () {
+    var cell = ta.closest('.trans-cell');
+    var pv = cell.querySelector('.trans-preview');
+    collapseRowSource(ta.closest('tr'));
+    ta.hidden = true;
+    pv.hidden = false;
+    if (ta.value.trim()) {
+      pv.textContent = ta.value;
+      pv.classList.remove('placeholder');
+    } else {
+      pv.textContent = '点击填写译文…';
+      pv.classList.add('placeholder');
+    }
+  });
+});
+document.querySelectorAll('.trans-input:not(.is-area)').forEach(function (ta) {
+  ta.addEventListener('focus', function () { expandRowSource(ta.closest('tr')); });
+  ta.addEventListener('blur', function () { collapseRowSource(ta.closest('tr')); });
+});
+
+// 保存译文 → 标记 translated
+document.querySelectorAll('.save-trans').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var row = btn.closest('tr');
+    var input = row.querySelector('.trans-input');
+    if (input && !input.value.trim()) { return; }
+    var cell = row.querySelectorAll('td')[4];
+    cell.innerHTML = '<span class="badge badge-ok">translated</span>';
+    row.dataset.status = 'translated';
+    if (input) { input.disabled = true; }
+    btn.textContent = '已保存';
+    btn.classList.remove('btn-accent');
+    btn.classList.add('btn-ghost');
+  });
+});
+
+// 忽略全局错误横幅（下次出错时重新出现）
+var bannerDismiss = document.getElementById('banner-dismiss');
+if (bannerDismiss) {
+  bannerDismiss.addEventListener('click', function () {
+    document.getElementById('global-error-banner').hidden = true;
+  });
+}
+
+// hash 直达（表格管理弹窗，需在表格管理 JS 之后执行）
+if (initialHash === 'create-table') {
+  activateTab('tables');
+  document.getElementById('table-create-modal').hidden = false;
+}
+if (initialHash === 'edit-table') {
+  activateTab('tables');
+  openEditModal('Item');
+}
+if (initialHash === 'delete-table') {
+  activateTab('tables');
+  openDeleteModal('Item');
+}
+if (initialHash === 'table-detail') {
+  activateTab('tables');
+  openTableDetail('Item');
+}
+if (initialHash === 'tables-drift') {
+  activateTab('tables');
+  openTableDetail('Quest');
+}
+if (initialHash === 'tables-empty') {
+  activateTab('tables');
+  document.getElementById('tbl-search').value = 'zzz';
+  applyTblFilters();
+}
+if (initialHash === 'tables-scrolled') {
+  activateTab('tables');
+  setTimeout(function () { window.scrollTo(0, 560); }, 0);
+}
+if (initialHash === 'i18n-long') {
+  activateTab('i18n');
+  document.querySelector('#page-i18n .trans-preview').click();
+}
+</script>
+</body>
+</html>
