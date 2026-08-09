@@ -21,6 +21,7 @@ from typing import Any
 from openpyxl import load_workbook
 
 from ct.schema.models import FieldDef, TableSchema
+from ct.schema.type_traits import TYPE_TRAITS
 
 logger = logging.getLogger(__name__)
 
@@ -56,68 +57,6 @@ def leaf_column_map(schema: TableSchema) -> dict[str, int]:
     return result
 
 
-# ---------------------------------------------------------------------------
-# Type coercion
-# ---------------------------------------------------------------------------
-
-_BOOL_TRUE = frozenset({"true", "1", "yes", "TRUE", "True", "YES", "Yes"})
-_BOOL_FALSE = frozenset({"false", "0", "no", "FALSE", "False", "NO", "No"})
-
-
-def _coerce_scalar(value: Any, type_name: str, *, array_element: bool = False) -> Any:
-    """共享标量转换（int 与 bool 的语义按来源区分：Python 值 vs 字符串元素）。
-
-    - ``array_element=True`` 时 int 走字符串拆分路径（``int(float(v))``），
-      bool 报错文案带"数组元素"前缀；
-    - 类型转换失败**不抛异常**，返回原值——"类型不对"的判定统一交给
-      校验器（``validate_table``），保证 CLI 输出结构化错误而非
-      Python traceback（Change 2 规格要求）。
-    """
-    if type_name in ("int32", "int64"):
-        try:
-            if array_element:
-                return int(float(value)) if "." in value else int(value)
-            if isinstance(value, float) and value == int(value):
-                return int(value)
-            return int(value)
-        except (TypeError, ValueError):
-            return value
-    if type_name in ("float", "double"):
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return value
-    if type_name == "bool":
-        if isinstance(value, bool):
-            return value
-        s = str(value).strip()
-        if s in _BOOL_TRUE:
-            return True
-        if s in _BOOL_FALSE:
-            return False
-        return value
-    if type_name == "string":
-        return str(value)
-    if type_name == "enum":
-        return str(value)
-    return value
-
-
-def _coerce(value: Any, field: FieldDef) -> Any:
-    """Convert a raw cell value to the expected Python type."""
-    if value is None:
-        return None
-    # For leaf fields inside structs, type_name is already the leaf type.
-    return _coerce_scalar(value, field.type)
-
-
-def _coerce_element(value: str, element_type: str) -> Any:
-    """Coerce a single array element string to the declared element type."""
-    value = value.strip()
-    return _coerce_scalar(value, element_type, array_element=True)
-
-
-# ---------------------------------------------------------------------------
 # Row parsing
 # ---------------------------------------------------------------------------
 
@@ -162,20 +101,9 @@ def _parse_row(
         top_field = next((f for f in top_fields if f.name == top_name), None)
 
         if top_field and top_field.type == "array" and "." not in dotted_path:
-            # Array: split cell by separator
-            if raw is None or (isinstance(raw, str) and not raw.strip()):
-                flat[dotted_path] = []
-            else:
-                raw_str = str(raw)
-                sep = top_field.separator or ","
-                elements = [
-                    _coerce_element(e, top_field.element)
-                    for e in raw_str.split(sep)
-                    if e.strip()
-                ]
-                flat[dotted_path] = elements
+            flat[dotted_path] = TYPE_TRAITS["array"].coerce(top_field, raw)
         else:
-            flat[dotted_path] = _coerce(raw, field)
+            flat[dotted_path] = TYPE_TRAITS[field.type].coerce(field, raw)
 
     return _build_nested_dict(flat)
 

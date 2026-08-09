@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from ct.schema.models import TableSchema
+from ct.schema.type_traits import TYPE_TRAITS
 
 
 def serialize_row(row: dict[str, Any], schema: TableSchema) -> dict[str, Any]:
@@ -12,23 +13,7 @@ def serialize_row(row: dict[str, Any], schema: TableSchema) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for field in schema.fields:
         value = row.get(field.name)
-        if field.type == "enum":
-            result[field.name] = str(value) if value is not None else None
-        elif field.type == "struct" and field.fields:
-            if isinstance(value, dict):
-                result[field.name] = value
-            else:
-                result[field.name] = None
-        elif field.type == "array":
-            if isinstance(value, list):
-                if field.element == "enum":
-                    result[field.name] = [str(v) for v in value]
-                else:
-                    result[field.name] = value
-            else:
-                result[field.name] = []
-        else:
-            result[field.name] = value
+        result[field.name] = TYPE_TRAITS[field.type].json_value(field, value)
     return result
 
 

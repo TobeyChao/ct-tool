@@ -8,34 +8,16 @@ strings from arrays built during ``Preload()``.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from ct.export.accessor_model import build_accessor_model
 from ct.schema.models import FieldDef, TableSchema
+from ct.schema.type_traits import TYPE_TRAITS, csharp_element_type
 
-
-
-
-# Schema type -> C# type used in accessor return values
-_CS_TYPE_MAP: dict[str, str] = {
-    "int32": "int",
-    "int64": "long",
-    "float": "float",
-    "double": "double",
-    "bool": "bool",
-    "string": "string",
-    "enum": "byte",
-}
 
 def _cs_return_type(field: FieldDef) -> str:
     """Return the C# type string for a field's accessor return value."""
-    if field.type == "array":
-        elem_type = _CS_TYPE_MAP.get(field.element or "", "int")
-        if field.element == "enum":
-            elem_type = "byte"
-        return f"{elem_type}[]"
-    if field.type == "struct":
-        return f"{field.name}Struct"  # FlatBuffers table type
-    return _CS_TYPE_MAP.get(field.type, "int")
+    return TYPE_TRAITS[field.type].csharp_type(field)
 
 
 # ---- code generation --------------------------------------------------------
@@ -56,7 +38,7 @@ def generate_csharp_accessor(schema: TableSchema, output_dir: Path) -> Path:
 
     # Determine primary key info
     pk = model.primary
-    pk_cs_type = _CS_TYPE_MAP.get(pk.type, "int")
+    pk_cs_type = csharp_element_type(pk.type)
 
     lines: list[str] = []
     w = lines.append  # shorthand
@@ -223,50 +205,100 @@ def _emit_field_accessor(
     w("    {")
     w("        int idx = _GetRowIndex(id);")
 
-    if field.type == "string":
-        # String fields: return from pre-materialized array
-        if field.i18n and schema.has_i18n:
-            w("        // i18n: check i18n array first, fallback to main")
-            w(f"        if (_i18nIndex != null && _i18nIndex.TryGetValue(id, out int i18nIdx))")
-            w("        {")
-            w(f"            string i18nVal = _i18nStr_{field.name}[i18nIdx];")
-            w("            if (i18nVal != null)")
-            w("                return i18nVal;")
-            w("        }")
-        w(f"        return _str_{field.name}[idx];")
-
-    elif field.type in ("int32", "int64", "float", "double", "bool"):
-        # Scalar fields: read from ByteBuffer via FlatBuffers row accessor
-        accessor = field.name
-        w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
-        w(f"        return root.Items(idx).Value.{accessor};")
-
-    elif field.type == "enum":
-        # Enum: return byte value via FlatBuffers row accessor
-        accessor = field.name
-        w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
-        w(f"        return (byte)root.Items(idx).Value.{accessor};")
-
-    elif field.type == "struct":
-        accessor = field.name
-        w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
-        w(f"        return root.Items(idx).Value.{accessor}.Value;")
-
-    elif field.type == "array":
-        accessor = field.name
-        elem_cs = _CS_TYPE_MAP.get(field.element or "", "int")
-        if field.element == "enum":
-            elem_cs = "byte"
-        w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
-        w(f"        var row = root.Items(idx).Value;")
-        w(f"        int len = row.{accessor}Length;")
-        w(f"        var arr = new {elem_cs}[len];")
-        w("        for (int i = 0; i < len; i++)")
-        if field.element == "enum":
-            w(f"            arr[i] = (byte)row.{accessor}(i);")
-        else:
-            w(f"            arr[i] = row.{accessor}(i);")
-        w("        return arr;")
+    _CS_ACCESSOR_EMITTERS[field.type](w, schema, field, table_pascal, pk_cs_type)
 
     w("    }")
     w("")
+
+
+def _emit_string_accessor(
+    w,
+    schema: TableSchema,
+    field: FieldDef,
+    table_pascal: str,
+    pk_cs_type: str,
+) -> None:
+    """String 字段：返回预物化数组（i18n 优先，回退主 bundle）。"""
+    if field.i18n and schema.has_i18n:
+        w("        // i18n: check i18n array first, fallback to main")
+        w(f"        if (_i18nIndex != null && _i18nIndex.TryGetValue(id, out int i18nIdx))")
+        w("        {")
+        w(f"            string i18nVal = _i18nStr_{field.name}[i18nIdx];")
+        w("            if (i18nVal != null)")
+        w("                return i18nVal;")
+        w("        }")
+    w(f"        return _str_{field.name}[idx];")
+
+
+def _emit_scalar_accessor(
+    w,
+    schema: TableSchema,
+    field: FieldDef,
+    table_pascal: str,
+    pk_cs_type: str,
+) -> None:
+    """标量字段：经 FlatBuffers row accessor 读取。"""
+    accessor = field.name
+    w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
+    w(f"        return root.Items(idx).Value.{accessor};")
+
+
+def _emit_enum_accessor(
+    w,
+    schema: TableSchema,
+    field: FieldDef,
+    table_pascal: str,
+    pk_cs_type: str,
+) -> None:
+    """enum：返回 byte 值。"""
+    accessor = field.name
+    w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
+    w(f"        return (byte)root.Items(idx).Value.{accessor};")
+
+
+def _emit_struct_accessor(
+    w,
+    schema: TableSchema,
+    field: FieldDef,
+    table_pascal: str,
+    pk_cs_type: str,
+) -> None:
+    """struct：返回 FlatBuffers table 值。"""
+    accessor = field.name
+    w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
+    w(f"        return root.Items(idx).Value.{accessor}.Value;")
+
+
+def _emit_array_accessor(
+    w,
+    schema: TableSchema,
+    field: FieldDef,
+    table_pascal: str,
+    pk_cs_type: str,
+) -> None:
+    """array：按元素类型物化数组。"""
+    accessor = field.name
+    elem_cs = csharp_element_type(field.element or "")
+    w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
+    w(f"        var row = root.Items(idx).Value;")
+    w(f"        int len = row.{accessor}Length;")
+    w(f"        var arr = new {elem_cs}[len];")
+    w("        for (int i = 0; i < len; i++)")
+    if field.element == "enum":
+        w(f"            arr[i] = (byte)row.{accessor}(i);")
+    else:
+        w(f"            arr[i] = row.{accessor}(i);")
+    w("        return arr;")
+
+
+_CS_ACCESSOR_EMITTERS: dict[str, Any] = {
+    "string": _emit_string_accessor,
+    "int32": _emit_scalar_accessor,
+    "int64": _emit_scalar_accessor,
+    "float": _emit_scalar_accessor,
+    "double": _emit_scalar_accessor,
+    "bool": _emit_scalar_accessor,
+    "enum": _emit_enum_accessor,
+    "struct": _emit_struct_accessor,
+    "array": _emit_array_accessor,
+}

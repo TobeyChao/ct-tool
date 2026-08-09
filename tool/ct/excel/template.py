@@ -40,6 +40,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 from ct.schema.hashing import compute_schema_hash
 from ct.schema.models import FieldDef, TableSchema
+from ct.schema.type_traits import TYPE_TRAITS
 
 logger = logging.getLogger(__name__)
 
@@ -107,28 +108,7 @@ def _collect_leaf_fields(fields: list[FieldDef], start_col: int) -> list[tuple[F
 
 def _type_annotation(field: FieldDef) -> str:
     """Build a human-readable type annotation for the type row."""
-    base = field.type
-
-    if field.type == "enum":
-        vals = ",".join(field.values or [])
-        return f"enum[{vals}]"
-
-    if field.type == "array":
-        element = field.element or "?"
-        if element == "enum":
-            vals = ",".join(field.element_values or [])
-            return f"array<enum[{vals}]>"
-        return f"array<{element}>"
-
-    # Basic types with optional qualifiers
-    parts: list[str] = []
-    if field.ref:
-        parts.append(f"ref:{field.ref}")
-    if field.i18n:
-        parts.append("i18n")
-    if parts:
-        return f"{base}[{','.join(parts)}]"
-    return base
+    return TYPE_TRAITS[field.type].excel_annotation(field)
 
 
 # ---------------------------------------------------------------------------
@@ -151,7 +131,7 @@ def _make_name_type_richtext(name: str, type_text: str) -> CellRichText:
 
 def _struct_type_label(field: FieldDef) -> str:
     """Type label shown beneath a struct field's name (matches FBS table name)."""
-    return f"{field.name}Struct"
+    return TYPE_TRAITS["struct"].excel_annotation(field)
 
 
 # ---------------------------------------------------------------------------

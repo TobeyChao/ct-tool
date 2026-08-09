@@ -28,22 +28,22 @@
 
 ## 2. 阶段 B：字段类型 traits 注册表
 
-- [ ] 2.1 新增 `tool/ct/schema/type_traits.py`：`FieldTraits` dataclass
+- [x] 2.1 新增 `tool/ct/schema/type_traits.py`：`FieldTraits` dataclass
       （coerce / validate / fbs_type / json_value / csharp_type /
       excel_annotation）+ `TYPE_TRAITS` 注册表；enum/struct/array 组合逻辑
       集中于此；新增覆盖测试遍历 `ALL_FIELD_TYPES` 断言每张分派表有 handler
-- [ ] 2.2 `excel/reader.py` 的 `_coerce` / `_coerce_element` 改查表（保留
+- [x] 2.2 `excel/reader.py` 的 `_coerce` / `_coerce_element` 改查表（保留
       array_element 语义、bool 别名集、int 截断规则；先跑 reader/validate
       特征测试）
-- [ ] 2.3 `validate/types.py::_validate_field_value` 改查表
-- [ ] 2.4 `schema/repository.py::_resolve_field_type` 改查表（fbs 类型）
-- [ ] 2.5 `export/binary_writer.py` 标量槽位 / 向量 / `_build_struct` /
+- [x] 2.3 `validate/types.py::_validate_field_value` 改查表
+- [x] 2.4 `schema/repository.py::_resolve_field_type` 改查表（fbs 类型）
+- [x] 2.5 `export/binary_writer.py` 标量槽位 / 向量 / `_build_struct` /
       `build_table_bytes` / `_build_array` 分派改查表
-- [ ] 2.6 `export/json_writer.py` 字段序列化改查表
-- [ ] 2.7 `export/csharp_accessor_generator.py` 类型映射与字段访问器分支
+- [x] 2.6 `export/json_writer.py` 字段序列化改查表
+- [x] 2.7 `export/csharp_accessor_generator.py` 类型映射与字段访问器分支
       改查表
-- [ ] 2.8 `excel/template.py` 表头类型注解改查表
-- [ ] 2.9 golden 测试（json / binary / fbs / csharp / lua）全绿，`git diff`
+- [x] 2.8 `excel/template.py` 表头类型注解改查表
+- [x] 2.9 golden 测试（json / binary / fbs / csharp / lua）全绿，`git diff`
       复核产物逐字不变；`cd tool && pytest` 全绿，提交阶段 B
 
 ## 3. 阶段 C：coercion 契约显式化

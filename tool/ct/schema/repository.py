@@ -15,6 +15,7 @@ import pydantic
 from ct.schema.conventions import FbsConvention
 from ct.schema.models import FieldDef
 from ct.schema.models import TableSchema
+from ct.schema.type_traits import TYPE_TRAITS
 
 
 def _schema_error_text(exc: Exception) -> str:
@@ -54,29 +55,20 @@ def _generate_enum(field: FieldDef) -> str:
     return f"enum {name} : byte {{ {entries} }}"
 
 
-def _generate_struct_table(field: FieldDef, enums: list[str]) -> str:
+def _generate_struct_table(field: FieldDef) -> str:
     """为 struct 生成 FlatBuffers table（非 struct）定义。"""
     name = f"{field.name}{FbsConvention.STRUCT_SUFFIX}"
     lines = [f"table {name} {{"]
     for sf in field.fields or []:
-        fb_type = _resolve_field_type(sf, enums)
+        fb_type = _resolve_field_type(sf)
         lines.append(f"  {sf.name}: {fb_type};")
     lines.append("}")
     return "\n".join(lines)
 
 
-def _resolve_field_type(field: FieldDef, enums: list[str]) -> str:
-    """解析字段的 FlatBuffers 类型。"""
-    if field.type == "enum":
-        return f"{field.name}{FbsConvention.ENUM_SUFFIX}"
-    elif field.type == "struct":
-        return f"{field.name}{FbsConvention.STRUCT_SUFFIX}"
-    elif field.type == "array":
-        if field.element == "enum":
-            return f"[{field.name}{FbsConvention.ELEM_SUFFIX}]"
-        return f"[{FbsConvention.TYPE_MAP.get(field.element, field.element)}]"
-    else:
-        return FbsConvention.TYPE_MAP.get(field.type, field.type)
+def _resolve_field_type(field: FieldDef) -> str:
+    """解析字段的 FlatBuffers 类型（查 type_traits 注册表）。"""
+    return TYPE_TRAITS[field.type].fbs_type(field)
 
 
 def _collect_nested(
@@ -90,7 +82,7 @@ def _collect_nested(
             enums.append(_generate_enum(sf))
         elif sf.type == "struct":
             _collect_nested(sf, enums, struct_tables)
-    struct_tables.append(_generate_struct_table(field, enums))
+    struct_tables.append(_generate_struct_table(field))
 
 
 def _schema_fbs_text(schema: TableSchema) -> str:
@@ -124,7 +116,7 @@ def _schema_fbs_text(schema: TableSchema) -> str:
     for field in schema.fields:
         if field.server_only:
             continue
-        fb_type = _resolve_field_type(field, enums)
+        fb_type = _resolve_field_type(field)
         lines.append(f"  {field.name}: {fb_type};")
     lines.append("}")
     lines.append("")
@@ -143,7 +135,7 @@ def _i18n_fbs_text(schema: TableSchema) -> str:
     """生成 i18n 变体 .fbs 文本（零外部依赖，自带 root_type）。"""
     table_name = schema.table
     pk_field = schema.primary_field
-    pk_type = FbsConvention.TYPE_MAP.get(pk_field.type, pk_field.type)
+    pk_type = TYPE_TRAITS[pk_field.type].fbs_type(pk_field)
 
     i18n_lines: list[str] = []
     i18n_lines.append(f"table {table_name}{FbsConvention.I18N_ENTRY_SUFFIX} {{")

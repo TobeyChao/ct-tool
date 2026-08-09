@@ -7,6 +7,7 @@ from typing import Any
 import flatbuffers
 
 from ct.schema.models import FieldDef, TableSchema
+from ct.schema.type_traits import OFFSET_TYPES
 
 logger = logging.getLogger(__name__)
 
@@ -14,9 +15,6 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Slot / vector writers（函数组合成类 6.9：查表取代重复的 if/elif 链）
 # ---------------------------------------------------------------------------
-
-_OFFSET_TYPES = frozenset({"string", "struct", "array"})
-
 
 def _slot_enum(builder: flatbuffers.Builder, slot: int, field: FieldDef, value: Any) -> None:
     values = field.values or []
@@ -62,7 +60,7 @@ def _prepend_slot(
     offset: int | None = None,
 ) -> None:
     """按字段类型写入 vtable slot；string/struct/array 使用预构建的 offset。"""
-    if field.type in _OFFSET_TYPES:
+    if field.type in OFFSET_TYPES:
         if offset is not None:
             builder.PrependUOffsetTRelativeSlot(slot, offset, 0)
         return
@@ -132,10 +130,12 @@ _ELEMENT_VECTOR_WRITERS: dict[str, Any] = {
 }
 
 
-def _build_string(builder: flatbuffers.Builder, s: str | None) -> int | None:
-    if s is None:
+def _build_string(
+    builder: flatbuffers.Builder, field: FieldDef, value: Any
+) -> int | None:
+    if value is None:
         return None
-    return builder.CreateString(str(s))
+    return builder.CreateString(str(value))
 
 
 def _build_value(
@@ -144,19 +144,10 @@ def _build_value(
     value: Any,
 ) -> Any:
     """将一个字段值转换为 FlatBuffers 可用的值或 offset。"""
-    if field.type == "string":
-        return _build_string(builder, value)
-    elif field.type == "enum":
-        values = field.values or []
-        if value in values:
-            return values.index(value)
-        return 0
-    elif field.type == "struct":
-        return _build_struct(builder, field, value or {})
-    elif field.type == "array":
-        return _build_array(builder, field, value or [])
-    else:
+    builder_fn = _OFFSET_BUILDERS.get(field.type)
+    if builder_fn is None:
         return value
+    return builder_fn(builder, field, value)
 
 
 def _build_struct(
@@ -170,7 +161,7 @@ def _build_struct(
     offsets: dict[str, Any] = {}
     for sf in sub_fields:
         val = data.get(sf.name)
-        if sf.type in _OFFSET_TYPES:
+        if sf.type in OFFSET_TYPES:
             offsets[sf.name] = _build_value(builder, sf, val)
 
     num_fields = len(sub_fields)
@@ -192,6 +183,13 @@ def _build_array(
     return writer(builder, field, values)
 
 
+_OFFSET_BUILDERS: dict[str, Any] = {
+    "string": _build_string,
+    "struct": _build_struct,
+    "array": _build_array,
+}
+
+
 def build_table_bytes(
     rows: list[dict[str, Any]],
     schema: TableSchema,
@@ -209,7 +207,7 @@ def build_table_bytes(
         field_offsets: dict[str, Any] = {}
         for f in active_fields:
             val = row.get(f.name)
-            if f.type in _OFFSET_TYPES:
+            if f.type in OFFSET_TYPES:
                 field_offsets[f.name] = _build_value(builder, f, val)
 
         num_fields = len(active_fields)
@@ -254,10 +252,8 @@ def build_i18n_table_bytes(
         builder.StartObject(num_fields)
         # pk
         pk_val = row.get(pk_field.name, 0)
-        if pk_field.type == "int32":
-            builder.PrependInt32Slot(0, int(pk_val), 0)
-        elif pk_field.type == "int64":
-            builder.PrependInt64Slot(0, int(pk_val), 0)
+        # 主键类型已被 schema 约束为 int32/int64（见 schema/models 校验）。
+        _SCALAR_SLOT_WRITERS[pk_field.type](builder, 0, pk_field, pk_val)
         # i18n string fields
         for i, f in enumerate(i18n_fields):
             builder.PrependUOffsetTRelativeSlot(1 + i, str_offsets[f.name], 0)
