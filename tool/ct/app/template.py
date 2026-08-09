@@ -59,9 +59,8 @@ def decide_template_action(
 ) -> Decision:
     """Return what to do with *path* given the schema and the user's flags.
 
-    See specs/cli-interface decision matrix. ``--force`` and
-    ``--update-header`` are mutually compatible flags; if both are given,
-    ``--update-header`` wins (data-preserving path is the safer choice).
+    ``--force`` and ``--update-header`` are mutually compatible flags; if both
+    are given, ``--update-header`` wins (data-preserving path is the safer choice).
     """
     table = schema.table
 

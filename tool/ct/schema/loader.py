@@ -1,39 +1,8 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
-from pathlib import Path
-
-import yaml
 
 from ct.schema.models import TableSchema
-
-
-def load_schemas(schemas_dir: Path) -> list[TableSchema]:
-    if not schemas_dir.exists():
-        raise FileNotFoundError(f"Schema 目录不存在: {schemas_dir}")
-
-    schemas: list[TableSchema] = []
-    seen_names: dict[str, Path] = {}
-
-    for yaml_path in sorted(schemas_dir.glob("*.yaml")):
-        with open(yaml_path, encoding="utf-8") as f:
-            data = yaml.safe_load(f)
-        if data is None:
-            continue
-        try:
-            schema = TableSchema(**data)
-        except Exception as e:
-            raise ValueError(f"加载 schema 失败 [{yaml_path.name}]: {e}") from e
-
-        if schema.table in seen_names:
-            raise ValueError(
-                f"表名 '{schema.table}' 重复: "
-                f"{seen_names[schema.table].name} 和 {yaml_path.name}"
-            )
-        seen_names[schema.table] = yaml_path
-        schemas.append(schema)
-
-    return schemas
 
 
 def build_dependency_graph(
@@ -85,10 +54,10 @@ def topological_sort(graph: dict[str, set[str]]) -> list[str]:
     return result
 
 
-def load_and_sort_schemas(
-    schemas_dir: Path,
+def sort_schemas(
+    schemas: list[TableSchema],
 ) -> tuple[list[TableSchema], list[str]]:
-    schemas = load_schemas(schemas_dir)
+    """按 ref 依赖拓扑排序（格式无关：只认 canonical 模型）。"""
     if not schemas:
         return [], []
     graph = build_dependency_graph(schemas)

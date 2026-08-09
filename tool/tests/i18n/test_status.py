@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from ct.cli_helpers.i18n_json import dump_lang_file
+from ct.export.i18n.io import dump_lang_file
 from ct.config import GlobalConfig
 from ct.export.i18n.status import (
     compute_status_report,

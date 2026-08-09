@@ -9,6 +9,7 @@ from pydantic import BaseModel, field_validator
 class GlobalConfig(BaseModel):
     primary_lang: str
     secondary_langs: list[str] = []
+    schema_format: str = "yaml"
     flatc_path: str = "tools/flatc"
     schemas_dir: str = "config/schemas"
     excel_dir: str = "excel"
@@ -33,23 +34,11 @@ class GlobalConfig(BaseModel):
     def all_langs(self) -> list[str]:
         return [self.primary_lang] + self.secondary_langs
 
-
-_cfg: GlobalConfig | None = None
-
-
 def load_config(project_root: Path | None = None) -> GlobalConfig:
-    global _cfg
     root = (project_root or Path(".")).resolve()
     config_path = root / "config" / "global.yaml"
     if not config_path.exists():
         raise FileNotFoundError(f"配置文件不存在: {config_path}")
     with open(config_path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
-    _cfg = GlobalConfig(project_root=root, **data)
-    return _cfg
-
-
-def get_config() -> GlobalConfig:
-    if _cfg is None:
-        raise RuntimeError("配置尚未加载，请先调用 load_config()")
-    return _cfg
+    return GlobalConfig(project_root=root, **data)

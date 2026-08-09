@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ct.cli_helpers.i18n_json import dump_source_file
+from ct.export.i18n.io import dump_source_file
 from ct.schema.models import TableSchema
 
 

@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
-from ct.cli_helpers.i18n_json import dump_lang_file
+from ct.export.i18n.io import dump_lang_file
 from ct.config import GlobalConfig
 from ct.export.i18n.extractor import (
     extract_source_for_table,

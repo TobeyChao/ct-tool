@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from ct.schema.models import FieldDef, TableSchema
-from ct.validate.errors import format_error
+from ct.validate.errors import IssueCode, ValidationIssue
 
 
 def _resolve_ref_target(ref: str) -> tuple[str, str]:
@@ -45,7 +45,7 @@ def validate_refs(
     rows: list[dict],
     schema: TableSchema,
     id_sets: dict[str, set],
-) -> list[str]:
+) -> list[ValidationIssue]:
     """Validate cross-table references for all rows.
 
     For each field that declares a ``ref``, check that every value (or
@@ -61,7 +61,7 @@ def validate_refs(
     Returns:
         List of formatted error message strings.
     """
-    errors: list[str] = []
+    errors: list[ValidationIssue] = []
     table_name = schema.table
 
     # Collect fields with refs.
@@ -86,11 +86,13 @@ def validate_refs(
             if target_ids is None:
                 # Referenced table not loaded — report as error.
                 errors.append(
-                    format_error(
+                    ValidationIssue(
                         table_name,
-                        row_num,
-                        field.name,
+                        IssueCode.REF,
                         f"引用表 {target_table} 的数据未加载，无法校验",
+                        row_index=row_num,
+                        field=field.name,
+                        value=value,
                     )
                 )
                 continue
@@ -103,11 +105,13 @@ def validate_refs(
                         else f"值 {ref_val!r} "
                     )
                     errors.append(
-                        format_error(
+                        ValidationIssue(
                             table_name,
-                            row_num,
-                            field.name,
+                            IssueCode.REF,
                             f"{detail}在引用表 {target_table}.{target_field} 中不存在",
+                            row_index=row_num,
+                            field=field.name,
+                            value=ref_val,
                         )
                     )
 

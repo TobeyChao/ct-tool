@@ -1,4 +1,4 @@
-"""Tests for ct.cli_helpers.template_action.decide_template_action.
+"""Tests for ct.app.template.decide_template_action.
 
 Covers the 9 spec scenarios in cli-interface for ct gen-template:
 - Generate template for all tables
@@ -20,7 +20,7 @@ import pytest
 from openpyxl import Workbook, load_workbook
 from openpyxl.packaging.custom import StringProperty
 
-from ct.cli_helpers.template_action import (
+from ct.app.template import (
     Action,
     decide_template_action,
 )

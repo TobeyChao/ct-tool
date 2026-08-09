@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from ct.schema.models import FieldDef, TableSchema
-from ct.validate.errors import format_error
+from ct.validate.errors import IssueCode, ValidationIssue
 
 
 # ---------------------------------------------------------------------------
@@ -164,7 +164,7 @@ def _validate_field_value(value: Any, field: FieldDef) -> list[str]:
 # Public API
 # ---------------------------------------------------------------------------
 
-def validate_table(rows: list[dict], schema: TableSchema) -> list[str]:
+def validate_table(rows: list[dict], schema: TableSchema) -> list[ValidationIssue]:
     """Validate all rows of a parsed table against its schema.
 
     Performs two kinds of checks:
@@ -178,7 +178,7 @@ def validate_table(rows: list[dict], schema: TableSchema) -> list[str]:
     Returns:
         List of error message strings. Empty list means no errors.
     """
-    errors: list[str] = []
+    errors: list[ValidationIssue] = []
     table_name = schema.table
     primary_key_name = schema.primary
 
@@ -192,18 +192,29 @@ def validate_table(rows: list[dict], schema: TableSchema) -> list[str]:
             value = row.get(field.name)
             field_errors = _validate_field_value(value, field)
             for err in field_errors:
-                errors.append(format_error(table_name, row_num, field.name, err))
+                errors.append(
+                    ValidationIssue(
+                        table=table_name,
+                        code=IssueCode.TYPE,
+                        message=err,
+                        row_index=row_num,
+                        field=field.name,
+                        value=value,
+                    )
+                )
 
         # Primary key uniqueness.
         pk_value = row.get(primary_key_name)
         if pk_value is not None:
             if pk_value in seen_pks:
                 errors.append(
-                    format_error(
+                    ValidationIssue(
                         table_name,
-                        row_num,
-                        primary_key_name,
+                        IssueCode.DUPLICATE_PK,
                         f"主键值 {pk_value!r} 重复（首次出现在第{seen_pks[pk_value]}行）",
+                        row_index=row_num,
+                        field=primary_key_name,
+                        value=pk_value,
                     )
                 )
             else:

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import sys
@@ -9,26 +8,16 @@ from typing import Optional
 
 import typer
 
-from ct.cache.state import (
-    load_cache,
-    load_fbs_bytes,
-    save_cache,
-    save_fbs_bytes,
-    update_table_cache,
-)
-from ct.cli_helpers.template_action import Action, decide_template_action
-from ct.config import load_config
-from ct.excel.diff import file_hash, get_changed_tables
+from ct.app.options import ExportOptions
+from ct.app.events import CancelToken
+from ct.app.export import ExportPipeline, ExportValidationError
+from ct.app.template import Action, decide_template_action
+from ct.app.validate import parse_and_validate
+from ct.app.workspace import Workspace
+from ct.cache.state import load_cache
+from ct.excel.diff import get_changed_tables
 from ct.excel.reader import read_excel
 from ct.excel.template import generate_template, read_template_metadata, update_template
-from ct.export.binary_writer import (
-    build_i18n_table_bytes,
-    build_table_bytes,
-    write_i18n_bundle,
-    write_primary_bundle,
-)
-from ct.export.fbs_generator import generate_container_fbs, generate_fbs
-from ct.export.i18n.merger import load_translation, merge_translations
 from ct.export.i18n.status import (
     compute_status_report,
     render_by_table,
@@ -37,12 +26,8 @@ from ct.export.i18n.status import (
 )
 from ct.export.i18n.sync import sync_all
 from ct.export.i18n.writer import report_stale_summary
-from ct.export.json_writer import write_json
 from ct.schema.hashing import compute_schema_hash
-from ct.schema.loader import load_and_sort_schemas
 from ct.validate.errors import report_errors
-from ct.validate.refs import validate_refs
-from ct.validate.types import validate_table
 
 app = typer.Typer(help="配表导出工具")
 i18n_app = typer.Typer(help="i18n 翻译骨架与状态管理")
@@ -73,6 +58,19 @@ def _print_sync_summary(summary, *, prefix: str = "[i18n sync]") -> None:
     typer.echo(f"{prefix} " + "; ".join(parts), err=True)
 
 
+class CLIProgressReporter:
+    """把管道事件渲染为 CLI 现有文本（步骤事件本身不输出，保持逐字一致）。"""
+
+    def step_started(self, step: str) -> None:
+        pass
+
+    def step_finished(self, step: str) -> None:
+        pass
+
+    def log(self, line: str, *, err: bool = False) -> None:
+        typer.echo(line, err=err)
+
+
 @app.command()
 def export(
     all_tables: bool = typer.Option(False, "--all", help="强制全量导出"),
@@ -82,208 +80,43 @@ def export(
     project_root: Optional[str] = typer.Option(None, "--root", help="项目根目录"),
 ) -> None:
     """增量导出主流程。"""
-    _setup_logging(verbose)
+    opts = ExportOptions(all_tables=all_tables, table=table, lang=lang, verbose=verbose)
+    _setup_logging(opts.verbose)
     root = Path(project_root) if project_root else Path(".")
-    cfg = load_config(root)
+    ws = Workspace.load(root)
 
-    schemas, order = load_and_sort_schemas(cfg.resolve("schemas_dir"))
-    if not schemas:
+    if not ws.schemas:
         typer.echo("未找到任何 schema", err=True)
         raise typer.Exit(1)
 
-    schema_map = {s.table: s for s in schemas}
-    cache = load_cache(cfg.resolve("cache_dir"))
-    excel_dir = cfg.resolve("excel_dir")
-    output_dir = cfg.resolve("output_dir")
-    i18n_dir = cfg.resolve("i18n_dir")
-    cache_dir = cfg.resolve("cache_dir")
+    cache = load_cache(ws.resolve("cache_dir"))
+    excel_dir = ws.resolve("excel_dir")
 
     # 确定导出范围
-    if table:
-        if table not in schema_map:
-            typer.echo(f"表 '{table}' 不存在", err=True)
+    if opts.table:
+        if opts.table not in ws.schema_map:
+            typer.echo(f"表 '{opts.table}' 不存在", err=True)
             raise typer.Exit(1)
-        tables_to_export = [table]
-    elif all_tables:
-        tables_to_export = order
+        tables_to_export = [opts.table]
+    elif opts.all_tables:
+        tables_to_export = ws.order
     else:
-        tables_to_export = get_changed_tables(schemas, cache, excel_dir)
+        tables_to_export = get_changed_tables(ws.schemas, cache, excel_dir)
         if not tables_to_export:
             typer.echo("所有表均无变化，跳过导出")
             return
 
-    # 确定语言范围
-    if lang:
-        langs = [lang]
-    else:
-        langs = cfg.all_langs
-
-    # 解析和校验
-    parsed_data: dict[str, list[dict]] = {}
-    id_sets: dict[str, set] = {}
-    all_errors: list[str] = []
-
-    # 先从 cache 加载未变化表的 id 集合
-    for name in order:
-        if name not in tables_to_export:
-            cached_ids = cache.tables.get(name)
-            if cached_ids:
-                id_sets[name] = set(cached_ids.ids)
-
-    # 解析变化的表
-    for name in order:
-        if name not in tables_to_export:
-            continue
-        schema = schema_map[name]
-        xlsx_path = excel_dir / schema.resolved_excel_file
-        if not xlsx_path.exists():
-            typer.echo(f"[error] {xlsx_path} 不存在，跳过 {name}", err=True)
-            continue
-
-        typer.echo(f"[parse] {name}")
-        rows = read_excel(xlsx_path, schema)
-        parsed_data[name] = rows
-
-        # 收集 id 集合
-        pk = schema.primary
-        id_sets[name] = {row[pk] for row in rows if pk in row}
-
-        # 类型校验
-        errors = validate_table(rows, schema)
-        all_errors.extend(errors)
-
-    # 引用校验（按拓扑顺序）
-    for name in order:
-        if name not in parsed_data:
-            continue
-        schema = schema_map[name]
-        if schema.all_refs():
-            errors = validate_refs(parsed_data[name], schema, id_sets)
-            all_errors.extend(errors)
-
-    if all_errors:
-        report_errors(all_errors, verbose)
+    try:
+        result = ExportPipeline().run(
+            ws, opts, cache, tables_to_export, CLIProgressReporter(), CancelToken()
+        )
+    except ExportValidationError as e:
+        report_errors(e.issues, opts.verbose)
         raise typer.Exit(1)
 
-    # i18n sync：只对本次解析的变更表刷新 source 与各 lang 骨架
-    changed_i18n_schemas = [schema_map[name] for name in parsed_data]
-    sync_summary = sync_all(cfg, changed_i18n_schemas, parsed_data)
-    if verbose:
-        _print_sync_summary(sync_summary)
-
-    # 导出
-    # 收集所有表的 FlatBuffers bytes（用于 Bundle 全量重写）
-    all_table_bytes: dict[str, bytes] = {}
-    # {lang: {table_i18n_key: bytes}}  每种语言独立存，避免多语言覆盖
-    all_i18n_bytes: dict[str, dict[str, bytes]] = {}
-
-    for name in order:
-        schema = schema_map[name]
-        if name in parsed_data:
-            rows = parsed_data[name]
-
-            # JSON 导出（每种语言）
-            for l in langs:
-                if l == cfg.primary_lang:
-                    json_rows = rows
-                else:
-                    translations = load_translation(i18n_dir, l, schema.table)
-                    json_rows = merge_translations(
-                        rows, schema, l, translations, cfg.primary_lang
-                    )
-                path = write_json(json_rows, schema, l, output_dir)
-                typer.echo(f"[json] {path.name}")
-
-            # FlatBuffers bytes（不含 server_only）
-            fbs_bytes = build_table_bytes(rows, schema, exclude_server_only=True)
-            all_table_bytes[name] = fbs_bytes
-
-            # 缓存 fbs bytes
-            save_fbs_bytes(cache_dir, name, fbs_bytes)
-
-            # i18n bytes（只缓存 secondary 语言，主语言已在主线 bundle 中）
-            if schema.has_i18n:
-                for l in langs:
-                    if l == cfg.primary_lang:
-                        continue  # 主语言 i18n 数据已在 data_{primary}.bin 中，无需单独缓存
-                    translations = load_translation(i18n_dir, l, schema.table)
-                    merged = merge_translations(
-                        rows, schema, l, translations, cfg.primary_lang
-                    )
-                    i18n_bytes = build_i18n_table_bytes(merged, schema)
-                    all_i18n_bytes.setdefault(l, {})[f"{name}_i18n"] = i18n_bytes
-                    # 按语言缓存 i18n bytes，供增量导出时复用
-                    save_fbs_bytes(cache_dir, f"{name}_i18n_{l}", i18n_bytes)
-
-            # 更新 cache
-            xlsx_path = excel_dir / schema.resolved_excel_file
-            h = file_hash(xlsx_path)
-            update_table_cache(
-                cache, name,
-                hash=h,
-                ids=sorted(id_sets.get(name, set())),
-            )
-        else:
-            # 未变化的表：从 cache 复用 bytes
-            cached_bytes = load_fbs_bytes(cache_dir, name)
-            if cached_bytes:
-                all_table_bytes[name] = cached_bytes
-                typer.echo(f"[skip] {name} (unchanged)")
-            # 同时尝试加载各 secondary 语言的 i18n bytes 缓存
-            if schema.has_i18n:
-                for l in langs:
-                    if l == cfg.primary_lang:
-                        continue
-                    cached_i18n = load_fbs_bytes(cache_dir, f"{name}_i18n_{l}")
-                    if cached_i18n:
-                        all_i18n_bytes.setdefault(l, {})[f"{name}_i18n"] = cached_i18n
-
-    # 生成 .fbs 文件
-    for name in order:
-        schema = schema_map[name]
-        fbs_path = generate_fbs(schema, output_dir)
-        typer.echo(f"[fbs] {fbs_path.name}")
-    generate_container_fbs(output_dir)
-    typer.echo("[fbs] container.fbs")
-
-    # 调用 flatc
-    flatc_path = cfg.resolve("flatc_path")
-    if flatc_path.exists():
-        from ct.export.flatc_runner import compile_fbs
-        fbs_dir = output_dir / "fbs"
-        compile_fbs(flatc_path, fbs_dir, output_dir)
-    else:
-        typer.echo(f"[warn] flatc 未找到 ({flatc_path})，跳过编译", err=True)
-
-    # 生成 Accessor
-    try:
-        from ct.export.csharp_accessor_generator import generate_csharp_accessor
-        from ct.export.lua_accessor_generator import generate_lua_accessor
-        for name in order:
-            schema = schema_map[name]
-            cs_path = generate_csharp_accessor(schema, output_dir / "generated" / "csharp")
-            typer.echo(f"[accessor] {cs_path.name}")
-            lua_path = generate_lua_accessor(schema, output_dir / "generated" / "lua")
-            typer.echo(f"[accessor] {lua_path.name}")
-    except ImportError:
-        pass
-
-    # 写入 Binary Bundle
-    if all_table_bytes:
-        path = write_primary_bundle(all_table_bytes, cfg.primary_lang, output_dir)
-        typer.echo(f"[bundle] {path.name}")
-
-    for l in langs:
-        if l != cfg.primary_lang:
-            path = write_i18n_bundle(all_i18n_bytes.get(l, {}), l, output_dir)
-            if path:
-                typer.echo(f"[bundle] {path.name}")
-
     # stale 报告（基于 lang 文件聚合）
-    report_stale_summary(cfg, schemas)
-
-    save_cache(cache, cache_dir)
-    typer.echo(f"\n导出完成: {len(tables_to_export)} 张表")
+    report_stale_summary(ws.config, ws.schemas)
+    typer.echo(f"\n导出完成: {result.tables_exported} 张表")
 
 
 @app.command()
@@ -295,40 +128,23 @@ def validate(
     """只走解析和校验，不输出产物。"""
     _setup_logging(verbose)
     root = Path(project_root) if project_root else Path(".")
-    cfg = load_config(root)
+    ws = Workspace.load(root)
 
-    schemas, order = load_and_sort_schemas(cfg.resolve("schemas_dir"))
-    schema_map = {s.table: s for s in schemas}
-    cache = load_cache(cfg.resolve("cache_dir"))
-    excel_dir = cfg.resolve("excel_dir")
+    schemas, order = ws.schemas, ws.order
+    cache = load_cache(ws.resolve("cache_dir"))
+    excel_dir = ws.resolve("excel_dir")
 
     targets = [table] if table else order
-    all_errors: list[str] = []
-    id_sets: dict[str, set] = {}
-
-    for name in order:
-        if name not in targets:
-            cached = cache.tables.get(name)
-            if cached:
-                id_sets[name] = set(cached.ids)
-            continue
-
-        schema = schema_map[name]
-        xlsx_path = excel_dir / schema.resolved_excel_file
-        if not xlsx_path.exists():
-            typer.echo(f"[error] {xlsx_path} 不存在", err=True)
-            continue
-
-        rows = read_excel(xlsx_path, schema)
-        pk = schema.primary
-        id_sets[name] = {row[pk] for row in rows if pk in row}
-
-        errors = validate_table(rows, schema)
-        all_errors.extend(errors)
-
-        if schema.all_refs():
-            errors = validate_refs(rows, schema, id_sets)
-            all_errors.extend(errors)
+    pv = parse_and_validate(
+        ws,
+        targets,
+        cache,
+        excel_dir,
+        on_missing=lambda name, path: typer.echo(
+            f"[error] {path} 不存在", err=True
+        ),
+    )
+    all_errors = pv.errors
 
     if all_errors:
         report_errors(all_errors, verbose)
@@ -354,11 +170,11 @@ def gen_template(
     """根据 schema 生成 Excel 模板头部。"""
     _setup_logging()
     root = Path(project_root) if project_root else Path(".")
-    cfg = load_config(root)
+    ws = Workspace.load(root)
 
-    schemas, _ = load_and_sort_schemas(cfg.resolve("schemas_dir"))
-    schema_map = {s.table: s for s in schemas}
-    excel_dir = cfg.resolve("excel_dir")
+    schemas, _ = ws.schemas, ws.order
+    schema_map = ws.schema_map
+    excel_dir = ws.resolve("excel_dir")
     excel_dir.mkdir(parents=True, exist_ok=True)
 
     targets = [table] if table else [s.table for s in schemas] if all_tables else []
@@ -413,11 +229,11 @@ def status(
     """
     _setup_logging()
     root = Path(project_root) if project_root else Path(".")
-    cfg = load_config(root)
+    ws = Workspace.load(root)
 
-    schemas, _ = load_and_sort_schemas(cfg.resolve("schemas_dir"))
-    cache = load_cache(cfg.resolve("cache_dir"))
-    excel_dir = cfg.resolve("excel_dir")
+    schemas, _ = ws.schemas, ws.order
+    cache = load_cache(ws.resolve("cache_dir"))
+    excel_dir = ws.resolve("excel_dir")
 
     changed = get_changed_tables(schemas, cache, excel_dir)
     changed_set = set(changed)
@@ -499,8 +315,8 @@ def i18n_sync(
     """刷新 i18n source 文件并为每个 secondary 语言生成/更新 lang 骨架。"""
     _setup_logging(verbose)
     root = Path(project_root) if project_root else Path(".")
-    cfg = load_config(root)
-    schemas, _ = load_and_sort_schemas(cfg.resolve("schemas_dir"))
+    ws = Workspace.load(root)
+    schemas, _ = ws.schemas, ws.order
 
     target_schemas = schemas
     if table:
@@ -509,9 +325,9 @@ def i18n_sync(
             typer.echo(f"表 '{table}' 不存在", err=True)
             raise typer.Exit(1)
 
-    rows_by_table = _read_all_rows_for_sync(cfg, target_schemas)
+    rows_by_table = _read_all_rows_for_sync(ws.config, target_schemas)
     summary = sync_all(
-        cfg,
+        ws.config,
         target_schemas,
         rows_by_table,
         lang_filter=lang,
@@ -547,10 +363,10 @@ def i18n_status(
     """报告 i18n 翻译进度。"""
     _setup_logging()
     root = Path(project_root) if project_root else Path(".")
-    cfg = load_config(root)
-    schemas, _ = load_and_sort_schemas(cfg.resolve("schemas_dir"))
+    ws = Workspace.load(root)
+    schemas, _ = ws.schemas, ws.order
 
-    report = compute_status_report(cfg, schemas, lang_filter=lang)
+    report = compute_status_report(ws.config, schemas, lang_filter=lang)
 
     if json_out:
         sys.stdout.write(render_json(report))
@@ -570,11 +386,11 @@ def i18n_compact(
     """物理移除 lang 文件中所有 status: orphan 的条目。"""
     _setup_logging()
     root = Path(project_root) if project_root else Path(".")
-    cfg = load_config(root)
-    schemas, _ = load_and_sort_schemas(cfg.resolve("schemas_dir"))
-    i18n_dir = cfg.resolve("i18n_dir")
+    ws = Workspace.load(root)
+    schemas, _ = ws.schemas, ws.order
+    i18n_dir = ws.resolve("i18n_dir")
 
-    langs = cfg.secondary_langs
+    langs = ws.config.secondary_langs
     if lang:
         if lang not in langs:
             typer.echo(f"语言 '{lang}' 不在 secondary_langs 中", err=True)
@@ -585,7 +401,7 @@ def i18n_compact(
     if table:
         target_schemas = [s for s in target_schemas if s.table == table]
 
-    from ct.cli_helpers.i18n_json import dump_lang_file
+    from ct.export.i18n.io import dump_lang_file
 
     total_removed = 0
     touched = False
