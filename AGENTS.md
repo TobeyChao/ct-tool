@@ -231,6 +231,8 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
 | `ct/app/export.py` | 导出管道：`ExportStep` 步骤序列（解析校验 → i18n sync → JSON → FBS → flatc → Accessor → Bundle）+ `ExportResult`；取消时不写 `state.json` |
 | `ct/app/validate.py` | 共享解析校验阶段 `parse_and_validate`（读 Excel + 类型/引用校验 + id 集合） |
 | `ct/app/template.py` | `gen-template` 决策矩阵集中实现：根据文件状态 × 用户 flag 输出 Action 枚举与说明信息 |
+| `ct/app/status.py` | `ct status` 用例：`compute_status` 分类数据变更 / 模板漂移 / 未跟踪 / 缺失，返回 `StatusReport`（CLI 只渲染） |
+| `ct/app/i18n.py` | i18n 用例编排：`read_i18n_rows` 为 sync 准备行数据，返回 `ReadRowsResult`（含缺失文件列表） |
 | `ct/schema/models.py` | Pydantic 模型：`TableSchema` 和 `FieldDef`。支持字段类型：`int32`、`int64`、`float`、`double`、`bool`、`string`、`enum`、`struct`、`array` |
 | `ct/schema/loader.py` | 依据 `ref` 字段构建依赖图并拓扑排序（格式无关，只认 canonical 模型） |
 | `ct/schema/repository.py` | Schema 源抽象 `SchemaRepository` + YAML 实现：`load_all()` 读取 schema，`fbs_sources()` 提供各表 .fbs 文本（未来 .fbs 源经 `schema_format` 切换） |
@@ -239,7 +241,7 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
 | `ct/schema/naming.py` | 命名校验器 `validate_name`：表/字段名必须首字符大写、不以 `_` 开头/结尾（WYSIWYG 恒等域，schema 加载即校验，不再做任何大小写转换） |
 | `ct/excel/reader.py` | 以只读模式读取 Excel，返回 `ParsedRows`（`rows` + 与之一一对应的 `excel_rows` 绝对行号）。struct 字段展开为多列；array 字段在单元格内按 `separator` 分隔。表头行数 = `max_nesting_depth + 1` |
 | `ct/excel/diff.py` | 对比 Excel 文件 MD5 hash 与缓存，输出已变更的表名列表 |
-| `ct/excel/template.py` | 根据 schema 生成带多行表头的空白 Excel 文件 |
+| `ct/excel/template.py` | 根据 schema 生成带多行表头的空白 Excel 文件；模板元数据读写 `read_template_metadata`、表头保留重建 `update_template`、共享数据行遍历 `iter_data_rows` |
 | `ct/validate/errors.py` | 结构化问题模型 `Issue` / `ValidationIssue`（含 `row_index` / `excel_row` / `column` / `value`）/ `WorkspaceIssue`；`render()` 输出 `Excel 第N行 · 列X (字段) · 当前值 ...`，无绝对定位信息时回退旧格式 |
 | `ct/validate/types.py` | 按字段类型逐一校验；主键唯一性检查；填充 `excel_row` / `column`（struct 定位到具体叶子列），返回 `ValidationIssue` |
 | `ct/validate/refs.py` | 利用已解析行数据和缓存中的 ID 集合进行跨表外键校验；填充 `excel_row` / `column`，返回 `ValidationIssue` |
@@ -247,14 +249,17 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
 | `ct/export/fbs_generator.py` | 生成 Bundle 容器 `container.fbs`；各表 `.fbs` 文本由 SchemaRepository 提供 |
 | `ct/export/flatc_runner.py` | 调用 `flatc` 编译 `.fbs` 为各语言 Accessor 代码 |
 | `ct/export/binary_writer.py` | 手动将行数据序列化为 FlatBuffers bytes（无生成的 Python Accessor）；打包为 `DataBundle` 二进制（`output/binary/data_{lang}.bin`） |
+| `ct/export/accessor_model.py` | 访问器生成共享模型 `AccessorModel`（client/string/i18n 字段 + 主键），C# 与 Lua 生成器消费同一模型 |
 | `ct/export/csharp_accessor_generator.py` | 生成 C# Accessor 类至 `output/generated/csharp/` |
 | `ct/export/lua_accessor_generator.py` | 生成 Lua Accessor 模块至 `output/generated/lua/` |
 | `ct/export/i18n/extractor.py` | 将 `i18n: true` 字段的主语言原文提取为 `i18n/source/{table}.json`（扁平 `{"id.field": "text"}` 格式） |
 | `ct/export/i18n/state.py` | 翻译状态机：`LangStatus` 枚举 + `merge_lang_entry` / `sync_lang_table`（计算每条目的 `status` 与字段更新规则） |
 | `ct/export/i18n/sync.py` | sync 编排：刷新 source 文件 + 为每语言每表生成/更新 lang 骨架，返回 `SyncSummary` |
 | `ct/export/i18n/merger.py` | 将 `i18n/{lang}/{table}.json` 中 `confirmed=true` 的译文合并回行数据；其他状态回退主语言并 warning |
-| `ct/export/i18n/status.py` | 计算每语言每表的 missing/stale/translated/orphan 计数，提供 default/by-table/json 三种渲染 |
+| `ct/export/i18n/counts.py` | 共享状态计数 `StatusCounts`（translated/missing/stale/orphan + total/progress + 聚合）+ `count_entries()` |
+| `ct/export/i18n/status.py` | 基于 `StatusCounts` 聚合每语言每表进度，提供 default/by-table/json 三种渲染 |
 | `ct/export/i18n/writer.py` | 导出后基于 lang 文件汇总各语言的 stale/missing/orphan 统计 |
+| `ct/export/i18n/compact.py` | `ct i18n compact` 用例：物理移除 orphan 条目，返回 `CompactSummary`（CLI 只渲染） |
 | `ct/export/i18n/io.py` | 紧凑 JSON 写出（每个 key 一行）+ key 排序（id 数值升序 + schema 字段顺序） |
 | `ct/cache/state.py` | 读写 `cache/state.json`（每表存储文件 MD5 hash、ID 列表、fbs bytes hash）；同时在 `cache/fbs_bytes/*.bin` 中缓存原始 FlatBuffers bytes，未变化的表可复用 |
 

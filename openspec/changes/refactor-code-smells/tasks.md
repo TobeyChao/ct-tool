@@ -128,7 +128,10 @@
 
 ## 8. 阶段 H：收尾
 
-- [ ] 8.1 全量 `pytest` + `gd/` 真实数据 CLI 输出快照对比 +
-      `git diff` 复核无无关改动
-- [ ] 8.2 更新 `AGENTS.md` 模块表与 `tool/docs/README.md` 中涉及的
-      模块说明
+- [x] 8.1 全量 `pytest`（152 passed）+ `gd/` 真实数据导出验证
+      （output 产物零变化，仅 cache/state.json 时间戳被导出更新，
+      已恢复）+ `git diff` 复核无无关改动
+- [x] 8.2 更新 `AGENTS.md` 模块表（新增 app/status、app/i18n、
+      accessor_model、i18n/counts、i18n/compact；status/counts 职责
+      拆清；excel/template 职责补全）；`tool/docs/README.md` 为纯
+      用户文档、无模块说明，无需改动
