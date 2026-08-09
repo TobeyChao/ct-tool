@@ -64,15 +64,16 @@ _BOOL_TRUE = frozenset({"true", "1", "yes", "TRUE", "True", "YES", "Yes"})
 _BOOL_FALSE = frozenset({"false", "0", "no", "FALSE", "False", "NO", "No"})
 
 
-def _coerce(value: Any, field: FieldDef) -> Any:
-    """Convert a raw cell value to the expected Python type."""
-    if value is None:
-        return None
+def _coerce_scalar(value: Any, type_name: str, *, array_element: bool = False) -> Any:
+    """共享标量转换（int 与 bool 的语义按来源区分：Python 值 vs 字符串元素）。
 
-    type_name = field.type
-    # For leaf fields inside structs, type_name is already the leaf type.
-
+    - ``array_element=True`` 时 int 走字符串拆分路径（``int(float(v))``），
+      bool 报错文案带"数组元素"前缀；
+    - 其余路径与旧 ``_coerce`` / ``_coerce_element`` 逐字一致。
+    """
     if type_name in ("int32", "int64"):
+        if array_element:
+            return int(float(value)) if "." in value else int(value)
         if isinstance(value, float) and value == int(value):
             return int(value)
         return int(value)
@@ -86,30 +87,28 @@ def _coerce(value: Any, field: FieldDef) -> Any:
             return True
         if s in _BOOL_FALSE:
             return False
+        if array_element:
+            raise ValueError(f"无法将数组元素 '{value}' 转换为 bool")
         raise ValueError(f"无法将 '{value}' 转换为 bool")
     if type_name == "string":
         return str(value)
     if type_name == "enum":
         return str(value)
-    # array and struct are handled separately
     return value
+
+
+def _coerce(value: Any, field: FieldDef) -> Any:
+    """Convert a raw cell value to the expected Python type."""
+    if value is None:
+        return None
+    # For leaf fields inside structs, type_name is already the leaf type.
+    return _coerce_scalar(value, field.type)
 
 
 def _coerce_element(value: str, element_type: str) -> Any:
     """Coerce a single array element string to the declared element type."""
     value = value.strip()
-    if element_type in ("int32", "int64"):
-        return int(float(value)) if "." in value else int(value)
-    if element_type in ("float", "double"):
-        return float(value)
-    if element_type == "bool":
-        if value in _BOOL_TRUE:
-            return True
-        if value in _BOOL_FALSE:
-            return False
-        raise ValueError(f"无法将数组元素 '{value}' 转换为 bool")
-    # string / enum
-    return value
+    return _coerce_scalar(value, element_type, array_element=True)
 
 
 # ---------------------------------------------------------------------------

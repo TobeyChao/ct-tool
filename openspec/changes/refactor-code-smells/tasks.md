@@ -98,17 +98,17 @@
 
 ## 6. 阶段 F：binary_writer 类型分派收敛
 
-- [ ] 6.1 槽位写入提炼 `_prepend_slot` + `_SCALAR_SLOT_WRITERS` 查表，
+- [x] 6.1 槽位写入提炼 `_prepend_slot` + `_SCALAR_SLOT_WRITERS` 查表，
       `_build_struct` 与 `build_table_bytes` 共用（函数组合成类 6.9）
-- [ ] 6.2 `_build_array` 元素写入分派合并为 `_ELEMENT_VECTOR_WRITERS` 查表
-- [ ] 6.3 `reader.py` 的 `_coerce` / `_coerce_element` 提炼共享标量转换
+- [x] 6.2 `_build_array` 元素写入分派合并为 `_ELEMENT_VECTOR_WRITERS` 查表
+- [x] 6.3 `reader.py` 的 `_coerce` / `_coerce_element` 提炼共享标量转换
       helper（注意两者 int 转换语义不同：Python 值与字符串两条路径，
       用参数区分或保留分层，行为逐字不变）
-- [ ] 6.4 补 `build_table_bytes` 固定 schema 的逐字节 golden 测试
+- [x] 6.4 补 `build_table_bytes` 固定 schema 的逐字节 golden 测试
       （schema 覆盖全部标量类型 + enum + string + array + struct；
       重构前先落快照到 `tests/fixtures/`；注释注明 flatbuffers
       库升级需重录）
-- [ ] 6.5 `pytest` 全绿（binary golden 验证零漂移）
+- [x] 6.5 `pytest` 全绿（binary golden 验证零漂移）
 
 ## 7. 阶段 G：Accessor 生成器模型化
 
