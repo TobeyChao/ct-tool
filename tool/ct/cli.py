@@ -25,7 +25,7 @@ from ct.export.i18n.status import (
     render_default,
     render_json,
 )
-from ct.export.i18n.sync import sync_all
+from ct.export.i18n.sync import cleanup_i18n_files, sync_all
 from ct.export.i18n.writer import report_stale_summary
 from ct.validate.errors import report_errors
 
@@ -40,6 +40,8 @@ def _load_workspace(root: Path) -> Workspace:
     try:
         return Workspace.load(root)
     except (FileNotFoundError, ValueError) as e:
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("加载 workspace 失败", exc_info=True)
         typer.echo(f"[error] {e}", err=True)
         raise typer.Exit(1)
 
@@ -301,6 +303,10 @@ def i18n_sync(
         lang_filter=lang,
         table_filter=table,
     )
+    # 残留清理仅在非局部操作时执行（--table 不动全局文件）；
+    # valid 基于全量 schema，保证清理不误删现存表文件（既有缺陷修复）
+    if table is None:
+        cleanup_i18n_files(ws.config, schemas, lang_filter=lang)
 
     if verbose:
         resolved_root = root.resolve()

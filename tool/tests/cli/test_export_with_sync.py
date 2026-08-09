@@ -147,6 +147,44 @@ def test_export_single_table_keeps_other_i18n_files(tmp_path: Path) -> None:
     assert (tmp_path / "i18n" / "en" / "Item.json").exists()
 
 
+def test_incremental_export_keeps_other_i18n_files(tmp_path: Path) -> None:
+    """部分表变化的增量导出不得清理其他表的 lang 文件（既有缺陷回归）。"""
+    _build_project(tmp_path)
+    _add_quest_table(tmp_path)
+
+    first = runner.invoke(app, ["export", "--all", "--root", str(tmp_path)])
+    assert first.exit_code == 0, first.output
+    assert (tmp_path / "i18n" / "en" / "Quest.json").exists()
+
+    # 只改 Item，Quest 未变化
+    from openpyxl import load_workbook
+
+    wb = load_workbook(tmp_path / "excel" / "item.xlsx")
+    wb.active.append([1002, "魔杖", 200.0])
+    wb.save(tmp_path / "excel" / "item.xlsx")
+
+    result = runner.invoke(app, ["export", "--root", str(tmp_path)])
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "i18n" / "en" / "Quest.json").exists()
+    assert (tmp_path / "i18n" / "en" / "Item.json").exists()
+
+
+def test_i18n_sync_table_filter_keeps_other_i18n_files(tmp_path: Path) -> None:
+    """`i18n sync --table` 不得清理其他表的 lang 文件。"""
+    _build_project(tmp_path)
+    _add_quest_table(tmp_path)
+
+    runner.invoke(app, ["i18n", "sync", "--root", str(tmp_path)])
+    assert (tmp_path / "i18n" / "en" / "Quest.json").exists()
+
+    result = runner.invoke(
+        app, ["i18n", "sync", "--table", "Item", "--root", str(tmp_path)]
+    )
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "i18n" / "en" / "Quest.json").exists()
+    assert (tmp_path / "i18n" / "en" / "Item.json").exists()
+
+
 def test_incremental_export_rebuilds_missing_cache_bytes(tmp_path: Path) -> None:
     """未变化表的 fbs_bytes 缓存缺失时，增量导出必须重建而非静默丢表。"""
     _build_project(tmp_path)

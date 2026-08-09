@@ -70,6 +70,9 @@ def sync_all(
 
     - lang_filter 限定 lang 文件处理范围；source 文件始终全量刷新
     - table_filter 同时限定 source 与 lang 文件
+    - **不做残留清理**：清理是独立用例 `cleanup_i18n_files`（基于项目
+      全量 schema），与本次处理范围解耦——避免按表/增量处理时误删
+      其他表的 lang 文件（既有缺陷，功能验证发现）。
     """
     started = time.perf_counter()
     summary = SyncSummary()
@@ -109,18 +112,38 @@ def sync_all(
             dump_lang_file(new_lang, lang_path, field_order)
             summary.lang_files_written.append(lang_path)
 
-    # 清理：删除无对应表的 i18n 文件（表名变更/删除后的残留）。
-    # 仅在非 table_filter 时执行（局部操作不做全局清理）。
-    if not table_filter:
-        valid_tables = {s.table for s in i18n_schemas}
-        cleanup_dirs = [i18n_dir / "source"]
-        cleanup_dirs += [i18n_dir / lang for lang in secondary_langs]
-        for d in cleanup_dirs:
-            if not d.exists():
-                continue
-            for f in d.glob("*.json"):
-                if f.stem not in valid_tables:
-                    f.unlink()
-
     summary.elapsed = time.perf_counter() - started
     return summary
+
+
+def cleanup_i18n_files(
+    cfg: GlobalConfig,
+    schemas: Iterable[TableSchema],
+    *,
+    lang_filter: str | None = None,
+) -> list[Path]:
+    """删除无对应表的 i18n 残留文件（表名变更/删除后的清理）。
+
+    valid 集合基于传入的**全量** schema（调用方应传项目全部 schema，
+    而非本次处理子集），保证任何导出/sync 模式都不会误删其他表的
+    lang 文件。
+    """
+    i18n_dir = cfg.resolve("i18n_dir")
+    valid_tables = {s.table for s in schemas if s.has_i18n}
+
+    langs = cfg.secondary_langs
+    if lang_filter:
+        langs = [lang_filter] if lang_filter in langs else []
+
+    cleanup_dirs = [i18n_dir / "source"]
+    cleanup_dirs += [i18n_dir / lang for lang in langs]
+
+    removed: list[Path] = []
+    for d in cleanup_dirs:
+        if not d.exists():
+            continue
+        for f in d.glob("*.json"):
+            if f.stem not in valid_tables:
+                f.unlink()
+                removed.append(f)
+    return removed

@@ -166,3 +166,16 @@
       状态机（translated→stale→orphan→compact 生命周期、--lang 过滤）、
       数组元素与跨表引用校验定位、无 secondary / 无 i18n 表边界、
       flatc 缺失降级、Windows `.exe` 路径解析、翻译合并回退语义
+- [x] 9.8 review 遗留修复：① `sync_all` 内部清理拆为独立
+      `cleanup_i18n_files`（valid 基于**全量** schema），并保持"局部操作
+      （--table）不清理"原语义——增量导出（部分表变化）与 `i18n sync
+      --table` 均不再误删其他表文件（新增两个 CLI 回归测试）；②
+      `extractor` 跳过主键类型不符的行（coercion 宽容契约补全，防垃圾
+      source key）；③ 顺手：`_handle_unchanged_table` 改名、
+      `_load_workspace` verbose 时保留 traceback、`_schema_error_text`
+      改用 pydantic `ctx.error`（去掉对 msg 前缀的字符串依赖）
+- [x] 9.9 多轮循环验证：3 轮完整用户工作流（全量导出 → 翻译 →
+      增量导出 → 单表导出 → sync --table → 残留清理）全通过；专项
+      循环（坏主键 sync 无垃圾 key、缓存缺失重建、schema 友好错误、
+      校验失败不写产物）全通过；gd/ 全量导出仅清理小写历史残留
+      （表名规范为大写），现存表文件无误删

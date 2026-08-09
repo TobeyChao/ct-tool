@@ -32,7 +32,7 @@ from ct.export.binary_writer import (
 from ct.export.csharp_accessor_generator import generate_csharp_accessor
 from ct.export.fbs_generator import generate_container_fbs
 from ct.export.i18n.merger import load_translation, merge_translations
-from ct.export.i18n.sync import sync_all
+from ct.export.i18n.sync import cleanup_i18n_files, sync_all
 from ct.export.json_writer import write_json
 from ct.export.lua_accessor_generator import generate_lua_accessor
 from ct.schema.models import TableSchema
@@ -121,14 +121,12 @@ class I18nSyncStep:
 
     def run(self, ctx: ExportContext) -> None:
         changed_i18n_schemas = [ctx.ws.schema_map[n] for n in ctx.parsed_data]
-        # table_filter 保持导出范围：单表导出时不触发 sync 的全局清理，
-        # 避免误删其他表的 lang 文件（既有缺陷，功能验证发现）。
-        summary = sync_all(
-            ctx.ws.config,
-            changed_i18n_schemas,
-            ctx.parsed_data,
-            table_filter=ctx.opts.table,
-        )
+        summary = sync_all(ctx.ws.config, changed_i18n_schemas, ctx.parsed_data)
+        # 残留清理独立于本次处理范围：基于全量 schema，任何导出模式
+        # 都不会误删其他表的 lang 文件；仅非局部操作（--table 为空）清理，
+        # 保持"局部操作不动全局文件"的原语义（既有缺陷修复）。
+        if ctx.opts.table is None:
+            cleanup_i18n_files(ctx.ws.config, ctx.ws.schemas)
         if ctx.opts.verbose:
             totals = summary.totals_by_lang()
             if not totals:
@@ -157,7 +155,7 @@ class JsonStep:
                     ctx, name, schema, ctx.parsed_data[name], ctx.langs
                 )
             else:
-                self._reuse_unchanged_table(ctx, name, schema, ctx.langs)
+                self._handle_unchanged_table(ctx, name, schema, ctx.langs)
             ctx.exported_tables.append(name)
 
     def _export_changed_table(
@@ -173,14 +171,14 @@ class JsonStep:
         self._build_and_cache_bytes(ctx, name, schema, rows, langs)
         self._update_cache(ctx, name, schema)
 
-    def _reuse_unchanged_table(
+    def _handle_unchanged_table(
         self,
         ctx: ExportContext,
         name: str,
         schema: TableSchema,
         langs: list[str],
     ) -> None:
-        """未变化表：从 cache 复用 bytes；任一缓存文件缺失时回退重新解析。
+        """未变化表：缓存齐全时复用 bytes；任一缓存缺失时重读重新导出。
 
         主表或 i18n bytes 缓存缺失（被清理/损坏）时若静默跳过，bundle
         会缺表——重读 Excel 走完整导出路径保证数据完整（功能验证发现）。

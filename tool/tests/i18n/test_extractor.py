@@ -82,6 +82,17 @@ def test_extract_skips_rows_without_primary() -> None:
     assert out == {"1.Name": "a", "1.Desc": "b"}
 
 
+def test_extract_skips_rows_with_bad_primary_type() -> None:
+    """主键 coercion 失败（如 int32 填字符串）时跳过该行，避免垃圾 source key。"""
+    schema = _make_item_schema()
+    rows = [
+        {"Id": "abc", "Name": "坏行", "Desc": "x", "Price": 1.0},
+        {"Id": 1, "Name": "好行", "Desc": "y", "Price": 2.0},
+    ]
+    out = extract_source_for_table(rows, schema)
+    assert out == {"1.Name": "好行", "1.Desc": "y"}
+
+
 def test_save_and_load_roundtrip(tmp_path: Path) -> None:
     schema = _make_item_schema()
     data = {"1.Name": "甲", "1.Desc": "乙"}

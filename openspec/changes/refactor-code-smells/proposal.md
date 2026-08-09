@@ -52,7 +52,12 @@ status / compact / export 同一套用例接口，现在这些逻辑还埋在 CL
   （`_reuse_unchanged_table` 改为任一缓存缺失即重读重建，已补回归测试）；
   ⑤ 既有缺陷——schema 加载错误（命名违规 / 重复表名 / 循环引用 / YAML
   语法 / enum 值非法）裸抛 Python traceback（`cli._load_workspace` 统一
-  转友好提示 + `repository` 捕获 YAMLError 并精简错误文本，新增 5 个测试）。
+  转友好提示 + `repository` 捕获 YAMLError 并精简错误文本，新增 5 个测试）；
+  ⑥ 既有缺陷（review 深化）——`sync_all` 的残留清理 valid 基于本次处理
+  子集，部分表变化的增量导出也会误删其他表 lang 文件；清理拆为独立
+  `cleanup_i18n_files`（valid 基于全量 schema），并保持"局部操作不清理"
+  原语义；⑦ coercion 宽容契约补全——`extractor` 跳过主键类型不符的行，
+  避免垃圾 source key 混入 i18n 文件。
 
 ## Capabilities
 

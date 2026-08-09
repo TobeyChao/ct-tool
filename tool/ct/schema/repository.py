@@ -23,9 +23,11 @@ def _schema_error_text(exc: Exception) -> str:
         parts = []
         for err in exc.errors():
             loc = ".".join(str(p) for p in err.get("loc", ()))
-            msg = err.get("msg", str(exc))
-            if msg.startswith("Value error, "):
-                msg = msg[len("Value error, "):]
+            # ctx.error 携带原始 ValueError 消息（如 "表 item: ... 首字符必须大写"），
+            # 不依赖 pydantic 展示层 msg 的 "Value error, " 前缀格式。
+            err_ctx = err.get("ctx") or {}
+            err_obj = err_ctx.get("error")
+            msg = str(err_obj) if err_obj is not None else err.get("msg", str(exc))
             parts.append(f"{loc}: {msg}" if loc else msg)
         return "; ".join(parts)
     return str(exc)
