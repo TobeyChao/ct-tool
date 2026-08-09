@@ -64,22 +64,23 @@
 
 ## 4. 阶段 D：CLI 用例下沉
 
-- [ ] 4.1 新增 `ct/app/status.py`：`StatusReport`（changed/drifted/
+- [x] 4.1 新增 `ct/app/status.py`：`StatusReport`（changed/drifted/
       untracked/missing）+ `compute_status(ws, cache)`，逻辑自
       `cli.status()` 整体搬移；CLI 只渲染，文本逐字不变
-      （搬移函数 8.1）；新增 `tool/tests/app/test_status.py` 直接单测
+      （搬移函数 8.1）；新增 `tool/tests/app/test_compute_status.py` 直接单测
       `compute_status` 四类状态与顺序
-- [ ] 4.2 新增 `ct/export/i18n/compact.py`：`compact_i18n(...)` +
+- [x] 4.2 新增 `ct/export/i18n/compact.py`：`compact_i18n(...)` +
       `CompactSummary` + `CompactError`；`cli.i18n_compact` 改为只渲染，
       文本逐字不变（拆分阶段 6.11）；新增 `tool/tests/i18n/test_compact.py`
       直接单测 `compact_i18n`（dry_run / 移除 / 无 orphan / lang 非法）
-- [ ] 4.3 新增 `ct/app/i18n.py::read_i18n_rows`（自
+- [x] 4.3 新增 `ct/app/i18n.py::read_i18n_rows`（自
       `cli._read_all_rows_for_sync` 搬移），返回 `ReadRowsResult`
       （rows_by_table + missing），CLI 渲染 `[warn]` 文本；
       `i18n_sync` 保留 `--table` 存在性校验，删除预过滤后的二次过滤，
-      过滤职责归 `sync_all`；新增 `tool/tests/app/test_i18n.py` 单测
+      过滤职责归 `sync_all`（`table` 同时传给 `read_i18n_rows` 保证
+      缺失警告范围一致）；新增 `tool/tests/app/test_i18n.py` 单测
       `read_i18n_rows`（含 missing 收集与顺序）
-- [ ] 4.4 `pytest` 全绿（status / i18n compact / i18n sync 的 CLI 文本
+- [x] 4.4 `pytest` 全绿（status / i18n compact / i18n sync 的 CLI 文本
       断言保持不变）
 
 ## 5. 阶段 E：管道关注点分离 + 失败路径修复

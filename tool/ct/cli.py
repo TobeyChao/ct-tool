@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 import sys
 from pathlib import Path
@@ -8,16 +7,17 @@ from typing import Optional
 
 import typer
 
+from ct.app.i18n import read_i18n_rows
 from ct.app.options import ExportOptions
 from ct.app.events import CancelToken
 from ct.app.export import ExportPipeline, ExportValidationError
+from ct.app.status import compute_status
 from ct.app.template import Action, decide_template_action
 from ct.app.validate import parse_and_validate
 from ct.app.workspace import Workspace
 from ct.cache.state import load_cache
-from ct.excel.diff import get_changed_tables
-from ct.excel.reader import read_excel
-from ct.excel.template import generate_template, read_template_metadata, update_template
+from ct.excel.template import generate_template, update_template
+from ct.export.i18n.compact import CompactError, compact_i18n
 from ct.export.i18n.status import (
     compute_status_report,
     render_by_table,
@@ -26,7 +26,6 @@ from ct.export.i18n.status import (
 )
 from ct.export.i18n.sync import sync_all
 from ct.export.i18n.writer import report_stale_summary
-from ct.schema.hashing import compute_schema_hash
 from ct.validate.errors import report_errors
 
 app = typer.Typer(help="配表导出工具")
@@ -231,78 +230,38 @@ def status(
     root = Path(project_root) if project_root else Path(".")
     ws = Workspace.load(root)
 
-    schemas, _ = ws.schemas, ws.order
     cache = load_cache(ws.resolve("cache_dir"))
-    excel_dir = ws.resolve("excel_dir")
-
-    changed = get_changed_tables(schemas, cache, excel_dir)
-    changed_set = set(changed)
-
-    # Classify each table's template state.
-    drifted: list[str] = []
-    untracked: list[str] = []
-    missing: list[str] = []
-    for s in schemas:
-        xlsx_path = excel_dir / s.resolved_excel_file
-        if not xlsx_path.exists():
-            missing.append(s.table)
-            continue
-        current_hash = compute_schema_hash(s)
-        # 真源：Excel 模板元数据里的 ct_schema_hash（生成模板时写入）
-        meta = read_template_metadata(xlsx_path)
-        if meta is None:
-            untracked.append(s.table)
-            continue
-        if meta.schema_hash != current_hash:
-            drifted.append(s.table)
+    report = compute_status(ws, cache)
 
     # Render output: each section only appears if it has entries.
-    has_anything = bool(changed_set or drifted or untracked or missing)
-
-    if missing:
+    if report.missing:
         typer.echo("缺失文件:")
-        for name in missing:
+        for name in report.missing:
             typer.echo(f"  [missing] {name}")
 
-    if changed_set:
+    if report.changed:
         typer.echo("数据变更（待导出）:")
-        for s in schemas:
-            if s.table in changed_set:
-                typer.echo(f"  [changed] {s.table}")
+        for name in report.changed:
+            typer.echo(f"  [changed] {name}")
 
-    if drifted:
+    if report.drifted:
         typer.echo("模板已过时（schema 修改后未重建）:")
-        for name in drifted:
+        for name in report.drifted:
             typer.echo(
                 f"  [template-stale] {name}  "
                 f"(建议: ct gen-template --table {name} --update-header)"
             )
 
-    if untracked:
+    if report.untracked:
         typer.echo("未跟踪元数据（legacy 文件）:")
-        for name in untracked:
+        for name in report.untracked:
             typer.echo(f"  [template-untracked] {name}")
 
-    if not has_anything:
+    if not report.has_anything:
         typer.echo("[OK] 所有表已是最新（数据 + 模板）")
 
 
 # ---------------------------------------------------------------- ct i18n group
-
-
-def _read_all_rows_for_sync(cfg, schemas) -> dict[str, list[dict]]:
-    """为 sync 命令读取所有 i18n 表的 Excel 行数据。"""
-    excel_dir = cfg.resolve("excel_dir")
-    rows_by_table: dict[str, list[dict]] = {}
-    for schema in schemas:
-        if not schema.has_i18n:
-            continue
-        xlsx_path = excel_dir / schema.resolved_excel_file
-        if not xlsx_path.exists():
-            typer.echo(f"[warn] {xlsx_path} 不存在，跳过 {schema.table}", err=True)
-            continue
-        rows_by_table[schema.table] = read_excel(xlsx_path, schema).rows
-    return rows_by_table
 
 
 @i18n_app.command("sync")
@@ -318,18 +277,17 @@ def i18n_sync(
     ws = Workspace.load(root)
     schemas, _ = ws.schemas, ws.order
 
-    target_schemas = schemas
-    if table:
-        target_schemas = [s for s in schemas if s.table == table]
-        if not target_schemas:
-            typer.echo(f"表 '{table}' 不存在", err=True)
-            raise typer.Exit(1)
+    if table and table not in {s.table for s in schemas}:
+        typer.echo(f"表 '{table}' 不存在", err=True)
+        raise typer.Exit(1)
 
-    rows_by_table = _read_all_rows_for_sync(ws.config, target_schemas)
+    rows_result = read_i18n_rows(ws.config, schemas, table=table)
+    for table_name, path in rows_result.missing:
+        typer.echo(f"[warn] {path} 不存在，跳过 {table_name}", err=True)
     summary = sync_all(
         ws.config,
-        target_schemas,
-        rows_by_table,
+        schemas,
+        rows_result.rows_by_table,
         lang_filter=lang,
         table_filter=table,
     )
@@ -388,54 +346,31 @@ def i18n_compact(
     root = Path(project_root) if project_root else Path(".")
     ws = Workspace.load(root)
     schemas, _ = ws.schemas, ws.order
-    i18n_dir = ws.resolve("i18n_dir")
 
-    langs = ws.config.secondary_langs
-    if lang:
-        if lang not in langs:
-            typer.echo(f"语言 '{lang}' 不在 secondary_langs 中", err=True)
-            raise typer.Exit(1)
-        langs = [lang]
+    try:
+        summary = compact_i18n(
+            ws.config, schemas, lang=lang, table=table, dry_run=dry_run
+        )
+    except CompactError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(1)
 
-    target_schemas = [s for s in schemas if s.has_i18n]
-    if table:
-        target_schemas = [s for s in target_schemas if s.table == table]
-
-    from ct.export.i18n.io import dump_lang_file
-
-    total_removed = 0
-    touched = False
-
-    for l in langs:
-        for schema in target_schemas:
-            path = i18n_dir / l / f"{schema.table}.json"
-            if not path.exists():
-                continue
-            with open(path, encoding="utf-8") as f:
-                data = json.load(f)
-
-            orphan_keys = [k for k, v in data.items() if v.get("status") == "orphan"]
-            if not orphan_keys:
-                continue
-
-            touched = True
-            if dry_run:
-                typer.echo(f"[dry-run] {l}/{schema.table}: 将移除 {len(orphan_keys)} 条 orphan")
-                for k in orphan_keys:
-                    typer.echo(f"  - {k}")
-                continue
-
-            for k in orphan_keys:
-                del data[k]
-            field_order = [f.name for f in schema.i18n_fields]
-            dump_lang_file(data, path, field_order)
-            total_removed += len(orphan_keys)
-            typer.echo(f"[compact] {l}/{schema.table}: 移除 {len(orphan_keys)} 条 orphan")
-
-    if not touched:
+    if not summary.touched:
         typer.echo("[compact] 无 orphan 条目，无需操作")
-    elif not dry_run:
-        typer.echo(f"\n[compact] 总计移除 {total_removed} 条")
+    else:
+        for f in summary.files:
+            if dry_run:
+                typer.echo(
+                    f"[dry-run] {f.lang}/{f.table}: 将移除 {len(f.removed_keys)} 条 orphan"
+                )
+                for k in f.removed_keys:
+                    typer.echo(f"  - {k}")
+            else:
+                typer.echo(
+                    f"[compact] {f.lang}/{f.table}: 移除 {len(f.removed_keys)} 条 orphan"
+                )
+        if not dry_run:
+            typer.echo(f"\n[compact] 总计移除 {summary.total_removed} 条")
 
 
 if __name__ == "__main__":

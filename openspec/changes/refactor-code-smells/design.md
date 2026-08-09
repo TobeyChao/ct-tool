@@ -116,12 +116,13 @@ class ReadRowsResult:
     rows_by_table: dict[str, list[dict]]
     missing: list[tuple[str, Path]]      # (table, xlsx_path)
 
-def read_i18n_rows(cfg, schemas) -> ReadRowsResult: ...
+def read_i18n_rows(cfg, schemas, *, table: str | None = None) -> ReadRowsResult: ...
 ```
 
 CLI 遍历 `missing` 渲染 `[warn] {path} 不存在，跳过 {table}`（逐字不变）。
 `i18n_sync` 的 `--table` **保留表存在性校验**（不存在时报错退出，行为不变），
-只把过滤职责归 `sync_all`（删除 CLI 预过滤后的二次过滤）。
+`table` 同时传给 `read_i18n_rows`（只读目标表，保证缺失警告范围一致）与
+`sync_all`（过滤职责归它，删除 CLI 预过滤后的二次过滤）。
 
 ### D2. JsonStep 关注点分离（提炼函数 6.1）
 

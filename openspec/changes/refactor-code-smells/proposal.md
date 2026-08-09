@@ -63,7 +63,7 @@ status / compact / export 同一套用例接口，现在这些逻辑还埋在 CL
 - **新增代码**：`tool/ct/app/status.py`、`tool/ct/app/i18n.py`、
   `tool/ct/export/i18n/compact.py`、`tool/ct/export/i18n/counts.py`、
   `tool/ct/export/accessor_model.py`；对应测试：
-  `tool/tests/app/test_status.py`、`tool/tests/app/test_i18n.py`、
+  `tool/tests/app/test_compute_status.py`、`tool/tests/app/test_i18n.py`、
   `tool/tests/i18n/test_compact.py`、`tool/tests/export/test_accessor_golden.py`、
   `tool/tests/export/test_binary_golden.py` + `tool/tests/fixtures/`。
 - **删除**：`get_cached_ids`、`_BB_READ`、`_field_slot_index`、
