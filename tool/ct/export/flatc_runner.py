@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import logging
 import subprocess
-import sys
 from pathlib import Path
+
+from ct.schema.conventions import resolve_flatc_path
 
 logger = logging.getLogger(__name__)
 
@@ -14,21 +15,8 @@ _TARGETS = [
 ]
 
 
-def _resolve_flatc(flatc_path: Path) -> Path:
-    """Resolve flatc path with platform-aware extension (Windows: .exe)."""
-    # On Windows, prefer .exe extension even if a bare file exists
-    # (e.g., both "flatc" Linux binary and "flatc.exe" may be present)
-    if sys.platform == "win32" and not flatc_path.suffix:
-        exe_path = flatc_path.with_suffix(".exe")
-        if exe_path.exists():
-            return exe_path
-    if flatc_path.exists():
-        return flatc_path
-    return flatc_path
-
-
 def check_flatc(flatc_path: Path) -> bool:
-    resolved = _resolve_flatc(flatc_path)
+    resolved = resolve_flatc_path(flatc_path)
     if not resolved.exists():
         logger.error(
             f"flatc 未找到: {flatc_path}\n"
@@ -63,7 +51,7 @@ def compile_fbs(
     fbs_dir: Path,
     output_dir: Path,
 ) -> bool:
-    resolved = _resolve_flatc(flatc_path)
+    resolved = resolve_flatc_path(flatc_path)
     if not check_flatc(flatc_path):
         return False
 

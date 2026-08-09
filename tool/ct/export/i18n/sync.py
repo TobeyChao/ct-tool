@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -13,6 +12,7 @@ from ct.export.i18n.extractor import (
     extract_source_for_table,
     save_source_file,
 )
+from ct.export.i18n.merger import load_translation
 from ct.export.i18n.state import LangStatus, sync_lang_table
 from ct.schema.models import TableSchema
 
@@ -51,14 +51,6 @@ def _lang_path(i18n_dir: Path, lang: str, table: str) -> Path:
     return i18n_dir / lang / f"{table}.json"
 
 
-def _load_lang_file(i18n_dir: Path, lang: str, table: str) -> dict[str, dict[str, Any]]:
-    path = _lang_path(i18n_dir, lang, table)
-    if not path.exists():
-        return {}
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
-
-
 def sync_all(
     cfg: GlobalConfig,
     schemas: Iterable[TableSchema],
@@ -94,7 +86,7 @@ def sync_all(
         summary.source_files_written.append(path)
 
         for lang in secondary_langs:
-            lang_existing = _load_lang_file(i18n_dir, lang, schema.table)
+            lang_existing = load_translation(i18n_dir, lang, schema.table)
             existing_count = len(lang_existing)
 
             new_lang = sync_lang_table(source_data, lang_existing)

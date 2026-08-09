@@ -31,21 +31,21 @@
 
 ## 2. 阶段 B：重复小工具收敛
 
-- [ ] 2.1 `FieldDef.column_span()` 方法上移入 `schema/models.py`；
+- [x] 2.1 `FieldDef.column_span()` 方法上移入 `schema/models.py`；
       `excel/reader.py` 与 `excel/template.py` 删除各自 `_column_span`
       （含 `reader.leaf_column_map` 内调用改为 `leaf.column_span()`；
       搬移函数 8.1）
-- [ ] 2.2 `schema/conventions.py` 的 `_resolve_flatc` 公开为
+- [x] 2.2 `schema/conventions.py` 的 `_resolve_flatc` 公开为
       `resolve_flatc_path()`；`export/flatc_runner.py` 复用并删除本地副本
-- [ ] 2.3 `sync.py` 删除 `_load_lang_file`，改用 `load_translation`
+- [x] 2.3 `sync.py` 删除 `_load_lang_file`，改用 `load_translation`
       （实现完全相同，内联函数 6.2）
-- [ ] 2.4 `excel/template.py` 新增共享生成器
+- [x] 2.4 `excel/template.py` 新增共享生成器
       `iter_data_rows(path, header_rows) -> Iterator[tuple]` 产出表头下
       非空行（"非空" = 任一单元格 not None，与现判断一致）；
       `app/template.py::_has_data_rows` 改为 `any(...)` 短路
       （消除 app 层对 openpyxl 的直接依赖）；`update_template` 全量时
       再 `list(...)` 复用同一遍历
-- [ ] 2.5 `pytest` 全绿
+- [x] 2.5 `pytest` 全绿
 
 ## 3. 阶段 C：i18n 计数统一
 

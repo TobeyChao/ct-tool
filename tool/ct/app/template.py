@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
+from ct.excel.template import iter_data_rows
 from ct.excel.template import read_template_metadata
 from ct.schema.hashing import compute_schema_hash
 from ct.schema.models import TableSchema
@@ -31,23 +32,11 @@ class Decision:
 
 def _has_data_rows(path: Path, header_rows: int) -> bool:
     """Return True if the workbook has at least one non-empty row past the header."""
-    from openpyxl import load_workbook
-
     try:
-        wb = load_workbook(str(path), read_only=True, data_only=True)
+        return any(iter_data_rows(path, header_rows))
     except Exception:
         # Treat unreadable file as "has data" — safer to refuse than to silently overwrite.
         return True
-    try:
-        ws = wb.active
-        for idx, row in enumerate(ws.iter_rows(values_only=True), start=1):
-            if idx <= header_rows:
-                continue
-            if any(c is not None for c in row):
-                return True
-    finally:
-        wb.close()
-    return False
 
 
 def decide_template_action(

@@ -106,7 +106,7 @@ def _check_structure(text: str, table: str) -> list[Issue]:
     return issues
 
 
-def _resolve_flatc(flatc_path: Path) -> Path:
+def resolve_flatc_path(flatc_path: Path) -> Path:
     """Windows 下优先 .exe 后缀（与 flatc_runner 保持一致）。"""
     import sys
 
@@ -119,7 +119,7 @@ def _resolve_flatc(flatc_path: Path) -> Path:
 
 def _check_flatc_compile(text: str, table: str, flatc_path: Path) -> list[Issue]:
     """用 flatc 编译校验类型合法性；flatc 缺失时降级（只告警不失败）。"""
-    resolved = _resolve_flatc(flatc_path)
+    resolved = resolve_flatc_path(flatc_path)
     if not resolved.exists():
         return [
             WorkspaceIssue(

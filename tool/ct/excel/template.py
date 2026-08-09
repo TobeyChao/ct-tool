@@ -19,6 +19,7 @@ Header layout (total rows = ``schema.header_rows`` = max_nesting_depth + 1):
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from importlib import metadata as importlib_metadata
@@ -83,16 +84,6 @@ _NAME_ROW_HEIGHT = 36
 
 
 # ---------------------------------------------------------------------------
-# Column span (same logic as reader, duplicated to keep modules independent)
-# ---------------------------------------------------------------------------
-
-def _column_span(field: FieldDef) -> int:
-    if field.type == "struct" and field.fields:
-        return sum(_column_span(sf) for sf in field.fields)
-    return 1
-
-
-# ---------------------------------------------------------------------------
 # Collect all leaf fields with their 1-based column positions
 # ---------------------------------------------------------------------------
 
@@ -103,7 +94,7 @@ def _collect_leaf_fields(fields: list[FieldDef], start_col: int) -> list[tuple[F
     for field in fields:
         if field.type == "struct" and field.fields:
             result.extend(_collect_leaf_fields(field.fields, col))
-            col += _column_span(field)
+            col += field.column_span()
         else:
             result.append((field, col))
             col += 1
@@ -191,7 +182,7 @@ def _write_field_headers(
     """
     col = start_col
     for field in fields:
-        span = _column_span(field)
+        span = field.column_span()
 
         if field.type == "struct" and field.fields:
             # ---- struct: horizontal merge in current group row ----
@@ -357,6 +348,25 @@ def read_template_metadata(path: Path) -> TemplateMetadata | None:
             pass
 
 
+def iter_data_rows(path: Path, header_rows: int) -> Iterator[tuple]:
+    """产出表头下方的非空数据行（openpyxl values-only 元组）。
+
+    "非空"定义为任一单元格 `not None`（与 `_has_data_rows` /
+    `update_template` 的判断一致，不是字符串 strip 语义）。工作簿以
+    只读模式打开，迭代结束后关闭。
+    """
+    wb = load_workbook(str(path), read_only=True, data_only=True)
+    try:
+        ws = wb.active
+        for idx, row in enumerate(ws.iter_rows(values_only=True), start=1):
+            if idx <= header_rows:
+                continue
+            if any(cell is not None for cell in row):
+                yield row
+    finally:
+        wb.close()
+
+
 def generate_template(schema: TableSchema, output_path: Path) -> None:
     """Create an Excel template workbook with structured headers."""
     total_rows = schema.header_rows  # max_nesting_depth + 1
@@ -377,7 +387,7 @@ def generate_template(schema: TableSchema, output_path: Path) -> None:
         primary_key=schema.primary,
     )
 
-    total_cols = sum(_column_span(f) for f in schema.fields)
+    total_cols = sum(f.column_span() for f in schema.fields)
     last_col_letter = get_column_letter(total_cols)
 
     # Fixed column width
@@ -448,17 +458,7 @@ def update_template(schema: TableSchema, output_path: Path) -> int:
     old_header_rows = meta.header_rows if meta is not None else schema.header_rows
 
     # 1. Snapshot data rows from the existing file.
-    data_rows: list[tuple] = []
-    old_wb = load_workbook(str(output_path), read_only=True, data_only=True)
-    try:
-        old_ws = old_wb.active
-        for idx, row in enumerate(old_ws.iter_rows(values_only=True), start=1):
-            if idx <= old_header_rows:
-                continue
-            if any(cell is not None for cell in row):
-                data_rows.append(row)
-    finally:
-        old_wb.close()
+    data_rows = list(iter_data_rows(output_path, old_header_rows))
 
     # 2. Regenerate the template with fresh headers + metadata.
     generate_template(schema, output_path)

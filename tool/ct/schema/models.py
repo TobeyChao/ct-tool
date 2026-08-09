@@ -85,6 +85,12 @@ class FieldDef(BaseModel):
             return 1 + max(f.nesting_depth() for f in self.fields)
         return 1
 
+    def column_span(self) -> int:
+        """该字段占用的 Excel 列数（struct 递归展开为叶子列数之和）。"""
+        if self.type == "struct" and self.fields:
+            return sum(sf.column_span() for sf in self.fields)
+        return 1
+
 
 class TableSchema(BaseModel):
     table: str

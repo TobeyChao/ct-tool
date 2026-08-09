@@ -25,21 +25,6 @@ from ct.schema.models import FieldDef, TableSchema
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Column span helpers
-# ---------------------------------------------------------------------------
-
-def _column_span(field: FieldDef) -> int:
-    """Return how many Excel columns *field* occupies.
-
-    - A basic / enum / array field occupies exactly 1 column.
-    - A struct field occupies the sum of its sub-fields' spans (recursive).
-    """
-    if field.type == "struct" and field.fields:
-        return sum(_column_span(sf) for sf in field.fields)
-    return 1
-
-
 def _flatten_fields(fields: list[FieldDef]) -> list[tuple[str, FieldDef]]:
     """Return a flat list of ``(dotted_path, leaf_field)`` tuples.
 
@@ -67,7 +52,7 @@ def leaf_column_map(schema: TableSchema) -> dict[str, int]:
     col = 0
     for path, leaf in _flatten_fields(schema.fields):
         result[path] = col
-        col += _column_span(leaf)
+        col += leaf.column_span()
     return result
 
 
