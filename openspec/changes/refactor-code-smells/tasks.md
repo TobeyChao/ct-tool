@@ -85,16 +85,16 @@
 
 ## 5. 阶段 E：管道关注点分离 + 失败路径修复
 
-- [ ] 5.1 `JsonStep.run` 按关注点拆私有方法：`_export_changed_table` /
+- [x] 5.1 `JsonStep.run` 按关注点拆私有方法：`_export_changed_table` /
       `_reuse_unchanged_table` / `_write_json` / `_build_and_cache_bytes` /
       `_update_cache`，步骤序列与日志文本不变（提炼函数 6.1）
-- [ ] 5.2 `AccessorStep` 的生成器 import 移到模块顶部，删除
+- [x] 5.2 `AccessorStep` 的生成器 import 移到模块顶部，删除
       `try/except ImportError`（失败直接暴露，不再静默）
-- [ ] 5.3 `ExportContext` 增加 `exported_tables`，取消时
+- [x] 5.3 `ExportContext` 增加 `exported_tables`，取消时
       `tables_exported` 返回实际已导出表数；更新 `test_export_pipeline.py`
       并补中途取消测试（用两张表的项目，处理第一张后 cancel，
       断言 `tables_exported == 1`）
-- [ ] 5.4 `pytest` 全绿
+- [x] 5.4 `pytest` 全绿
 
 ## 6. 阶段 F：binary_writer 类型分派收敛
 

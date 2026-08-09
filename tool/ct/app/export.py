@@ -28,10 +28,13 @@ from ct.export.binary_writer import (
     write_i18n_bundle,
     write_primary_bundle,
 )
+from ct.export.csharp_accessor_generator import generate_csharp_accessor
 from ct.export.fbs_generator import generate_container_fbs
 from ct.export.i18n.merger import load_translation, merge_translations
 from ct.export.i18n.sync import sync_all
 from ct.export.json_writer import write_json
+from ct.export.lua_accessor_generator import generate_lua_accessor
+from ct.schema.models import TableSchema
 from ct.validate.errors import Issue
 
 
@@ -60,6 +63,7 @@ class ExportContext:
     all_i18n_bytes: dict[str, dict[str, bytes]] = field(default_factory=dict)
     bundles_written: list[Path] = field(default_factory=list)
     flatc_ok: bool = True
+    exported_tables: list[str] = field(default_factory=list)
 
     @property
     def langs(self) -> list[str]:
@@ -137,64 +141,103 @@ class JsonStep:
     name = "JSON"
 
     def run(self, ctx: ExportContext) -> None:
-        ws, langs = ctx.ws, ctx.langs
-        for name in ws.order:
+        for name in ctx.ws.order:
             ctx.cancel.raise_if_cancelled()
-            schema = ws.schema_map[name]
+            schema = ctx.ws.schema_map[name]
             if name in ctx.parsed_data:
-                rows = ctx.parsed_data[name]
-
-                # JSON 导出（每种语言）
-                for l in langs:
-                    if l == ws.config.primary_lang:
-                        json_rows = rows
-                    else:
-                        translations = load_translation(ctx.i18n_dir, l, schema.table)
-                        json_rows = merge_translations(
-                            rows, schema, l, translations, ws.config.primary_lang
-                        )
-                    path = write_json(json_rows, schema, l, ctx.output_dir)
-                    ctx.reporter.log(f"[json] {path.name}")
-
-                # FlatBuffers bytes（不含 server_only）
-                fbs_bytes = build_table_bytes(rows, schema, exclude_server_only=True)
-                ctx.all_table_bytes[name] = fbs_bytes
-                save_fbs_bytes(ctx.cache_dir, name, fbs_bytes)
-
-                # i18n bytes（只缓存 secondary 语言）
-                if schema.has_i18n:
-                    for l in langs:
-                        if l == ws.config.primary_lang:
-                            continue
-                        translations = load_translation(ctx.i18n_dir, l, schema.table)
-                        merged = merge_translations(
-                            rows, schema, l, translations, ws.config.primary_lang
-                        )
-                        i18n_bytes = build_i18n_table_bytes(merged, schema)
-                        ctx.all_i18n_bytes.setdefault(l, {})[f"{name}_i18n"] = i18n_bytes
-                        save_fbs_bytes(ctx.cache_dir, f"{name}_i18n_{l}", i18n_bytes)
-
-                # 更新 cache
-                xlsx_path = ctx.excel_dir / schema.resolved_excel_file
-                h = file_hash(xlsx_path)
-                update_table_cache(
-                    ctx.cache, name,
-                    hash=h,
-                    ids=sorted(ctx.id_sets.get(name, set())),
+                self._export_changed_table(
+                    ctx, name, schema, ctx.parsed_data[name], ctx.langs
                 )
             else:
-                # 未变化的表：从 cache 复用 bytes
-                cached_bytes = load_fbs_bytes(ctx.cache_dir, name)
-                if cached_bytes:
-                    ctx.all_table_bytes[name] = cached_bytes
-                    ctx.reporter.log(f"[skip] {name} (unchanged)")
-                if schema.has_i18n:
-                    for l in langs:
-                        if l == ws.config.primary_lang:
-                            continue
-                        cached_i18n = load_fbs_bytes(ctx.cache_dir, f"{name}_i18n_{l}")
-                        if cached_i18n:
-                            ctx.all_i18n_bytes.setdefault(l, {})[f"{name}_i18n"] = cached_i18n
+                self._reuse_unchanged_table(ctx, name, schema, ctx.langs)
+            ctx.exported_tables.append(name)
+
+    def _export_changed_table(
+        self,
+        ctx: ExportContext,
+        name: str,
+        schema: TableSchema,
+        rows: list[dict[str, Any]],
+        langs: list[str],
+    ) -> None:
+        """写 JSON → 构建并缓存主表/i18n bytes → 更新 cache。"""
+        self._write_json(ctx, schema, rows, langs)
+        self._build_and_cache_bytes(ctx, name, schema, rows, langs)
+        self._update_cache(ctx, name, schema)
+
+    def _reuse_unchanged_table(
+        self,
+        ctx: ExportContext,
+        name: str,
+        schema: TableSchema,
+        langs: list[str],
+    ) -> None:
+        """未变化表：从 cache 复用 bytes。"""
+        cached_bytes = load_fbs_bytes(ctx.cache_dir, name)
+        if cached_bytes:
+            ctx.all_table_bytes[name] = cached_bytes
+            ctx.reporter.log(f"[skip] {name} (unchanged)")
+        if schema.has_i18n:
+            for l in langs:
+                if l == ctx.ws.config.primary_lang:
+                    continue
+                cached_i18n = load_fbs_bytes(ctx.cache_dir, f"{name}_i18n_{l}")
+                if cached_i18n:
+                    ctx.all_i18n_bytes.setdefault(l, {})[f"{name}_i18n"] = cached_i18n
+
+    def _write_json(
+        self,
+        ctx: ExportContext,
+        schema: TableSchema,
+        rows: list[dict[str, Any]],
+        langs: list[str],
+    ) -> None:
+        """每种语言写一份 JSON。"""
+        for l in langs:
+            if l == ctx.ws.config.primary_lang:
+                json_rows = rows
+            else:
+                translations = load_translation(ctx.i18n_dir, l, schema.table)
+                json_rows = merge_translations(
+                    rows, schema, l, translations, ctx.ws.config.primary_lang
+                )
+            path = write_json(json_rows, schema, l, ctx.output_dir)
+            ctx.reporter.log(f"[json] {path.name}")
+
+    def _build_and_cache_bytes(
+        self,
+        ctx: ExportContext,
+        name: str,
+        schema: TableSchema,
+        rows: list[dict[str, Any]],
+        langs: list[str],
+    ) -> None:
+        """构建主表 bytes（不含 server_only）与次语言 i18n bytes 并缓存。"""
+        fbs_bytes = build_table_bytes(rows, schema, exclude_server_only=True)
+        ctx.all_table_bytes[name] = fbs_bytes
+        save_fbs_bytes(ctx.cache_dir, name, fbs_bytes)
+
+        if schema.has_i18n:
+            for l in langs:
+                if l == ctx.ws.config.primary_lang:
+                    continue
+                translations = load_translation(ctx.i18n_dir, l, schema.table)
+                merged = merge_translations(
+                    rows, schema, l, translations, ctx.ws.config.primary_lang
+                )
+                i18n_bytes = build_i18n_table_bytes(merged, schema)
+                ctx.all_i18n_bytes.setdefault(l, {})[f"{name}_i18n"] = i18n_bytes
+                save_fbs_bytes(ctx.cache_dir, f"{name}_i18n_{l}", i18n_bytes)
+
+    def _update_cache(self, ctx: ExportContext, name: str, schema: TableSchema) -> None:
+        """记录本次导出的 Excel hash 与主键集合。"""
+        xlsx_path = ctx.excel_dir / schema.resolved_excel_file
+        h = file_hash(xlsx_path)
+        update_table_cache(
+            ctx.cache, name,
+            hash=h,
+            ids=sorted(ctx.id_sets.get(name, set())),
+        )
 
 
 class FbsStep:
@@ -241,22 +284,17 @@ class AccessorStep:
     name = "Accessor"
 
     def run(self, ctx: ExportContext) -> None:
-        try:
-            from ct.export.csharp_accessor_generator import generate_csharp_accessor
-            from ct.export.lua_accessor_generator import generate_lua_accessor
-            for name in ctx.ws.order:
-                ctx.cancel.raise_if_cancelled()
-                schema = ctx.ws.schema_map[name]
-                cs_path = generate_csharp_accessor(
-                    schema, ctx.output_dir / "generated" / "csharp"
-                )
-                ctx.reporter.log(f"[accessor] {cs_path.name}")
-                lua_path = generate_lua_accessor(
-                    schema, ctx.output_dir / "generated" / "lua"
-                )
-                ctx.reporter.log(f"[accessor] {lua_path.name}")
-        except ImportError:
-            pass
+        for name in ctx.ws.order:
+            ctx.cancel.raise_if_cancelled()
+            schema = ctx.ws.schema_map[name]
+            cs_path = generate_csharp_accessor(
+                schema, ctx.output_dir / "generated" / "csharp"
+            )
+            ctx.reporter.log(f"[accessor] {cs_path.name}")
+            lua_path = generate_lua_accessor(
+                schema, ctx.output_dir / "generated" / "lua"
+            )
+            ctx.reporter.log(f"[accessor] {lua_path.name}")
 
 
 class BundleStep:
@@ -329,7 +367,7 @@ class ExportPipeline:
             raise
         except CancelledError:
             return ExportResult(
-                tables_exported=len(tables_to_export),
+                tables_exported=len(ctx.exported_tables),
                 elapsed=time.perf_counter() - started,
                 cancelled=True,
             )

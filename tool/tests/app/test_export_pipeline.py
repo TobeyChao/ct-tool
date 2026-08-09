@@ -15,7 +15,12 @@ from ct.app.workspace import Workspace
 from ct.cache.state import load_cache
 
 
-def _build_project(root: Path, *, duplicate_pk: bool = False) -> None:
+def _build_project(
+    root: Path,
+    *,
+    duplicate_pk: bool = False,
+    extra_tables: list[str] | None = None,
+) -> None:
     (root / "config" / "schemas").mkdir(parents=True)
     (root / "excel").mkdir()
     (root / "i18n").mkdir()
@@ -56,6 +61,25 @@ def _build_project(root: Path, *, duplicate_pk: bool = False) -> None:
         ws.append([1001, "铁剑二号", 200.0])
     wb.save(root / "excel" / "item.xlsx")
 
+    for extra in extra_tables or []:
+        extra_schema = {
+            "table": extra,
+            "primary": "Id",
+            "fields": [
+                {"name": "Id", "type": "int32"},
+                {"name": "Name", "type": "string"},
+            ],
+        }
+        (root / "config" / "schemas" / f"{extra}.yaml").write_text(
+            yaml.safe_dump(extra_schema, allow_unicode=True), encoding="utf-8"
+        )
+        wb2 = Workbook()
+        ws2 = wb2.active
+        ws2.append(["id", "name"])
+        ws2.append(["主键", "名称"])
+        ws2.append([1, "A"])
+        wb2.save(root / "excel" / f"{extra}.xlsx")
+
 
 class _RecordingReporter:
     def __init__(self) -> None:
@@ -70,6 +94,21 @@ class _RecordingReporter:
 
     def log(self, line: str, *, err: bool = False) -> None:
         self.lines.append(line)
+
+
+class _CancelAfterFirstJson(_RecordingReporter):
+    """JsonStep 处理完第一张表后触发取消（用于中途取消语义测试）。"""
+
+    def __init__(self, cancel: CancelToken) -> None:
+        super().__init__()
+        self._cancel = cancel
+        self._json_logged = False
+
+    def log(self, line: str, *, err: bool = False) -> None:
+        super().log(line, err=err)
+        if line.startswith("[json]") and not self._json_logged:
+            self._json_logged = True
+            self._cancel.cancel()
 
 
 def test_cancelled_export_does_not_commit_cache(tmp_path: Path) -> None:
@@ -119,3 +158,20 @@ def test_successful_export_commits_cache_and_bundles(tmp_path: Path) -> None:
     assert any("data_zh.bin" in p.name for p in result.bundles_written)
     assert any(line.startswith("[parse] Item") for line in reporter.lines)
     assert any(line.startswith("[bundle]") for line in reporter.lines)
+
+
+def test_cancelled_mid_export_reports_actual_exported_tables(tmp_path: Path) -> None:
+    _build_project(tmp_path, extra_tables=["Quest"])
+    ws = Workspace.load(tmp_path)
+    cache = load_cache(ws.resolve("cache_dir"))
+    cancel = CancelToken()
+    reporter = _CancelAfterFirstJson(cancel)
+
+    result = ExportPipeline().run(
+        ws, ExportOptions(all_tables=True), cache, ws.order,
+        reporter, cancel,
+    )
+
+    assert result.cancelled
+    assert result.tables_exported == 1
+    assert not (ws.resolve("cache_dir") / "state.json").exists()
