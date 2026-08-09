@@ -112,19 +112,19 @@
 
 ## 7. 阶段 G：Accessor 生成器模型化
 
-- [ ] 7.1 补 C# / Lua 生成器 golden 特征测试：固定两个样例 schema
+- [x] 7.1 补 C# / Lua 生成器 golden 特征测试：固定两个样例 schema
       （样例 A = i18n string + enum + array<int32> + server_only；
       样例 B = struct 含 int32 / string 子字段 + 普通标量），断言
       当前生成文本逐字一致（重构前先落快照到 `tests/fixtures/`）
-- [ ] 7.2 新增 `ct/export/accessor_model.py`：`AccessorModel` +
+- [x] 7.2 新增 `ct/export/accessor_model.py`：`AccessorModel` +
       `build_accessor_model()`，只含共享派生数据（client_fields /
       string_fields / i18n_fields / primary），**不含槽位索引**
       （拆分阶段 6.11）
-- [ ] 7.3 `csharp_accessor_generator.py` 改为消费 `AccessorModel`，
+- [x] 7.3 `csharp_accessor_generator.py` 改为消费 `AccessorModel`，
       golden 测试零漂移
-- [ ] 7.4 `lua_accessor_generator.py` 改为消费 `AccessorModel`，
+- [x] 7.4 `lua_accessor_generator.py` 改为消费 `AccessorModel`，
       golden 测试零漂移
-- [ ] 7.5 `pytest` 全绿
+- [x] 7.5 `pytest` 全绿
 
 ## 8. 阶段 H：收尾
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ct.export.accessor_model import build_accessor_model
 from ct.schema.models import FieldDef, TableSchema
 
 
@@ -18,13 +19,14 @@ def generate_lua_accessor(schema: TableSchema, output_dir: Path) -> Path:
 
     Returns the path of the generated file.
     """
+    model = build_accessor_model(schema)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     table_pascal = schema.table
-    client_fields: list[FieldDef] = [f for f in schema.fields if not f.server_only]
-    pk = schema.primary_field
-    string_fields = [f for f in client_fields if f.type == "string"]
-    i18n_str_fields = schema.i18n_fields if schema.has_i18n else []
+    client_fields: list[FieldDef] = model.client_fields
+    pk = model.primary
+    string_fields = model.string_fields
+    i18n_str_fields = model.i18n_fields
 
     lines: list[str] = []
     w = lines.append

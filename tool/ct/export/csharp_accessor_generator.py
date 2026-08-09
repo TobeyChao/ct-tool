@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ct.export.accessor_model import build_accessor_model
 from ct.schema.models import FieldDef, TableSchema
 
 
@@ -44,16 +45,17 @@ def generate_csharp_accessor(schema: TableSchema, output_dir: Path) -> Path:
 
     Returns the path of the generated file.
     """
+    model = build_accessor_model(schema)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     table_pascal = schema.table
     class_name = f"{table_pascal}Accessor"
 
     # Collect non-server_only fields
-    client_fields: list[FieldDef] = [f for f in schema.fields if not f.server_only]
+    client_fields: list[FieldDef] = model.client_fields
 
     # Determine primary key info
-    pk = schema.primary_field
+    pk = model.primary
     pk_cs_type = _CS_TYPE_MAP.get(pk.type, "int")
 
     lines: list[str] = []
@@ -75,7 +77,7 @@ def generate_csharp_accessor(schema: TableSchema, output_dir: Path) -> Path:
     w(f"    private static Dictionary<{pk_cs_type}, int> _mainIndex;")
 
     # String field indices (among client_fields) for pre-materialisation
-    string_fields = [f for f in client_fields if f.type == "string"]
+    string_fields = model.string_fields
     for sf in string_fields:
         arr_name = f"_str_{sf.name}"
         w(f"    private static string[] {arr_name};")
@@ -84,7 +86,7 @@ def generate_csharp_accessor(schema: TableSchema, output_dir: Path) -> Path:
         w("")
         w("    private static ByteBuffer _i18nBb;")
         w(f"    private static Dictionary<{pk_cs_type}, int> _i18nIndex;")
-        for sf in schema.i18n_fields:
+        for sf in model.i18n_fields:
             w(f"    private static string[] _i18nStr_{sf.name};")
 
     w("")
@@ -116,7 +118,7 @@ def generate_csharp_accessor(schema: TableSchema, output_dir: Path) -> Path:
         w("        // Reset i18n fields (reload-safe: Preload may be called to switch language)")
         w("        _i18nBb = null;")
         w(f"        _i18nIndex = null;")
-        for sf in schema.i18n_fields:
+        for sf in model.i18n_fields:
             w(f"        _i18nStr_{sf.name} = null;")
         w("")
     w("        // ---- main bundle ----")
@@ -156,14 +158,14 @@ def generate_csharp_accessor(schema: TableSchema, output_dir: Path) -> Path:
         w("            int i18nCount = i18nRoot.EntriesLength;")
         w("")
         w(f"            _i18nIndex = new Dictionary<{pk_cs_type}, int>(i18nCount);")
-        for sf in schema.i18n_fields:
+        for sf in model.i18n_fields:
             w(f"            _i18nStr_{sf.name} = new string[i18nCount];")
         w("")
         w("            for (int j = 0; j < i18nCount; j++)")
         w("            {")
         w(f"                var entry = i18nRoot.Entries(j).Value;")
         w(f"                _i18nIndex[entry.{pk_accessor}] = j;")
-        for sf in schema.i18n_fields:
+        for sf in model.i18n_fields:
             sf_accessor = sf.name
             w(f"                _i18nStr_{sf.name}[j] = entry.{sf_accessor};")
         w("            }")
