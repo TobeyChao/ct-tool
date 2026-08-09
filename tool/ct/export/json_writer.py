@@ -7,12 +7,10 @@ from typing import Any
 from ct.schema.models import TableSchema
 
 
-def serialize_row(row: dict[str, Any], schema: TableSchema, exclude_server_only: bool = False) -> dict[str, Any]:
+def serialize_row(row: dict[str, Any], schema: TableSchema) -> dict[str, Any]:
     """序列化单行数据为 JSON 格式。"""
     result: dict[str, Any] = {}
     for field in schema.fields:
-        if exclude_server_only and field.server_only:
-            continue
         value = row.get(field.name)
         if field.type == "enum":
             result[field.name] = str(value) if value is not None else None
@@ -39,7 +37,6 @@ def write_json(
     schema: TableSchema,
     lang: str,
     output_dir: Path,
-    exclude_server_only: bool = False,
 ) -> Path:
     """将行数据序列化为 JSON 文件。
 
@@ -50,7 +47,7 @@ def write_json(
     json_dir.mkdir(parents=True, exist_ok=True)
 
     root_key = schema.resolved_json_key
-    items = [serialize_row(row, schema, exclude_server_only) for row in rows]
+    items = [serialize_row(row, schema) for row in rows]
     data = {root_key: items}
 
     out_path = json_dir / f"{schema.table}_{lang}.json"

@@ -11,7 +11,6 @@ from ct.export.i18n.io import dump_lang_file
 from ct.config import GlobalConfig
 from ct.export.i18n.extractor import (
     extract_source_for_table,
-    load_source_file,
     save_source_file,
 )
 from ct.export.i18n.state import LangStatus, sync_lang_table

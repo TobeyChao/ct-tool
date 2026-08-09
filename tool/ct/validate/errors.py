@@ -86,8 +86,6 @@ class ValidationIssue(Issue):
 class WorkspaceIssue(Issue):
     """项目级问题：缺文件、schema 加载错误等。"""
 
-    detail: str = ""
-
 
 def format_error(table: str, row: int, field: str, message: str) -> str:
     """Format a single validation error in a planner-friendly format.

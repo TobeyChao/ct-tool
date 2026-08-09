@@ -25,17 +25,6 @@ _CS_TYPE_MAP: dict[str, str] = {
     "enum": "byte",
 }
 
-# Schema type -> ByteBuffer.__get_{X} method suffix and byte width
-_BB_READ: dict[str, tuple[str, int]] = {
-    "int32": ("Int",    4),
-    "int64": ("Long",   8),
-    "float": ("Float",  4),
-    "double": ("Double", 8),
-    "bool":  ("Bool",   1),  # special-cased in code
-    "enum":  ("Sbyte",  1),  # stored as int8
-}
-
-
 def _cs_return_type(field: FieldDef) -> str:
     """Return the C# type string for a field's accessor return value."""
     if field.type == "array":
@@ -46,37 +35,6 @@ def _cs_return_type(field: FieldDef) -> str:
     if field.type == "struct":
         return f"{field.name}Struct"  # FlatBuffers table type
     return _CS_TYPE_MAP.get(field.type, "int")
-
-
-def _field_slot_index(schema: TableSchema, field: FieldDef) -> int:
-    """Return the vtable slot index of *field* among non-server_only fields."""
-    idx = 0
-    for f in schema.fields:
-        if f.server_only:
-            continue
-        if f.name == field.name:
-            return idx
-        idx += 1
-    raise ValueError(f"Field {field.name} not found in schema {schema.table}")
-
-
-def _i18n_field_slot_index(schema: TableSchema, field: FieldDef) -> int:
-    """Slot index inside the I18nEntry table (slot 0 = pk, then i18n fields)."""
-    idx = 1  # slot 0 is the primary key
-    for f in schema.i18n_fields:
-        if f.name == field.name:
-            return idx
-        idx += 1
-    raise ValueError(f"i18n field {field.name} not found")
-
-
-# ---- vtable offset helper --------------------------------------------------
-# FlatBuffers vtable layout: slot *i* is at byte offset 4 + i*2 in the vtable.
-# The __offset(int) method on the C# Table helper already does this, so we just
-# pass the "virtual offset" = 4 + slot_index * 2.
-
-def _voffset(slot: int) -> int:
-    return 4 + slot * 2
 
 
 # ---- code generation --------------------------------------------------------

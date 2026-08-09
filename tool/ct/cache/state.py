@@ -76,18 +76,6 @@ def update_table_cache(
 
 
 # ---------------------------------------------------------------------------
-# Task 5.3 – Read id sets from cache
-# ---------------------------------------------------------------------------
-
-def get_cached_ids(cache: CacheState, table_name: str) -> set[int] | None:
-    """Return the set of cached IDs for *table_name*, or ``None`` if absent."""
-    entry = cache.tables.get(table_name)
-    if entry is None:
-        return None
-    return set(entry.ids)
-
-
-# ---------------------------------------------------------------------------
 # Task 5.4 – Reuse FlatBuffers bytes
 # ---------------------------------------------------------------------------
 
@@ -107,5 +95,4 @@ def load_fbs_bytes(cache_dir: Path, table_name: str) -> bytes | None:
     if not bin_path.exists():
         return None
     return bin_path.read_bytes()
-
 
