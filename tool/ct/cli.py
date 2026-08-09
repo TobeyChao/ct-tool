@@ -273,6 +273,32 @@ def status(
         typer.echo("[OK] 所有表已是最新（数据 + 模板）")
 
 
+@app.command()
+def panel(
+    project_root: Optional[str] = typer.Option(None, "--root", help="项目根目录"),
+    host: str = typer.Option("127.0.0.1", "--host", help="监听地址"),
+    port: int = typer.Option(8000, "--port", help="监听端口"),
+    no_browser: bool = typer.Option(False, "--no-browser", help="启动时不自动打开浏览器"),
+) -> None:
+    """启动本地面板（浏览器打开即用）。"""
+    _setup_logging()
+    root = Path(project_root) if project_root else Path(".")
+    # 先加载一次，配置/schema 错误立即以友好提示退出
+    _load_workspace(root)
+
+    from ct.web.app import create_app
+
+    app = create_app(root)
+    if not no_browser:
+        import threading
+        import webbrowser
+
+        threading.Timer(0.8, lambda: webbrowser.open(f"http://{host}:{port}")).start()
+
+    typer.echo(f"面板已启动: http://{host}:{port}（Ctrl+C 停止）")
+    app.run(host=host, port=port, debug=False, use_reloader=False, threaded=True)
+
+
 # ---------------------------------------------------------------- ct i18n group
 
 
