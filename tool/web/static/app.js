@@ -64,6 +64,7 @@ Vue.createApp({
 
       logs: [],
       logModule: "all",
+      followLatest: true,
       history: [],
     };
   },
@@ -411,9 +412,15 @@ Vue.createApp({
         this.logs = await this.api("/api/logs?module=" + encodeURIComponent(this.logModule));
         this.$nextTick(() => {
           const el = this.$refs.logList;
-          if (el) el.scrollTop = el.scrollHeight;
+          if (el && this.followLatest) el.scrollTop = el.scrollHeight;
         });
       } catch (e) { /* 忽略 */ }
+    },
+    onLogScroll() {
+      const el = this.$refs.logList;
+      if (!el) return;
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
+      this.followLatest = atBottom;
     },
     async loadHistory() {
       try {
@@ -659,8 +666,10 @@ Vue.createApp({
         <div class="panel-body">
           <div class="log-toolbar">
             <button v-for="m in ['all','导出','校验','i18n','模板','系统']" :key="m" class="pill" :class="{active: logModule===m}" @click="logModule = m; loadLogs()">{{ m === 'all' ? '全部' : m }}</button>
+            <span style="flex:1"></span>
+            <label class="cmd-check"><input type="checkbox" v-model="followLatest">跟随最新</label>
           </div>
-          <div class="log-list" ref="logList">
+          <div class="log-list" ref="logList" @scroll="onLogScroll">
             <div v-for="(r, i) in logs" :key="i" class="log-row">
               <span class="log-time">{{ r.time }}</span>
               <span class="log-module">{{ r.module }}</span>
