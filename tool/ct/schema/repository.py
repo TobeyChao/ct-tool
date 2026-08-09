@@ -10,10 +10,25 @@ from pathlib import Path
 from typing import Protocol
 
 import yaml
+import pydantic
 
 from ct.schema.conventions import FbsConvention
 from ct.schema.models import FieldDef
 from ct.schema.models import TableSchema
+
+
+def _schema_error_text(exc: Exception) -> str:
+    """把 pydantic ValidationError 精简为可读的一行错误，其他异常原样。"""
+    if isinstance(exc, pydantic.ValidationError):
+        parts = []
+        for err in exc.errors():
+            loc = ".".join(str(p) for p in err.get("loc", ()))
+            msg = err.get("msg", str(exc))
+            if msg.startswith("Value error, "):
+                msg = msg[len("Value error, "):]
+            parts.append(f"{loc}: {msg}" if loc else msg)
+        return "; ".join(parts)
+    return str(exc)
 
 
 class SchemaRepository(Protocol):
@@ -158,14 +173,19 @@ class YamlSchemaRepository:
         seen_names: dict[str, Path] = {}
 
         for yaml_path in sorted(self.schemas_dir.glob("*.yaml")):
-            with open(yaml_path, encoding="utf-8") as f:
-                data = yaml.safe_load(f)
+            try:
+                with open(yaml_path, encoding="utf-8") as f:
+                    data = yaml.safe_load(f)
+            except (yaml.YAMLError, OSError) as e:
+                raise ValueError(f"加载 schema 失败 [{yaml_path.name}]: {e}") from e
             if data is None:
                 continue
             try:
                 schema = TableSchema(**data)
             except Exception as e:
-                raise ValueError(f"加载 schema 失败 [{yaml_path.name}]: {e}") from e
+                raise ValueError(
+                    f"加载 schema 失败 [{yaml_path.name}]: {_schema_error_text(e)}"
+                ) from e
 
             if schema.table in seen_names:
                 raise ValueError(

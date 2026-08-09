@@ -47,7 +47,12 @@ status / compact / export 同一套用例接口，现在这些逻辑还埋在 CL
   时管道 `sync_all` 未传 `table_filter`，会误删其他表的 i18n 文件（已修复
   并补回归测试）；③ 既有缺陷——Excel 单元格类型与 schema 不符时 reader
   coercion 崩溃输出 Python traceback，违反 Change 2 的友好错误定位规格
-  （coercion 失败改为返回原值，由校验器报结构化错误，已补 CLI 回归测试）。
+  （coercion 失败改为返回原值，由校验器报结构化错误，已补 CLI 回归测试）；
+  ④ 既有缺陷——增量导出时未变化表的 fbs_bytes 缓存缺失会静默丢表
+  （`_reuse_unchanged_table` 改为任一缓存缺失即重读重建，已补回归测试）；
+  ⑤ 既有缺陷——schema 加载错误（命名违规 / 重复表名 / 循环引用 / YAML
+  语法 / enum 值非法）裸抛 Python traceback（`cli._load_workspace` 统一
+  转友好提示 + `repository` 捕获 YAMLError 并精简错误文本，新增 5 个测试）。
 
 ## Capabilities
 

@@ -153,3 +153,16 @@
       export（增量 / 全量 / 按表 / 按语言）产物零漂移；临时项目
       gen-template 决策矩阵、i18n sync/status/compact（dry-run/真实）、
       错误定位、错误路径退出码全部符合预期
+- [x] 9.5 修复既有缺陷：增量导出时未变化表的 fbs_bytes 缓存缺失（被清理/
+      损坏）时静默跳过导致 bundle 缺表；`_reuse_unchanged_table` 改为
+      任一缓存缺失即重读 Excel 完整重建（补
+      `test_incremental_export_rebuilds_missing_cache_bytes` 回归测试）
+- [x] 9.6 修复既有缺陷：schema 加载错误（命名违规 / 重复表名 / 循环引用 /
+      YAML 语法 / enum 值非法）裸抛 Python traceback；`cli._load_workspace`
+      统一捕获转 `[error]` 友好提示，`repository` 捕获 YAMLError 并精简
+      pydantic 错误文本（新增 `tool/tests/cli/test_schema_errors.py` 5 个测试）
+- [x] 9.7 深测覆盖且通过：gen-template 决策矩阵全分支（legacy /
+      hash 不同±数据 / force / update-header / table_name 不匹配）、i18n
+      状态机（translated→stale→orphan→compact 生命周期、--lang 过滤）、
+      数组元素与跨表引用校验定位、无 secondary / 无 i18n 表边界、
+      flatc 缺失降级、Windows `.exe` 路径解析、翻译合并回退语义

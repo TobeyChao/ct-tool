@@ -22,6 +22,7 @@ from ct.cache.state import (
     update_table_cache,
 )
 from ct.excel.diff import file_hash
+from ct.excel.reader import read_excel
 from ct.export.binary_writer import (
     build_i18n_table_bytes,
     build_table_bytes,
@@ -179,18 +180,34 @@ class JsonStep:
         schema: TableSchema,
         langs: list[str],
     ) -> None:
-        """未变化表：从 cache 复用 bytes。"""
+        """未变化表：从 cache 复用 bytes；任一缓存文件缺失时回退重新解析。
+
+        主表或 i18n bytes 缓存缺失（被清理/损坏）时若静默跳过，bundle
+        会缺表——重读 Excel 走完整导出路径保证数据完整（功能验证发现）。
+        """
         cached_bytes = load_fbs_bytes(ctx.cache_dir, name)
-        if cached_bytes:
-            ctx.all_table_bytes[name] = cached_bytes
-            ctx.reporter.log(f"[skip] {name} (unchanged)")
+        i18n_cached: dict[str, dict[str, bytes]] = {}
+        cache_complete = cached_bytes is not None
         if schema.has_i18n:
             for l in langs:
                 if l == ctx.ws.config.primary_lang:
                     continue
                 cached_i18n = load_fbs_bytes(ctx.cache_dir, f"{name}_i18n_{l}")
-                if cached_i18n:
-                    ctx.all_i18n_bytes.setdefault(l, {})[f"{name}_i18n"] = cached_i18n
+                if cached_i18n is None:
+                    cache_complete = False
+                else:
+                    i18n_cached.setdefault(l, {})[f"{name}_i18n"] = cached_i18n
+
+        if cache_complete:
+            ctx.all_table_bytes[name] = cached_bytes
+            ctx.reporter.log(f"[skip] {name} (unchanged)")
+            for l, tables in i18n_cached.items():
+                ctx.all_i18n_bytes.setdefault(l, {}).update(tables)
+            return
+
+        rows = read_excel(ctx.excel_dir / schema.resolved_excel_file, schema).rows
+        self._export_changed_table(ctx, name, schema, rows, langs)
+        ctx.reporter.log(f"[rebuild] {name} (cache miss)")
 
     def _write_json(
         self,

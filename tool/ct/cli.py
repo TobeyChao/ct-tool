@@ -35,6 +35,15 @@ app.add_typer(i18n_app, name="i18n")
 logger = logging.getLogger("ct")
 
 
+def _load_workspace(root: Path) -> Workspace:
+    """加载 Workspace；配置/schema 错误转为友好提示（不抛 traceback）。"""
+    try:
+        return Workspace.load(root)
+    except (FileNotFoundError, ValueError) as e:
+        typer.echo(f"[error] {e}", err=True)
+        raise typer.Exit(1)
+
+
 def _setup_logging(verbose: bool = False) -> None:
     level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(
@@ -83,7 +92,7 @@ def export(
     opts = ExportOptions(all_tables=all_tables, table=table, lang=lang, verbose=verbose)
     _setup_logging(opts.verbose)
     root = Path(project_root) if project_root else Path(".")
-    ws = Workspace.load(root)
+    ws = _load_workspace(root)
 
     if not ws.schemas:
         typer.echo("未找到任何 schema", err=True)
@@ -128,7 +137,7 @@ def validate(
     """只走解析和校验，不输出产物。"""
     _setup_logging(verbose)
     root = Path(project_root) if project_root else Path(".")
-    ws = Workspace.load(root)
+    ws = _load_workspace(root)
 
     schemas, order = ws.schemas, ws.order
     cache = load_cache(ws.resolve("cache_dir"))
@@ -170,7 +179,7 @@ def gen_template(
     """根据 schema 生成 Excel 模板头部。"""
     _setup_logging()
     root = Path(project_root) if project_root else Path(".")
-    ws = Workspace.load(root)
+    ws = _load_workspace(root)
 
     schemas, _ = ws.schemas, ws.order
     schema_map = ws.schema_map
@@ -229,7 +238,7 @@ def status(
     """
     _setup_logging()
     root = Path(project_root) if project_root else Path(".")
-    ws = Workspace.load(root)
+    ws = _load_workspace(root)
 
     cache = load_cache(ws.resolve("cache_dir"))
     report = compute_status(ws, cache)
@@ -275,7 +284,7 @@ def i18n_sync(
     """刷新 i18n source 文件并为每个 secondary 语言生成/更新 lang 骨架。"""
     _setup_logging(verbose)
     root = Path(project_root) if project_root else Path(".")
-    ws = Workspace.load(root)
+    ws = _load_workspace(root)
     schemas, _ = ws.schemas, ws.order
 
     if table and table not in {s.table for s in schemas}:
@@ -322,7 +331,7 @@ def i18n_status(
     """报告 i18n 翻译进度。"""
     _setup_logging()
     root = Path(project_root) if project_root else Path(".")
-    ws = Workspace.load(root)
+    ws = _load_workspace(root)
     schemas, _ = ws.schemas, ws.order
 
     report = compute_status_report(ws.config, schemas, lang_filter=lang)
@@ -345,7 +354,7 @@ def i18n_compact(
     """物理移除 lang 文件中所有 status: orphan 的条目。"""
     _setup_logging()
     root = Path(project_root) if project_root else Path(".")
-    ws = Workspace.load(root)
+    ws = _load_workspace(root)
     schemas, _ = ws.schemas, ws.order
 
     try:

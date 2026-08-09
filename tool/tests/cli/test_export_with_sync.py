@@ -145,3 +145,30 @@ def test_export_single_table_keeps_other_i18n_files(tmp_path: Path) -> None:
     assert single.exit_code == 0, single.output
     assert (tmp_path / "i18n" / "en" / "Quest.json").exists()
     assert (tmp_path / "i18n" / "en" / "Item.json").exists()
+
+
+def test_incremental_export_rebuilds_missing_cache_bytes(tmp_path: Path) -> None:
+    """未变化表的 fbs_bytes 缓存缺失时，增量导出必须重建而非静默丢表。"""
+    _build_project(tmp_path)
+    _add_quest_table(tmp_path)
+
+    first = runner.invoke(app, ["export", "--all", "--root", str(tmp_path)])
+    assert first.exit_code == 0, first.output
+    quest_cache = tmp_path / "cache" / "fbs_bytes" / "Quest.bin"
+    assert quest_cache.exists()
+    quest_cache.unlink()
+
+    # 只改 Item，触发增量导出（Quest 按 cache hash 判定未变化）
+    from openpyxl import load_workbook
+
+    wb = load_workbook(tmp_path / "excel" / "item.xlsx")
+    wb.active.append([1002, "魔杖", 200.0])
+    wb.save(tmp_path / "excel" / "item.xlsx")
+
+    result = runner.invoke(app, ["export", "--root", str(tmp_path)])
+    assert result.exit_code == 0, result.output
+
+    # Quest 缓存被重建，且 bundle 中确实包含 Quest 表数据
+    assert quest_cache.exists()
+    bundle = (tmp_path / "output" / "binary" / "data_zh.bin").read_bytes()
+    assert b"Quest" in bundle
