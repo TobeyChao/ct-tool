@@ -94,3 +94,59 @@ def test_yaml_syntax_error_reports_error(tmp_path: Path) -> None:
     assert "Traceback" not in result.output
     assert "[error]" in result.output
     assert "加载 schema 失败" in result.output
+
+
+def test_string_primary_key_reports_error_on_validate(tmp_path: Path) -> None:
+    """主键类型约束：string 主键在 schema 加载期被拒绝（不再导出中段崩溃）。"""
+    _setup(
+        tmp_path,
+        {
+            "Item.yaml": (
+                "table: Item\n"
+                "primary: Code\n"
+                "fields:\n  - {name: Code, type: string}\n"
+            )
+        },
+    )
+    result = runner.invoke(app, ["validate", "--root", str(tmp_path)])
+    assert result.exit_code != 0
+    assert "Traceback" not in result.output
+    assert "[error]" in result.output
+    assert "主键" in result.output
+    assert "string" in result.output
+
+
+def test_string_primary_key_reports_error_on_export(tmp_path: Path) -> None:
+    """原崩溃路径：string 主键 + ct export 现在是加载期友好报错。"""
+    _setup(
+        tmp_path,
+        {
+            "Item.yaml": (
+                "table: Item\n"
+                "primary: Code\n"
+                "fields:\n  - {name: Code, type: string}\n"
+            )
+        },
+    )
+    result = runner.invoke(app, ["export", "--all", "--root", str(tmp_path)])
+    assert result.exit_code != 0
+    assert "Traceback" not in result.output
+    assert "[error]" in result.output
+    assert "主键" in result.output
+
+
+def test_int64_primary_key_is_accepted(tmp_path: Path) -> None:
+    """int64 主键与 int32 一样合法。"""
+    _setup(
+        tmp_path,
+        {
+            "Item.yaml": (
+                "table: Item\n"
+                "primary: Id\n"
+                "fields:\n  - {name: Id, type: int64}\n"
+            )
+        },
+    )
+    result = runner.invoke(app, ["validate", "--root", str(tmp_path)])
+    assert result.exit_code == 0, result.output
+    assert "Traceback" not in result.output

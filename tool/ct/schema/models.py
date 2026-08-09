@@ -110,6 +110,12 @@ class TableSchema(BaseModel):
             raise ValueError(
                 f"表 {self.table}: 主键 '{self.primary}' 不在字段列表中"
             )
+        pk_type = next(f.type for f in self.fields if f.name == self.primary)
+        if pk_type not in ("int32", "int64"):
+            raise ValueError(
+                f"表 {self.table}: 主键字段 '{self.primary}' 类型必须为 "
+                f"int32 或 int64（当前: {pk_type}）"
+            )
         if len(field_names) != len(set(field_names)):
             seen: set[str] = set()
             for n in field_names:
