@@ -237,12 +237,12 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
 | `ct/schema/conventions.py` | fbs 结构标准 `FbsConvention` + 检查器：类型映射、容器/root_type 结构、"类型名与字段名不撞名"不变量 + flatc 编译校验 |
 | `ct/schema/hashing.py` | 计算 TableSchema 的稳定 hash（sha256 前 16 位 hex），用于模板元数据比对检测 schema 漂移 |
 | `ct/schema/naming.py` | 命名校验器 `validate_name`：表/字段名必须首字符大写、不以 `_` 开头/结尾（WYSIWYG 恒等域，schema 加载即校验，不再做任何大小写转换） |
-| `ct/excel/reader.py` | 以只读模式读取 Excel。struct 字段展开为多列；array 字段在单元格内按 `separator` 分隔。表头行数 = `max_nesting_depth + 1` |
+| `ct/excel/reader.py` | 以只读模式读取 Excel，返回 `ParsedRows`（`rows` + 与之一一对应的 `excel_rows` 绝对行号）。struct 字段展开为多列；array 字段在单元格内按 `separator` 分隔。表头行数 = `max_nesting_depth + 1` |
 | `ct/excel/diff.py` | 对比 Excel 文件 MD5 hash 与缓存，输出已变更的表名列表 |
 | `ct/excel/template.py` | 根据 schema 生成带多行表头的空白 Excel 文件 |
-| `ct/validate/errors.py` | 结构化问题模型 `Issue` / `ValidationIssue`（含行号/列/当前值）/ `WorkspaceIssue`，`render()` 保持 CLI 文本格式 |
-| `ct/validate/types.py` | 按字段类型逐一校验；主键唯一性检查（返回 `ValidationIssue`） |
-| `ct/validate/refs.py` | 利用已解析行数据和缓存中的 ID 集合进行跨表外键校验（返回 `ValidationIssue`） |
+| `ct/validate/errors.py` | 结构化问题模型 `Issue` / `ValidationIssue`（含 `row_index` / `excel_row` / `column` / `value`）/ `WorkspaceIssue`；`render()` 输出 `Excel 第N行 · 列X (字段) · 当前值 ...`，无绝对定位信息时回退旧格式 |
+| `ct/validate/types.py` | 按字段类型逐一校验；主键唯一性检查；填充 `excel_row` / `column`（struct 定位到具体叶子列），返回 `ValidationIssue` |
+| `ct/validate/refs.py` | 利用已解析行数据和缓存中的 ID 集合进行跨表外键校验；填充 `excel_row` / `column`，返回 `ValidationIssue` |
 | `ct/export/json_writer.py` | 写出 `output/json/{table}_{lang}.json`，根键为 `schema.resolved_json_key` |
 | `ct/export/fbs_generator.py` | 生成 Bundle 容器 `container.fbs`；各表 `.fbs` 文本由 SchemaRepository 提供 |
 | `ct/export/flatc_runner.py` | 调用 `flatc` 编译 `.fbs` 为各语言 Accessor 代码 |

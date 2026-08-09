@@ -301,7 +301,7 @@ def _read_all_rows_for_sync(cfg, schemas) -> dict[str, list[dict]]:
         if not xlsx_path.exists():
             typer.echo(f"[warn] {xlsx_path} 不存在，跳过 {schema.table}", err=True)
             continue
-        rows_by_table[schema.table] = read_excel(xlsx_path, schema)
+        rows_by_table[schema.table] = read_excel(xlsx_path, schema).rows
     return rows_by_table
 
 

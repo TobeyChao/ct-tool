@@ -13,6 +13,7 @@ Key concepts:
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import logging
 from pathlib import Path
 from typing import Any
@@ -57,6 +58,16 @@ def _flatten_fields(fields: list[FieldDef]) -> list[tuple[str, FieldDef]]:
                 result.append((f"{f.name}.{sub_path}", sub_field))
         else:
             result.append((f.name, f))
+    return result
+
+
+def leaf_column_map(schema: TableSchema) -> dict[str, int]:
+    """返回 ``{dotted_path: 0-based 列索引}``（struct 展开后按叶子列计）。"""
+    result: dict[str, int] = {}
+    col = 0
+    for path, leaf in _flatten_fields(schema.fields):
+        result[path] = col
+        col += _column_span(leaf)
     return result
 
 
@@ -183,7 +194,18 @@ def _parse_row(
 # Public API
 # ---------------------------------------------------------------------------
 
-def read_excel(excel_path: Path, schema: TableSchema) -> list[dict[str, Any]]:
+@dataclass(frozen=True)
+class ParsedRows:
+    """解析结果：数据行 + 与之一一对应的 Excel 绝对行号。
+
+    数据与定位信息分离，避免行号泄漏进 JSON / Binary 等导出产物。
+    """
+
+    rows: list[dict[str, Any]]
+    excel_rows: list[int]
+
+
+def read_excel(excel_path: Path, schema: TableSchema) -> ParsedRows:
     """Read an Excel file and return parsed data rows.
 
     Parameters
@@ -195,22 +217,24 @@ def read_excel(excel_path: Path, schema: TableSchema) -> list[dict[str, Any]]:
 
     Returns
     -------
-    list[dict[str, Any]]
-        Each element is a row dict with keys matching the schema field names.
-        Struct fields are represented as nested dicts.
+    ParsedRows
+        ``rows``: 与旧返回完全一致的数据行（struct 为嵌套 dict）；
+        ``excel_rows``: 与 ``rows`` 平行的 Excel 绝对行号（空行被跳过，
+        但真实行号保留）。
     """
     wb = load_workbook(str(excel_path), read_only=True, data_only=True)
     try:
         ws = wb.active
         if ws is None:
             logger.warning("工作簿 %s 没有活动工作表", excel_path)
-            return []
+            return ParsedRows([], [])
 
         header_row_count = schema.header_rows
         flat_columns = _flatten_fields(schema.fields)
         expected_col_count = len(flat_columns)
 
         rows: list[dict[str, Any]] = []
+        excel_rows: list[int] = []
         for row_idx, row in enumerate(ws.iter_rows(values_only=True), start=1):
             # Skip header rows
             if row_idx <= header_row_count:
@@ -230,7 +254,8 @@ def read_excel(excel_path: Path, schema: TableSchema) -> list[dict[str, Any]]:
             parsed = _parse_row(row, flat_columns, schema.fields)
             if parsed is not None:
                 rows.append(parsed)
+                excel_rows.append(row_idx)
 
-        return rows
+        return ParsedRows(rows, excel_rows)
     finally:
         wb.close()

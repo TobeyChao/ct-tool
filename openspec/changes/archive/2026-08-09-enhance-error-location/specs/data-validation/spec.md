@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Validate field types against schema
 工具 SHALL 检查每行每个字段的值是否符合 schema 声明的类型，并提供
@@ -30,10 +30,3 @@
 #### Scenario: Referenced table not yet loaded
 - **WHEN** 被引用表的 hash 未变化，从缓存读取其 id 集合
 - **THEN** 校验正常进行，无需重新解析被引用表 Excel
-
-### Requirement: Batch error reporting
-工具 SHALL 在完成所有行的校验后统一报告全部错误，而非遇到第一个错误就终止。
-
-#### Scenario: Multiple errors in one table
-- **WHEN** 同一张表存在 3 处类型错误和 1 处引用错误
-- **THEN** 一次性输出全部 4 条错误，方便策划批量修正

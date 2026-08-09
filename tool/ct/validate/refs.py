@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ct.excel.reader import leaf_column_map
 from ct.schema.models import FieldDef, TableSchema
 from ct.validate.errors import IssueCode, ValidationIssue
 
@@ -45,6 +46,7 @@ def validate_refs(
     rows: list[dict],
     schema: TableSchema,
     id_sets: dict[str, set],
+    excel_rows: list[int] | None = None,
 ) -> list[ValidationIssue]:
     """Validate cross-table references for all rows.
 
@@ -63,6 +65,7 @@ def validate_refs(
     """
     errors: list[ValidationIssue] = []
     table_name = schema.table
+    col_map = leaf_column_map(schema)
 
     # Collect fields with refs.
     ref_fields: list[tuple[FieldDef, str, str]] = []  # (field, target_table, target_field)
@@ -76,6 +79,7 @@ def validate_refs(
 
     for row_idx, row in enumerate(rows):
         row_num = row_idx + 1
+        excel_row = excel_rows[row_idx] if excel_rows is not None else None
 
         for field, target_table, target_field in ref_fields:
             value = row.get(field.name)
@@ -91,6 +95,8 @@ def validate_refs(
                         IssueCode.REF,
                         f"引用表 {target_table} 的数据未加载，无法校验",
                         row_index=row_num,
+                        excel_row=excel_row,
+                        column=col_map.get(field.name),
                         field=field.name,
                         value=value,
                     )
@@ -110,6 +116,8 @@ def validate_refs(
                             IssueCode.REF,
                             f"{detail}在引用表 {target_table}.{target_field} 中不存在",
                             row_index=row_num,
+                            excel_row=excel_row,
+                            column=col_map.get(field.name),
                             field=field.name,
                             value=ref_val,
                         )

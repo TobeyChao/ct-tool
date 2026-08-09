@@ -24,6 +24,7 @@ class ParseValidateResult:
     """解析校验阶段的不可变中间数据。"""
 
     parsed_data: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
+    excel_rows: dict[str, list[int]] = field(default_factory=dict)
     id_sets: dict[str, set[Any]] = field(default_factory=dict)
     errors: list[Issue] = field(default_factory=list)
 
@@ -63,11 +64,18 @@ def parse_and_validate(
         if on_parse is not None:
             on_parse(name)
 
-        rows = read_excel(xlsx_path, schema)
-        result.parsed_data[name] = rows
+        table_rows = read_excel(xlsx_path, schema)
+        result.parsed_data[name] = table_rows.rows
+        result.excel_rows[name] = table_rows.excel_rows
         pk = schema.primary
-        result.id_sets[name] = {row[pk] for row in rows if pk in row}
-        result.errors.extend(validate_table(rows, schema))
+        result.id_sets[name] = {
+            row[pk] for row in table_rows.rows if pk in row
+        }
+        result.errors.extend(
+            validate_table(
+                table_rows.rows, schema, excel_rows=table_rows.excel_rows
+            )
+        )
 
     # 引用校验（按拓扑顺序，只针对本次解析的表）
     for name in ws.order:
@@ -76,7 +84,12 @@ def parse_and_validate(
         schema = ws.schema_map[name]
         if schema.all_refs():
             result.errors.extend(
-                validate_refs(result.parsed_data[name], schema, result.id_sets)
+                validate_refs(
+                    result.parsed_data[name],
+                    schema,
+                    result.id_sets,
+                    excel_rows=result.excel_rows.get(name),
+                )
             )
 
     return result

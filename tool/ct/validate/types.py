@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ct.excel.reader import leaf_column_map
 from ct.schema.models import FieldDef, TableSchema
 from ct.validate.errors import IssueCode, ValidationIssue
 
@@ -65,11 +66,13 @@ _SCALAR_VALIDATORS: dict[str, Any] = {
 # Array validator
 # ---------------------------------------------------------------------------
 
-def _validate_array(value: Any, field: FieldDef) -> list[str]:
-    """Validate an array field. Returns a list of error messages (may be empty)."""
-    errors: list[str] = []
+def _validate_array(value: Any, field: FieldDef) -> list[tuple[str, str]]:
+    """Validate an array field. Returns ``(dotted_path, message)`` pairs."""
+    errors: list[tuple[str, str]] = []
     if not isinstance(value, list):
-        errors.append(f"期望数组类型，实际值为 {value!r}（{type(value).__name__}）")
+        errors.append(
+            (field.name, f"期望数组类型，实际值为 {value!r}（{type(value).__name__}）")
+        )
         return errors
 
     element_type = field.element
@@ -81,13 +84,19 @@ def _validate_array(value: Any, field: FieldDef) -> list[str]:
             # For array<enum>, validate against element_values.
             if not isinstance(elem, str):
                 errors.append(
-                    f"数组第{idx + 1}个元素期望枚举字符串，"
-                    f"实际值为 {elem!r}（{type(elem).__name__}）"
+                    (
+                        field.name,
+                        f"数组第{idx + 1}个元素期望枚举字符串，"
+                        f"实际值为 {elem!r}（{type(elem).__name__}）",
+                    )
                 )
             elif field.element_values and elem not in field.element_values:
                 errors.append(
-                    f"数组第{idx + 1}个元素枚举值 {elem!r} "
-                    f"不在允许列表 {field.element_values} 中"
+                    (
+                        field.name,
+                        f"数组第{idx + 1}个元素枚举值 {elem!r} "
+                        f"不在允许列表 {field.element_values} 中",
+                    )
                 )
         else:
             # Build a temporary FieldDef-like object for scalar validation.
@@ -99,7 +108,7 @@ def _validate_array(value: Any, field: FieldDef) -> list[str]:
                     name=f"{field.name}[{idx}]", type=element_type)  # type: ignore[arg-type]
                 err = validator(elem, elem_field)
                 if err:
-                    errors.append(f"数组第{idx + 1}个元素{err}")
+                    errors.append((field.name, f"数组第{idx + 1}个元素{err}"))
 
     return errors
 
@@ -108,11 +117,16 @@ def _validate_array(value: Any, field: FieldDef) -> list[str]:
 # Struct validator
 # ---------------------------------------------------------------------------
 
-def _validate_struct(value: Any, field: FieldDef) -> list[str]:
-    """Validate a struct field. Returns a list of error messages."""
-    errors: list[str] = []
+def _validate_struct(value: Any, field: FieldDef) -> list[tuple[str, str]]:
+    """Validate a struct field. Returns ``(dotted_path, message)`` pairs."""
+    errors: list[tuple[str, str]] = []
     if not isinstance(value, dict):
-        errors.append(f"期望结构体（dict），实际值为 {value!r}（{type(value).__name__}）")
+        errors.append(
+            (
+                field.name,
+                f"期望结构体（dict），实际值为 {value!r}（{type(value).__name__}）",
+            )
+        )
         return errors
 
     if not field.fields:
@@ -120,9 +134,8 @@ def _validate_struct(value: Any, field: FieldDef) -> list[str]:
 
     for sub_field in field.fields:
         sub_value = value.get(sub_field.name)
-        sub_errors = _validate_field_value(sub_value, sub_field)
-        for err in sub_errors:
-            errors.append(f"{sub_field.name}.{err}" if "." in err else f"{sub_field.name}: {err}")
+        for path, msg in _validate_field_value(sub_value, sub_field):
+            errors.append((f"{field.name}.{path}", msg))
 
     return errors
 
@@ -131,18 +144,15 @@ def _validate_struct(value: Any, field: FieldDef) -> list[str]:
 # Unified field validator
 # ---------------------------------------------------------------------------
 
-def _validate_field_value(value: Any, field: FieldDef) -> list[str]:
-    """Validate a single field value against its definition.
-
-    Returns a list of error message strings (empty if valid).
-    """
+def _validate_field_value(value: Any, field: FieldDef) -> list[tuple[str, str]]:
+    """Validate a single field value. Returns ``(dotted_path, message)`` pairs."""
     # Allow None for string type (treat as empty string).
     if field.type == "string" and value is None:
         return []
 
     # None / missing value for non-string fields.
     if value is None:
-        return [f"值不能为空（类型 {field.type}）"]
+        return [(field.name, f"值不能为空（类型 {field.type}）")]
 
     if field.type == "array":
         return _validate_array(value, field)
@@ -155,7 +165,7 @@ def _validate_field_value(value: Any, field: FieldDef) -> list[str]:
     if validator:
         err = validator(value, field)
         if err:
-            return [err]
+            return [(field.name, err)]
 
     return []
 
@@ -164,7 +174,22 @@ def _validate_field_value(value: Any, field: FieldDef) -> list[str]:
 # Public API
 # ---------------------------------------------------------------------------
 
-def validate_table(rows: list[dict], schema: TableSchema) -> list[ValidationIssue]:
+def _dotted_value(row: dict, path: str) -> Any:
+    """按 dotted path 取嵌套值（struct 叶子）。"""
+    node: Any = row
+    for part in path.split("."):
+        if isinstance(node, dict):
+            node = node.get(part)
+        else:
+            return None
+    return node
+
+
+def validate_table(
+    rows: list[dict],
+    schema: TableSchema,
+    excel_rows: list[int] | None = None,
+) -> list[ValidationIssue]:
     """Validate all rows of a parsed table against its schema.
 
     Performs two kinds of checks:
@@ -181,25 +206,28 @@ def validate_table(rows: list[dict], schema: TableSchema) -> list[ValidationIssu
     errors: list[ValidationIssue] = []
     table_name = schema.table
     primary_key_name = schema.primary
+    col_map = leaf_column_map(schema)
 
     # Track primary key values for uniqueness check.
     seen_pks: dict[Any, int] = {}  # pk_value -> first row number (1-based)
 
     for row_idx, row in enumerate(rows):
         row_num = row_idx + 1  # 1-based row number from data start
+        excel_row = excel_rows[row_idx] if excel_rows is not None else None
 
         for field in schema.fields:
             value = row.get(field.name)
-            field_errors = _validate_field_value(value, field)
-            for err in field_errors:
+            for path, msg in _validate_field_value(value, field):
                 errors.append(
                     ValidationIssue(
                         table=table_name,
                         code=IssueCode.TYPE,
-                        message=err,
+                        message=msg,
                         row_index=row_num,
-                        field=field.name,
-                        value=value,
+                        excel_row=excel_row,
+                        column=col_map.get(path, col_map.get(field.name)),
+                        field=path,
+                        value=_dotted_value(row, path),
                     )
                 )
 
@@ -213,6 +241,8 @@ def validate_table(rows: list[dict], schema: TableSchema) -> list[ValidationIssu
                         IssueCode.DUPLICATE_PK,
                         f"主键值 {pk_value!r} 重复（首次出现在第{seen_pks[pk_value]}行）",
                         row_index=row_num,
+                        excel_row=excel_row,
+                        column=col_map.get(primary_key_name),
                         field=primary_key_name,
                         value=pk_value,
                     )

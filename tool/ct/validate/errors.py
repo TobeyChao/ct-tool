@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Iterable
 
+from openpyxl.utils import get_column_letter
+
 
 class IssueCode(str, Enum):
     TYPE = "type"
@@ -57,6 +59,13 @@ class ValidationIssue(Issue):
     value: Any = None
 
     def render(self) -> str:
+        if self.excel_row is not None and self.column is not None:
+            letter = get_column_letter(self.column + 1)
+            return (
+                f"[{self.table}.xlsx] Excel 第{self.excel_row}行 · "
+                f"列{letter} ({self.field}) · 当前值 {self.value!r} → {self.message}"
+            )
+        # 回退：无绝对定位信息时使用旧格式（相对数据行号）
         return format_error(self.table, self.row_index, self.field, self.message)
 
     def to_dict(self) -> dict[str, Any]:
