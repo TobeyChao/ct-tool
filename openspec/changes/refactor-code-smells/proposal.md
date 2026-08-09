@@ -35,8 +35,9 @@ status / compact / export 同一套用例接口，现在这些逻辑还埋在 CL
   `iter_data_rows`。
 - **死代码清理**：删除 C# 生成器零调用的 `_BB_READ` / `_field_slot_index` /
   `_i18n_field_slot_index` / `_voffset`、`get_cached_ids`、`serialize_row` /
-  `write_json` 的 `exclude_server_only` 参数、`TableSyncStats.created/updated`
-  及其聚合、`WorkspaceIssue.detail`、sync 未使用的 `load_source_file` import。
+  `write_json` 的 `exclude_server_only` 参数、`WorkspaceIssue.detail`、
+  sync 未使用的 `load_source_file` import。（`TableSyncStats.created/updated`
+  经实施核实有测试消费者，保留，仅将其余状态计数收敛到 `StatusCounts`。）
 - **失败路径修复**：`AccessorStep` 不再静默吞 `ImportError`（import 移模块
   顶部，失败直接暴露）；取消导出时 `ExportResult.tables_exported` 反映实际
   已导出表数（CLI 无取消入口，行为不可观察）。
@@ -67,6 +68,6 @@ status / compact / export 同一套用例接口，现在这些逻辑还埋在 CL
   `tool/tests/export/test_binary_golden.py` + `tool/tests/fixtures/`。
 - **删除**：`get_cached_ids`、`_BB_READ`、`_field_slot_index`、
   `_i18n_field_slot_index`、`_voffset`、`exclude_server_only` 参数、
-  `TableSyncStats.created/updated`、`WorkspaceIssue.detail`。
+  `WorkspaceIssue.detail`。
 - **依赖**：无新增、无移除；Python 版本要求不变。
 - **接口**：CLI 命令 / 参数 / 输出格式不变；无外部 API。

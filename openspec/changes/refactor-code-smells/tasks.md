@@ -49,17 +49,18 @@
 
 ## 3. 阶段 C：i18n 计数统一
 
-- [ ] 3.1 新增 `ct/export/i18n/counts.py`：`StatusCounts`
+- [x] 3.1 新增 `ct/export/i18n/counts.py`：`StatusCounts`
       （translated/missing/stale/orphan + total/progress）+ `count_entries()`
       （函数组合成类 6.9）
-- [ ] 3.2 `sync.py`：`TableSyncStats` 由 `StatusCounts` 承担，删除
-      `created/updated` 字段与聚合；`StatusCounts` 提供 `__add__`，
-      `totals_by_lang()` 返回 `dict[str, StatusCounts]`
-- [ ] 3.3 `status.py`：`TableCounts` / `LangCounts` 组合 `StatusCounts`，
+- [x] 3.2 `sync.py`：`TableSyncStats` 承载 `StatusCounts`（状态字段
+      转发）；**保留 `created/updated`**（测试有断言，属有消费者统计）；
+      `StatusCounts` 提供 `__add__`，`totals_by_lang()` 返回
+      `dict[str, StatusCounts]`
+- [x] 3.3 `status.py`：`TableCounts` / `LangCounts` 组合 `StatusCounts`，
       render 输出逐字不变
-- [ ] 3.4 `writer.py`：`report_stale_summary` 改用 `count_entries`，状态
+- [x] 3.4 `writer.py`：`report_stale_summary` 改用 `count_entries`，状态
       比较统一用 `LangStatus` 枚举（status.py 同样去字符串字面量）
-- [ ] 3.5 `pytest` 全绿（i18n 全部测试）
+- [x] 3.5 `pytest` 全绿（i18n 全部测试）
 
 ## 4. 阶段 D：CLI 用例下沉
 

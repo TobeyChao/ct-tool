@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import time
-from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
+from ct.export.i18n.counts import StatusCounts, count_entries
 from ct.export.i18n.io import dump_lang_file
 from ct.config import GlobalConfig
 from ct.export.i18n.extractor import (
@@ -13,18 +13,31 @@ from ct.export.i18n.extractor import (
     save_source_file,
 )
 from ct.export.i18n.merger import load_translation
-from ct.export.i18n.state import LangStatus, sync_lang_table
+from ct.export.i18n.state import sync_lang_table
 from ct.schema.models import TableSchema
 
 
 @dataclass
 class TableSyncStats:
+    counts: StatusCounts = field(default_factory=StatusCounts)
     created: int = 0
     updated: int = 0
-    translated: int = 0
-    missing: int = 0
-    stale: int = 0
-    orphan: int = 0
+
+    @property
+    def translated(self) -> int:
+        return self.counts.translated
+
+    @property
+    def missing(self) -> int:
+        return self.counts.missing
+
+    @property
+    def stale(self) -> int:
+        return self.counts.stale
+
+    @property
+    def orphan(self) -> int:
+        return self.counts.orphan
 
 
 @dataclass
@@ -34,17 +47,11 @@ class SyncSummary:
     source_files_written: list[Path] = field(default_factory=list)
     lang_files_written: list[Path] = field(default_factory=list)
 
-    def totals_by_lang(self) -> dict[str, TableSyncStats]:
-        out: dict[str, TableSyncStats] = defaultdict(TableSyncStats)
+    def totals_by_lang(self) -> dict[str, StatusCounts]:
+        out: dict[str, StatusCounts] = {}
         for (lang, _), stats in self.per_lang_table.items():
-            agg = out[lang]
-            agg.created += stats.created
-            agg.updated += stats.updated
-            agg.translated += stats.translated
-            agg.missing += stats.missing
-            agg.stale += stats.stale
-            agg.orphan += stats.orphan
-        return dict(out)
+            out[lang] = out.get(lang, StatusCounts()) + stats.counts
+        return out
 
 
 def _lang_path(i18n_dir: Path, lang: str, table: str) -> Path:
@@ -87,24 +94,14 @@ def sync_all(
 
         for lang in secondary_langs:
             lang_existing = load_translation(i18n_dir, lang, schema.table)
-            existing_count = len(lang_existing)
 
             new_lang = sync_lang_table(source_data, lang_existing)
-
-            stats = TableSyncStats()
             new_keys = set(new_lang.keys()) - set(lang_existing.keys())
-            stats.created = len(new_keys)
-            stats.updated = len(new_lang) - stats.created
-            for entry in new_lang.values():
-                status = entry["status"]
-                if status == LangStatus.TRANSLATED.value:
-                    stats.translated += 1
-                elif status == LangStatus.MISSING.value:
-                    stats.missing += 1
-                elif status == LangStatus.STALE.value:
-                    stats.stale += 1
-                elif status == LangStatus.ORPHAN.value:
-                    stats.orphan += 1
+            stats = TableSyncStats(
+                counts=count_entries(new_lang),
+                created=len(new_keys),
+                updated=len(new_lang) - len(new_keys),
+            )
             summary.per_lang_table[(lang, schema.table)] = stats
 
             field_order = [f.name for f in schema.i18n_fields]

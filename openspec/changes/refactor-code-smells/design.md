@@ -200,10 +200,12 @@ class StatusCounts:
 def count_entries(entries: dict[str, dict]) -> StatusCounts: ...
 ```
 
-- sync.py：`TableSyncStats` 由 `StatusCounts` 承担，删除 `created/updated`
-  及其聚合（无展示消费）；`StatusCounts` 提供 `__add__`（值对象语义，
-  返回新实例），`totals_by_lang()` 用 `agg = agg + stats` 聚合，返回
-  `dict[str, StatusCounts]`（现有测试只断言 `.missing`，兼容）；
+- sync.py：`TableSyncStats` 承载 `StatusCounts`（translated/missing/
+  stale/orphan 转发），**保留 `created/updated`**——实施中发现测试
+  `test_first_sync_creates_dirs_and_files` 断言其值，属有消费者的统计，
+  删除会改变测试断言，故不删；`StatusCounts` 提供 `__add__`（值对象
+  语义，返回新实例），`totals_by_lang()` 用 `agg = agg + stats` 聚合，
+  返回 `dict[str, StatusCounts]`（现有测试只断言 `.missing`，兼容）；
 - status.py：`TableCounts` / `LangCounts` 组合 `StatusCounts`，并保留
   原有字段属性（`translated` / `missing` / `total` / `progress` 等转发到
   `StatusCounts`），render 函数本身无需改动，输出不变；

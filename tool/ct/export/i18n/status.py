@@ -7,39 +7,66 @@ from pathlib import Path
 from typing import Iterable
 
 from ct.config import GlobalConfig
+from ct.export.i18n.counts import StatusCounts, count_entries
 from ct.export.i18n.merger import load_translation
 from ct.schema.models import TableSchema
 
 
 @dataclass
 class TableCounts:
-    total: int = 0
-    translated: int = 0
-    missing: int = 0
-    stale: int = 0
-    orphan: int = 0
+    counts: StatusCounts = field(default_factory=StatusCounts)
+
+    @property
+    def total(self) -> int:
+        return self.counts.total()
+
+    @property
+    def translated(self) -> int:
+        return self.counts.translated
+
+    @property
+    def missing(self) -> int:
+        return self.counts.missing
+
+    @property
+    def stale(self) -> int:
+        return self.counts.stale
+
+    @property
+    def orphan(self) -> int:
+        return self.counts.orphan
 
     def progress(self) -> float:
-        active = self.total - self.orphan
-        if active <= 0:
-            return 1.0
-        return self.translated / active
+        return self.counts.progress()
 
 
 @dataclass
 class LangCounts:
-    total: int = 0
-    translated: int = 0
-    missing: int = 0
-    stale: int = 0
-    orphan: int = 0
+    counts: StatusCounts = field(default_factory=StatusCounts)
     tables: dict[str, TableCounts] = field(default_factory=dict)
 
+    @property
+    def total(self) -> int:
+        return self.counts.total()
+
+    @property
+    def translated(self) -> int:
+        return self.counts.translated
+
+    @property
+    def missing(self) -> int:
+        return self.counts.missing
+
+    @property
+    def stale(self) -> int:
+        return self.counts.stale
+
+    @property
+    def orphan(self) -> int:
+        return self.counts.orphan
+
     def progress(self) -> float:
-        active = self.total - self.orphan
-        if active <= 0:
-            return 1.0
-        return self.translated / active
+        return self.counts.progress()
 
 
 @dataclass
@@ -65,24 +92,9 @@ def compute_status_report(
         lc = LangCounts()
         for schema in i18n_schemas:
             entries = load_translation(i18n_dir, lang, schema.table)
-            tc = TableCounts()
-            for entry in entries.values():
-                tc.total += 1
-                status = entry.get("status", "")
-                if status == "translated":
-                    tc.translated += 1
-                elif status == "missing":
-                    tc.missing += 1
-                elif status == "stale":
-                    tc.stale += 1
-                elif status == "orphan":
-                    tc.orphan += 1
+            tc = TableCounts(counts=count_entries(entries))
             lc.tables[schema.table] = tc
-            lc.total += tc.total
-            lc.translated += tc.translated
-            lc.missing += tc.missing
-            lc.stale += tc.stale
-            lc.orphan += tc.orphan
+            lc.counts = lc.counts + tc.counts
         report.langs[lang] = lc
     return report
 
