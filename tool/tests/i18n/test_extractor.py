@@ -11,6 +11,7 @@ from ct.export.i18n.extractor import (
     save_source_file,
 )
 from ct.schema.models import FieldDef, TableSchema
+from ct.validate.errors import IssueCode, ValidationIssue
 
 
 def _make_item_schema() -> TableSchema:
@@ -90,6 +91,29 @@ def test_extract_skips_rows_with_bad_primary_type() -> None:
         {"Id": 1, "Name": "好行", "Desc": "y", "Price": 2.0},
     ]
     out = extract_source_for_table(rows, schema)
+    assert out == {"1.Name": "好行", "1.Desc": "y"}
+
+
+def test_extract_skips_rows_flagged_by_reader_issues() -> None:
+    """显式路径：带主键 issue 的行被跳过（契约来自 ParsedRows.issues）。"""
+    schema = _make_item_schema()
+    rows = [
+        {"Id": "abc", "Name": "坏行", "Desc": "x", "Price": 1.0},
+        {"Id": 1, "Name": "好行", "Desc": "y", "Price": 2.0},
+    ]
+    issues = [
+        ValidationIssue(
+            table="Item",
+            code=IssueCode.TYPE,
+            message="期望整数类型，实际值为 'abc'（str）",
+            row_index=1,
+            excel_row=3,
+            column=0,
+            field="Id",
+            value="abc",
+        )
+    ]
+    out = extract_source_for_table(rows, schema, issues=issues)
     assert out == {"1.Name": "好行", "1.Desc": "y"}
 
 

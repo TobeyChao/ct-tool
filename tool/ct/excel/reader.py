@@ -13,7 +13,7 @@ Key concepts:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 from pathlib import Path
 from typing import Any
@@ -21,7 +21,8 @@ from typing import Any
 from openpyxl import load_workbook
 
 from ct.schema.models import FieldDef, TableSchema
-from ct.schema.type_traits import TYPE_TRAITS
+from ct.schema.type_traits import TYPE_TRAITS, validate_field_value
+from ct.validate.errors import IssueCode, ValidationIssue
 
 logger = logging.getLogger(__name__)
 
@@ -80,14 +81,23 @@ def _parse_row(
     cells: tuple[Any, ...],
     flat_columns: list[tuple[str, FieldDef]],
     top_fields: list[FieldDef],
-) -> dict[str, Any] | None:
-    """Parse a single data row into a dict.  Returns *None* if the row is
-    entirely empty."""
+    *,
+    schema: TableSchema,
+    excel_row: int,
+    row_index: int,
+) -> tuple[dict[str, Any] | None, list[ValidationIssue]]:
+    """Parse a single data row into a dict + 解析期问题列表。
+
+    Returns ``(None, [])`` if the row is entirely empty. 标量单元格 coerce
+    失败（显式 ``ok=False``）时产出带行列定位的 issue；数组元素失败
+    留给校验器报带元素序号的精确消息（见 type_traits._coerce_array）。
+    """
     # Check if the row is empty (all None / empty string)
     if all(c is None or (isinstance(c, str) and not c.strip()) for c in cells):
-        return None
+        return None, []
 
     flat: dict[str, Any] = {}
+    issues: list[ValidationIssue] = []
     for col_idx, (dotted_path, field) in enumerate(flat_columns):
         if col_idx >= len(cells):
             raw = None
@@ -101,11 +111,28 @@ def _parse_row(
         top_field = next((f for f in top_fields if f.name == top_name), None)
 
         if top_field and top_field.type == "array" and "." not in dotted_path:
-            flat[dotted_path] = TYPE_TRAITS["array"].coerce(top_field, raw)
+            coerced, _ok = TYPE_TRAITS["array"].coerce(top_field, raw)
+            flat[dotted_path] = coerced
         else:
-            flat[dotted_path] = TYPE_TRAITS[field.type].coerce(field, raw)
+            coerced, ok = TYPE_TRAITS[field.type].coerce(field, raw)
+            flat[dotted_path] = coerced
+            if not ok:
+                msgs = validate_field_value(raw, field)
+                msg = msgs[0][1] if msgs else f"期望 {field.type} 类型"
+                issues.append(
+                    ValidationIssue(
+                        table=schema.table,
+                        code=IssueCode.TYPE,
+                        message=msg,
+                        row_index=row_index,
+                        excel_row=excel_row,
+                        column=col_idx,
+                        field=dotted_path,
+                        value=raw,
+                    )
+                )
 
-    return _build_nested_dict(flat)
+    return _build_nested_dict(flat), issues
 
 
 # ---------------------------------------------------------------------------
@@ -114,13 +141,17 @@ def _parse_row(
 
 @dataclass(frozen=True)
 class ParsedRows:
-    """解析结果：数据行 + 与之一一对应的 Excel 绝对行号。
+    """解析结果：数据行 + Excel 绝对行号 + 解析期问题列表。
 
     数据与定位信息分离，避免行号泄漏进 JSON / Binary 等导出产物。
+    ``issues`` 是 reader 在标量 coerce 失败时直接产出的行列定位问题
+    （契约显式化，替代"返回原值、由下游猜测"）；消费方（校验、i18n
+    extractor）据此跳过坏行，不必重新推导类型。
     """
 
     rows: list[dict[str, Any]]
     excel_rows: list[int]
+    issues: list[ValidationIssue] = field(default_factory=list)
 
 
 def read_excel(excel_path: Path, schema: TableSchema) -> ParsedRows:
@@ -153,6 +184,7 @@ def read_excel(excel_path: Path, schema: TableSchema) -> ParsedRows:
 
         rows: list[dict[str, Any]] = []
         excel_rows: list[int] = []
+        issues: list[ValidationIssue] = []
         for row_idx, row in enumerate(ws.iter_rows(values_only=True), start=1):
             # Skip header rows
             if row_idx <= header_row_count:
@@ -169,11 +201,19 @@ def read_excel(excel_path: Path, schema: TableSchema) -> ParsedRows:
                         )
                 continue
 
-            parsed = _parse_row(row, flat_columns, schema.fields)
+            parsed, row_issues = _parse_row(
+                row,
+                flat_columns,
+                schema.fields,
+                schema=schema,
+                excel_row=row_idx,
+                row_index=len(rows) + 1,
+            )
             if parsed is not None:
                 rows.append(parsed)
                 excel_rows.append(row_idx)
+                issues.extend(row_issues)
 
-        return ParsedRows(rows, excel_rows)
+        return ParsedRows(rows, excel_rows, issues)
     finally:
         wb.close()

@@ -48,15 +48,15 @@
 
 ## 3. 阶段 C：coercion 契约显式化
 
-- [ ] 3.1 先跑 `tool/tests/validate/test_location.py` 与 `test_issues.py`
+- [x] 3.1 先跑 `tool/tests/validate/test_location.py` 与 `test_issues.py`
       建立错误文本基线（Change 2 规格）
-- [ ] 3.2 `ParsedRows` 新增 `issues: list[ValidationIssue]`；reader 转换
+- [x] 3.2 `ParsedRows` 新增 `issues: list[ValidationIssue]`；reader 转换
       失败（失败判定由 traits 显式提供，不依赖"返回原值"猜测）时产出带
       excel_row/column/value/field 的 issue
-- [ ] 3.3 `parse_and_validate` 汇集 `ParsedRows.issues` 与既有校验结果
+- [x] 3.3 `parse_and_validate` 汇集 `ParsedRows.issues` 与既有校验结果
       （保序、避免双报），错误文本与基线逐字一致
-- [ ] 3.4 `export/i18n/extractor.py` 显式跳过带 issue 的行，替代隐式
+- [x] 3.4 `export/i18n/extractor.py` 显式跳过带 issue 的行，替代隐式
       "主键类型不符跳过"判断，行为不变
       （`test_extract_skips_rows_with_bad_primary_type` 原样通过）
-- [ ] 3.5 `cd tool && pytest` 全绿 + 完整功能回归（export / validate /
+- [x] 3.5 `cd tool && pytest` 全绿 + 完整功能回归（export / validate /
       i18n / gen-template 各跑一轮），提交阶段 C

@@ -11,11 +11,13 @@ from pathlib import Path
 from ct.config import GlobalConfig
 from ct.excel.reader import read_excel
 from ct.schema.models import TableSchema
+from ct.validate.errors import ValidationIssue
 
 
 @dataclass(frozen=True)
 class ReadRowsResult:
     rows_by_table: dict[str, list[dict]] = field(default_factory=dict)
+    issues_by_table: dict[str, list[ValidationIssue]] = field(default_factory=dict)
     missing: list[tuple[str, Path]] = field(default_factory=list)
 
 
@@ -41,5 +43,7 @@ def read_i18n_rows(
         if not xlsx_path.exists():
             result.missing.append((schema.table, xlsx_path))
             continue
-        result.rows_by_table[schema.table] = read_excel(xlsx_path, schema).rows
+        parsed = read_excel(xlsx_path, schema)
+        result.rows_by_table[schema.table] = parsed.rows
+        result.issues_by_table[schema.table] = parsed.issues
     return result

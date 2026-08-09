@@ -6,6 +6,7 @@ from typing import Any
 
 from ct.export.i18n.io import dump_source_file
 from ct.schema.models import TableSchema
+from ct.validate.errors import ValidationIssue
 
 
 def _pk_value_matches_type(value: Any, field: FieldDef) -> bool:
@@ -29,10 +30,16 @@ def _pk_value_matches_type(value: Any, field: FieldDef) -> bool:
 def extract_source_for_table(
     rows: list[dict[str, Any]],
     schema: TableSchema,
+    *,
+    issues: list[ValidationIssue] | None = None,
 ) -> dict[str, str]:
     """从解析后的行数据中提取主语言原文，返回 {"id.field": "text"} 扁平结构。
 
     无 i18n 字段时返回空 dict。
+
+    ``issues`` 为 reader 的解析期问题（``ParsedRows.issues``）：带主键
+    field 的 issue 行会被显式跳过，避免 "abc.Name" 之类垃圾 source key。
+    未传 issues 时回退到类型自检（兼容直接以 rows 调用的路径）。
     """
     if not schema.has_i18n:
         return {}
@@ -42,13 +49,23 @@ def extract_source_for_table(
     i18n_field_names = [f.name for f in schema.i18n_fields]
     out: dict[str, str] = {}
 
-    for row in rows:
+    bad_pk_rows: set[int] = set()
+    if issues is not None:
+        bad_pk_rows = {
+            i.row_index
+            for i in issues
+            if i.field == primary_key and i.row_index is not None
+        }
+
+    for row_idx, row in enumerate(rows):
         row_id = row.get(primary_key)
         if row_id is None:
             continue
-        if not _pk_value_matches_type(row_id, pk_field):
-            # 主键 coercion 失败（类型不对）保持原值：跳过该行，
-            # 不产生 "abc.Name" 之类的垃圾 source key。
+        if issues is not None:
+            if row_idx + 1 in bad_pk_rows:
+                continue
+        elif not _pk_value_matches_type(row_id, pk_field):
+            # 兼容路径：未传 issues 时按类型自检跳过坏主键（行为同旧版）。
             continue
         for field_name in i18n_field_names:
             text = row.get(field_name, "")

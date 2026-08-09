@@ -28,8 +28,9 @@ OFFSET_TYPES = frozenset({"string", "struct", "array"})
 class FieldTraits:
     """单个字段类型的全部跨模块行为。
 
-    - ``coerce``: 单元格原始值 → Python 值（失败返回原值，宽容契约；
-      ``array_element=True`` 表示字符串拆分路径，int/bool 语义按元素处理）；
+    - ``coerce``: 单元格原始值 → ``(Python 值, 是否成功)``——失败返回原值
+      并显式置 ``False``（不再靠下游"返回原值"猜测）；``array_element=True``
+      表示字符串拆分路径，int/bool 语义按元素处理；
     - ``validate``: 值 → ``[(dotted_path, 错误消息)]``（空列表 = 通过）；
     - ``fbs_type``: 字段的 FlatBuffers 类型名；
     - ``json_value``: JSON 序列化值；
@@ -53,71 +54,96 @@ _BOOL_TRUE = frozenset({"true", "1", "yes", "TRUE", "True", "YES", "Yes"})
 _BOOL_FALSE = frozenset({"false", "0", "no", "FALSE", "False", "NO", "No"})
 
 
-def _coerce_int(field: FieldDef, value: Any, array_element: bool = False) -> Any:
+def _coerce_int(
+    field: FieldDef, value: Any, array_element: bool = False
+) -> tuple[Any, bool]:
     if value is None:
-        return None
+        return None, True
     try:
         if array_element:
-            return int(float(value)) if "." in value else int(value)
+            return (
+                int(float(value)) if "." in value else int(value),
+                True,
+            )
         if isinstance(value, float) and value == int(value):
-            return int(value)
-        return int(value)
+            return int(value), True
+        return int(value), True
     except (TypeError, ValueError):
-        return value
+        return value, False
 
 
-def _coerce_float(field: FieldDef, value: Any, array_element: bool = False) -> Any:
+def _coerce_float(
+    field: FieldDef, value: Any, array_element: bool = False
+) -> tuple[Any, bool]:
     if value is None:
-        return None
+        return None, True
     try:
-        return float(value)
+        return float(value), True
     except (TypeError, ValueError):
-        return value
+        return value, False
 
 
-def _coerce_bool(field: FieldDef, value: Any, array_element: bool = False) -> Any:
+def _coerce_bool(
+    field: FieldDef, value: Any, array_element: bool = False
+) -> tuple[Any, bool]:
     if value is None:
-        return None
+        return None, True
     if isinstance(value, bool):
-        return value
+        return value, True
     s = str(value).strip()
     if s in _BOOL_TRUE:
-        return True
+        return True, True
     if s in _BOOL_FALSE:
-        return False
-    return value
+        return False, True
+    return value, False
 
 
-def _coerce_string(field: FieldDef, value: Any, array_element: bool = False) -> Any:
+def _coerce_string(
+    field: FieldDef, value: Any, array_element: bool = False
+) -> tuple[Any, bool]:
     if value is None:
-        return None
-    return str(value)
+        return None, True
+    return str(value), True
 
 
-def _coerce_enum(field: FieldDef, value: Any, array_element: bool = False) -> Any:
+def _coerce_enum(
+    field: FieldDef, value: Any, array_element: bool = False
+) -> tuple[Any, bool]:
     if value is None:
-        return None
-    return str(value)
+        return None, True
+    return str(value), True
 
 
-def _coerce_passthrough(field: FieldDef, value: Any, array_element: bool = False) -> Any:
+def _coerce_passthrough(
+    field: FieldDef, value: Any, array_element: bool = False
+) -> tuple[Any, bool]:
     """struct 整体不做标量转换（reader 按叶子列分别 coerce 后组装）。"""
-    return value
+    return value, True
 
 
-def _coerce_array(field: FieldDef, value: Any, array_element: bool = False) -> Any:
-    """array：按 separator 拆分字符串并逐元素 coerce（自 reader._parse_row 迁入）。"""
+def _coerce_array(
+    field: FieldDef, value: Any, array_element: bool = False
+) -> tuple[Any, bool]:
+    """array：按 separator 拆分字符串并逐元素 coerce。
+
+    数组元素失败不在这里标记（``ok`` 恒为 True）——整格 coerce 对数组
+    而言总是"成功"（拆分为列表）；元素级错误由 ``validate`` 报带元素
+    序号的精确消息，避免与 reader 的整格 issue 双报。
+    """
     if value is None or (isinstance(value, str) and not value.strip()):
-        return []
+        return [], True
     raw_str = str(value)
     sep = field.separator or ","
     element_type = field.element or ""
     elem_field = FieldDef.model_construct(name="Elem", type=element_type)
-    return [
-        TYPE_TRAITS[element_type].coerce(elem_field, e.strip(), True)
-        for e in raw_str.split(sep)
-        if e.strip()
-    ]
+    elements: list[Any] = []
+    for e in raw_str.split(sep):
+        e = e.strip()
+        if not e:
+            continue
+        coerced, _ok = TYPE_TRAITS[element_type].coerce(elem_field, e, True)
+        elements.append(coerced)
+    return elements, True
 
 
 # ---------------------------------------------------------------------------

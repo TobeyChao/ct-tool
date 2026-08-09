@@ -34,6 +34,7 @@ def validate_table(
     rows: list[dict],
     schema: TableSchema,
     excel_rows: list[int] | None = None,
+    reader_issues: list[ValidationIssue] | None = None,
 ) -> list[ValidationIssue]:
     """Validate all rows of a parsed table against its schema.
 
@@ -44,6 +45,9 @@ def validate_table(
     Args:
         rows: Parsed data rows (list of dicts keyed by field name).
         schema: The TableSchema describing the table.
+        reader_issues: reader 在标量 coerce 失败时产出的 issue；按
+            ``(row_index, field)`` 与本次校验结果对齐，在相同位置输出
+            reader 版本并跳过重复构造（错误文本与 reader 完全一致）。
 
     Returns:
         List of error message strings. Empty list means no errors.
@@ -52,6 +56,13 @@ def validate_table(
     table_name = schema.table
     primary_key_name = schema.primary
     col_map = leaf_column_map(schema)
+    reader_by_key: dict[tuple[int, str], ValidationIssue] = {}
+    if reader_issues:
+        reader_by_key = {
+            (i.row_index, i.field): i
+            for i in reader_issues
+            if i.row_index is not None
+        }
 
     # Track primary key values for uniqueness check.
     seen_pks: dict[Any, int] = {}  # pk_value -> first row number (1-based)
@@ -63,6 +74,10 @@ def validate_table(
         for field in schema.fields:
             value = row.get(field.name)
             for path, msg in validate_field_value(value, field):
+                known = reader_by_key.get((row_num, path))
+                if known is not None:
+                    errors.append(known)
+                    continue
                 errors.append(
                     ValidationIssue(
                         table=table_name,

@@ -300,6 +300,7 @@ def i18n_sync(
         ws.config,
         schemas,
         rows_result.rows_by_table,
+        issues_by_table=rows_result.issues_by_table,
         lang_filter=lang,
         table_filter=table,
     )

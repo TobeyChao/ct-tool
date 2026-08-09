@@ -15,6 +15,7 @@ from ct.export.i18n.extractor import (
 from ct.export.i18n.merger import load_translation
 from ct.export.i18n.state import sync_lang_table
 from ct.schema.models import TableSchema
+from ct.validate.errors import ValidationIssue
 
 
 @dataclass
@@ -63,6 +64,7 @@ def sync_all(
     schemas: Iterable[TableSchema],
     rows_by_table: dict[str, list[dict[str, Any]]],
     *,
+    issues_by_table: dict[str, list[ValidationIssue]] | None = None,
     lang_filter: str | None = None,
     table_filter: str | None = None,
 ) -> SyncSummary:
@@ -91,7 +93,10 @@ def sync_all(
 
     for schema in i18n_schemas:
         rows = rows_by_table.get(schema.table, [])
-        source_data = extract_source_for_table(rows, schema)
+        table_issues = (issues_by_table or {}).get(schema.table)
+        source_data = extract_source_for_table(
+            rows, schema, issues=table_issues
+        )
         path = save_source_file(i18n_dir, schema, source_data)
         summary.source_files_written.append(path)
 

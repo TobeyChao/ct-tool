@@ -15,6 +15,7 @@ from ct.app.workspace import Workspace
 from ct.cache.state import CacheState
 from ct.excel.reader import read_excel
 from ct.validate.errors import Issue
+from ct.validate.errors import ValidationIssue
 from ct.validate.refs import validate_refs
 from ct.validate.types import validate_table
 
@@ -25,6 +26,7 @@ class ParseValidateResult:
 
     parsed_data: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     excel_rows: dict[str, list[int]] = field(default_factory=dict)
+    parsed_issues: dict[str, list[ValidationIssue]] = field(default_factory=dict)
     id_sets: dict[str, set[Any]] = field(default_factory=dict)
     errors: list[Issue] = field(default_factory=list)
 
@@ -67,13 +69,17 @@ def parse_and_validate(
         table_rows = read_excel(xlsx_path, schema)
         result.parsed_data[name] = table_rows.rows
         result.excel_rows[name] = table_rows.excel_rows
+        result.parsed_issues[name] = table_rows.issues
         pk = schema.primary
         result.id_sets[name] = {
             row[pk] for row in table_rows.rows if pk in row
         }
         result.errors.extend(
             validate_table(
-                table_rows.rows, schema, excel_rows=table_rows.excel_rows
+                table_rows.rows,
+                schema,
+                excel_rows=table_rows.excel_rows,
+                reader_issues=table_rows.issues,
             )
         )
 

@@ -36,7 +36,7 @@ from ct.export.i18n.sync import cleanup_i18n_files, sync_all
 from ct.export.json_writer import write_json
 from ct.export.lua_accessor_generator import generate_lua_accessor
 from ct.schema.models import TableSchema
-from ct.validate.errors import Issue
+from ct.validate.errors import Issue, ValidationIssue
 
 
 class ExportValidationError(Exception):
@@ -58,6 +58,7 @@ class ExportContext:
     cache: Any
     tables_to_export: list[str]
     parsed_data: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
+    parsed_issues: dict[str, list[ValidationIssue]] = field(default_factory=dict)
     id_sets: dict[str, set[Any]] = field(default_factory=dict)
     all_errors: list[Issue] = field(default_factory=list)
     all_table_bytes: dict[str, bytes] = field(default_factory=dict)
@@ -110,6 +111,7 @@ class ParseValidateStep:
             ),
         )
         ctx.parsed_data = pv.parsed_data
+        ctx.parsed_issues = pv.parsed_issues
         ctx.id_sets = pv.id_sets
         ctx.all_errors = pv.errors
         if ctx.all_errors:
@@ -121,7 +123,12 @@ class I18nSyncStep:
 
     def run(self, ctx: ExportContext) -> None:
         changed_i18n_schemas = [ctx.ws.schema_map[n] for n in ctx.parsed_data]
-        summary = sync_all(ctx.ws.config, changed_i18n_schemas, ctx.parsed_data)
+        summary = sync_all(
+            ctx.ws.config,
+            changed_i18n_schemas,
+            ctx.parsed_data,
+            issues_by_table=ctx.parsed_issues,
+        )
         # 残留清理独立于本次处理范围：基于全量 schema，任何导出模式
         # 都不会误删其他表的 lang 文件；仅非局部操作（--table 为空）清理，
         # 保持"局部操作不动全局文件"的原语义（既有缺陷修复）。
