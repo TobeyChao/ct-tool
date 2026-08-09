@@ -24,7 +24,7 @@
       （与"主键不在字段列表"校验同层）
 - [x] 1.3 手动复跑原崩溃命令（string 主键表 + `ct export`）确认改为加载期
       友好报错；grep 确认 gd 与 tests 无 string/非 int 主键存量
-- [ ] 1.4 `cd tool && pytest` 全绿，提交阶段 A
+- [x] 1.4 `cd tool && pytest` 全绿，提交阶段 A
 
 ## 2. 阶段 B：字段类型 traits 注册表
 
