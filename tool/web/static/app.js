@@ -85,9 +85,16 @@ Vue.createApp({
     },
     stepCellClass() {
       return (idx) => {
-        if (this.exportState.step_index > idx) return "done";
-        if (this.exportState.step_index === idx && this.exportRunning) return "active";
-        if (this.exportError && this.exportState.step_index === idx) return "error";
+        const s = this.exportState;
+        if (s.status === "cancelled") {
+          return idx < s.step_index ? "done" : "";
+        }
+        if (s.status === "error") {
+          if (s.step_index === idx) return "error";
+          return idx < s.step_index ? "done" : "";
+        }
+        if (idx < s.step_index) return "done";
+        if (idx === s.step_index) return s.status === "running" ? "active" : "done";
         return "";
       };
     },
