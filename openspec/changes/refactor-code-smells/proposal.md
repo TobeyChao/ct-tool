@@ -41,6 +41,13 @@ status / compact / export 同一套用例接口，现在这些逻辑还埋在 CL
 - **失败路径修复**：`AccessorStep` 不再静默吞 `ImportError`（import 移模块
   顶部，失败直接暴露）；取消导出时 `ExportResult.tables_exported` 反映实际
   已导出表数（CLI 无取消入口，行为不可观察）。
+- **功能验证发现的修复**（阶段 H 收尾验证时发现并修复）：① 阶段 D 下沉
+  status 时误删 `get_changed_tables` import 导致无参数增量导出 NameError
+  （回归，已修复并补增量导出测试）；② 既有缺陷——`ct export --table X`
+  时管道 `sync_all` 未传 `table_filter`，会误删其他表的 i18n 文件（已修复
+  并补回归测试）；③ 既有缺陷——Excel 单元格类型与 schema 不符时 reader
+  coercion 崩溃输出 Python traceback，违反 Change 2 的友好错误定位规格
+  （coercion 失败改为返回原值，由校验器报结构化错误，已补 CLI 回归测试）。
 
 ## Capabilities
 

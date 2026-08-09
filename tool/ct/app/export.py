@@ -120,7 +120,14 @@ class I18nSyncStep:
 
     def run(self, ctx: ExportContext) -> None:
         changed_i18n_schemas = [ctx.ws.schema_map[n] for n in ctx.parsed_data]
-        summary = sync_all(ctx.ws.config, changed_i18n_schemas, ctx.parsed_data)
+        # table_filter 保持导出范围：单表导出时不触发 sync 的全局清理，
+        # 避免误删其他表的 lang 文件（既有缺陷，功能验证发现）。
+        summary = sync_all(
+            ctx.ws.config,
+            changed_i18n_schemas,
+            ctx.parsed_data,
+            table_filter=ctx.opts.table,
+        )
         if ctx.opts.verbose:
             totals = summary.totals_by_lang()
             if not totals:

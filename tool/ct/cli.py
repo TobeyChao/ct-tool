@@ -16,6 +16,7 @@ from ct.app.template import Action, decide_template_action
 from ct.app.validate import parse_and_validate
 from ct.app.workspace import Workspace
 from ct.cache.state import load_cache
+from ct.excel.diff import get_changed_tables
 from ct.excel.template import generate_template, update_template
 from ct.export.i18n.compact import CompactError, compact_i18n
 from ct.export.i18n.status import (

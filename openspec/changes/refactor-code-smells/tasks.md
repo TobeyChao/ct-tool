@@ -135,3 +135,21 @@
       accessor_model、i18n/counts、i18n/compact；status/counts 职责
       拆清；excel/template 职责补全）；`tool/docs/README.md` 为纯
       用户文档、无模块说明，无需改动
+
+## 9. 功能验证发现与修复（收尾阶段，全流程 CLI 验证）
+
+- [x] 9.1 修复阶段 D 回归：`cli.py` 删除 `get_changed_tables` import 导致
+      无参数增量导出 NameError；恢复 import 并补
+      `test_export_incremental_without_flags` 测试
+- [x] 9.2 修复既有缺陷：`ct export --table X` 时管道 `sync_all` 未传
+      `table_filter`，误删其他表 i18n 文件（gd/ 真实数据复现并恢复）；
+      `I18nSyncStep` 改传 `ctx.opts.table`，补
+      `test_export_single_table_keeps_other_i18n_files` 回归测试
+- [x] 9.3 修复既有缺陷：类型转换失败（如 int32 填 "abc"）在 reader
+      coercion 崩溃输出 Python traceback，违反 Change 2 友好错误规格；
+      coercion 失败返回原值、由校验器报结构化错误，补
+      `test_validate_reports_type_mismatch_instead_of_traceback` 回归测试
+- [x] 9.4 全流程验证通过：gd/ 真实数据 status / validate / i18n status /
+      export（增量 / 全量 / 按表 / 按语言）产物零漂移；临时项目
+      gen-template 决策矩阵、i18n sync/status/compact（dry-run/真实）、
+      错误定位、错误路径退出码全部符合预期

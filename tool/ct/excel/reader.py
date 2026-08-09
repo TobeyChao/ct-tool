@@ -69,16 +69,24 @@ def _coerce_scalar(value: Any, type_name: str, *, array_element: bool = False) -
 
     - ``array_element=True`` 时 int 走字符串拆分路径（``int(float(v))``），
       bool 报错文案带"数组元素"前缀；
-    - 其余路径与旧 ``_coerce`` / ``_coerce_element`` 逐字一致。
+    - 类型转换失败**不抛异常**，返回原值——"类型不对"的判定统一交给
+      校验器（``validate_table``），保证 CLI 输出结构化错误而非
+      Python traceback（Change 2 规格要求）。
     """
     if type_name in ("int32", "int64"):
-        if array_element:
-            return int(float(value)) if "." in value else int(value)
-        if isinstance(value, float) and value == int(value):
+        try:
+            if array_element:
+                return int(float(value)) if "." in value else int(value)
+            if isinstance(value, float) and value == int(value):
+                return int(value)
             return int(value)
-        return int(value)
+        except (TypeError, ValueError):
+            return value
     if type_name in ("float", "double"):
-        return float(value)
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return value
     if type_name == "bool":
         if isinstance(value, bool):
             return value
@@ -87,9 +95,7 @@ def _coerce_scalar(value: Any, type_name: str, *, array_element: bool = False) -
             return True
         if s in _BOOL_FALSE:
             return False
-        if array_element:
-            raise ValueError(f"无法将数组元素 '{value}' 转换为 bool")
-        raise ValueError(f"无法将 '{value}' 转换为 bool")
+        return value
     if type_name == "string":
         return str(value)
     if type_name == "enum":
