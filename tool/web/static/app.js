@@ -33,6 +33,7 @@ Vue.createApp({
       forced: false,
 
       exportState: { status: "idle", steps: [], step_index: -1, step_name: "", message: "", errors: [], tables_exported: 0, elapsed: 0 },
+      sessionRun: false,
 
       i18nTables: [],
       i18nCurrentTable: "",
@@ -79,6 +80,9 @@ Vue.createApp({
     },
     exportCancelled() {
       return this.exportState.status === "cancelled";
+    },
+    lastExport() {
+      return this.history.length ? this.history[this.history.length - 1] : null;
     },
     stepCells() {
       return this.exportState.steps;
@@ -189,6 +193,7 @@ Vue.createApp({
     async startExport() {
       if (this.exportRunning) return;
       this.errorBanner = null;
+      this.sessionRun = true;
       try {
         this.exportState = await this.api("/api/export", {
           method: "POST",
@@ -210,7 +215,8 @@ Vue.createApp({
         const prev = this.exportState.status;
         const s = await this.api("/api/export/progress");
         this.exportState = s;
-        if (s.status === "error" && prev !== "error") {
+        if (s.status === "running") this.sessionRun = true;
+        if (s.status === "error" && prev !== "error" && this.sessionRun) {
           this.errorBanner = { message: s.message, count: s.errors.length || 1 };
         }
         if (prev !== s.status && (s.status === "done" || s.status === "cancelled")) {
@@ -493,26 +499,40 @@ Vue.createApp({
       </div>
       <div class="panel">
         <div class="panel-head">
-          <span class="panel-title">导出进度</span>
+          <span class="panel-title">{{ sessionRun ? '导出进度' : '上次导出' }}</span>
           <span style="flex:1"></span>
-          <span class="badge badge-ok" v-if="exportDone">成功 · {{ exportState.tables_exported }} 张表</span>
-          <span class="badge badge-warn" v-if="exportCancelled">已取消</span>
-          <span class="badge badge-err" v-if="exportError">已中止</span>
-          <span class="badge badge-mute" v-if="exportRunning">进行中</span>
+          <template v-if="sessionRun">
+            <span class="badge badge-ok" v-if="exportDone">成功 · {{ exportState.tables_exported }} 张表</span>
+            <span class="badge badge-warn" v-if="exportCancelled">已取消</span>
+            <span class="badge badge-err" v-if="exportError">已中止</span>
+            <span class="badge badge-mute" v-if="exportRunning">进行中</span>
+          </template>
+          <span class="badge badge-mute" v-else-if="lastExport">{{ lastExport.result }}</span>
         </div>
         <div class="panel-body">
-          <div class="cell-progress">
-            <div v-for="(step, idx) in stepCells" :key="step" class="prog-cell" :class="stepCellClass(idx)">
-              <span class="p-num">{{ idx + 1 }}</span><span class="p-name">{{ step }}</span>
+          <template v-if="sessionRun">
+            <div class="cell-progress">
+              <div v-for="(step, idx) in stepCells" :key="step" class="prog-cell" :class="stepCellClass(idx)">
+                <span class="p-num">{{ idx + 1 }}</span><span class="p-name">{{ step }}</span>
+              </div>
             </div>
-          </div>
-          <div class="progress-line" v-if="exportState.message">{{ exportState.message }}</div>
-          <div class="progress-line" v-for="line in exportState.errors" :key="line" style="color:var(--danger)">{{ line }}</div>
-          <div class="summary-line" v-if="exportRunning || exportDone || exportCancelled || exportError">
-            <span>已导出 <b>{{ exportState.tables_exported }}</b> 张表</span>
-            <span>状态 <b>{{ exportState.status }}</b></span>
-            <span>耗时 <b>{{ exportState.elapsed }}s</b></span>
-            <button class="btn btn-sm btn-danger" v-if="exportRunning" @click="cancelExport">取消导出</button>
+            <div class="progress-line" v-if="exportState.message">{{ exportState.message }}</div>
+            <div class="progress-line" v-for="line in exportState.errors" :key="line" style="color:var(--danger)">{{ line }}</div>
+            <div class="summary-line" v-if="exportRunning || exportDone || exportCancelled || exportError">
+              <span>已导出 <b>{{ exportState.tables_exported }}</b> 张表</span>
+              <span>状态 <b>{{ exportState.status }}</b></span>
+              <span>耗时 <b>{{ exportState.elapsed }}s</b></span>
+              <button class="btn btn-sm btn-danger" v-if="exportRunning" @click="cancelExport">取消导出</button>
+            </div>
+          </template>
+          <div v-else>
+            <div class="empty-state" v-if="!lastExport">
+              <div class="empty-title">还没有导出记录</div>
+              <div class="empty-sub">点击“开始导出”进行第一次导出</div>
+            </div>
+            <template v-else>
+              <div class="progress-line">上次导出 {{ lastExport.time }} · {{ lastExport.scope }} · {{ lastExport.tables }} 张表 · {{ lastExport.elapsed }}s</div>
+            </template>
           </div>
           <div class="cmd-footnote">
             <span class="mono" v-if="ws">产物目录 {{ ws.root }}/output</span>
