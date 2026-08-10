@@ -3,14 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ct Launcher · 桌面启动器原型</title>
+<title>ct Launcher · 桌面启动器设计（最终样式）</title>
 <style>
 /* ==========================================================================
-   ct Launcher · Tauri 2 桌面启动器（静态高保真原型）
-   设计判读：内部工具型桌面应用 / 策划用户 / 沉稳、清晰、一眼可见的启停状态
-   DESIGN_VARIANCE 4 · MOTION_INTENSITY 2 · VISUAL_DENSITY 5
-   调色板与 Web 面板一致：深林绿 + 中绿 + 金（主键语义）
-   交互：点击主开关切换 启动/暂停 两种状态，日志随之模拟追加
+   ct Launcher · 桌面启动器高保真设计稿（与 Flutter 实现一致）
+   形态：左侧导航 + 右侧内容区，三页签（概览 / 日志 / 设置）
+   设计令牌与实现同步：深林绿 + 暖中性，统一 8px 圆角
+   窗口：720 x 460，macOS 隐藏标题栏（左上角红绿灯悬浮）
    ========================================================================== */
 :root {
   --bg: #F5F6F4;
@@ -21,27 +20,18 @@
   --ink: #1B241F;
   --ink-2: #5A645E;
   --ink-3: #8B948E;
-
   --primary: #1B4332;
   --primary-hover: #153728;
   --accent: #2F7A56;
   --accent-hover: #266544;
   --accent-soft: #D8F3DC;
   --accent-softer: #ECF7ED;
-
   --gold: #C9A227;
-  --gold-soft: #F7EECB;
   --danger: #B23B3B;
   --danger-soft: #F9E8E8;
-  --warn: #B7791F;
-  --warn-soft: #F9EFD9;
-
   --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
-
-  --r: 10px;
-  --shadow-panel: 0 1px 2px rgba(27, 36, 31, 0.04), 0 8px 28px rgba(27, 36, 31, 0.05);
-  --shadow-toggle: 0 10px 30px rgba(43, 122, 86, 0.35);
+  --r: 8px;
 }
 
 * { box-sizing: border-box; }
@@ -57,42 +47,68 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ---------- 窗口容器（模拟桌面窗口） ---------- */
+/* ---------- 窗口（模拟 720x460 无标题栏） ---------- */
 .window {
-  width: 760px;
-  margin: 32px auto;
+  position: relative;
+  width: 720px;
+  height: 460px;
+  margin: 40px auto;
   background: var(--bg);
   border: 1px solid var(--border-strong);
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow: 0 18px 60px rgba(27, 36, 31, 0.18);
   overflow: hidden;
 }
 
-/* ---------- 标题栏 ---------- */
-.titlebar {
+/* macOS 红绿灯（悬浮区，不参与布局） */
+.traffic {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  z-index: 10;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  height: 46px;
-  padding: 0 16px;
+  gap: 7px;
+}
+
+.traffic span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.traffic span:nth-child(1) { background: #E5B94B; }
+.traffic span:nth-child(2) { background: #5CB85C; }
+.traffic span:nth-child(3) { background: #D9534F; }
+
+/* ---------- 应用骨架：左侧导航 + 右侧内容 ---------- */
+.app {
+  display: flex;
+  height: 100%;
+}
+
+.side {
+  width: 176px;
+  flex: none;
   background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  -webkit-user-select: none;
-  user-select: none;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding-top: 44px;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-weight: 650;
-  letter-spacing: 0.01em;
+  padding: 0 16px;
+  font-weight: 600;
+  font-size: 13px;
 }
 
 .brand-mark {
   width: 22px;
   height: 22px;
-  border-radius: 6px;
+  border-radius: 5px;
   background: var(--primary);
   display: grid;
   place-items: center;
@@ -102,85 +118,134 @@ html, body {
   font-weight: 700;
 }
 
-.brand-name { font-size: 13px; }
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 22px;
+  padding: 0 12px;
+}
 
-.titlebar-spacer { flex: 1; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--r);
+  font-size: 13px;
+  color: var(--ink-2);
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+}
 
-.win-hint {
+.nav-item svg { width: 16px; height: 16px; color: var(--ink-3); flex: none; }
+
+.nav-item.active {
+  background: var(--accent-softer);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.nav-item.active svg { color: var(--primary); }
+
+.side-status {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 14px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.side-status .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.side-status .port {
+  margin-left: auto;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--ink-3);
-  margin-right: 8px;
 }
 
-.win-ctl {
-  display: inline-flex;
-  gap: 6px;
+/* ---------- 右侧内容区 ---------- */
+main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 26px 14px;
 }
 
-.win-ctl span {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  display: inline-block;
+.page-title {
+  font-size: 14px;
+  font-weight: 600;
 }
 
-.win-ctl .w-min { background: #E5B94B; }
-.win-ctl .w-max { background: #5CB85C; }
-.win-ctl .w-close { background: #D9534F; }
+.page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
-/* ---------- 主区域 ---------- */
-.body { padding: 22px 26px 26px; }
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
-/* 状态 hero */
+.page-body { flex: 1; margin-top: 12px; display: flex; flex-direction: column; }
+
+.footer-hint {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ink-3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.footer-hint .path {
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 概览页 ---------- */
 .hero {
   display: flex;
   align-items: center;
-  gap: 26px;
-  padding: 24px 26px;
-  background: linear-gradient(135deg, var(--surface) 0%, #FBFCF9 100%);
+  gap: 24px;
+  padding: 18px 24px;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r);
-  box-shadow: var(--shadow-panel);
+  box-shadow: 0 8px 28px rgba(27, 36, 31, 0.05);
 }
 
 .toggle {
-  position: relative;
-  width: 128px;
-  height: 128px;
+  width: 104px;
+  height: 104px;
   flex: none;
   border-radius: 50%;
-  border: 2px solid var(--border-strong);
-  background: var(--surface);
-  cursor: pointer;
+  border: 2px solid var(--accent);
+  background: linear-gradient(160deg, #2F7A56 0%, #1B4332 100%);
+  box-shadow: 0 10px 30px rgba(43, 122, 86, 0.35);
   display: grid;
   place-items: center;
-  transition: border-color .2s, background .2s, box-shadow .2s;
-  outline: none;
+  color: #fff;
 }
 
-.toggle:hover { border-color: var(--ink-3); }
-.toggle:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 3px; }
-
-.toggle svg { width: 46px; height: 46px; }
-
-.toggle .t-icon { color: var(--ink-3); transition: color .2s; }
-.toggle .t-ring { position: absolute; inset: -2px; border-radius: 50%; border: 2px solid transparent; }
-
-.hero[data-state="running"] .toggle {
-  border-color: var(--accent);
-  background: linear-gradient(160deg, #2F7A56 0%, #1B4332 100%);
-  box-shadow: var(--shadow-toggle);
-}
-
-.hero[data-state="running"] .toggle .t-icon { color: #fff; }
-
-.hero[data-state="running"] .toggle .t-ring {
-  border-color: rgba(216, 243, 220, 0.55);
-  border-right-color: transparent;
-  animation: spin 1.6s linear infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
+.toggle svg { width: 42px; height: 42px; }
 
 .hero-meta { flex: 1; min-width: 0; }
 
@@ -188,43 +253,34 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 22px;
+  font-size: 21px;
   font-weight: 700;
 }
 
-.state-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--ink-3); }
+.state-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
 
-.hero[data-state="running"] .state-dot { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
-
-.state-sub { margin-top: 4px; color: var(--ink-2); font-size: 13px; }
+.state-sub { margin-top: 2px; font-size: 13px; color: var(--ink-2); }
 
 .addr-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 10px;
   font-family: var(--font-mono);
   font-size: 13px;
 }
 
 .addr {
-  padding: 5px 12px;
-  border-radius: 7px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  color: var(--ink-2);
+  padding: 4px 12px;
+  border-radius: var(--r);
+  background: var(--accent-softer);
+  border: 1px solid var(--accent);
+  color: var(--accent-hover);
 }
 
-.hero[data-state="running"] .addr { color: var(--accent-hover); border-color: var(--accent); background: var(--accent-softer); cursor: pointer; }
+.addr-hint { font-size: 12px; color: var(--ink-3); font-family: var(--font-sans); }
 
-.addr-hint { color: var(--ink-3); font-size: 12px; font-family: var(--font-sans); }
-
-/* 动作按钮 */
-.actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 16px;
-}
+.actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 
 .btn {
   appearance: none;
@@ -235,142 +291,55 @@ html, body {
   font-size: 13px;
   font-weight: 600;
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--r);
   cursor: pointer;
-  transition: background .15s, border-color .15s, color .15s, opacity .15s;
 }
 
-.btn:hover:not(:disabled) { border-color: var(--ink-3); }
-.btn:disabled { opacity: .45; cursor: not-allowed; }
-
-.btn-primary {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-}
-
-.btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
-
-.btn-accent {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
-.btn-accent:hover:not(:disabled) { background: var(--accent-hover); }
-
+.btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn-ghost { border-color: transparent; background: transparent; color: var(--ink-2); }
-.btn-ghost:hover:not(:disabled) { color: var(--ink); background: var(--surface-2); }
 
-/* 统计条 */
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin-top: 18px;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 .stat {
+  height: 132px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r);
-  padding: 12px 16px;
+  padding: 18px 16px;
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.stat-label {
+  display: flex;
+  align-items: center;
   gap: 8px;
-}
-
-.stat-num { font-size: 20px; font-weight: 700; color: var(--primary); }
-.stat-label { font-size: 12px; color: var(--ink-2); }
-.stat-label small { display: block; color: var(--ink-3); font-size: 11px; }
-
-/* 设置 */
-.section { margin-top: 20px; }
-
-.section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.section-title { font-size: 14px; font-weight: 650; }
-
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  box-shadow: var(--shadow-panel);
-}
-
-.set-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-}
-
-.set-row + .set-row { border-top: 1px solid var(--border); }
-
-.set-label { width: 90px; flex: none; font-size: 13px; color: var(--ink-2); }
-
-.set-field { flex: 1; min-width: 0; display: flex; gap: 8px; }
-
-.input {
-  flex: 1;
-  min-width: 0;
-  border: 1px solid var(--border-strong);
-  border-radius: 7px;
-  padding: 7px 10px;
-  font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--ink);
-  background: var(--surface);
+  color: var(--ink-2);
 }
 
-.input:focus { outline: 2px solid var(--accent-soft); outline-offset: -1px; border-color: var(--accent); }
+.stat-label svg { width: 15px; height: 15px; color: var(--ink-3); }
 
-.input-sm { flex: none; width: 90px; }
-
-/* 开关 */
-.switch {
-  position: relative;
-  width: 40px;
-  height: 22px;
-  flex: none;
-  border-radius: 999px;
-  background: var(--border-strong);
-  cursor: pointer;
-  transition: background .18s;
+.stat-num {
+  margin-top: 14px;
+  font-size: 26px;
+  line-height: 1.1;
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
 }
 
-.switch::after {
-  content: "";
-  position: absolute;
-  top: 3px; left: 3px;
-  width: 16px; height: 16px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(27,36,31,.3);
-  transition: transform .18s;
-}
+.stat-sub { margin-top: 6px; font-size: 11px; color: var(--ink-3); }
 
-.switch.on { background: var(--accent); }
-.switch.on::after { transform: translateX(18px); }
-
-.sw-hint { font-size: 12px; color: var(--ink-3); }
-
-/* 日志 */
-.log-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.log-actions { display: flex; gap: 6px; }
-
+/* ---------- 日志页 ---------- */
 .log {
+  flex: 1;
   background: #121A16;
   border: 1px solid #26332C;
   border-radius: var(--r);
@@ -378,270 +347,254 @@ html, body {
   font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.75;
-  height: 168px;
   overflow: hidden;
 }
 
-.log-line { white-space: nowrap; color: #B9C9C0; }
-.log-line .ts { color: #6E8277; margin-right: 8px; }
+.log-line { display: flex; color: #B9C9C0; }
+.log-line .pre { flex: none; width: 142px; }
+.log-line .pre .ts { color: #6E8277; }
+.log-line .pre .lv { margin-left: 8px; }
+.log-line .msg { flex: 1; min-width: 0; }
 .log-line.info .lv { color: #7FD6A8; }
 .log-line.warn .lv { color: #E5C078; }
 .log-line.err .lv { color: #E8837F; }
-.log-line .pid { color: #5E7368; }
 
-/* 托盘提示 */
-.tray-tip {
-  margin-top: 14px;
+/* ---------- 设置页 ---------- */
+.settings {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+}
+
+.set-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--ink-3);
+  gap: 14px;
+  padding: 11px 16px;
+  min-height: 48px;
 }
 
-.tray-tip .kbd {
-  font-family: var(--font-mono);
-  background: var(--surface);
+.set-row + .set-row { border-top: 1px solid var(--border); }
+
+.set-label { width: 92px; flex: none; font-size: 13px; color: var(--ink-2); }
+
+.set-field { flex: 1; min-width: 0; display: flex; gap: 8px; align-items: center; }
+
+.input {
+  flex: 1;
+  min-width: 0;
   border: 1px solid var(--border-strong);
-  border-radius: 5px;
-  padding: 0 6px;
-  font-size: 11px;
+  border-radius: var(--r);
+  padding: 7px 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink);
 }
 
-/* toast */
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: 34px;
-  transform: translateX(-50%) translateY(20px);
-  background: var(--primary);
-  color: #fff;
-  font-size: 13px;
-  padding: 10px 18px;
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(27,36,31,.35);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .2s, transform .2s;
-  z-index: 99;
+.input-sm { flex: none; width: 90px; }
+.sw-hint { font-size: 12px; color: var(--ink-3); }
+
+.switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--accent);
 }
 
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px; right: 3px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(27, 36, 31, 0.3);
+}
 </style>
 </head>
 <body>
 
 <div class="window">
-  <!-- 标题栏 -->
-  <div class="titlebar">
-    <div class="brand">
-      <span class="brand-mark">ct</span>
-      <span class="brand-name">ct Launcher</span>
-    </div>
-    <span class="win-hint">本地服务 · 仅本机可访问</span>
-    <div class="titlebar-spacer"></div>
-    <div class="win-ctl"><span class="w-min"></span><span class="w-max"></span><span class="w-close"></span></div>
-  </div>
+  <div class="traffic"><span></span><span></span><span></span></div>
+  <div class="app">
+    <aside class="side">
+      <div class="brand">
+        <span class="brand-mark">ct</span>
+        <span>ct Launcher</span>
+      </div>
+      <nav class="nav">
+        <button class="nav-item active" data-tab="overview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+          概览
+        </button>
+        <button class="nav-item" data-tab="logs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          日志
+        </button>
+        <button class="nav-item" data-tab="settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          设置
+        </button>
+      </nav>
+      <div class="side-status">
+        <span class="dot"></span>
+        <span>运行中</span>
+        <span class="port">8000</span>
+      </div>
+    </aside>
 
-  <div class="body">
-    <!-- 状态 hero -->
-    <div class="hero" id="hero" data-state="stopped">
-      <button class="toggle" id="toggle" title="启动 / 暂停" aria-label="启动或暂停面板服务">
-        <span class="t-ring"></span>
-        <svg class="t-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
-          <line x1="12" y1="2" x2="12" y2="12"/>
-        </svg>
-      </button>
-      <div class="hero-meta">
-        <div class="state-line">
-          <span class="state-dot" id="stateDot"></span>
-          <span id="stateText">已停止</span>
-        </div>
-        <div class="state-sub" id="stateSub">点击开关启动面板服务</div>
-        <div class="addr-row">
-          <span class="addr" id="addr">http://127.0.0.1:8000</span>
-          <span class="addr-hint" id="addrHint">未运行</span>
-        </div>
-        <div class="actions">
-          <button class="btn btn-accent" id="btnOpen" disabled>打开面板</button>
-          <button class="btn" id="btnBrowser" disabled>在浏览器打开</button>
-          <button class="btn btn-ghost" id="btnWorkspace">打开工作区目录</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 统计条 -->
-    <div class="stats">
-      <div class="stat">
-        <span class="stat-num">12</span>
-        <span class="stat-label">数据表<small>config/schemas</small></span>
-      </div>
-      <div class="stat">
-        <span class="stat-num">3</span>
-        <span class="stat-label">导出语言<small>zh / en / ja</small></span>
-      </div>
-      <div class="stat">
-        <span class="stat-num">1.2s</span>
-        <span class="stat-label">最近导出<small>今天 16:52 · 全部表</small></span>
-      </div>
-    </div>
-
-    <!-- 设置 -->
-    <div class="section">
-      <div class="section-head">
-        <div class="section-title">设置</div>
-        <span class="sw-hint" id="setHint">保存后立即生效</span>
-      </div>
-      <div class="card">
-        <div class="set-row">
-          <span class="set-label">工作区</span>
-          <div class="set-field">
-            <input class="input" id="wsPath" value="E:\Proj\ct-tool\gd" spellcheck="false">
-            <button class="btn" id="btnBrowse">浏览…</button>
+    <main>
+      <!-- 概览 -->
+      <section class="page" id="page-overview">
+        <div class="page-title">概览</div>
+        <div class="page-body">
+          <div class="hero">
+            <div class="toggle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+            </div>
+            <div class="hero-meta">
+              <div class="state-line">
+                <span class="state-dot"></span>
+                <span>运行中</span>
+              </div>
+              <div class="state-sub">面板服务运行中 · 点击开关可暂停</div>
+              <div class="addr-row">
+                <span class="addr">http://127.0.0.1:8000</span>
+                <span class="addr-hint">点击地址可复制</span>
+              </div>
+              <div class="actions">
+                <button class="btn btn-accent">打开面板</button>
+                <button class="btn btn-ghost">打开工作区目录</button>
+              </div>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7"/><rect x="12" y="6" width="3" height="11"/><rect x="17" y="13" width="3" height="4"/></svg>
+                数据表
+              </div>
+              <div class="stat-num">12</div>
+              <div class="stat-sub">config/schemas</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                导出语言
+              </div>
+              <div class="stat-num">3</div>
+              <div class="stat-sub">zh / en / ja</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                最近导出
+              </div>
+              <div class="stat-num">16:52</div>
+              <div class="stat-sub">全部表</div>
+            </div>
           </div>
         </div>
-        <div class="set-row">
-          <span class="set-label">端口</span>
-          <div class="set-field">
-            <input class="input input-sm" id="port" value="8000" inputmode="numeric">
-            <span class="sw-hint" style="align-self:center">被占用时自动 +1</span>
-          </div>
+        <div class="footer-hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span class="path">/Users/tobeychao/Documents/Projects/ct-tool/gd</span>
         </div>
-        <div class="set-row">
-          <span class="set-label">开机自启</span>
-          <div class="set-field">
-            <span class="switch" id="swAuto"></span>
-            <span class="sw-hint">登录系统后自动启动并运行面板</span>
-          </div>
-        </div>
-        <div class="set-row">
-          <span class="set-label">托盘常驻</span>
-          <div class="set-field">
-            <span class="switch on" id="swTray"></span>
-            <span class="sw-hint">关闭窗口时最小化到托盘，服务不中断</span>
-          </div>
-        </div>
-      </div>
-    </div>
+      </section>
 
-    <!-- 日志 -->
-    <div class="section">
-      <div class="log-head">
-        <div class="section-title">运行日志</div>
-        <div class="log-actions">
-          <button class="btn btn-ghost" id="btnCopy">复制</button>
-          <button class="btn btn-ghost" id="btnClear">清空</button>
+      <!-- 日志 -->
+      <section class="page" id="page-logs" hidden>
+        <div class="page-head">
+          <div class="page-title">运行日志</div>
+          <div class="actions" style="margin-top:0">
+            <button class="btn btn-ghost">复制</button>
+            <button class="btn btn-ghost">清空</button>
+          </div>
         </div>
-      </div>
-      <div class="log" id="log">
-        <div class="log-line info"><span class="ts">16:50:01</span><span class="lv">[INFO ]</span> ct panel 已退出 (PID 4312)，端口 8000 已释放</div>
-      </div>
-    </div>
+        <div class="page-body">
+          <div class="log">
+            <div class="log-line info">
+              <span class="pre"><span class="ts">04:15:56</span><span class="lv">[INFO]</span></span>
+              <span class="msg">启动面板服务…</span>
+            </div>
+            <div class="log-line info">
+              <span class="pre"><span class="ts">04:15:56</span><span class="lv">[INFO]</span></span>
+              <span class="msg">面板已启动: http://127.0.0.1:8000（Ctrl+C 停止）</span>
+            </div>
+            <div class="log-line info">
+              <span class="pre"><span class="ts">04:15:56</span><span class="lv">[INFO]</span></span>
+              <span class="msg">面板服务运行中：http://127.0.0.1:8000</span>
+            </div>
+            <div class="log-line warn">
+              <span class="pre"><span class="ts">04:15:56</span><span class="lv">[WARN]</span></span>
+              <span class="msg">WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.</span>
+            </div>
+          </div>
+        </div>
+        <div class="footer-hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>日志保留最近 500 条，启动服务后自动跟随最新输出</span>
+        </div>
+      </section>
 
-    <!-- 托盘提示 -->
-    <div class="tray-tip">
-      <span>关闭窗口不会退出应用：点击系统托盘的</span><span class="kbd">ct</span><span>图标可快速启动 / 暂停 / 退出</span>
-    </div>
+      <!-- 设置 -->
+      <section class="page" id="page-settings" hidden>
+        <div class="page-title">设置</div>
+        <div class="page-body">
+          <div class="settings">
+            <div class="set-row">
+              <span class="set-label">工作区</span>
+              <div class="set-field">
+                <input class="input" value="/Users/tobeychao/Documents/Projects/ct-tool/gd" spellcheck="false">
+                <button class="btn">浏览…</button>
+              </div>
+            </div>
+            <div class="set-row">
+              <span class="set-label">端口</span>
+              <div class="set-field">
+                <input class="input input-sm" value="8000">
+                <span class="sw-hint">被占用时自动 +1</span>
+              </div>
+            </div>
+            <div class="set-row">
+              <span class="set-label">开机自启</span>
+              <div class="set-field">
+                <span class="switch"></span>
+                <span class="sw-hint">登录系统后自动启动并运行面板</span>
+              </div>
+            </div>
+            <div class="set-row">
+              <span class="set-label">托盘常驻</span>
+              <div class="set-field">
+                <span class="switch"></span>
+                <span class="sw-hint">关闭窗口时最小化到托盘，服务不中断</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>修改后立即生效，无需重启启动器</span>
+        </div>
+      </section>
+    </main>
   </div>
 </div>
 
-<div class="toast" id="toast">已在应用内打开面板（原型演示）</div>
-
 <script>
 (function () {
-  var hero = document.getElementById('hero');
-  var toggle = document.getElementById('toggle');
-  var stateText = document.getElementById('stateText');
-  var stateSub = document.getElementById('stateSub');
-  var addrHint = document.getElementById('addrHint');
-  var btnOpen = document.getElementById('btnOpen');
-  var btnBrowser = document.getElementById('btnBrowser');
-  var log = document.getElementById('log');
-  var portInput = document.getElementById('port');
-  var toast = document.getElementById('toast');
-  var running = false;
-  var pid = 4312;
-  var startSec = 0;
-  var timer = null;
-
-  // 开关切换
-  function setRunning(on) {
-    running = on;
-    hero.dataset.state = on ? 'running' : 'stopped';
-    stateText.textContent = on ? '运行中' : '已停止';
-    stateSub.textContent = on ? '面板服务运行中 · 可随时点击开关暂停' : '点击开关启动面板服务';
-    addrHint.textContent = on ? '应用内 WebView 已连接' : '未运行';
-    btnOpen.disabled = !on;
-    btnBrowser.disabled = !on;
-    if (on) {
-      startSec = Date.now();
-      appendLog('info', '启动面板服务 (PID ' + (pid + 1) + ')');
-      appendLog('info', 'Flask 已监听 http://127.0.0.1:' + (portInput.value || 8000));
-      appendLog('warn', '导出 / 校验 / i18n 用例层已加载，等待请求');
-      timer = setInterval(tick, 1000);
-    } else {
-      clearInterval(timer);
-      timer = null;
-      appendLog('warn', '收到暂停指令，正在停止面板服务…');
-      appendLog('info', 'ct panel 已退出 (PID ' + (pid + 1) + ')，端口 ' + (portInput.value || 8000) + ' 已释放');
-    }
-  }
-
-  function tick() {
-    var s = Math.floor((Date.now() - startSec) / 1000);
-    var h = String(Math.floor(s / 3600)).padStart(2, '0');
-    var m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
-    var sec = String(s % 60).padStart(2, '0');
-    stateSub.textContent = '已运行 ' + h + ':' + m + ':' + sec + ' · 点击开关可暂停';
-  }
-
-  function appendLog(level, msg) {
-    var now = new Date();
-    var ts = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
-    var lv = ('[' + level.toUpperCase() + ' ]').slice(0, 7);
-    var line = document.createElement('div');
-    line.className = 'log-line ' + level;
-    line.innerHTML = '<span class="ts">' + ts + '</span><span class="lv">' + lv + '</span> ' + msg.replace(/</g, '&lt;');
-    log.appendChild(line);
-    while (log.children.length > 80) { log.removeChild(log.firstChild); }
-  }
-
-  toggle.addEventListener('click', function () { setRunning(!running); });
-  // URL hash 直达状态（用于截图与演示）：#running 预置运行态
-  if (location.hash.indexOf('running') > -1) { setRunning(true); }
-
-  // 开关控件
-  document.querySelectorAll('.switch').forEach(function (sw) {
-    sw.addEventListener('click', function () {
-      sw.classList.toggle('on');
-      document.getElementById('setHint').textContent = '保存后立即生效';
+  var items = document.querySelectorAll('.nav-item');
+  items.forEach(function (item) {
+    item.addEventListener('click', function () {
+      items.forEach(function (i) { i.classList.remove('active'); });
+      item.classList.add('active');
+      ['overview', 'logs', 'settings'].forEach(function (tab) {
+        document.getElementById('page-' + tab).hidden = tab !== item.dataset.tab;
+      });
     });
   });
-
-  // 端口输入：显示地址
-  portInput.addEventListener('input', function () {
-    var v = portInput.value.trim() || '8000';
-    document.getElementById('addr').textContent = 'http://127.0.0.1:' + v;
-  });
-
-  // 动作按钮
-  btnOpen.addEventListener('click', function () { showToast('已在应用内窗口打开面板（原型演示）'); });
-  btnBrowser.addEventListener('click', function () { showToast('已在系统默认浏览器打开面板（原型演示）'); });
-  btnWorkspace.addEventListener('click', function () { showToast('已用系统文件管理器打开工作区（原型演示）'); });
-  btnBrowse.addEventListener('click', function () { showToast('将弹出系统目录选择器（原型演示）'); });
-  btnClear.addEventListener('click', function () { log.innerHTML = ''; });
-  btnCopy.addEventListener('click', function () { showToast('日志已复制到剪贴板'); });
-
-  var toastTimer = null;
-  function showToast(msg) {
-    toast.textContent = msg;
-    toast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 1800);
-  }
 })();
 </script>
 </body>
 </html>
-
