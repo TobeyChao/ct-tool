@@ -1,6 +1,3 @@
-# 本文件仅作用于 tool/ 自身（Python 工具链）。
-# 注意：目录级规则必须带前导斜杠（如 /lib/）限定作用域，
-# 避免误伤 tool/ 下未来出现的其他技术栈子项目（如已迁出的 launcher/）。
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -17,7 +14,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-/lib/
+lib/
 lib64/
 parts/
 sdist/
@@ -32,7 +29,7 @@ MANIFEST
 # PyInstaller
 #   Usually these files are written by a python script from a template
 #   before PyInstaller builds the exe, so as to inject date/other infos into it.
-/*.manifest
+*.manifest
 *.spec
 
 # Installer logs
