@@ -54,8 +54,15 @@ class SettingsStore extends ChangeNotifier {
     for (var i = 0; i < 12; i++) {
       if (File('${dir.path}/pubspec.yaml').existsSync() &&
           Directory('${dir.path}/lib').existsSync()) {
-        final tool = dir.parent.path;
-        final ws = '${dir.parent.parent.path}/gd';
+        // 仓库布局：launcher/ 与 tool/、gd/ 平级于仓库根
+        final repoRoot = dir.parent.path;
+        final tool = '$repoRoot/tool';
+        final ws = '$repoRoot/gd';
+        // 校验工具目录存在（含 venv 或 ct 包），不存在则留给用户配置
+        if (!Directory('$tool/.venv').existsSync() &&
+            !Directory('$tool/ct').existsSync()) {
+          return ('', '');
+        }
         return (tool, ws);
       }
       dir = dir.parent;

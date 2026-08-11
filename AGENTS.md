@@ -28,7 +28,11 @@
 ├── tool/                 # 工具源码
 │   ├── ct/               #   Python 包 (cli, schema, excel, export, validate, cache)
 │   ├── tests/            #   pytest 测试
-│   └── docs/             #   用户文档
+│   ├── docs/             #   用户文档
+│   └── web/              #   面板前端资源（Vue 无构建，由 ct panel 托管）
+├── launcher/             # Flutter 桌面启动器（独立构建单元，运行时经设置指向 tool/.venv）
+│   ├── lib/              #   Dart 源码（壳 + 概览/日志/设置三页签）
+│   └── macos|windows/    #   平台工程（macOS Swift 集成 / Windows 构建）
 ├── gd/                   # 游戏数据工作空间 (--root)
 │   ├── config/           #   global.yaml + schemas/*.yaml
 │   ├── excel/            #   策划填写的 Excel 数据表
@@ -41,7 +45,8 @@
 │   ├── i18n/             #   翻译文件 (source/ 原文 + {lang}/ 译文)
 │   ├── tools/            #   flatc 等外部工具
 │   └── scripts/          #   辅助脚本
-└── openspec/             # 设计文档和任务列表
+├── openspec/             # 设计文档和任务列表
+└── test-proj/            # .NET 二进制读取测试工程
 ```
 
 ---
