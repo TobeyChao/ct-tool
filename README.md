@@ -34,7 +34,7 @@ ct --help
 
 | 目录 | 说明 |
 |------|------|
-| `tool/` | 工具源码、测试、文档 |
+| `python/` | ct 工具源码（Python package） |
 | `gd/` | 游戏数据工作空间（`--root` 默认目录） |
 | `gd/config/` | 全局配置 + 表 Schema 定义 |
 | `gd/excel/` | 策划填写的 Excel 数据表 |
@@ -46,4 +46,4 @@ ct --help
 
 Python >= 3.10。如需 FlatBuffers Binary 导出，将 `flatc` 放入 `gd/tools/`。
 
-详细文档见 [`tool/docs/README.md`](tool/docs/README.md)。
+详细文档见 [`docs/README.md`](docs/README.md)。

@@ -525,7 +525,7 @@ def invalid_api_usage(e):
 **目录结构草案**：
 
 ```
-tool/ct/
+python/ct/
 ├── panel/
 │   ├── app.py            # Flask 应用工厂 + 路由 + error handlers
 │   ├── jobs.py           # ExportJob：threading + queue.Queue + CancelToken 桥接
