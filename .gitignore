@@ -12,6 +12,3 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 *.lnk
-
-# ---------- 运行产物 ----------
-.pytest_cache/
