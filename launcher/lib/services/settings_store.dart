@@ -47,23 +47,23 @@ class SettingsStore extends ChangeNotifier {
   }
 
   /// 开发期默认值推断：从可执行文件向上找 Flutter 项目根（launcher/），
-  /// 得到工具目录 python/ 与工作区仓库根/gd。打包分发后找不到项目结构，
+  /// 得到工具目录 ct/ 与工作区仓库根/gd。打包分发后找不到项目结构，
   /// 返回空值，由用户在设置中配置。
   static (String, String) _inferDefaults() {
     var dir = File(Platform.resolvedExecutable).parent;
     for (var i = 0; i < 12; i++) {
       if (File('${dir.path}/pubspec.yaml').existsSync() &&
           Directory('${dir.path}/lib').existsSync()) {
-        // 仓库布局：launcher/ 与 python/、gd/ 平级于仓库根
+        // 仓库布局：launcher/ 与 ct/、gd/ 平级于仓库根
         final repoRoot = dir.parent.path;
-        final pythonDir = '$repoRoot/python';
+        final ctDir = '$repoRoot/ct';
         final ws = '$repoRoot/gd';
-        // 校验工具目录存在（含 venv 或 ct 包），不存在则留给用户配置
-        if (!Directory('$pythonDir/.venv').existsSync() &&
-            !Directory('$pythonDir/ct').existsSync()) {
+        // 校验工具目录存在（含 venv 或 src/ct 包），不存在则留给用户配置
+        if (!Directory('$ctDir/.venv').existsSync() &&
+            !Directory('$ctDir/src/ct').existsSync()) {
           return ('', '');
         }
-        return (pythonDir, ws);
+        return (ctDir, ws);
       }
       dir = dir.parent;
     }

@@ -8,7 +8,7 @@
 
 本仓库是 `ct`（配表导出工具）的工作空间。功能：将游戏策划数据从 **Excel + YAML Schema** 导出为 **JSON、FlatBuffers Binary 及 C#/Lua Accessor 代码**。
 
-- `python/` — ct 工具源码（Python package、打包配置）
+- `ct/` — 配表工具（自包含 Python 项目：src 布局包、web 面板、tests、docs、打包配置）
 - `gd/` — 数据工作空间（config、excel、output 等）
 
 ### 命名缩写
@@ -25,14 +25,17 @@
 
 ```
 仓库根目录/
-├── python/               # ct 工具源码（Python）
-│   ├── ct/               #   Python 包 (cli, schema, excel, export, validate, cache)
-│   └── web/              #   面板前端资源（Vue 无构建，由 ct panel 托管）
-├── tests/                # 测试（pytest 单元测试 + BinaryReaderTest .NET 验证工程）
-├── docs/                 # 用户文档与设计稿
-├── launcher/             # Flutter 桌面启动器（独立构建单元，运行时经设置指向 python/.venv）
+├── ct/                   # 配表工具（自包含 Python 项目）
+│   ├── src/ct/           #   Python 包 (cli, schema, excel, export, validate, cache, web)
+│   │   └── web/static/   #     面板前端资源（Vue 无构建，随包分发）
+│   ├── tests/            #   pytest 测试
+│   ├── docs/             #   工具文档与设计稿
+│   ├── pyproject.toml    #   打包配置（src layout + package-data）
+│   └── .venv/            #   虚拟环境
+├── launcher/             # Flutter 桌面启动器（独立构建单元，运行时经设置指向 ct/.venv）
 │   ├── lib/              #   Dart 源码（壳 + 概览/日志/设置三页签）
-│   └── macos|windows/    #   平台工程（macOS Swift 集成 / Windows 构建）
+│   ├── macos|windows/    #   平台工程（macOS Swift 集成 / Windows 构建）
+│   └── docs/design/      #   启动器设计稿
 ├── gd/                   # 游戏数据工作空间 (--root)
 │   ├── config/           #   global.yaml + schemas/*.yaml
 │   ├── excel/            #   策划填写的 Excel 数据表
@@ -86,7 +89,7 @@ pip install -e .
 ## 测试
 
 ```bash
-cd /Users/tobeychao/Documents/Projects/ct-tool
+cd ct
 
 # 运行全部测试
 pytest
