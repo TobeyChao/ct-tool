@@ -1,29 +1,29 @@
-# 默认：自动检测文本/二进制，文本文件统一为 LF
+# 默认：自动检测文本/二进制（仓库统一存 LF，工作区随平台）
 * text=auto
 
 # 源码文件
-*.py      text diff=python eol=lf
-*.yaml    text eol=lf
-*.yml     text eol=lf
-*.json    text eol=lf
-*.fbs     text eol=lf
-*.lua     text eol=lf
-*.cs      text eol=lf
-*.cpp     text eol=lf
-*.h       text eol=lf
-*.md      text eol=lf
-*.txt     text eol=lf
-*.cfg     text eol=lf
-*.toml    text eol=lf
-*.ini     text eol=lf
+*.py      text diff=python
+*.yaml    text
+*.yml     text
+*.json    text
+*.lua     text
+*.cs      text
+*.cpp     text
+*.h       text
+*.md      text
+*.txt     text
+*.cfg     text
+*.toml    text
+*.ini     text
+# 平台关键文件：shell 脚本必须 LF，Windows 批处理/脚本必须 CRLF
 *.sh      text eol=lf
 *.bat     text eol=crlf
 *.cmd     text eol=crlf
 *.ps1     text eol=crlf
 
 # 生成的代码 / 文档（视为源码一样的文本处理）
-*.fbs        text eol=lf
-*.accessor   text eol=lf
+*.fbs        text
+*.accessor   text
 
 # Excel / Office（二进制）
 *.xlsx    binary
@@ -41,7 +41,7 @@
 *.jpg     binary
 *.jpeg    binary
 *.gif     binary
-*.svg     text eol=lf
+*.svg     text
 *.ico     binary
 *.wav     binary
 *.mp3     binary
