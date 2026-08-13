@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import subprocess
 from pathlib import Path
 
@@ -13,6 +14,23 @@ _TARGETS = [
     ("--csharp", "csharp"),
     ("--lua", "lua"),
 ]
+
+
+def _normalize_generated_line_endings(out_dir: Path) -> None:
+    """将 flatc 产物统一为平台原生行尾。
+
+    flatc 的 C++ 生成器以 binary 模式写文件（固定 LF），与 Windows 检出时的
+    CRLF 不一致，会导致 git 的 stat 缓存过期（内容未变却显示 modified）。
+    Windows 上转为 CRLF 后与检出状态一致；macOS/Linux 上保持 LF，无副作用。
+    """
+    for path in out_dir.iterdir():
+        if not path.is_file():
+            continue
+        data = path.read_bytes()
+        data = data.replace(b"\r\n", b"\n")
+        if os.linesep == "\r\n":
+            data = data.replace(b"\n", b"\r\n")
+        path.write_bytes(data)
 
 
 def check_flatc(flatc_path: Path) -> bool:
@@ -97,5 +115,8 @@ def compile_fbs(
             except subprocess.TimeoutExpired:
                 logger.error(f"flatc 编译超时: {fbs_file.name}")
                 success = False
+        # flatc 各语言生成器的行尾行为不一致（C++ 固定 LF，C#/Lua 随平台），
+        # 统一为平台原生行尾，避免 Windows 下 git stat 缓存过期产生假 diff。
+        _normalize_generated_line_endings(out)
 
     return success
