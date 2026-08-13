@@ -12,7 +12,29 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CT_DIR="$REPO_ROOT/ct"
 LAUNCHER_DIR="$REPO_ROOT/launcher"
 VENV_PY="$CT_DIR/.venv/bin/python"
-FLUTTER="${FLUTTER:-flutter}"
+
+# Flutter 定位：环境变量优先，其次 PATH，最后常见安装位置。
+if [ -n "${FLUTTER:-}" ]; then
+  FLUTTER_BIN="$FLUTTER"
+elif command -v flutter >/dev/null 2>&1; then
+  FLUTTER_BIN="$(command -v flutter)"
+else
+  for candidate in \
+    "$HOME/development/flutter/bin/flutter" \
+    "$HOME/flutter/bin/flutter" \
+    "/opt/homebrew/bin/flutter" \
+    "/usr/local/bin/flutter"; do
+    if [ -x "$candidate" ]; then
+      FLUTTER_BIN="$candidate"
+      break
+    fi
+  done
+fi
+
+if [ -z "${FLUTTER_BIN:-}" ] || [ ! -x "$FLUTTER_BIN" ]; then
+  echo "[error] 未找到 Flutter SDK。请安装后重试，或用 FLUTTER=/path/to/flutter 指定。" >&2
+  exit 1
+fi
 
 if [ ! -x "$VENV_PY" ]; then
   echo "[error] 未找到 ct venv: $VENV_PY（请先按根 AGENTS.md 创建）" >&2
@@ -35,7 +57,7 @@ fi
 echo "[2/4] 构建 macOS launcher（flutter build macos --release）..."
 (
   cd "$LAUNCHER_DIR"
-  "$FLUTTER" build macos --release
+  "$FLUTTER_BIN" build macos --release
 )
 
 APP="$LAUNCHER_DIR/build/macos/Build/Products/Release/ct_launcher.app"
