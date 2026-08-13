@@ -24,6 +24,63 @@ class PanelService extends ChangeNotifier {
 
   String get baseUrl => settings.baseUrl;
 
+  /// 内置运行时路径：应用包随附的冻结 ct CLI。
+  ///
+  /// macOS：`.app/Contents/Resources/runtime/ct`
+  /// Windows：可执行文件同级 `runtime\ct.exe`
+  String? get bundledCtPath => resolveBundledCtPath(
+    executablePath: Platform.resolvedExecutable,
+    isMacOS: Platform.isMacOS,
+    isWindows: Platform.isWindows,
+  );
+
+  /// 按平台布局解析内置运行时路径；仅当文件存在时返回。
+  @visibleForTesting
+  static String? resolveBundledCtPath({
+    required String executablePath,
+    required bool isMacOS,
+    required bool isWindows,
+  }) {
+    final exe = File(executablePath);
+    if (isMacOS) {
+      // <app>.app/Contents/MacOS/<binary> → Contents/Resources/runtime/ct
+      final candidate = File(
+        '${exe.parent.parent.path}/Resources/runtime/ct',
+      );
+      return candidate.existsSync() ? candidate.path : null;
+    }
+    if (isWindows) {
+      // <dir>\ct_launcher.exe → <dir>\runtime\ct.exe
+      final candidate = File('${exe.parent.path}/runtime/ct.exe');
+      return candidate.existsSync() ? candidate.path : null;
+    }
+    return null;
+  }
+
+  /// 按「内置优先 → 工具目录 CLI → venv python」顺序构造启动命令；
+  /// 三者都不可用时返回 null（调用方负责报错）。
+  @visibleForTesting
+  static ({String executable, List<String> args})? buildLaunchCommand({
+    required String? bundledCtPath,
+    required String ctCliPath,
+    required String pythonPath,
+    required List<String> panelArgs,
+  }) {
+    if (bundledCtPath != null) {
+      return (executable: bundledCtPath, args: ['panel', ...panelArgs]);
+    }
+    if (File(ctCliPath).existsSync()) {
+      return (executable: ctCliPath, args: ['panel', ...panelArgs]);
+    }
+    if (File(pythonPath).existsSync()) {
+      return (
+        executable: pythonPath,
+        args: ['-m', 'ct.cli', 'panel', ...panelArgs],
+      );
+    }
+    return null;
+  }
+
   void init() {
     _append(LogLevel.info, 'ct Launcher 就绪，点击开关启动面板服务');
   }
@@ -33,31 +90,44 @@ class PanelService extends ChangeNotifier {
     _setStatus(PanelStatus.starting);
     _append(LogLevel.info, '启动面板服务…');
 
-    final python = settings.pythonPath;
-    final ctCli = settings.ctCliPath;
-    final useCli = File(ctCli).existsSync();
-    if (!useCli && !File(python).existsSync()) {
-      _fail('找不到 Python：$python\n请确认工具目录已创建虚拟环境（tool/.venv）');
+    final bundled = bundledCtPath;
+    final launch = buildLaunchCommand(
+      bundledCtPath: bundled,
+      ctCliPath: settings.ctCliPath,
+      pythonPath: settings.pythonPath,
+      panelArgs: _panelArgs,
+    );
+    if (launch == null) {
+      _fail(
+        '找不到可用的 ct 运行时：\n'
+        '应用包内缺少内置运行时（Resources/runtime/ct 或 runtime\\ct.exe），'
+        '且工具目录未配置有效入口。\n'
+        '请在设置页配置工具目录（含 .venv 的 ct 源码目录）。',
+      );
       return;
     }
 
     try {
-      final cmd = useCli
-          ? [ctCli, 'panel', ..._panelArgs]
-          : [python, '-m', 'ct.cli', 'panel', ..._panelArgs];
       // 禁用 Werkzeug/click 的 ANSI 颜色输出（日志面板不解析控制字符）
       final env = Map<String, String>.from(Platform.environment)
         ..['NO_COLOR'] = '1'
         ..['TERM'] = 'dumb';
       final proc = await Process.start(
-        cmd.first,
-        cmd.skip(1).toList(),
-        workingDirectory: settings.toolDir,
+        launch.executable,
+        launch.args,
+        workingDirectory: settings.toolDir.isNotEmpty
+            ? settings.toolDir
+            : settings.workspacePath,
         environment: env,
         runInShell: false,
       );
       _process = proc;
-      _append(LogLevel.info, 'Python 已启动 (PID ${proc.pid})');
+      _append(
+        LogLevel.info,
+        bundled != null
+            ? '使用内置运行时启动 (PID ${proc.pid})：$bundled'
+            : '使用工具目录运行时启动 (PID ${proc.pid})',
+      );
 
       proc.stdout
           .transform(utf8.decoder)

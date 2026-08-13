@@ -113,6 +113,25 @@ pytest -p no:warnings
 
 测试使用 `pytest` + `typer.testing.CliRunner`。每个测试通过 `_build_project(tmp_path)` 构造临时项目目录（schemas、excel、config），以 `CliRunner` 调用 `ct` 命令并断言退出码与输出产物。
 
+## launcher 打包与分发
+
+launcher（Flutter 桌面壳）构建时会把 ct CLI 用 PyInstaller 冻结成独立运行时（onedir）并嵌入应用包，用户无需安装 Python 或拉取本仓库即可使用。
+
+```bash
+# macOS（需 Flutter、Xcode + CocoaPods；可用 FLUTTER=/path/to/flutter 指定 SDK）
+launcher/tool/build_macos.sh
+
+# Windows（需在 Windows 机器执行，需 Flutter + VS 桌面开发负载）
+launcher/tool/build_windows.ps1
+```
+
+产物位置：
+
+- macOS：`launcher/build/macos/Build/Products/Release/ct_launcher.app`（内置 `Contents/Resources/runtime/`）
+- Windows：`launcher/build/windows/x64/runner/Release/`（`ct_launcher.exe` + 同级 `runtime\`）
+
+launcher 启动优先级：内置运行时 → 设置中的工具目录（venv）→ 报错并引导配置。游戏仓库（如 fabulous-game）消费方式：把编译好的应用放入仓库（如 `Config/launcher-apps/`），用户双击启动后，在设置页把工作区指向 `Config/gd` 即可，无需配置工具目录。
+
 ---
 
 ## CLI 命令
