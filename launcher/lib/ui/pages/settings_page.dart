@@ -3,15 +3,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/auto_launch.dart';
+import '../../services/panel_service.dart';
 import '../../services/settings_store.dart';
 import '../../theme.dart';
 import '../widgets/common.dart';
 
 /// 设置页：工作区 / 端口 / 开机自启 / 托盘常驻
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key, required this.settings});
+  const SettingsPage({super.key, required this.settings, required this.panel});
 
   final SettingsStore settings;
+  final PanelService panel;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -29,19 +31,34 @@ class _SettingsPageState extends State<SettingsPage> {
     _wsController =
         TextEditingController(text: widget.settings.workspacePath);
     _portController = TextEditingController(text: '${widget.settings.port}');
+    widget.panel.addListener(_onPanelChanged);
     _syncAutostart();
   }
 
   @override
   void dispose() {
+    widget.panel.removeListener(_onPanelChanged);
     _wsController.dispose();
     _portController.dispose();
     super.dispose();
   }
 
+  void _onPanelChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// 面板服务运行中（含正在启动）：工作区/端口不可修改，需先停止。
+  bool get _serviceActive =>
+      widget.panel.status == PanelStatus.running ||
+      widget.panel.status == PanelStatus.starting;
+
   Future<void> _syncAutostart() async {
-    final enabled = await AutoLaunch.instance.isEnabled;
-    if (mounted) setState(() => _autostartSwitch = enabled);
+    try {
+      final enabled = await AutoLaunch.instance.isEnabled;
+      if (mounted) setState(() => _autostartSwitch = enabled);
+    } catch (_) {
+      // 平台插件不可用时保持默认关闭，不影响设置页其他功能。
+    }
   }
 
   Future<void> _pickWorkspace() async {
@@ -101,7 +118,7 @@ class _SettingsPageState extends State<SettingsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '修改后立即生效，无需重启启动器',
+                  '工作区与端口需在面板停止时修改；其他设置即时生效',
                   style: TextStyle(fontSize: 12, color: ctInk3),
                 ),
                 const SizedBox(height: 6),
@@ -145,16 +162,28 @@ class _SettingsPageState extends State<SettingsPage> {
                     controller: _wsController,
                     style: ctMono.copyWith(fontSize: 12),
                     decoration: ctInputDecoration(),
+                    enabled: !_serviceActive,
                     onChanged: (v) {
                       widget.settings.setWorkspacePath(v.trim());
                     },
                   ),
                 ),
                 const SizedBox(width: 8),
-                CtButton.ghost('浏览…', onPressed: _pickWorkspace),
+                CtButton.ghost(
+                  '浏览…',
+                  onPressed: _serviceActive ? null : _pickWorkspace,
+                ),
               ],
             ),
           ),
+          if (_serviceActive)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: Text(
+                '面板服务运行中：请先停止服务再修改工作区 / 端口',
+                style: TextStyle(fontSize: 12, color: ctInk3),
+              ),
+            ),
           CtSettingRow(
             label: '端口',
             child: Row(
@@ -165,6 +194,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     controller: _portController,
                     style: ctMono.copyWith(fontSize: 12),
                     decoration: ctInputDecoration(),
+                    enabled: !_serviceActive,
                     onChanged: (v) {
                       final p = int.tryParse(v.trim());
                       if (p != null && p > 0 && p < 65536) {

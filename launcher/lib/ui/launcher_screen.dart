@@ -158,7 +158,10 @@ class _LauncherScreenState extends State<LauncherScreen> {
       _Tab.overview =>
         OverviewPage(panel: widget.panel, settings: widget.settings),
       _Tab.logs => LogsPage(panel: widget.panel),
-      _Tab.settings => SettingsPage(settings: widget.settings),
+      _Tab.settings => SettingsPage(
+          settings: widget.settings,
+          panel: widget.panel,
+        ),
     };
   }
 }
