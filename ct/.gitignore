@@ -31,6 +31,8 @@ MANIFEST
 #   before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+# 但 ct 的打包 spec 是受控源码，需要入库
+!packaging/*.spec
 
 # Installer logs
 pip-log.txt
