@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- 简约扁平：纯色底 + 字母标，无渐变无阴影 -->
+  <rect width="1024" height="1024" rx="220" fill="#1B4332"/>
+  <text x="512" y="708" text-anchor="middle"
+        font-family="Avenir Next, Helvetica Neue, sans-serif"
+        font-weight="900" font-size="580" letter-spacing="-28">
+    <tspan fill="#FFFFFF">C</tspan><tspan fill="#E3BC3E">t</tspan>
+  </text>
+</svg>
