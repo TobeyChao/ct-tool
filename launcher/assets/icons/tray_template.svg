@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44">
   <!-- macOS 菜单栏模板图：透明底 + 纯黑字形（系统按亮/暗模式自动着色） -->
-  <text x="22" y="31" text-anchor="middle"
+  <text x="22" y="35" text-anchor="middle"
         font-family="Avenir Next, Helvetica Neue, sans-serif"
-        font-weight="800" font-size="30" letter-spacing="-1.5" fill="#000000">ct</text>
+        font-weight="800" font-size="39" letter-spacing="-2" fill="#000000">ct</text>
 </svg>
