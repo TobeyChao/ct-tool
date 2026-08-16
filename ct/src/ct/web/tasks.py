@@ -55,6 +55,7 @@ class ExportTaskState:
                 "flatc",
                 "Accessor",
                 "Bundle",
+                "Deploy",
             ]
             self.message = "导出进行中…"
             self.errors = []

@@ -494,8 +494,10 @@ Vue.createApp({
     <div class="banner-error" v-if="errorBanner">
       <span>有 <b>{{ errorBanner.count }}</b> 条错误待处理</span>
       <span class="banner-fix">{{ errorBanner.message }}</span>
-      <a class="btn btn-sm btn-danger" @click.prevent="switchTab('logs')" href="#">查看日志</a>
-      <button class="btn btn-sm btn-ghost" @click="dismissBanner">忽略</button>
+      <div class="banner-actions">
+        <a class="btn btn-sm btn-danger" @click.prevent="switchTab('logs')" href="#">查看日志</a>
+        <button class="btn btn-sm btn-ghost" @click="dismissBanner">忽略</button>
+      </div>
     </div>
     <div class="banner-error" v-if="workspaceError">
       <span><b>工作区不可用</b></span>
@@ -534,7 +536,6 @@ Vue.createApp({
               <span>已导出 <b>{{ exportState.tables_exported }}</b> 张表</span>
               <span>状态 <b>{{ exportState.status }}</b></span>
               <span>耗时 <b>{{ exportState.elapsed }}s</b></span>
-              <button class="btn btn-sm btn-danger" v-if="exportRunning" @click="cancelExport">取消导出</button>
             </div>
           </template>
           <div v-else>
@@ -548,6 +549,17 @@ Vue.createApp({
           </div>
           <div class="cmd-footnote">
             <span class="mono" v-if="ws">产物目录 {{ ws.root }}/output</span>
+            <template v-if="ws && ws.config.deploy">
+              <template v-if="ws.config.deploy.enabled">
+                <div class="cmd-footnote deploy-footnote">
+                  <span class="mono">部署目录 {{ ws.config.deploy.unity_project }}</span>
+                  <span class="mono deploy-dest" v-for="t in ws.config.deploy.targets" :key="t.dest">→ {{ t.dest }}</span>
+                </div>
+              </template>
+              <template v-else>
+                <span class="mono">部署目录 未配置</span>
+              </template>
+            </template>
           </div>
         </div>
       </div>

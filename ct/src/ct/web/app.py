@@ -134,6 +134,23 @@ def _build_schema(data: dict) -> TableSchema:
         raise PanelError(f"schema 校验失败: {_schema_error_text(e)}") from e
 
 
+def _deploy_summary(ws) -> dict:
+    """deploy 配置摘要：绝对路径，供前端展示。"""
+    cfg = ws.config
+    unity = cfg.unity_project_root
+    targets = []
+    if unity is not None:
+        targets = [
+            {"source": t.source, "dest": str(unity / t.dest)}
+            for t in cfg.deploy.targets
+        ]
+    return {
+        "enabled": cfg.deploy.enabled,
+        "unity_project": str(unity) if unity else "",
+        "targets": targets,
+    }
+
+
 def create_app(root: Path | None = None) -> Flask:
     # 前端静态资源随包分发：与 app.py 同处 ct/web/static
     static_dir = Path(__file__).resolve().parent / "static"
@@ -161,6 +178,7 @@ def create_app(root: Path | None = None) -> Flask:
                     "primary_lang": ws.config.primary_lang,
                     "secondary_langs": ws.config.secondary_langs,
                     "schema_format": ws.config.schema_format,
+                    "deploy": _deploy_summary(ws),
                 },
                 "status": {
                     "changed": report.changed,

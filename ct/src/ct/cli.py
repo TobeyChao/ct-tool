@@ -26,6 +26,7 @@ from ct.export.i18n.status import (
     render_json,
 )
 from ct.export.i18n.sync import cleanup_i18n_files, sync_all
+from ct.export.deploy import deploy
 from ct.export.i18n.writer import report_stale_summary
 from ct.validate.errors import report_errors
 
@@ -88,10 +89,13 @@ def export(
     table: Optional[str] = typer.Option(None, "--table", help="只导出指定表"),
     lang: Optional[str] = typer.Option(None, "--lang", help="只导出指定语言"),
     verbose: bool = typer.Option(False, "--verbose", help="显示详细日志"),
+    for_build: bool = typer.Option(False, "--for-build", help="部署时追加构建目标"),
     project_root: Optional[str] = typer.Option(None, "--root", help="项目根目录"),
 ) -> None:
     """增量导出主流程。"""
-    opts = ExportOptions(all_tables=all_tables, table=table, lang=lang, verbose=verbose)
+    opts = ExportOptions(
+        all_tables=all_tables, table=table, lang=lang, verbose=verbose, for_build=for_build
+    )
     _setup_logging(opts.verbose)
     root = Path(project_root) if project_root else Path(".")
     ws = _load_workspace(root)
@@ -115,6 +119,9 @@ def export(
         tables_to_export = get_changed_tables(ws.schemas, cache, excel_dir)
         if not tables_to_export:
             typer.echo("所有表均无变化，跳过导出")
+            if ws.config.deploy.enabled:
+                typer.echo("所有表均无变化，仅部署")
+                _run_deploy(ws, opts)
             return
 
     try:
@@ -124,10 +131,38 @@ def export(
     except ExportValidationError as e:
         report_errors(e.issues, opts.verbose)
         raise typer.Exit(1)
+    except (FileNotFoundError, OSError) as e:
+        typer.echo(f"[deploy error] {e}", err=True)
+        raise typer.Exit(1)
 
     # stale 报告（基于 lang 文件聚合）
     report_stale_summary(ws.config, ws.schemas)
     typer.echo(f"\n导出完成: {result.tables_exported} 张表")
+
+
+def _run_deploy(ws: Workspace, opts: ExportOptions) -> None:
+    """执行部署并渲染结果；失败以友好提示退出。"""
+    try:
+        n = deploy(ws, opts, CLIProgressReporter())
+    except (FileNotFoundError, OSError) as e:
+        typer.echo(f"[deploy error] {e}", err=True)
+        raise typer.Exit(1)
+    if n:
+        typer.echo(f"[deploy] 完成：{n} 个文件已同步")
+    else:
+        typer.echo("[deploy] 无文件变更")
+
+
+@app.command("deploy")
+def deploy_command(
+    for_build: bool = typer.Option(False, "--for-build", help="追加构建目标（StreamingAssets）"),
+    project_root: Optional[str] = typer.Option(None, "--root", help="项目根目录"),
+) -> None:
+    """只部署当前产物到 Unity Assets，不触发导出。"""
+    _setup_logging()
+    root = Path(project_root) if project_root else Path(".")
+    ws = _load_workspace(root)
+    _run_deploy(ws, ExportOptions(for_build=for_build))
 
 
 @app.command()
@@ -271,6 +306,14 @@ def status(
 
     if not report.has_anything:
         typer.echo("[OK] 所有表已是最新（数据 + 模板）")
+
+    if ws.config.deploy.enabled:
+        dests = ", ".join(
+            str(d) for _, d in ws.config.resolve_deploy_targets(for_build=False)
+        )
+        typer.echo(f"deploy: 启用 → {dests}")
+    else:
+        typer.echo("deploy: 未配置")
 
 
 @app.command()

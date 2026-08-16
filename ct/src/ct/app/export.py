@@ -34,6 +34,7 @@ from ct.export.fbs_generator import generate_container_fbs
 from ct.export.i18n.merger import load_translation, merge_translations
 from ct.export.i18n.sync import cleanup_i18n_files, sync_all
 from ct.export.json_writer import write_json
+from ct.export.deploy import deploy
 from ct.export.lua_accessor_generator import generate_lua_accessor
 from ct.schema.models import TableSchema
 from ct.validate.errors import Issue, ValidationIssue
@@ -345,6 +346,16 @@ class BundleStep:
                     ctx.reporter.log(f"[bundle] {path.name}")
 
 
+
+class DeployStep:
+    """把导出产物同步到 Unity Assets（配置见 global.yaml 的 deploy section）。"""
+
+    name = "Deploy"
+
+    def run(self, ctx: ExportContext) -> None:
+        deploy(ctx.ws, ctx.opts, ctx.reporter)
+
+
 @dataclass
 class ExportResult:
     tables_exported: int
@@ -366,6 +377,7 @@ class ExportPipeline:
             FlatcStep(),
             AccessorStep(),
             BundleStep(),
+            DeployStep(),
         ]
 
     def run(

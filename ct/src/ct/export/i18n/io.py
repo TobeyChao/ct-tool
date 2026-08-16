@@ -39,14 +39,24 @@ def _serialize_object(data: dict[str, Any], field_order: list[str]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _write_if_changed(path: Path, content: str) -> None:
+    """内容一致时不重写，避免无谓的 mtime 变化（触发外部增量检测/重新导入）。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        if path.read_text(encoding="utf-8") == content:
+            return
+    except FileNotFoundError:
+        pass
+    path.write_text(content, encoding="utf-8")
+
+
 def _write_with_roundtrip_check(content: str, data: dict[str, Any], path: Path) -> None:
     parsed = json.loads(content)
     if parsed != data:
         raise RuntimeError(
             f"紧凑 JSON 写出自检失败: {path}（往返结果不等价）"
         )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
+    _write_if_changed(path, content)
 
 
 def dump_lang_file(data: dict[str, dict[str, Any]], path: Path, field_order: list[str]) -> None:

@@ -13,3 +13,4 @@ class ExportOptions:
     table: str | None = None
     lang: str | None = None
     verbose: bool = False
+    for_build: bool = False
