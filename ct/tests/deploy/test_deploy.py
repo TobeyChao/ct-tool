@@ -28,7 +28,6 @@ def _build_project(root: Path, unity: Path | None = None) -> None:
         "output_dir": "output",
         "cache_dir": "cache",
         "i18n_dir": "i18n",
-        "flatc_path": "tools/nope",
     }
     if unity is not None:
         cfg["deploy"] = {

@@ -46,7 +46,7 @@
 │   │   └── generated/    #     C# / Lua Accessor
 │   ├── cache/            #   增量缓存 (自动维护)
 │   ├── i18n/             #   翻译文件 (source/ 原文 + {lang}/ 译文)
-│   ├── tools/            #   flatc 等外部工具
+│   ├── tools/            #   外部工具（flatc 已退役）
 │   └── scripts/          #   辅助脚本
 ├── openspec/             # 设计文档和任务列表
 └── test-proj/            # .NET 二进制读取测试工程
@@ -81,8 +81,6 @@ pip install -e .
   python -m pip uninstall -y pydantic pydantic-core
   python -m pip install "pydantic==2.13.4"
   ```
-
-将 `flatc.exe`（Windows）或 `flatc`（Linux/macOS）放入 `gd/tools/`。缺少时跳过 FlatBuffers 编译，但 JSON 导出不受影响。
 
 ---
 
@@ -255,7 +253,7 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
 | `ct/app/workspace.py` | 组合根 `Workspace`：root + config + 拓扑排序后的 schemas，所有用例的第一个参数 |
 | `ct/app/options.py` | 用例参数对象（如 `ExportOptions`），收拢结伴出现的参数 |
 | `ct/app/events.py` | 导出管道原语：`ProgressReporter` / `CancelToken` / `CancelledError` |
-| `ct/app/export.py` | 导出管道：`ExportStep` 步骤序列（解析校验 → i18n sync → JSON → FBS → flatc → Accessor → Bundle）+ `ExportResult`；取消时不写 `state.json` |
+| `ct/app/export.py` | 导出管道：`ExportStep` 步骤序列（解析校验 → i18n sync → JSON → FBS → Accessor → Bundle）+ `ExportResult`；取消时不写 `state.json` |
 | `ct/app/validate.py` | 共享解析校验阶段 `parse_and_validate`（读 Excel + 类型/引用校验 + id 集合） |
 | `ct/app/template.py` | `gen-template` 决策矩阵集中实现：根据文件状态 × 用户 flag 输出 Action 枚举与说明信息 |
 | `ct/app/status.py` | `ct status` 用例：`compute_status` 分类数据变更 / 模板漂移 / 未跟踪 / 缺失，返回 `StatusReport`（CLI 只渲染） |
@@ -263,7 +261,7 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
 | `ct/schema/models.py` | Pydantic 模型：`TableSchema` 和 `FieldDef`。支持字段类型：`int32`、`int64`、`float`、`double`、`bool`、`string`、`enum`、`struct`、`array` |
 | `ct/schema/loader.py` | 依据 `ref` 字段构建依赖图并拓扑排序（格式无关，只认 canonical 模型） |
 | `ct/schema/repository.py` | Schema 源抽象 `SchemaRepository` + YAML 实现：`load_all()` 读取 schema，`fbs_sources()` 提供各表 .fbs 文本（未来 .fbs 源经 `schema_format` 切换） |
-| `ct/schema/conventions.py` | fbs 结构标准 `FbsConvention` + 检查器：类型映射、容器/root_type 结构、"类型名与字段名不撞名"不变量 + flatc 编译校验 |
+| `ct/schema/conventions.py` | fbs 结构标准 `FbsConvention` + 检查器：类型映射、容器/root_type 结构、"类型名与字段名不撞名"不变量检查 |
 | `ct/schema/hashing.py` | 计算 TableSchema 的稳定 hash（sha256 前 16 位 hex），用于模板元数据比对检测 schema 漂移 |
 | `ct/schema/naming.py` | 命名校验器 `validate_name`：表/字段名必须首字符大写、不以 `_` 开头/结尾（WYSIWYG 恒等域，schema 加载即校验，不再做任何大小写转换） |
 | `ct/excel/reader.py` | 以只读模式读取 Excel，返回 `ParsedRows`（`rows` + 与之一一对应的 `excel_rows` 绝对行号）。struct 字段展开为多列；array 字段在单元格内按 `separator` 分隔。表头行数 = `max_nesting_depth + 1` |
@@ -274,7 +272,6 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
 | `ct/validate/refs.py` | 利用已解析行数据和缓存中的 ID 集合进行跨表外键校验；填充 `excel_row` / `column`，返回 `ValidationIssue` |
 | `ct/export/json_writer.py` | 写出 `output/json/{table}_{lang}.json`，根键为 `schema.resolved_json_key` |
 | `ct/export/fbs_generator.py` | 生成 Bundle 容器 `container.fbs`；各表 `.fbs` 文本由 SchemaRepository 提供 |
-| `ct/export/flatc_runner.py` | 调用 `flatc` 编译 `.fbs` 为各语言 Accessor 代码 |
 | `ct/export/binary_writer.py` | 手动将行数据序列化为 FlatBuffers bytes（无生成的 Python Accessor）；打包为 `DataBundle` 二进制（`output/binary/data_{lang}.bin`） |
 | `ct/export/accessor_model.py` | 访问器生成共享模型 `AccessorModel`（client/string/i18n 字段 + 主键），C# 与 Lua 生成器消费同一模型 |
 | `ct/export/csharp_accessor_generator.py` | 生成 C# Accessor 类至 `output/generated/csharp/` |

@@ -23,7 +23,6 @@ def _build_project_with_duplicate_pk(root: Path) -> None:
             {
                 "primary_lang": "zh",
                 "secondary_langs": ["en"],
-                "flatc_path": "tools/nope",
             },
             allow_unicode=True,
         ),

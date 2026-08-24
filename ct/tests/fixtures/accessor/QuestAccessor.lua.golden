@@ -10,67 +10,63 @@
 --   .Active (bool)
 --   .Precise (double)
 
-local flatbuffers = require("flatbuffers")
-local DataBundle = require("DataBundle")
-local QuestTable = require("QuestTable")
+local GD = require("gd")
 
+-- 表句柄：模块加载时取一次（C 固定槽位引用，跨加载有效）
+local _tbl     = GD.FindTable("Quest")
+
+-- 统一元表工厂：字段名 → 读取 lambda（READERS 分发表，一次性构建）
+local function make_meta(readers)
+    return { __index = function(self, key)
+        local fn = readers[key]
+        if fn then return fn(self) end
+    end }
+end
+
+-- struct 访问器元表（DropRange；self = 嵌套表 userdata）
+local DropRangeMeta = make_meta({
+    Min = function(s) return GD.I32(s, 4) end,
+    Max = function(s) return GD.I32(s, 6) end,
+})
+
+-- array 访问器元表（通用）
+local ArrayMeta = {}
+ArrayMeta.__len   = function(self) return GD.ArrLen(self) end
+ArrayMeta.__index = function(self, i) return GD.ArrAt(self, i) end
+ArrayMeta.__pairs = ipairs          -- 稠密向量，pairs ≡ ipairs
+
+-- 行访问器元表（每表一个，所有行共用一个元表；self = 行 userdata）
+local RowMeta = make_meta({
+    Id = function(s)
+        return GD.I32(s, 4)
+    end,
+    DropRange = function(s)
+        return GD.Struct(s, 6, DropRangeMeta)
+    end,
+    Ratio = function(s)
+        return GD.F32(s, 8)
+    end,
+    Big = function(s)
+        return GD.I64(s, 10)
+    end,
+    Active = function(s)
+        return GD.I8(s, 12) ~= 0
+    end,
+    Precise = function(s)
+        return GD.F64(s, 14)
+    end,
+})
+
+-- 公开 API（纯函数，无状态）
 local M = {}
-
-local _loaded = false
-local _main_root = nil
-local _main_index = {}  -- id -> row index (1-based)
-
-local function _FindTableBytes(bundle_bb, table_name)
-    local bundle = DataBundle.GetRootAsDataBundle(bundle_bb, 0)
-    local count = bundle:TablesLength()
-    for i = 1, count do
-        local bt = bundle:Tables(i)
-        if bt:Name() == table_name then
-            return flatbuffers.binaryArray.New(bt:DataAsString(1, bt:DataLength()))
-        end
-    end
-    error("Table '" .. table_name .. "' not found in config bundle.")
-end
-
-function M.preload()
-    -- main bundle
-    local main_bytes = GD.GetMainBytes()
-    local bundle_bb = flatbuffers.binaryArray.New(main_bytes)
-    local main_buf = _FindTableBytes(bundle_bb, "Quest")
-    _main_root = QuestTable.GetRootAsQuestTable(main_buf, 0)
-    local main_count = _main_root:ItemsLength()
-
-    _main_index = {}
-
-    for i = 1, main_count do
-        local row = _main_root:Items(i)
-        local pk = row:Id()
-        _main_index[pk] = i
-    end
-
-    _loaded = true
-end
-
-local RowMeta = {}
-
 function M.ByID(id)
-    if not _loaded then M.preload() end
-    local idx = _main_index[id]
-    if not idx then return nil end
-    return setmetatable({ _idx = idx }, RowMeta)
+    return GD.ByID(_tbl, id, RowMeta)
 end
-
-function RowMeta:__index(key)
-    local idx = rawget(self, "_idx")
-
-    -- key is PascalCase, matches flatc method name directly
-    local row = _main_root:Items(idx)
-    local method = row[key]
-    if type(method) == "function" then
-        return method(row)
-    end
-
-    return nil
+function M.ByIndex(i)
+    return GD.ByIndex(_tbl, i, RowMeta)
+end
+function M.Count()
+    return GD.Count(_tbl)
 end
 
 return M

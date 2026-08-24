@@ -141,7 +141,6 @@ void main() {
       File('${config.path}/global.yaml').writeAsStringSync('''
 primary_lang: zh
 secondary_langs: []
-flatc_path: tools/flatc
 schemas_dir: config/schemas
 excel_dir: excel
 output_dir: output

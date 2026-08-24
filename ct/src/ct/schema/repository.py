@@ -121,8 +121,18 @@ def _schema_fbs_text(schema: TableSchema) -> str:
     lines.append("}")
     lines.append("")
 
+    # byId 二分用的排序索引（仅带主键的表生成；IndexEntry 为 8B 内联 struct）
+    if schema.primary:
+        lines.append("struct IndexEntry {")
+        lines.append("  id: int32;")
+        lines.append("  row: int32;")
+        lines.append("}")
+        lines.append("")
+
     lines.append(f"table {table_name}{FbsConvention.CONTAINER_SUFFIX} {{")
     lines.append(f"  items: [{table_name}];")
+    if schema.primary:
+        lines.append("  index: [IndexEntry];")
     lines.append("}")
     lines.append("")
     lines.append(f"root_type {table_name}{FbsConvention.CONTAINER_SUFFIX};")

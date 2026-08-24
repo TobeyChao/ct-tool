@@ -190,6 +190,31 @@ _OFFSET_BUILDERS: dict[str, Any] = {
 }
 
 
+def _build_index_vector(
+    builder: flatbuffers.Builder,
+    rows: list[dict[str, Any]],
+    schema: TableSchema,
+) -> int | None:
+    """构建按主键排序的 index 向量（内联 struct `IndexEntry{id,row}`，8B/条）。
+
+    `items` 保持 Excel 行序（byIndex 用）；`index` 按 id 升序（byId 二分用）。
+    `row` 存 items 向量中的原始下标（0-based）。无主键的表不生成，返回 None。
+    """
+    if not schema.primary:
+        return None
+    pk_field = schema.primary_field
+    # 按主键排序（int 化，避免字符串序 "10" < "9" 错误）；保留原始行下标
+    ordered = sorted(
+        enumerate(rows),
+        key=lambda t: int(t[1].get(pk_field.name, 0) or 0),
+    )
+    builder.StartVector(8, len(ordered), 4)           # IndexEntry = 8B struct，对齐 4
+    for orig_idx, row in reversed(ordered):           # 元素倒序
+        builder.PrependInt32(orig_idx)                # row（struct 内第二个字段先写）
+        builder.PrependInt32(int(row.get(pk_field.name, 0) or 0))  # id（第一个字段）
+    return builder.EndVector()
+
+
 def build_table_bytes(
     rows: list[dict[str, Any]],
     schema: TableSchema,
@@ -216,15 +241,21 @@ def build_table_bytes(
             _prepend_slot(builder, i, f, row.get(f.name), field_offsets.get(f.name))
         row_offsets.append(builder.EndObject())
 
-    # 构建 items vector
+    # 构建 items vector（Excel 行序）
     builder.StartVector(4, len(row_offsets), 4)
     for o in reversed(row_offsets):
         builder.PrependUOffsetTRelative(o)
     items_vec = builder.EndVector()
 
-    # 构建 Table 容器
-    builder.StartObject(1)
+    # 构建 index vector（按主键排序；无主键的表不生成）
+    index_vec = _build_index_vector(builder, rows, schema)
+
+    # 构建 Table 容器（items 槽位 0；index 槽位 1，仅带主键的表）
+    num_fields = 2 if index_vec is not None else 1
+    builder.StartObject(num_fields)
     builder.PrependUOffsetTRelativeSlot(0, items_vec, 0)
+    if index_vec is not None:
+        builder.PrependUOffsetTRelativeSlot(1, index_vec, 0)
     table_offset = builder.EndObject()
 
     builder.Finish(table_offset)
@@ -235,13 +266,19 @@ def build_i18n_table_bytes(
     rows: list[dict[str, Any]],
     schema: TableSchema,
 ) -> bytes:
-    """构建 i18n 变体表的 FlatBuffers bytes。"""
+    """构建 i18n 变体表的 FlatBuffers bytes。
+
+    entries 按主键升序排列（i18n 表只查不迭代，运行时按主键二分）。
+    """
     builder = flatbuffers.Builder(1024)
     pk_field = schema.primary_field
     i18n_fields = schema.i18n_fields
 
     entry_offsets: list[int] = []
-    for row in rows:
+    for row in sorted(
+        rows,
+        key=lambda r: int(r.get(pk_field.name, 0) or 0),  # 主键排序（int 化）
+    ):
         # 先构建 string offsets
         str_offsets: dict[str, int] = {}
         for f in i18n_fields:

@@ -7,7 +7,7 @@ from ct.export.binary_writer import (
     _OFFSET_BUILDERS,
     _SCALAR_SLOT_WRITERS,
 )
-from ct.export.csharp_accessor_generator import _CS_ACCESSOR_EMITTERS
+from ct.export.csharp_accessor_generator import _ARR_READERS, _SCALAR_READERS
 from ct.schema.models import ALL_FIELD_TYPES, BASIC_TYPES
 from ct.schema.type_traits import OFFSET_TYPES, TYPE_TRAITS
 
@@ -46,5 +46,9 @@ def test_binary_offset_builders_match_offset_types() -> None:
     assert set(_OFFSET_BUILDERS) == set(OFFSET_TYPES)
 
 
-def test_csharp_accessor_emitters_cover_all_field_types() -> None:
-    assert set(_CS_ACCESSOR_EMITTERS) == set(ALL_FIELD_TYPES)
+def test_csharp_scalar_readers_cover_scalar_types() -> None:
+    assert set(_SCALAR_READERS) == (set(BASIC_TYPES) - {"string"}) | {"enum"}
+
+
+def test_csharp_array_readers_cover_all_element_types() -> None:
+    assert set(_ARR_READERS) == set(BASIC_TYPES) | {"enum"}

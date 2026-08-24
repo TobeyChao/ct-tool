@@ -40,7 +40,6 @@ class GlobalConfig(BaseModel):
     primary_lang: str
     secondary_langs: list[str] = []
     schema_format: str = "yaml"
-    flatc_path: str = "tools/flatc"
     schemas_dir: str = "config/schemas"
     excel_dir: str = "excel"
     output_dir: str = "output"

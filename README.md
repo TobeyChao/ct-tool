@@ -70,6 +70,10 @@ deploy:
 
 ## 依赖
 
-Python >= 3.10。如需 FlatBuffers Binary 导出，将 `flatc` 放入 `gd/tools/`。
+Python >= 3.10。二进制由 `binary_writer` 直接构建（无需 flatc）。
 
 详细文档见 [`ct/docs/README.md`](ct/docs/README.md)。
+
+## 待办（Known TODOs）
+
+- **AccessorStep 尊重导出过滤范围**：当前 `AccessorStep` 无条件遍历 `ctx.ws.order`（全部表）生成 accessor，`--table X` 单表导出时也会重新生成所有表的 accessor（过度生成，不误删但多余 IO）。改进方向：让 AccessorStep 尊重 `tables_to_export` 只生成变化的表，同时 `_prune_generated_dir` 改为只删除 schema 中已不存在的表（而非"本次未生成"），否则会误删未变化表的 accessor。取舍：现状简单、零误删风险，多生成几个文件对导出流程无实质开销。

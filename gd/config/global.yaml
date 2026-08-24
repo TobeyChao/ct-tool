@@ -5,7 +5,6 @@ secondary_langs:
   - ja
 
 # 路径配置（相对于项目根目录）
-flatc_path: tools/flatc
 schemas_dir: config/schemas
 excel_dir: excel
 output_dir: output

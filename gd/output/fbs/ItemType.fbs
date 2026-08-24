@@ -4,8 +4,14 @@ table ItemType {
   Code: string;
 }
 
+struct IndexEntry {
+  id: int32;
+  row: int32;
+}
+
 table ItemTypeTable {
   items: [ItemType];
+  index: [IndexEntry];
 }
 
 root_type ItemTypeTable;

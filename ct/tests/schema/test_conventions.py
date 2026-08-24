@@ -1,4 +1,4 @@
-"""FbsConvention 检查器测试：撞名不变量 + 结构规范 + flatc 降级。"""
+"""FbsConvention 检查器测试：撞名不变量 + 结构规范。"""
 
 from __future__ import annotations
 
@@ -77,9 +77,3 @@ table ItemTable {
     assert any("root_type" in i.message for i in issues)
 
 
-def test_missing_flatc_degrades_to_structure_only(tmp_path: Path) -> None:
-    missing = tmp_path / "no-flatc"
-    issues = validate_fbs_conventions(
-        _VALID_MAIN, table="Item", flatc_path=missing
-    )
-    assert any("跳过编译校验" in i.message for i in issues)

@@ -1,9 +1,18 @@
-"""Task 8.9 -- Generate {table}_accessor.lua files for each config table.
+"""Generate {table}_accessor.lua files for each config table.
 
-The generated Lua module provides ``M.ByID(id)`` returning a RowMeta table with
-``__index`` that lazily reads fields from i18n cache -> main cache -> FlatBuffers.
+生成器产出**无状态访问器**（design D4）：
 
-Field access uses PascalCase (matching flatc output), e.g. ``row.RequiredLevel``.
+- 模块加载时经 ``GD.FindTable`` 取一次表句柄（C 固定槽位引用，跨加载有效）
+- READERS 分发表：字段名 → 读取 lambda（slot = vtable 槽位 = 4 + 2*字段序）
+- 行/struct 访问器 = 共享元表（make_meta 工厂），所有行共用一个元表
+- 数组经 ``GD.Arr`` 返回带 ``__len/__index/__pairs`` 的视图
+- 公开 API：ByID / ByIndex / Count（纯函数，无状态、无 preload）
+
+字段读取约定（与原生 C 读取器、C# WireReader 对齐）：
+- 标量按类型分派（I8/I32/I64/F32/F64）；bool 由 ``I8(...) ~= 0`` 组合
+- string：i18n 字段经 ``GD.I18nStr`` 优先（i18n 表二分），未命中 ``GD.Str`` 兜底原文
+- struct：``GD.Struct`` 返回嵌套表对象 userdata（挂 struct 访问器元表）
+- array：``GD.Arr`` 返回视图（elemTag 由生成器按元素类型写死）
 """
 
 from __future__ import annotations
@@ -13,20 +22,42 @@ from pathlib import Path
 from ct.export.accessor_model import build_accessor_model
 from ct.schema.models import FieldDef, TableSchema
 
+# 元素类型 → gd 模块 elemTag（GD.Arr 的第二个参数）
+_ELEM_TAGS = {
+    "int32": "i32",
+    "int64": "i64",
+    "float": "f32",
+    "double": "f64",
+    "bool": "bool",
+    "string": "str",
+    "enum": "i8",
+}
+
+# 标量字段类型 → GD 读取函数
+_SCALAR_READERS = {
+    "int32": "GD.I32",
+    "int64": "GD.I64",
+    "float": "GD.F32",
+    "double": "GD.F64",
+    "enum": "GD.I8",
+}
+
+
+def _slot(idx: int) -> int:
+    """vtable 槽位 = 4 + 2*字段序（flatbuffers 约定，与 C/C# 读取器一致）。"""
+    return 4 + 2 * idx
+
 
 def generate_lua_accessor(schema: TableSchema, output_dir: Path) -> Path:
-    """Generate ``{table}_accessor.lua`` and write it to *output_dir*.
-
-    Returns the path of the generated file.
-    """
+    """Generate ``{table}_accessor.lua`` and write it to *output_dir*."""
     model = build_accessor_model(schema)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     table_pascal = schema.table
     client_fields: list[FieldDef] = model.client_fields
-    pk = model.primary
-    string_fields = model.string_fields
-    i18n_str_fields = model.i18n_fields
+    # 主键槽位（i18n 查询用）：按 schema 字段序计算
+    pk_idx = next(i for i, f in enumerate(client_fields) if f.name == schema.primary)
+    pk_slot = _slot(pk_idx)
 
     lines: list[str] = []
     w = lines.append
@@ -42,142 +73,80 @@ def generate_lua_accessor(schema: TableSchema, output_dir: Path) -> Path:
         if f.i18n:
             flags.append("i18n")
         flag_str = f", {', '.join(flags)}" if flags else ""
-        pascal = f.name
-        w(f"--   .{pascal} ({f.type}{flag_str})")
+        w(f"--   .{f.name} ({f.type}{flag_str})")
     w("")
-    w('local flatbuffers = require("flatbuffers")')
-
-    # FlatBuffers types as local require (not global)
-    fb_types = {f"{table_pascal}Table", "DataBundle"}
+    w('local GD = require("gd")')
+    w("")
+    w("-- 表句柄：模块加载时取一次（C 固定槽位引用，跨加载有效）")
+    w(f'local _tbl     = GD.FindTable("{schema.table}")')
     if schema.has_i18n:
-        fb_types.add(f"{table_pascal}I18nTable")
-    for t in sorted(fb_types):
-        w(f'local {t} = require("{t}")')
+        w(f'local _i18nTbl = GD.FindTableI18n("{schema.table}_i18n")')
     w("")
+    w("-- 统一元表工厂：字段名 → 读取 lambda（READERS 分发表，一次性构建）")
+    w("local function make_meta(readers)")
+    w("    return { __index = function(self, key)")
+    w("        local fn = readers[key]")
+    w("        if fn then return fn(self) end")
+    w("    end }")
+    w("end")
+    w("")
+
+    # -- struct 访问器元表（每个 struct 字段一个） -----------------------------
+    for f in client_fields:
+        if f.type == "struct" and f.fields:
+            w(f"-- struct 访问器元表（{f.name}；self = 嵌套表 userdata）")
+            w(f"local {f.name}Meta = make_meta({{")
+            for i, sf in enumerate(f.fields):
+                w(f"    {sf.name} = function(s) return GD.I32(s, {_slot(i)}) end,")
+            w("})")
+            w("")
+
+    # -- array 访问器元表（通用；elem 类型固化在视图 payload 里） -------------
+    w("-- array 访问器元表（通用）")
+    w("local ArrayMeta = {}")
+    w("ArrayMeta.__len   = function(self) return GD.ArrLen(self) end")
+    w("ArrayMeta.__index = function(self, i) return GD.ArrAt(self, i) end")
+    w("ArrayMeta.__pairs = ipairs          -- 稠密向量，pairs ≡ ipairs")
+    w("")
+
+    # -- 行访问器元表：READERS 分发表 ----------------------------------------
+    w("-- 行访问器元表（每表一个，所有行共用一个元表；self = 行 userdata）")
+    w("local RowMeta = make_meta({")
+    for i, f in enumerate(client_fields):
+        slot = _slot(i)
+        w(f"    {f.name} = function(s)")
+        if f.type == "string" and f.i18n:
+            w(f"        local v = GD.I18nStr(_i18nTbl, s, {pk_slot}, 4, {slot})")
+            w(f"        return v ~= nil and v or GD.Str(s, {slot})")
+        elif f.type == "bool":
+            w(f"        return GD.I8(s, {slot}) ~= 0")
+        elif f.type in _SCALAR_READERS:
+            w(f"        return {_SCALAR_READERS[f.type]}(s, {slot})")
+        elif f.type == "struct":
+            w(f"        return GD.Struct(s, {slot}, {f.name}Meta)")
+        elif f.type == "array":
+            w(f'        return GD.Arr(s, {slot}, "{_ELEM_TAGS.get(f.element, "i32")}", ArrayMeta)')
+        elif f.type == "string":
+            w(f"        return GD.Str(s, {slot})")
+        else:
+            raise ValueError(f"表字段类型不支持: {f.type}")
+        w(f"    end,")
+    w("})")
+    w("")
+
+    # -- 公开 API --------------------------------------------------------------
+    w("-- 公开 API（纯函数，无状态）")
     w("local M = {}")
-    w("")
-
-    # -- private state --------------------------------------------------------
-    w("local _loaded = false")
-    w("local _main_root = nil")
-    w("local _main_index = {}  -- id -> row index (1-based)")
-    if schema.has_i18n:
-        w("local _i18n_strings = {}  -- [id] = { field = value }")
-    w("")
-
-    # -- helper: extract table bytes from DataBundle --------------------------
-    w("local function _FindTableBytes(bundle_bb, table_name)")
-    w("    local bundle = DataBundle.GetRootAsDataBundle(bundle_bb, 0)")
-    w("    local count = bundle:TablesLength()")
-    w("    for i = 1, count do")
-    w("        local bt = bundle:Tables(i)")
-    w("        if bt:Name() == table_name then")
-    w("            return flatbuffers.binaryArray.New(bt:DataAsString(1, bt:DataLength()))")
-    w("        end")
-    w("    end")
-    w("    error(\"Table '\" .. table_name .. \"' not found in config bundle.\")")
-    w("end")
-    w("")
-
-    # -- i18n indexing --------------------------------------------------------
-    if schema.has_i18n:
-        w("local function _index_i18n()")
-        w("    local i18n_bytes = GD.GetI18nBytes()")
-        w("    if not i18n_bytes or #i18n_bytes == 0 then")
-        w("        _i18n_strings = {}")
-        w("        return")
-        w("    end")
-        w("")
-        w("    local i18n_bb = flatbuffers.binaryArray.New(i18n_bytes)")
-        w(f'    local i18n_buf = _FindTableBytes(i18n_bb, "{schema.table}_i18n")')
-        w(f"    local i18n_root = {table_pascal}I18nTable.GetRootAs{table_pascal}I18nTable(i18n_buf, 0)")
-        w("    local i18n_count = i18n_root:EntriesLength()")
-        w("")
-        w("    _i18n_strings = {}")
-        w("    for j = 1, i18n_count do")
-        w("        local entry = i18n_root:Entries(j)")
-        pk_getter = pk.name
-        w(f"        local pk = entry:{pk_getter}()")
-        w("        _i18n_strings[pk] = {}")
-        for sf in i18n_str_fields:
-            sf_getter = sf.name
-            w(f'        _i18n_strings[pk]["{sf_getter}"] = entry:{sf_getter}()')
-        w("    end")
-        w("end")
-        w("")
-
-    # -- helper: get i18n string for a row index and field key ----------------
-    if schema.has_i18n:
-        w("local function _get_i18n_string(idx, key)")
-        w("    local row = _main_root:Items(idx)")
-        pk_getter = pk.name
-        w(f"    local id = row:{pk_getter}()")
-        w("    if _i18n_strings[id] and _i18n_strings[id][key] ~= nil then")
-        w("        return _i18n_strings[id][key]")
-        w("    end")
-        w("    return nil")
-        w("end")
-        w("")
-
-    # -- preload --------------------------------------------------------------
-    w("function M.preload()")
-    w("    -- main bundle")
-    w("    local main_bytes = GD.GetMainBytes()")
-    w("    local bundle_bb = flatbuffers.binaryArray.New(main_bytes)")
-    w(f'    local main_buf = _FindTableBytes(bundle_bb, "{schema.table}")')
-    w(f"    _main_root = {table_pascal}Table.GetRootAs{table_pascal}Table(main_buf, 0)")
-    w("    local main_count = _main_root:ItemsLength()")
-    w("")
-    w("    _main_index = {}")
-    w("")
-    w("    for i = 1, main_count do")
-    w("        local row = _main_root:Items(i)")
-    pk_getter = pk.name
-    w(f"        local pk = row:{pk_getter}()")
-    w("        _main_index[pk] = i")
-    w("    end")
-    w("")
-
-    if schema.has_i18n:
-        w("    -- i18n bundle (reload-safe)")
-        w("    _index_i18n()")
-        w("")
-
-    w("    _loaded = true")
-    w("end")
-    w("")
-
-    # -- RowMeta (must be defined before ByID) -------------------------------
-    w("local RowMeta = {}")
-    w("")
-
-    # -- ByID ----------------------------------------------------------------
     w("function M.ByID(id)")
-    w("    if not _loaded then M.preload() end")
-    w("    local idx = _main_index[id]")
-    w("    if not idx then return nil end")
-    w("    return setmetatable({ _idx = idx }, RowMeta)")
+    w("    return GD.ByID(_tbl, id, RowMeta)")
+    w("end")
+    w("function M.ByIndex(i)")
+    w("    return GD.ByIndex(_tbl, i, RowMeta)")
+    w("end")
+    w("function M.Count()")
+    w("    return GD.Count(_tbl)")
     w("end")
     w("")
-    w("function RowMeta:__index(key)")
-    w("    local idx = rawget(self, \"_idx\")")
-    w("")
-    if schema.has_i18n:
-        w("    local i18n_val = _get_i18n_string(idx, key)")
-        w("    if i18n_val ~= nil then return i18n_val end")
-        w("")
-    w("    -- key is PascalCase, matches flatc method name directly")
-    w("    local row = _main_root:Items(idx)")
-    w("    local method = row[key]")
-    w("    if type(method) == \"function\" then")
-    w("        return method(row)")
-    w("    end")
-    w("")
-    w("    return nil")
-    w("end")
-    w("")
-
-    # -- module return --------------------------------------------------------
     w("return M")
     w("")
 

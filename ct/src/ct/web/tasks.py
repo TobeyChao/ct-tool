@@ -52,7 +52,6 @@ class ExportTaskState:
                 "i18n sync",
                 "JSON",
                 "FBS",
-                "flatc",
                 "Accessor",
                 "Bundle",
                 "Deploy",

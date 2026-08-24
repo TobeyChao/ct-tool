@@ -1,304 +1,283 @@
-"""Task 8.8 -- Generate {Table}Accessor.cs files for each config table.
+"""Generate {Table}Accessor.cs files for each config table.
 
-The generated C# static class provides zero-GC accessor methods that
-read FlatBuffers data in-place for scalars and return pre-materialized
-strings from arrays built during ``Preload()``.
+生成器产出**行模式访问器**（design D6），零第三方依赖（不引用
+Google.FlatBuffers / flatc 类型）：
+
+- ``{Table}Accessor`` 静态类：窗口（``_table``/``_i18nTable`` IntPtr）+
+  预缓存 items 基址（``_itemsBase``）+ 行指针缓存（``_rowPtrs``）；
+  ``EnsureLoaded`` 由加载点失效信号（ConfigAccessors）驱动，本地判断零 P/Invoke
+- ``{Table}Row`` readonly struct：行指针 + epoch 校验（等价 Lua check_ud），
+  属性先 ``EnsureFresh`` 再经 ``WireReader`` 指针直读
+- struct 字段：``{Struct}View`` readonly struct（指针 + epoch）
+- i18n：``WireReader.SearchEntry`` 二分 i18n entries，未命中兜底原文
+
+slot = vtable 槽位 = 4 + 2*字段序（与原生 C / Lua 读取器一致）。
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 from ct.export.accessor_model import build_accessor_model
 from ct.schema.models import FieldDef, TableSchema
-from ct.schema.type_traits import TYPE_TRAITS, csharp_element_type
+
+# 标量字段 → WireReader 方法 + C# 返回类型
+_SCALAR_READERS = {
+    "int32": ("I32", "int"),
+    "int64": ("I64", "long"),
+    "float": ("F32", "float"),
+    "double": ("F64", "double"),
+    "enum": ("I8", "byte"),
+    "bool": ("Bool", "bool"),
+}
+# 数组元素 → WireReader 元素读取方法
+_ARR_READERS = {
+    "int32": "ArrI32",
+    "int64": "ArrI64",
+    "float": "ArrF32",
+    "double": "ArrF64",
+    "bool": "ArrBool",
+    "string": "ArrStr",
+    "enum": "ArrI8",
+}
 
 
-def _cs_return_type(field: FieldDef) -> str:
-    """Return the C# type string for a field's accessor return value."""
-    return TYPE_TRAITS[field.type].csharp_type(field)
+def _slot(idx: int) -> int:
+    """vtable 槽位 = 4 + 2*字段序（flatbuffers 约定）。"""
+    return 4 + 2 * idx
 
 
-# ---- code generation --------------------------------------------------------
+def _row_prop_type(f: FieldDef) -> str:
+    if f.type == "string":
+        return "string"
+    if f.type == "struct":
+        return f"{f.name}View"
+    if f.type == "array":
+        return ""  # 数组不生成单属性，拆 Count/At
+    return _SCALAR_READERS[f.type][1]
+
+
+def _arr_elem_type(f: FieldDef) -> str:
+    if f.element == "string":
+        return "string"
+    if f.element == "enum":
+        return "byte"
+    return _SCALAR_READERS.get(f.element, ("", "int"))[1]
+
+
+def _gen_row_property(
+    f: FieldDef,
+    slot: int,
+    pk_slot: int,
+    i18n_slot: int | None = None,
+    accessor_name: str = "",
+) -> list[str]:
+    """产出 ItemRow 的一个属性（含 EnsureFresh 先行）。
+
+    ``pk_slot`` 主表主键槽位（i18n 查询用）；``i18n_slot`` i18n entry 内
+    目标字段槽位（entry 布局：pk 槽位 0，i18n 字段从槽位 1 起）。
+    """
+    if f.type == "array":  # 数组拆 Count/At 两个成员，不输出单属性头
+        elem = _ARR_READERS.get(f.element, "ArrI32")
+        return [
+            f"    public int {f.name}Count {{ get {{ EnsureFresh(); return WireReader.ArrLen(_row, {slot}); }} }}",
+            f"    public {_arr_elem_type(f)} {f.name}At(int i) {{ EnsureFresh(); return WireReader.{elem}(_row, {slot}, i); }}",
+        ]
+    lines = [f"    public {_row_prop_type(f)} {f.name}"]
+    if f.type == "string":
+        if f.i18n:
+            lines += [
+                "    {",
+                "        get",
+                "        {",
+                "            EnsureFresh();",
+                "            var entry = WireReader.SearchEntry(" + accessor_name + ".I18nTable, WireReader.I32(_row, " + str(pk_slot) + "), 4);",
+                "            if (entry != IntPtr.Zero)",
+                "            {",
+                "                var v = WireReader.Str(entry, " + str(i18n_slot) + ");",
+                "                if (v != null) return v;",
+                "            }",
+                f"            return WireReader.Str(_row, {slot});",
+                "        }",
+                "    }",
+            ]
+        else:
+            lines += [
+                "    {",
+                "        get",
+                "        {",
+                "            EnsureFresh();",
+                f"            return WireReader.Str(_row, {slot});",
+                "        }",
+                "    }",
+            ]
+    elif f.type == "struct":
+        lines += [
+            "    {",
+            "        get",
+            "        {",
+            "            EnsureFresh();",
+            f"            return new {f.name}View(WireReader.Indirect(_row, {slot}));",
+            "        }",
+            "    }",
+        ]
+    elif f.type == "array":
+        elem = _ARR_READERS.get(f.element, "ArrI32")
+        lines += [
+            f"    public int {f.name}Count {{ get {{ EnsureFresh(); return WireReader.ArrLen(_row, {slot}); }} }}",
+            f"    public {_arr_elem_type(f)} {f.name}At(int i) {{ EnsureFresh(); return WireReader.{elem}(_row, {slot}, i); }}",
+        ]
+    else:
+        method, _ = _SCALAR_READERS[f.type]
+        lines += [
+            "    {",
+            "        get",
+            "        {",
+            "            EnsureFresh();",
+            f"            return WireReader.{method}(_row, {slot});",
+            "        }",
+            "    }",
+        ]
+    return lines
+
 
 def generate_csharp_accessor(schema: TableSchema, output_dir: Path) -> Path:
-    """Generate ``{Table}Accessor.cs`` and write it to *output_dir*.
-
-    Returns the path of the generated file.
-    """
+    """Generate ``{Table}Accessor.cs`` and write it to *output_dir*."""
     model = build_accessor_model(schema)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     table_pascal = schema.table
     class_name = f"{table_pascal}Accessor"
-
-    # Collect non-server_only fields
+    row_name = f"{table_pascal}Row"
     client_fields: list[FieldDef] = model.client_fields
-
-    # Determine primary key info
-    pk = model.primary
-    pk_cs_type = csharp_element_type(pk.type)
+    pk_idx = next(i for i, f in enumerate(client_fields) if f.name == schema.primary)
+    pk_slot = _slot(pk_idx)
 
     lines: list[str] = []
-    w = lines.append  # shorthand
+    w = lines.append
 
     # -- file header ----------------------------------------------------------
     w("// <auto-generated/>")
     w("// Generated by ct/export/csharp_accessor_generator.py -- DO NOT EDIT")
     w("")
     w("using System;")
-    w("using System.Collections.Generic;")
-    w("using Google.FlatBuffers;")
     w("")
     w(f"public static class {class_name}")
     w("{")
-
-    # -- private state --------------------------------------------------------
-    w("    private static ByteBuffer _bb;")
-    w(f"    private static Dictionary<{pk_cs_type}, int> _mainIndex;")
-
-    # String field indices (among client_fields) for pre-materialisation
-    string_fields = model.string_fields
-    for sf in string_fields:
-        arr_name = f"_str_{sf.name}"
-        w(f"    private static string[] {arr_name};")
-
+    w("    private static IntPtr _table;        // 当前世代子表窗口")
     if schema.has_i18n:
-        w("")
-        w("    private static ByteBuffer _i18nBb;")
-        w(f"    private static Dictionary<{pk_cs_type}, int> _i18nIndex;")
-        for sf in model.i18n_fields:
-            w(f"    private static string[] _i18nStr_{sf.name};")
-
+        w(f"    private static IntPtr _i18nTable;   // 可为零（zh 无 i18n）")
+    w("    private static IntPtr _itemsBase;    // 预缓存 items 向量基址")
+    w("    private static IntPtr[] _rowPtrs;    // 行指针缓存（idx → 指针，懒填充）")
     w("")
-
-    # -- _FindTableBytes ------------------------------------------------------
-    w("    private static ByteBuffer _FindTableBytes(ByteBuffer bundleBb, string tableName)")
+    w("    static " + class_name + "()")
     w("    {")
-    w("        var bundle = DataBundle.GetRootAsDataBundle(bundleBb);")
-    w("        for (int i = 0; i < bundle.TablesLength; i++)")
+    w("        ConfigAccessors.Register(Invalidate);")
+    w("    }")
+    w("")
+    w("    private static void Invalidate()      // 加载点推送：清窗口 + 清行指针缓存")
+    w("    {")
+    w("        _table = IntPtr.Zero;")
+    if schema.has_i18n:
+        w("        _i18nTable = IntPtr.Zero;")
+    w("        _rowPtrs = null;")
+    w("    }")
+    w("")
+    w("    private static void EnsureLoaded()    // 本地判断（零 P/Invoke）")
+    w("    {")
+    w("        if (_table == IntPtr.Zero)")
     w("        {")
-    w("            var bt = bundle.Tables(i).Value;")
-    w("            if (bt.Name == tableName)")
+    w(f'            _table = GDNative.FindTable("{schema.table}");')
+    if schema.has_i18n:
+        w(f'            _i18nTable = GDNative.FindTableI18n("{schema.table}_i18n");')
+    w("            if (_table == IntPtr.Zero)              // 主表缺失（异常态）：空窗口兜底")
     w("            {")
-    w("                int len = bt.DataLength;")
-    w("                byte[] data = new byte[len];")
-    w("                for (int j = 0; j < len; j++)")
-    w("                    data[j] = bt.Data(j);")
-    w("                return new ByteBuffer(data);")
+    w("                _rowPtrs = Array.Empty<IntPtr>();")
+    w("                return;")
     w("            }")
+    w("            _itemsBase = WireReader.VectorBase(_table);")
+    w("            _rowPtrs = new IntPtr[WireReader.Count(_table)];")
     w("        }")
-    w("        throw new InvalidOperationException($\"Table '{tableName}' not found in config bundle.\");")
     w("    }")
     w("")
-
-    # -- Preload --------------------------------------------------------------
-    w("    public static void Preload()")
+    w("    private static IntPtr RowPtr(int idx) // 行指针缓存：命中零解析")
     w("    {")
+    w("        var p = _rowPtrs[idx];")
+    w("        if (p == IntPtr.Zero) { p = WireReader.RowAt(_itemsBase, idx); _rowPtrs[idx] = p; }")
+    w("        return p;")
+    w("    }")
+    w("")
     if schema.has_i18n:
-        w("        // Reset i18n fields (reload-safe: Preload may be called to switch language)")
-        w("        _i18nBb = null;")
-        w(f"        _i18nIndex = null;")
-        for sf in model.i18n_fields:
-            w(f"        _i18nStr_{sf.name} = null;")
+        w("    internal static IntPtr I18nTable => _i18nTable;")
         w("")
-    w("        // ---- main bundle ----")
-    w("        byte[] mainBytes = GDNative.GetMainBytes();")
-    w("        var bundleBb = new ByteBuffer(mainBytes);")
-    w(f'        _bb = _FindTableBytes(bundleBb, "{schema.table}");')
-    w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
-    w("        int count = root.ItemsLength;")
+    w("    public static int Count { get { EnsureLoaded(); return _rowPtrs.Length; } }")
     w("")
-    w(f"        _mainIndex = new Dictionary<{pk_cs_type}, int>(count);")
-    for sf in string_fields:
-        w(f"        _str_{sf.name} = new string[count];")
-    w("")
-    w("        for (int i = 0; i < count; i++)")
-    w("        {")
-    w(f"            var row = root.Items(i).Value;")
-
-    pk_accessor = pk.name
-    w(f"            _mainIndex[row.{pk_accessor}] = i;")
-
-    for sf in string_fields:
-        sf_accessor = sf.name
-        w(f"            _str_{sf.name}[i] = row.{sf_accessor};")
-
-    w("        }")
-
-    # ---- i18n bundle ----
-    if schema.has_i18n:
-        w("")
-        w("        // ---- i18n bundle ----")
-        w("        byte[] i18nBytes = GDNative.GetI18nBytes();")
-        w("        if (i18nBytes != null && i18nBytes.Length > 0)")
-        w("        {")
-        w("            var i18nBundleBb = new ByteBuffer(i18nBytes);")
-        w(f'            _i18nBb = _FindTableBytes(i18nBundleBb, "{schema.table}_i18n");')
-        w(f"            var i18nRoot = {table_pascal}I18nTable.GetRootAs{table_pascal}I18nTable(_i18nBb);")
-        w("            int i18nCount = i18nRoot.EntriesLength;")
-        w("")
-        w(f"            _i18nIndex = new Dictionary<{pk_cs_type}, int>(i18nCount);")
-        for sf in model.i18n_fields:
-            w(f"            _i18nStr_{sf.name} = new string[i18nCount];")
-        w("")
-        w("            for (int j = 0; j < i18nCount; j++)")
-        w("            {")
-        w(f"                var entry = i18nRoot.Entries(j).Value;")
-        w(f"                _i18nIndex[entry.{pk_accessor}] = j;")
-        for sf in model.i18n_fields:
-            sf_accessor = sf.name
-            w(f"                _i18nStr_{sf.name}[j] = entry.{sf_accessor};")
-        w("            }")
-        w("        }")
-
-    w("    }")
-    w("")
-
-    # -- _EnsureLoaded --------------------------------------------------------
-    w("    private static void _EnsureLoaded()")
+    w("    /// <summary>按主键查行；未找到返回 null。</summary>")
+    w("    public static " + row_name + "? ByID(int id)")
     w("    {")
-    w("        if (_mainIndex == null)")
-    w('            throw new InvalidOperationException(')
-    w(f'                "{class_name}.Preload() must be called before accessing data.");')
+    w("        EnsureLoaded();")
+    w("        int idx = WireReader.IndexSearch(_table, id);")
+    w("        return idx < 0 ? (" + row_name + "?)null : new " + row_name + "(RowPtr(idx));")
     w("    }")
     w("")
-
-    # -- _GetRowIndex ---------------------------------------------------------
-    w(f"    private static int _GetRowIndex({pk_cs_type} id)")
+    w("    /// <summary>按 Excel 序行下标取行。i 越界（&lt;0 或 ≥Count）抛 IndexOutOfRangeException。</summary>")
+    w("    public static " + row_name + " ByIndex(int i)")
     w("    {")
-    w("        _EnsureLoaded();")
-    w("        if (!_mainIndex.TryGetValue(id, out int idx))")
-    w(f'            throw new KeyNotFoundException($"{class_name}: id {{id}} not found.");')
-    w("        return idx;")
+    w("        EnsureLoaded();")
+    w("        return new " + row_name + "(RowPtr(i));")
+    w("    }")
+    w("}")
+    w("")
+    w("// ---- 行对象：值类型零堆分配；epoch 校验等价 Lua check_ud ----")
+    w(f"public readonly struct {row_name}")
+    w("{")
+    w("    private readonly IntPtr _row;")
+    w("    private readonly int _epoch;")
+    w(f"    internal {row_name}(IntPtr row) {{ _row = row; _epoch = ConfigAccessors.Epoch; }}")
+    w("")
+    w("    private void EnsureFresh()")
+    w("    {")
+    w("        if (_epoch != ConfigAccessors.Epoch)")
+    w("            throw new InvalidOperationException(")
+    w('                "[Config] stale row (language switched), re-fetch via ByID/ByIndex");')
     w("    }")
     w("")
-
-    # -- per-field accessors --------------------------------------------------
-    for field in client_fields:
-        _emit_field_accessor(w, schema, field, table_pascal, pk_cs_type)
-
-    # close class
+    for i, f in enumerate(client_fields):
+        i18n_slot = None
+        if f.type == "string" and f.i18n:
+            # i18n entry：pk 槽位 0，i18n 字段从槽位 1 起 → slot = 4+2*(1+j)
+            j = model.i18n_fields.index(f)
+            i18n_slot = _slot(1 + j)
+        for line in _gen_row_property(f, _slot(i), pk_slot, i18n_slot, class_name):
+            w(line)
+        w("")
     w("}")
     w("")
 
-    out_path = output_dir / f"{table_pascal}Accessor.cs"
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines))
+    # -- struct 视图（每个 struct 字段一个）-----------------------------------
+    for f in client_fields:
+        if f.type == "struct" and f.fields:
+            w(f"// ---- struct 视图（{f.name}）----")
+            w(f"public readonly struct {f.name}View")
+            w("{")
+            w("    private readonly IntPtr _p;")
+            w("    private readonly int _epoch;")
+            w(f"    internal {f.name}View(IntPtr p) {{ _p = p; _epoch = ConfigAccessors.Epoch; }}")
+            w("")
+            w("    private void EnsureFresh()")
+            w("    {")
+            w("        if (_epoch != ConfigAccessors.Epoch)")
+            w('            throw new InvalidOperationException("[Config] stale view (language switched)");')
+            w("    }")
+            w("")
+            for i, sf in enumerate(f.fields):
+                method, cs_type = _SCALAR_READERS.get(sf.type, ("I32", "int"))
+                w(f"    public {cs_type} {sf.name} {{ get {{ EnsureFresh(); return WireReader.{method}(_p, {_slot(i)}); }} }}")
+            w("}")
+            w("")
+
+    out_path = output_dir / f"{class_name}.cs"
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines))
 
     return out_path
-
-
-def _emit_field_accessor(
-    w,
-    schema: TableSchema,
-    field: FieldDef,
-    table_pascal: str,
-    pk_cs_type: str,
-) -> None:
-    """Emit a ``Get{FieldName}(id)`` static method for *field*."""
-    method_name = f"Get{field.name}"
-    ret_type = _cs_return_type(field)
-
-    w(f"    public static {ret_type} {method_name}({pk_cs_type} id)")
-    w("    {")
-    w("        int idx = _GetRowIndex(id);")
-
-    _CS_ACCESSOR_EMITTERS[field.type](w, schema, field, table_pascal, pk_cs_type)
-
-    w("    }")
-    w("")
-
-
-def _emit_string_accessor(
-    w,
-    schema: TableSchema,
-    field: FieldDef,
-    table_pascal: str,
-    pk_cs_type: str,
-) -> None:
-    """String 字段：返回预物化数组（i18n 优先，回退主 bundle）。"""
-    if field.i18n and schema.has_i18n:
-        w("        // i18n: check i18n array first, fallback to main")
-        w(f"        if (_i18nIndex != null && _i18nIndex.TryGetValue(id, out int i18nIdx))")
-        w("        {")
-        w(f"            string i18nVal = _i18nStr_{field.name}[i18nIdx];")
-        w("            if (i18nVal != null)")
-        w("                return i18nVal;")
-        w("        }")
-    w(f"        return _str_{field.name}[idx];")
-
-
-def _emit_scalar_accessor(
-    w,
-    schema: TableSchema,
-    field: FieldDef,
-    table_pascal: str,
-    pk_cs_type: str,
-) -> None:
-    """标量字段：经 FlatBuffers row accessor 读取。"""
-    accessor = field.name
-    w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
-    w(f"        return root.Items(idx).Value.{accessor};")
-
-
-def _emit_enum_accessor(
-    w,
-    schema: TableSchema,
-    field: FieldDef,
-    table_pascal: str,
-    pk_cs_type: str,
-) -> None:
-    """enum：返回 byte 值。"""
-    accessor = field.name
-    w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
-    w(f"        return (byte)root.Items(idx).Value.{accessor};")
-
-
-def _emit_struct_accessor(
-    w,
-    schema: TableSchema,
-    field: FieldDef,
-    table_pascal: str,
-    pk_cs_type: str,
-) -> None:
-    """struct：返回 FlatBuffers table 值。"""
-    accessor = field.name
-    w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
-    w(f"        return root.Items(idx).Value.{accessor}.Value;")
-
-
-def _emit_array_accessor(
-    w,
-    schema: TableSchema,
-    field: FieldDef,
-    table_pascal: str,
-    pk_cs_type: str,
-) -> None:
-    """array：按元素类型物化数组。"""
-    accessor = field.name
-    elem_cs = csharp_element_type(field.element or "")
-    w(f"        var root = {table_pascal}Table.GetRootAs{table_pascal}Table(_bb);")
-    w(f"        var row = root.Items(idx).Value;")
-    w(f"        int len = row.{accessor}Length;")
-    w(f"        var arr = new {elem_cs}[len];")
-    w("        for (int i = 0; i < len; i++)")
-    if field.element == "enum":
-        w(f"            arr[i] = (byte)row.{accessor}(i);")
-    else:
-        w(f"            arr[i] = row.{accessor}(i);")
-    w("        return arr;")
-
-
-_CS_ACCESSOR_EMITTERS: dict[str, Any] = {
-    "string": _emit_string_accessor,
-    "int32": _emit_scalar_accessor,
-    "int64": _emit_scalar_accessor,
-    "float": _emit_scalar_accessor,
-    "double": _emit_scalar_accessor,
-    "bool": _emit_scalar_accessor,
-    "enum": _emit_enum_accessor,
-    "struct": _emit_struct_accessor,
-    "array": _emit_array_accessor,
-}

@@ -6,8 +6,14 @@ table Quest {
   RequiredLevel: int32;
 }
 
+struct IndexEntry {
+  id: int32;
+  row: int32;
+}
+
 table QuestTable {
   items: [Quest];
+  index: [IndexEntry];
 }
 
 root_type QuestTable;

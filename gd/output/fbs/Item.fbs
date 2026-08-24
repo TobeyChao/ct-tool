@@ -15,8 +15,14 @@ table Item {
   Tags: [int32];
 }
 
+struct IndexEntry {
+  id: int32;
+  row: int32;
+}
+
 table ItemTable {
   items: [Item];
+  index: [IndexEntry];
 }
 
 root_type ItemTable;

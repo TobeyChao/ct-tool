@@ -7,7 +7,6 @@
 ## 目录
 
 - [安装说明](#安装说明)
-- [flatc 安装指引](#flatc-安装指引)
 - [Schema 格式文档](#schema-格式文档)
 - [CLI 命令说明](#cli-命令说明)
 - [目录结构](#目录结构)
@@ -47,46 +46,6 @@ pip install -r requirements.txt
 | pyyaml       | 6.0      | 读取 YAML 配置文件   |
 
 > **Python 版本要求：** >= 3.10
-
----
-
-## flatc 安装指引
-
-`flatc` 是 FlatBuffers 的编译器，用于将 `.fbs` schema 编译为对应语言的读取代码。
-
-### 步骤
-
-`flatc` 使用**本地编译**的自研 fork（[TobeyChao/flatbuffers](https://github.com/TobeyChao/flatbuffers)，
-commit `6c035fc9`，含 `--lua-snake-input` 选项），不再使用官方预编译产物。
-
-1. **编译 flatc**
-   克隆 fork 后在仓库根目录执行：
-   ```bash
-   cmake -S . -B build -G "Visual Studio 18 2026" -A x64
-   cmake --build build --target flatc --config Release
-   ```
-   （macOS/Linux 去掉 `-G`/`-A` 参数即可；产物位于 `build/Release/flatc.exe` 或 `build/flatc`）
-
-2. **放入 `tools/` 目录**
-   将编译出的 `flatc`（Windows 下为 `flatc.exe`）放入项目根目录的 `tools/` 文件夹中：
-   ```
-   项目根目录/
-   └── tools/
-       └── flatc        # Linux / macOS
-       └── flatc.exe    # Windows
-   ```
-   > 注：ct 的 Lua 目标依赖 fork 的 `--lua-snake-input` 选项，官方原版 flatc 缺少该选项，
-   > 请勿用官方二进制覆盖。
-
-3. **配置路径**
-   在 `config/global.yaml` 中确认 `flatc_path` 指向正确路径：
-   ```yaml
-   flatc_path: tools/flatc
-   ```
-   路径相对于项目根目录。如果 flatc 安装在系统 PATH 中，也可以直接写可执行文件名。
-
-4. **验证**
-   运行导出命令时，工具会自动检测 flatc 是否存在。如果未找到，会输出警告并跳过 FlatBuffers 编译步骤（JSON 导出不受影响）。
 
 ---
 
@@ -473,8 +432,6 @@ ct i18n compact [OPTIONS]
 │   └── en/                  #   英文译文骨架（翻译者维护 text/confirmed）
 │       ├── item.json        #     {"id.field": {source, text, confirmed, status}}
 │       └── quest.json
-├── tools/                   # 外部工具
-│   └── flatc                #   FlatBuffers 编译器
 ├── ct/                      # 工具源码
 ├── pyproject.toml           # 项目元数据和依赖配置
 └── requirements.txt         # pip 依赖列表
@@ -541,7 +498,7 @@ ct i18n compact [OPTIONS]
 
 - 路径：`output/fbs/{Table}.fbs`、`output/fbs/container.fbs`
 - 根据 Schema 自动生成的 `.fbs` 定义文件
-- 可用 flatc 编译为各语言的序列化/反序列化代码
+  - 结构参考文本（flatc 已退役；实际二进制由 binary_writer 直接构建）
 
 ### 3. Binary Bundle（.bin）
 

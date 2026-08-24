@@ -65,7 +65,6 @@ class ExportContext:
     all_table_bytes: dict[str, bytes] = field(default_factory=dict)
     all_i18n_bytes: dict[str, dict[str, bytes]] = field(default_factory=dict)
     bundles_written: list[Path] = field(default_factory=list)
-    flatc_ok: bool = True
     exported_tables: list[str] = field(default_factory=list)
 
     @property
@@ -296,24 +295,11 @@ class FbsStep:
         ctx.reporter.log("[fbs] container.fbs")
 
 
-class FlatcStep:
-    name = "flatc"
-
-    def run(self, ctx: ExportContext) -> None:
-        flatc_path = ctx.ws.resolve("flatc_path")
-        if flatc_path.exists():
-            from ct.export.flatc_runner import compile_fbs
-            fbs_dir = ctx.output_dir / "fbs"
-            ctx.flatc_ok = compile_fbs(flatc_path, fbs_dir, ctx.output_dir)
-        else:
-            ctx.reporter.log(f"[warn] flatc 未找到 ({flatc_path})，跳过编译", err=True)
-            ctx.flatc_ok = False
-
-
 class AccessorStep:
     name = "Accessor"
 
     def run(self, ctx: ExportContext) -> None:
+        written: list[Path] = []
         for name in ctx.ws.order:
             ctx.cancel.raise_if_cancelled()
             schema = ctx.ws.schema_map[name]
@@ -325,6 +311,18 @@ class AccessorStep:
                 schema, ctx.output_dir / "generated" / "lua"
             )
             ctx.reporter.log(f"[accessor] {lua_path.name}")
+            written.extend([cs_path, lua_path])
+        self._prune_generated_dir(ctx, ctx.output_dir / "generated" / "csharp", written)
+        self._prune_generated_dir(ctx, ctx.output_dir / "generated" / "lua", written)
+
+    def _prune_generated_dir(self, ctx: ExportContext, d: Path, written: list[Path]) -> None:
+        """删除生成目录中本次未产出的文件（旧格式/废弃表的残留）。"""
+        if not d.is_dir():
+            return
+        for p in sorted(d.iterdir()):
+            if p.is_file() and p not in written:
+                p.unlink()
+                ctx.reporter.log(f"[accessor] 清理旧产物 {p.name}")
 
 
 class BundleStep:
@@ -361,7 +359,6 @@ class ExportResult:
     tables_exported: int
     elapsed: float
     cancelled: bool = False
-    flatc_ok: bool = True
     bundles_written: list[Path] = field(default_factory=list)
 
 
@@ -374,7 +371,6 @@ class ExportPipeline:
             I18nSyncStep(),
             JsonStep(),
             FbsStep(),
-            FlatcStep(),
             AccessorStep(),
             BundleStep(),
             DeployStep(),
@@ -418,6 +414,5 @@ class ExportPipeline:
         return ExportResult(
             tables_exported=len(tables_to_export),
             elapsed=time.perf_counter() - started,
-            flatc_ok=ctx.flatc_ok,
             bundles_written=ctx.bundles_written,
         )

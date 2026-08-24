@@ -34,7 +34,6 @@ def _build_project(
         "output_dir": "output",
         "cache_dir": "cache",
         "i18n_dir": "i18n",
-        "flatc_path": "tools/nope",
     }
     (root / "config" / "global.yaml").write_text(
         yaml.safe_dump(cfg, allow_unicode=True), encoding="utf-8"

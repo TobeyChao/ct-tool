@@ -10,8 +10,6 @@
 from __future__ import annotations
 
 import re
-import subprocess
-import tempfile
 from pathlib import Path
 
 from ct.validate.errors import Issue, IssueCode, ValidationIssue, WorkspaceIssue
@@ -106,62 +104,13 @@ def _check_structure(text: str, table: str) -> list[Issue]:
     return issues
 
 
-def resolve_flatc_path(flatc_path: Path) -> Path:
-    """Windows 下优先 .exe 后缀（与 flatc_runner 保持一致）。"""
-    import sys
-
-    if sys.platform == "win32" and not flatc_path.suffix:
-        exe_path = flatc_path.with_suffix(".exe")
-        if exe_path.exists():
-            return exe_path
-    return flatc_path
-
-
-def _check_flatc_compile(text: str, table: str, flatc_path: Path) -> list[Issue]:
-    """用 flatc 编译校验类型合法性；flatc 缺失时降级（只告警不失败）。"""
-    resolved = resolve_flatc_path(flatc_path)
-    if not resolved.exists():
-        return [
-            WorkspaceIssue(
-                table, IssueCode.SCHEMA,
-                f"flatc 未找到 ({flatc_path})，跳过编译校验（仅结构检查）",
-            )
-        ]
-
-    with tempfile.TemporaryDirectory() as td:
-        src = Path(td) / "schema.fbs"
-        src.write_text(text, encoding="utf-8")
-        result = subprocess.run(
-            [str(resolved), "--cpp", "--no-warnings", "-o", td, str(src)],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        if result.returncode != 0:
-            stderr = result.stderr.strip()
-            return [
-                WorkspaceIssue(
-                    table, IssueCode.SCHEMA,
-                    f"flatc 编译失败: {stderr or '未知错误'}",
-                )
-            ]
-    return []
-
-
 def validate_fbs_conventions(
     text: str,
     *,
     table: str = "",
-    flatc_path: Path | None = None,
 ) -> list[Issue]:
-    """校验单份 .fbs 文本是否符合 ct 结构标准。
-
-    结构检查（撞名不变量 + 容器/root_type）始终执行；传入 ``flatc_path``
-    时追加编译校验，flatc 缺失自动降级为纯结构检查。
-    """
+    """校验单份 .fbs 文本是否符合 ct 结构标准（撞名不变量 + 容器/root_type）。"""
     issues: list[Issue] = []
     issues.extend(_check_name_collisions(text, table))
     issues.extend(_check_structure(text, table))
-    if flatc_path is not None:
-        issues.extend(_check_flatc_compile(text, table, flatc_path))
     return issues

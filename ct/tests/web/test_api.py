@@ -24,7 +24,6 @@ def _build_project(root: Path) -> None:
             {
                 "primary_lang": "zh",
                 "secondary_langs": ["en"],
-                "flatc_path": "tools/nope",
             },
             allow_unicode=True,
         ),

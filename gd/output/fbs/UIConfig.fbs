@@ -8,8 +8,14 @@ table UIConfig {
   Stack: bool;
 }
 
+struct IndexEntry {
+  id: int32;
+  row: int32;
+}
+
 table UIConfigTable {
   items: [UIConfig];
+  index: [IndexEntry];
 }
 
 root_type UIConfigTable;
