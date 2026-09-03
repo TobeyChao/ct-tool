@@ -304,5 +304,5 @@ function statusBadge(status) {
   return { cls: "ct-badge-mute", text: status || "unknown" };
 }
 
-const _state = {};
+const _state = { statusFilter: "all", entries: [], drafts: {}, error: "" };
 function getState() { return _state; }

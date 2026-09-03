@@ -160,7 +160,9 @@ def test_canonical_export_task_reports_phases_and_history(tmp_path: Path) -> Non
         assert last["tables_exported"] == 4
         assert last["step_index"] == len(last["steps"]) - 1
         assert last["forced"] is False
-        assert "解析校验" in steps_seen
+        # full phase list is reported; the export is fast, so only assert the
+        # complete steps list plus the observed final step (no polling-granularity flake)
+        assert last["steps"] == ["解析校验", "JSON", "Accessor", "FBS", "Bundle"]
         assert "Bundle" in steps_seen
         # history entry written to the workspace cache
         history = json.loads(
