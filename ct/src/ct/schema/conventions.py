@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from ct.validate.errors import Issue, IssueCode, ValidationIssue, WorkspaceIssue
+from ct.diagnostics.errors import Issue, IssueCode, ValidationIssue, WorkspaceIssue
 
 
 class FbsConvention:

@@ -41,6 +41,7 @@ class GlobalConfig(BaseModel):
     secondary_langs: list[str] = []
     schema_format: str = "yaml"
     schemas_dir: str = "config/schemas"
+    types_dir: str = "config/types"
     excel_dir: str = "excel"
     output_dir: str = "output"
     cache_dir: str = "cache"
