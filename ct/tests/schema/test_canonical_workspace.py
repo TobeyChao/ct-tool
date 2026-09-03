@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 
-def test_load_mixed_workspace_exposes_one_graph(load_v4) -> None:
-    ws = load_v4(
+def test_load_mixed_workspace_exposes_one_graph(load) -> None:
+    ws = load(
         schemas=[
             {
                 "table": "Item",
@@ -31,8 +31,8 @@ def test_load_mixed_workspace_exposes_one_graph(load_v4) -> None:
     assert ws.table_order == ("table:Item", "table:ItemType")
 
 
-def test_table_order_respects_cross_table_refs(load_v4) -> None:
-    ws = load_v4(
+def test_table_order_respects_cross_table_refs(load) -> None:
+    ws = load(
         schemas=[
             {
                 "table": "Quest",
@@ -48,8 +48,8 @@ def test_table_order_respects_cross_table_refs(load_v4) -> None:
     assert ws.table_order == ("table:Item", "table:Quest")
 
 
-def test_reverse_refs_exposed_on_workspace(load_v4) -> None:
-    ws = load_v4(
+def test_reverse_refs_exposed_on_workspace(load) -> None:
+    ws = load(
         schemas=[
             {
                 "table": "Item",

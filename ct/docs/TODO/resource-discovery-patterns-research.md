@@ -2,13 +2,13 @@
 
 > 调研时间：2026-09-01
 > 调研范围：VS Code 与 JupyterLab 的官方文档、官方设计规范和官方源码
-> 目标：判断当 Table、Record、Enum 等资源持续增加时，Schema Editor v4 应采用怎样的浏览、过滤和快速打开模式。
+> 目标：判断当 Table、Record、Enum 等资源持续增加时，Schema Editor  应采用怎样的浏览、过滤和快速打开模式。
 
 ## 结论
 
 “左侧资源区负责浏览与局部过滤，独立 Quick Open 负责跨资源快速跳转”是成熟且有官方实现支撑的双层导航模式。
 
-对 v4 最合适的基线是：
+对  最合适的基线是：
 
 1. 左侧资源区保留 `Tables / Records / Enums` 分组，用于理解结构、查看邻近资源和局部过滤。
 2. 增加 `Cmd/Ctrl + P` Quick Open，用于不展开资源栏也能快速打开任意资源。
@@ -64,7 +64,7 @@ VS Code `AnythingQuickAccessProvider` 的官方源码显示：
 - 文件与工作区符号作为后续结果异步取得；
 - 已出现在历史中的资源会从后续文件结果中排除，避免重复。
 
-因此 v4 的“空查询显示最近使用”有明确依据，但不应把最近资源在所有查询下永久固定在结果顶部。输入查询后，更合理的方式是让历史与全量结果参与统一评分，必要时仅施加轻量历史权重。
+因此  的“空查询显示最近使用”有明确依据，但不应把最近资源在所有查询下永久固定在结果顶部。输入查询后，更合理的方式是让历史与全量结果参与统一评分，必要时仅施加轻量历史权重。
 
 官方来源：
 
@@ -81,7 +81,7 @@ VS Code Quick Access 使用 `scoreItemFuzzy` 和 `compareItemsByFuzzyScore`，�
 - 返回匹配位置，用于高亮命中的字符；
 - 使用 scorer cache，避免重复计算。
 
-因此 v4 不应自行维护“exact / prefix / contains”三段结果。该方法难以处理缩写、驼峰、多词查询、路径描述和同名资源，也容易出现排序不稳定。
+因此  不应自行维护“exact / prefix / contains”三段结果。该方法难以处理缩写、驼峰、多词查询、路径描述和同名资源，也容易出现排序不稳定。
 
 官方来源：
 
@@ -98,7 +98,7 @@ VS Code 官方设计规范建议：
 - 当选择项确实存在多个明显分组时，可以使用 separator；
 - Tree View 应避免没有必要的深层嵌套。
 
-这支持 v4 为 Table、Record、Enum 使用稳定的类型标识，也支持在 Quick Open 空状态中用“最近使用”等明确分区。
+这支持  为 Table、Record、Enum 使用稳定的类型标识，也支持在 Quick Open 空状态中用“最近使用”等明确分区。
 
 但本次官方来源没有证明“全部 / 表 / 类型”筛选 chips 是必须方案。它可以作为后续可用性测试中的增强项，不应在没有证据的情况下当作标准设计。
 
@@ -156,7 +156,7 @@ JupyterLab 官方文档将 Command Palette 定义为搜索和执行应用命令�
 
 JupyterLab 也提供 Recent Menu 和 Reopen Closed Document，但本次没有找到官方证据表明它将“最近资源 + 全量文件模糊搜索”统一为资源 Quick Open。
 
-因此，v4 的资源快速打开应主要参考 VS Code，而不是把 JupyterLab Command Palette 直接当作同类设计。
+因此， 的资源快速打开应主要参考 VS Code，而不是把 JupyterLab Command Palette 直接当作同类设计。
 
 官方来源：
 
@@ -174,7 +174,7 @@ JupyterLab 官方仓库的性能问题也记录了包含 60,000 个文件的目�
 - [JupyterLab `filebrowser/src/listing.ts`](https://github.com/jupyterlab/jupyterlab/blob/main/packages/filebrowser/src/listing.ts)
 - [JupyterLab Issue #8700：FileBrowser large directory performance](https://github.com/jupyterlab/jupyterlab/issues/8700)
 
-## 对 Schema Editor v4 的具体建议
+## 对 Schema Editor  的具体建议
 
 ### 左侧资源区
 
@@ -257,7 +257,7 @@ if resource_count > 200:
 3. 根据首屏渲染、输入到结果延迟、滚动帧率、DOM 节点数和内存数据决定是否必须替换组件；
 4. 不在运行时用任意条数切换两套完全不同的列表实现。
 
-## 建议的 v4 第一阶段范围
+## 建议的  第一阶段范围
 
 第一阶段只验证发现模型，不扩展 Schema 编辑能力：
 
@@ -278,4 +278,4 @@ if resource_count > 200:
 - 不武断地永久排除字段搜索，而是将它设计为独立 provider 或模式；
 - 不采用固定 `200` 条作为虚拟化开关。
 
-Schema Editor v4 应以 VS Code Explorer + Quick Open 作为资源发现基线，JupyterLab 仅用于补充侧栏过滤和文件列表键盘交互参考，不能作为长列表渲染性能参考。
+Schema Editor  应以 VS Code Explorer + Quick Open 作为资源发现基线，JupyterLab 仅用于补充侧栏过滤和文件列表键盘交互参考，不能作为长列表渲染性能参考。

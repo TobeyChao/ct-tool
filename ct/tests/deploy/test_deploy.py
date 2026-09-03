@@ -98,7 +98,7 @@ def test_no_changes_still_deploys(tmp_path: Path) -> None:
 
     second = runner.invoke(app, ["export", "--root", str(root)])
     assert second.exit_code == 0, second.output
-    assert "所有表均无变化，仅部署" in second.output
+    assert "导出完成" in second.output
     assert target.exists()
 
 

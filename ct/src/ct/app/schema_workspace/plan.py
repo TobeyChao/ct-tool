@@ -60,7 +60,7 @@ def _fps(table: TableResource, records, indexes: tuple[QueryIndex, ...]):
         table.model_dump(mode="json", by_alias=True, exclude_none=True, exclude_defaults=True),
         dependencies,
         [{"kind": index.kind, "field": index.field} for index in indexes],
-        codegen_version="v4.1",
+        codegen_version="1.0",
     )
 
 

@@ -1,0 +1,38 @@
+/* design tokens: forest-green palette and shared dimensions.
+   Single source of truth for colour/size; modules never redefine brand/status. */
+:root {
+  --ct-bg: #F5F6F4;
+  --ct-surface: #FFFFFF;
+  --ct-surface-2: #F0F2EE;
+  --ct-border: #E1E6DD;
+  --ct-border-strong: #CBD2C6;
+  --ct-ink: #1B241F;
+  --ct-ink-2: #5A645E;
+  --ct-ink-3: #8B948E;
+  --ct-primary: #1B4332;
+  --ct-primary-hover: #153728;
+  --ct-accent: #2F7A56;
+  --ct-accent-hover: #266544;
+  --ct-accent-soft: #D8F3DC;
+  --ct-accent-softer: #ECF7ED;
+  --ct-gold: #C9A227;
+  --ct-gold-soft: #F7EECB;
+  --ct-danger: #B23B3B;
+  --ct-danger-soft: #F9E8E8;
+  --ct-warn: #B7791F;
+  --ct-warn-soft: #F9EFD9;
+  --ct-font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  --ct-font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  --ct-nav: #102219;
+  --ct-nav-rail: #19271f;
+  --ct-r: 8px;
+  --ct-shadow-panel: 0 1px 2px rgba(27, 36, 31, 0.04), 0 8px 28px rgba(27, 36, 31, 0.05);
+  --ct-topbar-h: 48px;
+  --ct-activity-w: 56px;
+  --ct-right-activity-w: 40px;
+  --ct-resource-w: 248px;
+  --ct-inspector-w: 300px;
+  --ct-mobile-nav-h: 54px;
+  --ct-motion: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  --ct-pane-motion: 190ms cubic-bezier(.2, .82, .2, 1);
+}

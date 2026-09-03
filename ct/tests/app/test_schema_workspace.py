@@ -15,7 +15,7 @@ from ct.app.schema_workspace.plan import build_change_plan
 from ct.app.schema_workspace.snapshot import build_snapshot
 from ct.schema.resources import FieldDef, RecordResource, TableResource
 
-from _v4_helpers import build_v4_project
+from _helpers import build_project
 
 
 def _base() -> tuple[TableResource, ...]:
@@ -47,7 +47,7 @@ def _records() -> tuple[RecordResource, ...]:
 
 
 def test_snapshot_revision_changes_on_external_input(tmp_path) -> None:
-    root = build_v4_project(
+    root = build_project(
         tmp_path / "gd",
         schemas=[
             {

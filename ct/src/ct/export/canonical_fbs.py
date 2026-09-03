@@ -1,4 +1,4 @@
-"""Canonical FlatBuffers schema generation for v4 resources.
+"""Canonical FlatBuffers schema generation for  resources.
 
 All named Records and Enums are emitted once, in deterministic dependency
 order, into a single ``types.fbs``; every Table schema ``include``s it and

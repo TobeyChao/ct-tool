@@ -1,7 +1,7 @@
 """Versioned canonical cache state with layered fingerprints.
 
 Stores per-table ``ArtifactFingerprints``, per-language Bundle fingerprints
-and layout revisions in ``cache/state.json`` (v4 format). Any version
+and layout revisions in ``cache/state.json`` ( format). Any version
 mismatch, missing field or corrupt file fails safe to ``None`` so callers
 rebuild instead of trusting stale entries.
 """
@@ -14,7 +14,7 @@ from pathlib import Path
 
 from ct.cache.fingerprints import ArtifactFingerprints
 
-CACHE_STATE_VERSION = "canonical-cache-v4/1"
+CACHE_STATE_VERSION = "canonical-cache/1"
 
 
 @dataclass(frozen=True)

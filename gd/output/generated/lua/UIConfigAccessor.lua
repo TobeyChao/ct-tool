@@ -1,4 +1,4 @@
--- Auto-generated canonical Lua accessor for UIConfig (v4)
+-- Auto-generated canonical Lua accessor for UIConfig ()
 local GD = require("gd")
 local _tbl = "UIConfig"
 

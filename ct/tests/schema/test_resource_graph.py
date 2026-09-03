@@ -13,11 +13,11 @@ from ct.schema.resource_graph import (
 )
 from ct.schema.resource_repository import YamlResourceRepository
 
-from _v4_helpers import build_v4_project
+from _helpers import build_project
 
 
 def _workspace(tmp_path, schemas, types):
-    root = build_v4_project(tmp_path / "gd", schemas=schemas, types=types)
+    root = build_project(tmp_path / "gd", schemas=schemas, types=types)
     return YamlResourceRepository(
         root / "config" / "schemas",
         root / "config" / "types",
@@ -95,7 +95,7 @@ def test_missing_ref_target_reports_owner_path(tmp_path) -> None:
         "primary": "Id",
         "fields": [{"name": "Id", "type": "int32"}, {"name": "X", "type": "int32", "ref": "Nope.Id"}],
     }
-    root = build_v4_project(tmp_path / "gd", schemas=[bad], types=None)
+    root = build_project(tmp_path / "gd", schemas=[bad], types=None)
     with pytest.raises(ValueError, match="table:Bad/X.*'Nope'"):
         CanonicalWorkspace.load(root)
 
@@ -111,7 +111,7 @@ def test_record_cycle_is_rejected_with_path(tmp_path) -> None:
         "name": "B",
         "fields": [{"name": "Prev", "type": "A"}],
     }
-    root = build_v4_project(tmp_path / "gd", schemas=None, types=[a, b])
+    root = build_project(tmp_path / "gd", schemas=None, types=[a, b])
     with pytest.raises(ValueError, match="循环依赖"):
         CanonicalWorkspace.load(root)
 

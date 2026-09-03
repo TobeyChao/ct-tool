@@ -1,4 +1,4 @@
-"""Read Excel data rows against a canonical v4 ``Layout``.
+"""Read Excel data rows against a canonical  ``Layout``.
 
 Values are rebuilt into their canonical shape from each column's stable path:
 
@@ -21,7 +21,7 @@ from openpyxl import load_workbook
 from ct.excel.layout import Column, Layout
 from ct.schema.resources import TableResource
 from ct.schema.type_expression import NamedType, ScalarType, VectorType
-from ct.validate.errors import IssueCode, ValidationIssue
+from ct.diagnostics.errors import IssueCode, ValidationIssue
 
 _BOOL_TRUE = frozenset({"true", "1", "yes", "TRUE", "True", "YES", "Yes", "✓"})
 _BOOL_FALSE = frozenset({"false", "0", "no", "FALSE", "False", "NO", "No", "✗"})

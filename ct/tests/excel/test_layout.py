@@ -149,6 +149,6 @@ def test_manifest_missing_and_corruption(tmp_path: Path) -> None:
     path.write_text("{ not json", encoding="utf-8")
     assert load_manifest(cache, "Item") is None
 
-    path.write_text('{"format":"template-layout-v4/1","columns":[]}', encoding="utf-8")
+    path.write_text('{"format":"template-layout/1","columns":[]}', encoding="utf-8")
     manifest = load_manifest(cache, "Item")
     assert manifest is not None and manifest.columns == ()

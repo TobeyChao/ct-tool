@@ -39,7 +39,7 @@ def canonical_field_path(owner_id: str, *segments: str) -> str:
 def _persisted_field_id(source_key: str, path: str) -> str:
     normalized_source = PurePath(source_key).as_posix()
     digest = hashlib.sha256(
-        f"schema-field-v4\0{normalized_source}\0{path}".encode("utf-8")
+        f"schema-field\0{normalized_source}\0{path}".encode("utf-8")
     ).hexdigest()[:20]
     return f"field:{digest}"
 

@@ -1,4 +1,4 @@
-"""Canonical Excel column layout for v4 Table resources.
+"""Canonical Excel column layout for  Table resources.
 
 A ``Layout`` is the single source of truth for how a Table's fields map to
 Excel columns: each leaf column carries a stable canonical path, the leaf

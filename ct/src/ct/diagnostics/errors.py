@@ -7,9 +7,11 @@ This removes the schema→validate reverse coupling.
 
 from __future__ import annotations
 
+import sys
+import traceback
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, Iterable
 
 from openpyxl.utils import get_column_letter
 
@@ -83,3 +85,20 @@ class WorkspaceIssue(Issue):
 def format_error(table: str, row: int, field: str, message: str) -> str:
     """Format a single validation error in a planner-friendly format."""
     return f"[{table}.xlsx] 第{row}行 {field}：{message}"
+
+
+def report_errors(errors: Iterable[Issue], verbose: bool = False) -> None:
+    """Print validation errors to stderr (legacy text preserved verbatim)."""
+    errs = list(errors)
+    if not errs:
+        return
+
+    print(f"\n验证发现 {len(errs)} 个错误：", file=sys.stderr)
+    for err in errs:
+        print(f"  ✗ {err.render()}", file=sys.stderr)
+
+    if verbose:
+        print("\n--- traceback (--verbose) ---", file=sys.stderr)
+        traceback.print_stack(file=sys.stderr)
+
+    print("", file=sys.stderr)

@@ -11,8 +11,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from ct.app.events import ProgressReporter
-from ct.app.options import ExportOptions
-from ct.app.workspace import Workspace
 
 
 def sync_dir(src: Path, dst: Path, reporter: ProgressReporter) -> int:
@@ -62,16 +60,16 @@ def sync_dir(src: Path, dst: Path, reporter: ProgressReporter) -> int:
     return changed
 
 
-def deploy(ws: Workspace, opts: ExportOptions, reporter: ProgressReporter) -> int:
+def deploy(config, for_build: bool, reporter: ProgressReporter) -> int:
     """按配置部署产物，返回写入/删除的文件总数。
 
     未配置或未启用时跳过（返回 0）。失败时抛 FileNotFoundError/OSError。
     """
-    if not ws.config.deploy.enabled:
+    if not config.deploy.enabled:
         reporter.log("[deploy] 未配置或未启用，跳过", err=True)
         return 0
 
-    targets = ws.config.resolve_deploy_targets(for_build=opts.for_build)
+    targets = config.resolve_deploy_targets(for_build=for_build)
     if not targets:
         reporter.log("[deploy] unity_project 未配置，跳过", err=True)
         return 0

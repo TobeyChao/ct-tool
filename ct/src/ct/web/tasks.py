@@ -1,24 +1,27 @@
-"""导出后台任务：单任务互斥，进度可查询、可取消。"""
+"""导出后台任务（canonical ）：单任务互斥，进度可查询、可取消。
+
+``CanonicalExportTask`` 服务 canonical 工作区（``run_canonical_export``），
+复用 :class:`_BaseTask` 的状态机（start/cancel/progress/step 上报）；legacy
+导出任务已随 cutover 移除。
+"""
 
 from __future__ import annotations
 
 import threading
-import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ct.app.events import CancelToken, ProgressReporter
-from ct.app.export import ExportPipeline, ExportValidationError
-from ct.app.options import ExportOptions
-from ct.app.workspace import Workspace
-from ct.cache.state import load_cache
+from ct.app.canonical_commands import CanonicalValidationError
+from ct.app.canonical_export import CANONICAL_STEPS, run_canonical_export
+from ct.app.events import CancelledError, CancelToken, ProgressReporter
+from ct.config import load_config
 from ct.web.history import append_history, make_entry
 from ct.web.logs import log_buffer
 
 
 @dataclass
-class ExportTaskState:
-    """当前导出任务的内存状态（一次只允许一个任务）。"""
+class _BaseTask:
+    """导出任务公共状态机（子类实现 export_steps + _run）。"""
 
     status: str = "idle"  # idle | running | done | cancelled | error
     forced: bool = False
@@ -36,10 +39,14 @@ class ExportTaskState:
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     @property
+    def export_steps(self) -> list[str]:
+        raise NotImplementedError
+
+    @property
     def running(self) -> bool:
         return self.status == "running"
 
-    def start(self, root: Path, forced: bool) -> None:
+    def start(self, root: Path, forced: bool = False) -> None:
         with self._lock:
             if self.status == "running":
                 raise RuntimeError("已有导出任务进行中")
@@ -47,15 +54,7 @@ class ExportTaskState:
             self.forced = forced
             self.step_index = -1
             self.step_name = ""
-            self.steps = [
-                "解析校验",
-                "i18n sync",
-                "JSON",
-                "FBS",
-                "Accessor",
-                "Bundle",
-                "Deploy",
-            ]
+            self.steps = list(self.export_steps)
             self.message = "导出进行中…"
             self.errors = []
             self.cancelled = False
@@ -86,61 +85,36 @@ class ExportTaskState:
                 "cancelled": self.cancelled,
             }
 
-    # ---- 内部：后台线程执行 ----
     def _run(self, root: Path, forced: bool) -> None:
-        try:
-            ws = Workspace.load(root)
-            if not ws.schemas:
-                self._fail("未找到任何 schema")
-                return
+        raise NotImplementedError
 
-            cache = load_cache(ws.resolve("cache_dir"))
-            reporter = PanelProgressReporter(self)
-            opts = ExportOptions(all_tables=True, verbose=False)
-            try:
-                result = ExportPipeline().run(
-                    ws, opts, cache, ws.order, reporter, self._token
-                )
-            except ExportValidationError as e:
-                lines = [issue.render() for issue in e.issues]
-                for line in lines:
-                    log_buffer.add("校验", "ERROR", line)
-                self._fail("校验未通过，导出中止", lines)
-                return
+    def _finish_cancelled(self) -> None:
+        with self._lock:
+            self.status = "cancelled"
+            self.cancelled = True
+            self.message = "导出已取消（未提交新缓存）"
+        log_buffer.add("导出", "WARN", "导出已取消")
 
-            if result.cancelled:
-                with self._lock:
-                    self.status = "cancelled"
-                    self.cancelled = True
-                    self.message = "导出已取消（未提交新缓存）"
-                    self.elapsed = result.elapsed
-                log_buffer.add("导出", "WARN", "导出已取消")
-                return
-
-            entry = make_entry(
-                scope="全部表 × 全量语言",
-                result="成功",
-                tables=result.tables_exported,
-                elapsed=result.elapsed,
-                forced=forced,
-            )
-            append_history(ws.resolve("cache_dir"), entry)
-            with self._lock:
-                self.status = "done"
-                self.message = (
-                    f"导出完成：{result.tables_exported} 张表 · "
-                    f"{round(result.elapsed, 2)}s"
-                )
-                self.tables_exported = result.tables_exported
-                self.elapsed = result.elapsed
-            log_buffer.add(
-                "导出",
-                "INFO",
-                f"导出完成：{result.tables_exported} 张表（{round(result.elapsed, 2)}s）",
-            )
-        except Exception as e:  # noqa: BLE001
-            log_buffer.add("系统", "ERROR", f"导出异常: {e}")
-            self._fail(f"导出异常: {e}")
+    def _finish_ok(
+        self, *, cache_dir: Path, scope: str, tables: int, elapsed: float
+    ) -> None:
+        """完成态：写历史 + 置 done。"""
+        entry = make_entry(
+            scope=scope,
+            result="成功",
+            tables=tables,
+            elapsed=elapsed,
+            forced=self.forced,
+        )
+        append_history(cache_dir, entry)
+        with self._lock:
+            self.status = "done"
+            self.message = f"导出完成：{tables} 张表 · {round(elapsed, 2)}s"
+            self.tables_exported = tables
+            self.elapsed = elapsed
+        log_buffer.add(
+            "导出", "INFO", f"导出完成：{tables} 张表（{round(elapsed, 2)}s）"
+        )
 
     def _fail(self, message: str, errors: list[str] | None = None) -> None:
         with self._lock:
@@ -159,10 +133,48 @@ class ExportTaskState:
         pass
 
 
+@dataclass
+class CanonicalExportTask(_BaseTask):
+    """Canonical 导出任务（run_canonical_export，阶段化上报）。"""
+
+    @property
+    def export_steps(self) -> list[str]:
+        return list(CANONICAL_STEPS)
+
+    def _run(self, root: Path, forced: bool) -> None:
+        try:
+            try:
+                result = run_canonical_export(
+                    root,
+                    forced=forced,
+                    reporter=PanelProgressReporter(self),
+                    cancel_token=self._token,
+                )
+            except CancelledError:
+                self._finish_cancelled()
+                return
+            self._finish_ok(
+                cache_dir=load_config(root).resolve("cache_dir"),
+                scope="全部表 × 全量语言",
+                tables=result["tables"],
+                elapsed=result["elapsed"],
+            )
+        except FileNotFoundError as e:
+            log_buffer.add("系统", "ERROR", f"导出异常: {e}")
+            self._fail(f"文件不存在: {e}")
+        except CanonicalValidationError as e:
+            for issue in e.issues:
+                log_buffer.add("校验", "ERROR", issue.render())
+            self._fail("校验未通过，导出中止", [issue.render() for issue in e.issues])
+        except Exception as e:  # noqa: BLE001
+            log_buffer.add("系统", "ERROR", f"导出异常: {e}")
+            self._fail(f"导出异常: {e}")
+
+
 class PanelProgressReporter:
     """把管道事件转发到任务状态与日志缓冲。"""
 
-    def __init__(self, task: ExportTaskState) -> None:
+    def __init__(self, task: _BaseTask) -> None:
         self._task = task
 
     def step_started(self, step: str) -> None:
@@ -175,4 +187,5 @@ class PanelProgressReporter:
         log_buffer.add("导出", "ERROR" if err else "INFO", line)
 
 
-export_task = ExportTaskState()
+# 模块级单例（Web 触发入口，与线程安全状态机绑定）
+canonical_export_task = CanonicalExportTask()

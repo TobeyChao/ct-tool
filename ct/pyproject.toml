@@ -30,7 +30,13 @@ where = ["src"]
 include = ["ct*"]
 
 [tool.setuptools.package-data]
-"ct.web" = ["static/*", "static/vendor/*"]
+"ct.web" = [
+    "static/*",
+    "static/js/*",
+    "static/js/*/*",
+    "static/styles/*",
+    "static/vendor/*",
+]
 
 [tool.pytest.ini_options]
 markers = [

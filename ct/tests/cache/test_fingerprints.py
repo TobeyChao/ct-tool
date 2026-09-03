@@ -18,7 +18,7 @@ def _table_payload() -> dict:
 
 
 def _schema() -> str:
-    return schema_fingerprint(_table_payload(), [], [], codegen_version="v4.1")
+    return schema_fingerprint(_table_payload(), [], [], codegen_version="1.0")
 
 
 def _data(schema: str, excel: str = "e1") -> str:
@@ -122,7 +122,7 @@ def test_data_change_changes_all_languages() -> None:
 def test_excel_layout_change_does_not_touch_schema_wire() -> None:
     schema = _schema()
     schema_layout = data_fingerprint(schema, "e1", parsing_inputs={"separator": ";"})
-    schema_wire = schema_fingerprint(_table_payload(), [], [], codegen_version="v4.1")
+    schema_wire = schema_fingerprint(_table_payload(), [], [], codegen_version="1.0")
     assert schema_layout != _data(schema)
     assert schema_wire == schema  # wire (FBS/Accessor) contract unchanged
 
@@ -157,7 +157,7 @@ def test_bundle_fingerprint_is_language_scoped() -> None:
 
 def test_transitive_shared_type_change_invalidates_dependent_schema() -> None:
     table = _table_payload()
-    before = schema_fingerprint(table, [{"name": "DropReward", "fields": [{"name": "Min", "type": "int32"}]}], [], codegen_version="v4.1")
-    after = schema_fingerprint(table, [{"name": "DropReward", "fields": [{"name": "Min", "type": "int32"}, {"name": "Max", "type": "int32"}]}], [], codegen_version="v4.1")
+    before = schema_fingerprint(table, [{"name": "DropReward", "fields": [{"name": "Min", "type": "int32"}]}], [], codegen_version="1.0")
+    after = schema_fingerprint(table, [{"name": "DropReward", "fields": [{"name": "Min", "type": "int32"}, {"name": "Max", "type": "int32"}]}], [], codegen_version="1.0")
     assert before != after
     assert data_fingerprint(before, "e1", parsing_inputs={}) != data_fingerprint(after, "e1", parsing_inputs={})

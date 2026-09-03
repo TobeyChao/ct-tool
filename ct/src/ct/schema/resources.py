@@ -126,6 +126,28 @@ class TableResource(BaseModel):
     def resource_id(self) -> str:
         return f"table:{self.table}"
 
+    @property
+    def i18n_fields(self) -> list[FieldDef]:
+        """顶层标记为 i18n 的字段（与 legacy TableSchema 同名派生属性对齐）。"""
+        return [field for field in self.fields if field.i18n]
+
+    @property
+    def has_i18n(self) -> bool:
+        return any(field.i18n for field in self.fields)
+
+    @property
+    def primary_field(self) -> FieldDef:
+        """主键字段定义（primary 已在模型校验中保证存在于 fields）。"""
+        return next(field for field in self.fields if field.name == self.primary)
+
+    @property
+    def resolved_json_key(self) -> str:
+        return self.json_key or f"{self.table}s"
+
+    @property
+    def resolved_excel_file(self) -> str:
+        return self.excel_file or f"{self.table}.xlsx"
+
 
 class RecordResource(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")

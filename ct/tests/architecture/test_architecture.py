@@ -77,10 +77,10 @@ def _snapshot_tree(root: Path) -> dict[str, bytes]:
 
 
 def test_validate_and_plan_are_side_effect_free(tmp_path) -> None:
-    from _v4_helpers import build_v4_project
+    from _helpers import build_project
     from ct.app.canonical_workspace import CanonicalWorkspace
 
-    root = build_v4_project(
+    root = build_project(
         tmp_path / "gd",
         schemas=[
             {"table": "Item", "primary": "Id", "fields": [{"name": "Id", "type": "int32"}]}
@@ -98,7 +98,7 @@ def test_validate_and_plan_are_side_effect_free(tmp_path) -> None:
 
 
 def test_legacy_type_parsing_absent_from_canonical_domain() -> None:
-    """The canonical v4 domain must never parse legacy struct/array inline
+    """The canonical  domain must never parse legacy struct/array inline
     fields; any occurrence there is a regression."""
     canonical_domain = [
         "schema/type_expression.py",
@@ -183,7 +183,6 @@ def test_route_modules_contain_no_direct_writes_or_generator_work() -> None:
     """14.4: route modules are thin presenters (no YAML/Excel/cache writes,
     os.replace, or generator orchestration)."""
     route_modules = [
-        "web/schema_routes.py",
         "web/schema_workspace_api.py",
     ]
     forbidden = [
@@ -205,15 +204,15 @@ def test_route_modules_contain_no_direct_writes_or_generator_work() -> None:
     assert violations == [], "\n".join(violations)
 
 
-def test_v4_no_orphan_css_and_single_source_colors() -> None:
-    """12.5: all v4 CSS is loaded (no orphan files) and brand/status colors
+def test_no_orphan_css_and_single_source_colors() -> None:
+    """12.5: all  CSS is loaded (no orphan files) and brand/status colors
     are defined only in tokens.css (no duplicate color definitions)."""
-    static = SRC / "web" / "static" / "v4"
+    static = SRC / "web" / "static"
     index = (static / "index.html").read_text(encoding="utf-8")
     css_files = sorted((static / "styles").glob("*.css"))
     assert css_files  # at least the layers exist
     for css in css_files:
-        assert css.name in index, f"v4 CSS 未被 index.html 加载: {css.name}"
+        assert css.name in index, f"CSS 未被 index.html 加载: {css.name}"
     brand_colors = {"#1B4332", "#2F7A56", "#C9A227", "#B23B3B", "#B7791F"}
     tokens = (static / "styles" / "tokens.css").read_text(encoding="utf-8")
     for color in brand_colors:
@@ -228,16 +227,8 @@ def test_v4_no_orphan_css_and_single_source_colors() -> None:
 
 def test_no_live_writable_schema_route() -> None:
     """13.6: the legacy Schema write routes are removed entirely (only reads remain)."""
-    import ast
-
     app_src = (SRC / "web" / "app.py").read_text(encoding="utf-8")
     routes = re.findall(r'@app\.(?:route|get|post|put|delete)\([^\n]*"/api/schemas[^\n]*', app_src)
-    assert not routes, "app.py 不应直接定义 /api/schemas 路由（已移入蓝图）"
-    blueprint_src = (SRC / "web" / "schema_routes.py").read_text(encoding="utf-8")
-    # write methods are gone: no POST/PUT/DELETE decorators on /api/schemas
-    assert 'methods=["PUT", "DELETE"]' not in blueprint_src
-    assert "post" not in blueprint_src.lower().split("schemas_list")[0]
-    tree = ast.parse(blueprint_src)
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and getattr(node.func, "attr", "") in ("post", "put", "delete", "route"):
-            raise AssertionError(f"schema_routes 不应存在写路由: {node.func.attr}")
+    assert not routes, "app.py 不应直接定义 /api/schemas 路由（写协议已退役）"
+    # legacy schema_routes 模块整体移除：不再存在写路由文件
+    assert not (SRC / "web" / "schema_routes.py").exists(), "legacy schema_routes.py 应已移除"

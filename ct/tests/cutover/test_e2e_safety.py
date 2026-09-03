@@ -17,7 +17,7 @@ from ct.app.schema_workspace.apply import (
 )
 from ct.web.app import create_app
 
-FIXTURE = Path(__file__).parents[2] / "tests/fixtures/repository_cutover_v4/workspace"
+FIXTURE = Path(__file__).parents[2] / "tests/fixtures/repository_cutover/workspace"
 
 
 def _canonical_workspace(tmp_path: Path) -> Path:

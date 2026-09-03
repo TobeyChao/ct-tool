@@ -33,7 +33,7 @@ def _lang_entries(confirmed_sword: bool = True) -> dict:
 
 
 def _data() -> str:
-    schema = schema_fingerprint({"table": "Item"}, [], [], codegen_version="v4")
+    schema = schema_fingerprint({"table": "Item"}, [], [], codegen_version="")
     return data_fingerprint(schema, "e1", parsing_inputs={})
 
 
@@ -106,5 +106,5 @@ def test_canonical_state_corruption_and_missing(tmp_path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("{ broken", encoding="utf-8")
     assert load_state(cache) is None
-    path.write_text('{"format":"canonical-cache-v4/1","tables":1}', encoding="utf-8")
+    path.write_text('{"format":"canonical-cache/1","tables":1}', encoding="utf-8")
     assert load_state(cache) is None

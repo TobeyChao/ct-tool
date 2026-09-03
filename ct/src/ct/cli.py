@@ -7,44 +7,25 @@ from typing import Optional
 
 import typer
 
-from ct.app.i18n import read_i18n_rows
-from ct.app.options import ExportOptions
-from ct.app.events import CancelToken
-from ct.app.export import ExportPipeline, ExportValidationError
-from ct.app.status import compute_status
-from ct.app.template import Action, decide_template_action
-from ct.app.validate import parse_and_validate
-from ct.app.workspace import Workspace
-from ct.cache.state import load_cache
-from ct.excel.diff import get_changed_tables
-from ct.excel.template import generate_template, update_template
-from ct.export.i18n.compact import CompactError, compact_i18n
-from ct.export.i18n.status import (
-    compute_status_report,
-    render_by_table,
-    render_default,
-    render_json,
+from ct.app.canonical_commands import (
+    CanonicalValidationError,
+    canonical_gen_template,
+    canonical_i18n_compact,
+    canonical_i18n_status,
+    canonical_i18n_sync,
+    canonical_status,
+    canonical_validate,
 )
-from ct.export.i18n.sync import cleanup_i18n_files, sync_all
+from ct.app.canonical_export import run_canonical_export
+from ct.app.canonical_workspace import CanonicalWorkspace
+from ct.config import load_config
+from ct.diagnostics.errors import report_errors
 from ct.export.deploy import deploy
-from ct.export.i18n.writer import report_stale_summary
-from ct.validate.errors import report_errors
 
 app = typer.Typer(help="配表导出工具")
 i18n_app = typer.Typer(help="i18n 翻译骨架与状态管理")
 app.add_typer(i18n_app, name="i18n")
 logger = logging.getLogger("ct")
-
-
-def _load_workspace(root: Path) -> Workspace:
-    """加载 Workspace；配置/schema 错误转为友好提示（不抛 traceback）。"""
-    try:
-        return Workspace.load(root)
-    except (FileNotFoundError, ValueError) as e:
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug("加载 workspace 失败", exc_info=True)
-        typer.echo(f"[error] {e}", err=True)
-        raise typer.Exit(1)
 
 
 def _setup_logging(verbose: bool = False) -> None:
@@ -56,18 +37,8 @@ def _setup_logging(verbose: bool = False) -> None:
     )
 
 
-def _print_sync_summary(summary, *, prefix: str = "[i18n sync]") -> None:
-    totals = summary.totals_by_lang()
-    if not totals:
-        typer.echo(f"{prefix} 无 secondary 语言或无 i18n 表，跳过", err=True)
-        return
-    parts = []
-    for lang, counts in sorted(totals.items()):
-        parts.append(
-            f"{lang}: translated={counts.translated}, missing={counts.missing}, "
-            f"stale={counts.stale}, orphan={counts.orphan}"
-        )
-    typer.echo(f"{prefix} " + "; ".join(parts), err=True)
+def _root(project_root: Optional[str]) -> Path:
+    return Path(project_root) if project_root else Path(".")
 
 
 class CLIProgressReporter:
@@ -83,28 +54,29 @@ class CLIProgressReporter:
         typer.echo(line, err=err)
 
 
-def _looks_canonical(root: Path) -> bool:
-    """Positive evidence of the canonical v4 workspace format."""
-    types_dir = root / "config" / "types"
-    if types_dir.exists() and any(types_dir.glob("*.yaml")):
-        return True
-    import yaml
+def _load_workspace(root: Path) -> CanonicalWorkspace:
+    """加载 canonical workspace；配置/schema 错误转为友好提示（不抛 traceback）。"""
+    try:
+        return CanonicalWorkspace.load(root)
+    except (FileNotFoundError, ValueError) as e:
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("加载 workspace 失败", exc_info=True)
+        typer.echo(f"[error] {e}", err=True)
+        raise typer.Exit(1)
 
-    schemas_dir = root / "config" / "schemas"
-    if not schemas_dir.exists():
-        return False
-    for path in schemas_dir.glob("*.yaml"):
-        try:
-            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-        except OSError:
-            continue
-        for field in data.get("fields", []):
-            type_text = field.get("type", "") if isinstance(field, dict) else ""
-            if isinstance(type_text, str) and (
-                type_text.startswith("vector<") or ":" in type_text
-            ):
-                return True
-    return False
+
+def _run_deploy(root: Path, for_build: bool) -> None:
+    """执行部署并渲染结果；失败以友好提示退出。"""
+    try:
+        config = load_config(root)
+        n = deploy(config, for_build, CLIProgressReporter())
+    except (FileNotFoundError, OSError) as e:
+        typer.echo(f"[deploy error] {e}", err=True)
+        raise typer.Exit(1)
+    if n:
+        typer.echo(f"[deploy] 完成：{n} 个文件已同步")
+    else:
+        typer.echo("[deploy] 无文件变更")
 
 
 @app.command()
@@ -116,82 +88,25 @@ def export(
     for_build: bool = typer.Option(False, "--for-build", help="部署时追加构建目标"),
     project_root: Optional[str] = typer.Option(None, "--root", help="项目根目录"),
 ) -> None:
-    """增量导出主流程。"""
-    opts = ExportOptions(
-        all_tables=all_tables, table=table, lang=lang, verbose=verbose, for_build=for_build
-    )
-    _setup_logging(opts.verbose)
-    root = Path(project_root) if project_root else Path(".")
-
-    # 路由：canonical v4 工作区走新管线；legacy 工作区维持原实现。
-    # 仅当存在 config/types 目录或任一字段使用 vector<...>/具名类型时才判定为 canonical，
-    # 避免把纯标量的 legacy 项目误路由。
-    from ct.app.canonical_export import run_canonical_export
-
-    if _looks_canonical(root):
-        try:
-            result = run_canonical_export(
-                root, table_filter=opts.table, lang_filter=opts.lang
-            )
-        except FileNotFoundError as e:
-            typer.echo(f"[export error] {e}", err=True)
-            raise typer.Exit(1)
-        typer.echo(f"\n导出完成（v4）: {result['tables']} 张表")
-        return
-
-    ws = _load_workspace(root)
-
-    if not ws.schemas:
-        typer.echo("未找到任何 schema", err=True)
-        raise typer.Exit(1)
-
-    cache = load_cache(ws.resolve("cache_dir"))
-    excel_dir = ws.resolve("excel_dir")
-
-    # 确定导出范围
-    if opts.table:
-        if opts.table not in ws.schema_map:
-            typer.echo(f"表 '{opts.table}' 不存在", err=True)
-            raise typer.Exit(1)
-        tables_to_export = [opts.table]
-    elif opts.all_tables:
-        tables_to_export = ws.order
-    else:
-        tables_to_export = get_changed_tables(ws.schemas, cache, excel_dir)
-        if not tables_to_export:
-            typer.echo("所有表均无变化，跳过导出")
-            if ws.config.deploy.enabled:
-                typer.echo("所有表均无变化，仅部署")
-                _run_deploy(ws, opts)
-            return
-
+    """增量导出主流程（canonical ）。"""
+    _setup_logging(verbose)
+    root = _root(project_root)
     try:
-        result = ExportPipeline().run(
-            ws, opts, cache, tables_to_export, CLIProgressReporter(), CancelToken()
+        result = run_canonical_export(
+            root,
+            table_filter=table,
+            lang_filter=lang,
+            forced=all_tables,
+            reporter=CLIProgressReporter(),
         )
-    except ExportValidationError as e:
-        report_errors(e.issues, opts.verbose)
+    except CanonicalValidationError as e:
+        report_errors(e.issues, verbose)
         raise typer.Exit(1)
-    except (FileNotFoundError, OSError) as e:
-        typer.echo(f"[deploy error] {e}", err=True)
+    except (FileNotFoundError, ValueError) as e:
+        typer.echo(f"[export error] {e}", err=True)
         raise typer.Exit(1)
-
-    # stale 报告（基于 lang 文件聚合）
-    report_stale_summary(ws.config, ws.schemas)
-    typer.echo(f"\n导出完成: {result.tables_exported} 张表")
-
-
-def _run_deploy(ws: Workspace, opts: ExportOptions) -> None:
-    """执行部署并渲染结果；失败以友好提示退出。"""
-    try:
-        n = deploy(ws, opts, CLIProgressReporter())
-    except (FileNotFoundError, OSError) as e:
-        typer.echo(f"[deploy error] {e}", err=True)
-        raise typer.Exit(1)
-    if n:
-        typer.echo(f"[deploy] 完成：{n} 个文件已同步")
-    else:
-        typer.echo("[deploy] 无文件变更")
+    typer.echo(f"\n导出完成: {result['tables']} 张表")
+    _run_deploy(root, for_build)
 
 
 @app.command("deploy")
@@ -201,9 +116,7 @@ def deploy_command(
 ) -> None:
     """只部署当前产物到 Unity Assets，不触发导出。"""
     _setup_logging()
-    root = Path(project_root) if project_root else Path(".")
-    ws = _load_workspace(root)
-    _run_deploy(ws, ExportOptions(for_build=for_build))
+    _run_deploy(_root(project_root), for_build)
 
 
 @app.command()
@@ -214,118 +127,32 @@ def validate(
 ) -> None:
     """只走解析和校验，不输出产物。"""
     _setup_logging(verbose)
-    root = Path(project_root) if project_root else Path(".")
-    if _looks_canonical(root):
-        from ct.app.canonical_commands import canonical_validate
-
-        errors = canonical_validate(root, table_filter=table)
-        if errors:
-            report_errors(errors, verbose)
-            raise typer.Exit(1)
-        typer.echo("校验通过（v4）")
-        return
-
-    ws = _load_workspace(root)
-
-    schemas, order = ws.schemas, ws.order
-    cache = load_cache(ws.resolve("cache_dir"))
-    excel_dir = ws.resolve("excel_dir")
-
-    targets = [table] if table else order
-    pv = parse_and_validate(
-        ws,
-        targets,
-        cache,
-        excel_dir,
-        on_missing=lambda name, path: typer.echo(
-            f"[error] {path} 不存在", err=True
-        ),
-    )
-    all_errors = pv.errors
-
-    if all_errors:
-        report_errors(all_errors, verbose)
+    root = _root(project_root)
+    errors = canonical_validate(root, table_filter=table)
+    if errors:
+        report_errors(errors, verbose)
         raise typer.Exit(1)
-    else:
-        typer.echo("校验通过")
+    typer.echo("校验通过")
 
 
 @app.command("gen-template")
 def gen_template(
     all_tables: bool = typer.Option(False, "--all", help="生成所有表模板"),
     table: Optional[str] = typer.Option(None, "--table", help="只生成指定表模板"),
-    force: bool = typer.Option(
-        False, "--force",
-        help="强制全量覆盖（数据丢失）。无元数据 / hash 一致 / hash 不同有数据 时需要。",
-    ),
-    update_header: bool = typer.Option(
-        False, "--update-header",
-        help="重建表头并保留旧数据行原样追加（推荐用于 schema 变更）。",
-    ),
     project_root: Optional[str] = typer.Option(None, "--root", help="项目根目录"),
 ) -> None:
     """根据 schema 生成 Excel 模板头部。"""
     _setup_logging()
-    root = Path(project_root) if project_root else Path(".")
-    if _looks_canonical(root):
-        from ct.app.canonical_commands import canonical_gen_template
-
-        try:
-            messages = canonical_gen_template(
-                root, table_filter=table, all_tables=all_tables
-            )
-        except ValueError as e:
-            typer.echo(str(e), err=True)
-            raise typer.Exit(1)
-        for message in messages:
-            typer.echo(message)
-        return
-
-    ws = _load_workspace(root)
-
-    schemas, _ = ws.schemas, ws.order
-    schema_map = ws.schema_map
-    excel_dir = ws.resolve("excel_dir")
-    excel_dir.mkdir(parents=True, exist_ok=True)
-
-    targets = [table] if table else [s.table for s in schemas] if all_tables else []
-    if not targets:
-        typer.echo("请指定 --all 或 --table <表名>", err=True)
-        raise typer.Exit(1)
-
-    refused = 0
-    for name in targets:
-        if name not in schema_map:
-            typer.echo(f"表 '{name}' 不存在", err=True)
-            refused += 1
-            continue
-        schema = schema_map[name]
-        out_path = excel_dir / schema.resolved_excel_file
-
-        decision = decide_template_action(
-            schema, out_path, force=force, update_header=update_header,
+    root = _root(project_root)
+    try:
+        messages = canonical_gen_template(
+            root, table_filter=table, all_tables=all_tables
         )
-
-        if decision.action == Action.REFUSE:
-            typer.echo(decision.message, err=True)
-            refused += 1
-            continue
-
-        if decision.action == Action.SKIP:
-            typer.echo(decision.message)
-            continue
-
-        if decision.action == Action.UPDATE_PRESERVE:
-            preserved = update_template(schema, out_path)
-            typer.echo(f"{decision.message} (保留 {preserved} 行数据)")
-            continue
-
-        # CREATE_NEW or REBUILD: same code path, different message.
-        generate_template(schema, out_path)
-        typer.echo(decision.message)
-
-    if refused > 0:
+    except ValueError as e:
+        typer.echo(str(e), err=True)
         raise typer.Exit(1)
+    for message in messages:
+        typer.echo(message)
 
 
 @app.command()
@@ -339,66 +166,25 @@ def status(
       - 模板漂移：当前 schema_hash 与模板元数据不一致（建议重建模板）
     """
     _setup_logging()
-    root = Path(project_root) if project_root else Path(".")
-    if _looks_canonical(root):
-        from ct.app.canonical_commands import canonical_status
-
-        report = canonical_status(root)
-        if report["missing"]:
-            typer.echo("缺失文件:")
-            for name in report["missing"]:
-                typer.echo(f"  [missing] {name}")
-        if report["changed"]:
-            typer.echo("数据变更（待导出）:")
-            for name in report["changed"]:
-                typer.echo(f"  [changed] {name}")
-        if report["drifted"]:
-            typer.echo("模板已过时（schema 修改后未重建）:")
-            for name in report["drifted"]:
-                typer.echo(f"  [template-stale] {name}  (建议: ct gen-template --table {name} --update-header)")
-        if not report["missing"] and not report["changed"] and not report["drifted"]:
-            typer.echo("[OK] 所有表已是最新（数据 + 模板）")
-        return
-
-    ws = _load_workspace(root)
-
-    cache = load_cache(ws.resolve("cache_dir"))
-    report = compute_status(ws, cache)
-
-    # Render output: each section only appears if it has entries.
-    if report.missing:
+    root = _root(project_root)
+    report = canonical_status(root)
+    if report["missing"]:
         typer.echo("缺失文件:")
-        for name in report.missing:
+        for name in report["missing"]:
             typer.echo(f"  [missing] {name}")
-
-    if report.changed:
+    if report["changed"]:
         typer.echo("数据变更（待导出）:")
-        for name in report.changed:
+        for name in report["changed"]:
             typer.echo(f"  [changed] {name}")
-
-    if report.drifted:
+    if report["drifted"]:
         typer.echo("模板已过时（schema 修改后未重建）:")
-        for name in report.drifted:
+        for name in report["drifted"]:
             typer.echo(
                 f"  [template-stale] {name}  "
-                f"(建议: ct gen-template --table {name} --update-header)"
+                f"(建议: ct gen-template --table {name})"
             )
-
-    if report.untracked:
-        typer.echo("未跟踪元数据（legacy 文件）:")
-        for name in report.untracked:
-            typer.echo(f"  [template-untracked] {name}")
-
-    if not report.has_anything:
+    if not report["missing"] and not report["changed"] and not report["drifted"]:
         typer.echo("[OK] 所有表已是最新（数据 + 模板）")
-
-    if ws.config.deploy.enabled:
-        dests = ", ".join(
-            str(d) for _, d in ws.config.resolve_deploy_targets(for_build=False)
-        )
-        typer.echo(f"deploy: 启用 → {dests}")
-    else:
-        typer.echo("deploy: 未配置")
 
 
 @app.command()
@@ -410,14 +196,8 @@ def panel(
 ) -> None:
     """启动本地面板（浏览器打开即用）。"""
     _setup_logging()
-    root = Path(project_root) if project_root else Path(".")
-    # 先加载一次，配置/schema 错误立即以友好提示退出（canonical 工作区用 canonical 加载）
-    if _looks_canonical(root):
-        from ct.app.canonical_workspace import CanonicalWorkspace
-
-        CanonicalWorkspace.load(root)
-    else:
-        _load_workspace(root)
+    root = _root(project_root)
+    _load_workspace(root)  # 配置/schema 错误立即以友好提示退出
 
     from ct.web.app import create_app
 
@@ -444,47 +224,11 @@ def i18n_sync(
 ) -> None:
     """刷新 i18n source 文件并为每个 secondary 语言生成/更新 lang 骨架。"""
     _setup_logging(verbose)
-    root = Path(project_root) if project_root else Path(".")
-    ws = _load_workspace(root)
-    schemas, _ = ws.schemas, ws.order
-
-    if table and table not in {s.table for s in schemas}:
-        typer.echo(f"表 '{table}' 不存在", err=True)
-        raise typer.Exit(1)
-
-    rows_result = read_i18n_rows(ws.config, schemas, table=table)
-    for table_name, path in rows_result.missing:
-        typer.echo(f"[warn] {path} 不存在，跳过 {table_name}", err=True)
-    summary = sync_all(
-        ws.config,
-        schemas,
-        rows_result.rows_by_table,
-        issues_by_table=rows_result.issues_by_table,
-        lang_filter=lang,
-        table_filter=table,
-    )
-    # 残留清理仅在非局部操作时执行（--table 不动全局文件）；
-    # valid 基于全量 schema，保证清理不误删现存表文件（既有缺陷修复）
-    if table is None:
-        cleanup_i18n_files(ws.config, schemas, lang_filter=lang)
-
-    if verbose:
-        resolved_root = root.resolve()
-        for path in summary.source_files_written:
-            try:
-                rel = path.relative_to(resolved_root)
-            except ValueError:
-                rel = path
-            typer.echo(f"[source] {rel}", err=True)
-        for path in summary.lang_files_written:
-            try:
-                rel = path.relative_to(resolved_root)
-            except ValueError:
-                rel = path
-            typer.echo(f"[lang]   {rel}", err=True)
-
-    _print_sync_summary(summary)
-    typer.echo(f"[i18n sync] 完成（{summary.elapsed:.2f}s）", err=True)
+    root = _root(project_root)
+    messages = canonical_i18n_sync(root, table_filter=table)
+    for message in messages:
+        typer.echo(f"[i18n sync] {message}", err=True)
+    typer.echo("[i18n sync] 完成", err=True)
 
 
 @i18n_app.command("status")
@@ -496,18 +240,21 @@ def i18n_status(
 ) -> None:
     """报告 i18n 翻译进度。"""
     _setup_logging()
-    root = Path(project_root) if project_root else Path(".")
-    ws = _load_workspace(root)
-    schemas, _ = ws.schemas, ws.order
-
-    report = compute_status_report(ws.config, schemas, lang_filter=lang)
-
+    root = _root(project_root)
+    report = canonical_i18n_status(root)
     if json_out:
-        sys.stdout.write(render_json(report))
-    elif by_table:
-        sys.stdout.write(render_by_table(report))
-    else:
-        sys.stdout.write(render_default(report))
+        import json
+
+        sys.stdout.write(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+        return
+    for lang_name, counts in sorted(report.items()):
+        if lang is not None and lang_name != lang:
+            continue
+        typer.echo(
+            f"{lang_name}: translated={counts['translated']}, "
+            f"missing={counts['missing']}, stale={counts['stale']}, "
+            f"orphan={counts['orphan']}"
+        )
 
 
 @i18n_app.command("compact")
@@ -519,34 +266,12 @@ def i18n_compact(
 ) -> None:
     """物理移除 lang 文件中所有 status: orphan 的条目。"""
     _setup_logging()
-    root = Path(project_root) if project_root else Path(".")
-    ws = _load_workspace(root)
-    schemas, _ = ws.schemas, ws.order
-
-    try:
-        summary = compact_i18n(
-            ws.config, schemas, lang=lang, table=table, dry_run=dry_run
-        )
-    except CompactError as e:
-        typer.echo(str(e), err=True)
-        raise typer.Exit(1)
-
-    if not summary.touched:
+    root = _root(project_root)
+    removed = canonical_i18n_compact(root, table_filter=table)
+    if not removed:
         typer.echo("[compact] 无 orphan 条目，无需操作")
     else:
-        for f in summary.files:
-            if dry_run:
-                typer.echo(
-                    f"[dry-run] {f.lang}/{f.table}: 将移除 {len(f.removed_keys)} 条 orphan"
-                )
-                for k in f.removed_keys:
-                    typer.echo(f"  - {k}")
-            else:
-                typer.echo(
-                    f"[compact] {f.lang}/{f.table}: 移除 {len(f.removed_keys)} 条 orphan"
-                )
-        if not dry_run:
-            typer.echo(f"\n[compact] 总计移除 {summary.total_removed} 条")
+        typer.echo(f"[compact] 总计移除 {removed} 条")
 
 
 if __name__ == "__main__":

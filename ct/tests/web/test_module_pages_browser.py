@@ -1,4 +1,4 @@
-"""v4 module page tests: export, i18n, logs, history (12.x)."""
+""" module page tests: export, i18n, logs, history (12.x)."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from ct.web.app import create_app
 playwright_api = pytest.importorskip("playwright.sync_api")
 
 CT_ROOT = Path(__file__).parents[2]
-FIXTURE = CT_ROOT / "tests/fixtures/repository_cutover_v4/workspace"
+FIXTURE = CT_ROOT / "tests/fixtures/repository_cutover/workspace"
 
 
 @pytest.fixture
@@ -27,7 +27,7 @@ def module_url(tmp_path) -> Iterator[str]:
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        yield f"http://127.0.0.1:{server.server_port}/static/v4/index.html"
+        yield f"http://127.0.0.1:{server.server_port}/static/index.html"
     finally:
         server.shutdown()
         thread.join(timeout=5)
@@ -47,7 +47,7 @@ def test_export_module_renders(module_url: str, chromium_browser: Any) -> None:
     page = chromium_browser.new_page(viewport={"width": 1600, "height": 900})
     page.goto(module_url, wait_until="load")
     page.get_by_role("tab", name="导出").click()
-    page.wait_for_selector("#page-export #v4-export")
+    page.wait_for_selector("#page-export #export")
     assert page.locator("#page-export .ct-panel-title", has_text="导出").count() == 1
     page.close()
 

@@ -20,11 +20,11 @@ from ct.app.schema_workspace.apply import (
 )
 from ct.app.schema_workspace.snapshot import build_snapshot
 
-from _v4_helpers import build_v4_project
+from _helpers import build_project
 
 
 def _ws(tmp_path: Path) -> CanonicalWorkspace:
-    root = build_v4_project(
+    root = build_project(
         tmp_path / "gd",
         schemas=[
             {

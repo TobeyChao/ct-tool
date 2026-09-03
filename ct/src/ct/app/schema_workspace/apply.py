@@ -23,8 +23,8 @@ from ct.app.canonical_workspace import CanonicalWorkspace
 from ct.app.schema_workspace.snapshot import build_snapshot
 
 PLAN_TTL_SECONDS = 7200  # default two-hour plan expiry
-PLAN_FORMAT = "apply-plan-v4/1"
-JOURNAL_FORMAT = "apply-journal-v4/1"
+PLAN_FORMAT = "apply-plan/1"
+JOURNAL_FORMAT = "apply-journal/1"
 
 
 class ApplyError(Exception):

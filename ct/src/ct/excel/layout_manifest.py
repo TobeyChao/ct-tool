@@ -14,7 +14,7 @@ from typing import Any
 
 from ct.excel.layout import Column, Layout
 
-MANIFEST_FORMAT = "template-layout-v4/1"
+MANIFEST_FORMAT = "template-layout/1"
 
 
 @dataclass(frozen=True)

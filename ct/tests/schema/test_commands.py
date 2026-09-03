@@ -8,7 +8,7 @@ from ct.app.canonical_workspace import CanonicalWorkspace
 from ct.schema.commands import rename_field, rename_resource
 from ct.schema.resource_graph import require_deletable
 
-from _v4_helpers import build_v4_project
+from _helpers import build_project
 
 
 ITEM = {
@@ -45,7 +45,7 @@ ITEMTYPE = {
 
 
 def _ws(tmp_path, schemas=None, types=None) -> CanonicalWorkspace:
-    root = build_v4_project(
+    root = build_project(
         tmp_path / "gd",
         schemas=schemas if schemas is not None else [ITEM, QUEST, ITEMTYPE],
         types=types if types is not None else [DROPreWARD, RARITY],

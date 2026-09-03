@@ -1,0 +1,1227 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ct Workspace · Schema Editor </title>
+  <style>
+    :root {
+      --canvas: #f4f6f3;
+      --panel: #f7f9f6;
+      --surface: #ffffff;
+      --surface-soft: #eef2ed;
+      --line: #dfe5dc;
+      --line-strong: #c8d1c7;
+      --ink: #1a241e;
+      --muted: #59655d;
+      --faint: #6b776f;
+      --nav: #142019;
+      --nav-soft: #203128;
+      --accent: #2f7a56;
+      --accent-hover: #28694a;
+      --accent-soft: #dff1e4;
+      --warn: #9a5b14;
+      --warn-soft: #f8eed8;
+      --danger: #ad3c43;
+      --danger-soft: #f8e8e9;
+      --safe: #286e58;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      --mono: "SFMono-Regular", "Cascadia Code", "Roboto Mono", Consolas, monospace;
+      --left-pane: 248px;
+      --right-pane: 300px;
+      --left-activity: 56px;
+      --right-activity: 40px;
+      --pane-duration: 190ms;
+      --pane-easing: cubic-bezier(.2, .82, .2, 1);
+      --radius: 6px;
+      --shadow: 0 16px 42px rgba(24, 36, 28, .16);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: var(--canvas);
+      color: var(--ink);
+      font: 13px/1.45 var(--sans);
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    [hidden] { display: none !important; }
+
+    .app {
+      height: 100dvh;
+      min-width: 0;
+      display: grid;
+      grid-template-rows: 48px minmax(0, 1fr);
+      overflow: hidden;
+    }
+
+    .topbar {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: var(--left-activity) minmax(0, 1fr) auto;
+      align-items: center;
+      color: #f2f6f3;
+      background: var(--nav);
+      border-bottom: 1px solid #0b130e;
+    }
+    .brand {
+      height: 48px;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border-right: 1px solid #2a3a31;
+      font-weight: 720;
+    }
+    .brand > span:last-child { display: none; }
+    .brand-mark {
+      width: 26px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 1px solid #72b58f;
+      border-radius: 5px;
+      background: #1b4332;
+      color: white;
+      font: 750 11px/1 var(--mono);
+    }
+    .crumbs {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 16px;
+      color: #b4c0b8;
+      white-space: nowrap;
+    }
+    .crumbs strong { color: #f5f8f6; font-weight: 650; }
+    .crumb-path { min-width: 0; overflow: hidden; text-overflow: ellipsis; font: 11px var(--mono); }
+    .compact-context, .back-button { display: none; }
+    .top-actions { display: flex; align-items: center; gap: 7px; padding-right: 10px; }
+
+    .button {
+      min-height: 31px;
+      padding: 5px 11px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--ink);
+      font-weight: 650;
+    }
+    .button:hover { background: var(--surface-soft); border-color: #aeb9ae; }
+    .button:active { transform: translateY(1px); }
+    .button.primary { border-color: var(--accent); background: var(--accent); color: white; }
+    .button.primary:hover { background: var(--accent-hover); }
+    .button:disabled { opacity: .46; cursor: not-allowed; transform: none; }
+    .button.dark { border-color: #45574d; background: #26362d; color: #f4f8f5; }
+    .button.dark:hover { background: #304239; }
+    .button.small { min-height: 27px; padding: 3px 9px; font-size: 12px; }
+    .icon-button {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--muted);
+    }
+    .icon-button:hover { border-color: var(--line); background: #e7ece7; color: var(--ink); }
+    :is(.button, .icon-button, .activity-button, .resource-item, .group-toggle, .tab, .field-row):focus-visible {
+      outline: 2px solid #74b792;
+      outline-offset: 1px;
+    }
+
+    .workbench {
+      --resolved-left-pane: 0px;
+      --resolved-right-pane: 0px;
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-columns:
+        var(--left-activity)
+        var(--resolved-left-pane)
+        minmax(0, 1fr)
+        var(--resolved-right-pane)
+        var(--right-activity);
+      overflow: hidden;
+      transition: grid-template-columns var(--pane-duration) var(--pane-easing);
+    }
+    /* 首帧禁用过渡：避免刷新时初始 0px 与 data-open=true 之间被播放成展开动画 */
+    .workbench[data-init] { transition: none; }
+    .workbench[data-left-open="true"] { --resolved-left-pane: var(--left-pane); }
+    .workbench[data-right-open="true"] { --resolved-right-pane: var(--right-pane); }
+
+    .activity-bar {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .activity-bar.left {
+      gap: 6px;
+      padding: 9px 7px;
+      border-right: 1px solid #0c1510;
+      background: #19271f;
+    }
+    .activity-bar.right {
+      gap: 5px;
+      padding: 8px 4px;
+      border-left: 1px solid var(--line);
+      background: #edf1ec;
+    }
+    .activity-button {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      padding: 0;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: #9fada4;
+      font: 720 10px/1 var(--mono);
+      /* 几何尺寸固定，仅过渡视觉状态，避免 Tab 与 pane 边界抖动。 */
+      transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+    }
+    .activity-button:hover { background: #26382e; color: #f2f6f3; }
+    .activity-button.module-current { border-color: #40564a; color: #edf5f0; background: #22332a; }
+    /* 常驻选中指示条：锚定在按钮最左缘，面板开合均不移动、不消失 */
+    .activity-button.module-current::before {
+      content: "";
+      position: absolute;
+      left: -1px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 20px;
+      border-radius: 2px;
+      background: #57a878;
+    }
+    .activity-button.module-current.pane-open {
+      border-color: var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      color: var(--accent);
+    }
+    .activity-button::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      z-index: 40;
+      left: 48px;
+      top: 7px;
+      display: none;
+      width: max-content;
+      padding: 5px 8px;
+      border-radius: 5px;
+      background: #101914;
+      color: white;
+      font: 11px/1.35 var(--sans);
+      box-shadow: var(--shadow);
+    }
+    .activity-button:hover::after, .activity-button:focus-visible::after { display: block; }
+    .activity-spacer { flex: 1; }
+    .health {
+      width: 29px;
+      height: 29px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #294338;
+      color: #9ee0c3;
+      font: 750 11px var(--mono);
+    }
+
+    .right-activity-button {
+      position: relative;
+      width: 32px;
+      min-height: 74px;
+      display: grid;
+      place-items: center;
+      padding: 8px 0;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      writing-mode: vertical-rl;
+      transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+    }
+    .right-activity-button:hover { border-color: var(--line-strong); background: white; color: var(--ink); }
+    .right-activity-button.pane-open {
+      border-color: var(--line);
+      border-radius: 5px;
+      background: var(--panel);
+      color: var(--accent);
+    }
+    /* 展开态指示条锚定在 Tab 边缘，不参与 pane 轨道动画。 */
+    .right-activity-button.pane-open::before {
+      content: "";
+      position: absolute;
+      left: -1px;
+      top: 10px;
+      bottom: 10px;
+      width: 3px;
+      border-radius: 2px;
+      background: #57a878;
+    }
+    .side-pane {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      background: var(--panel);
+    }
+    .side-pane.left { border-right: 1px solid var(--line); }
+    .side-pane.right { border-left: 1px solid var(--line); }
+    .side-pane-inner {
+      height: 100%;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      opacity: 1;
+      transition: opacity 80ms linear 70ms;
+    }
+    .side-pane.left .side-pane-inner { width: var(--left-pane); }
+    .side-pane.right .side-pane-inner { width: var(--right-pane); margin-left: auto; grid-template-rows: auto minmax(0, 1fr) auto; }
+    .workbench[data-left-open="false"] .side-pane.left .side-pane-inner,
+    .workbench[data-right-open="false"] .side-pane.right .side-pane-inner {
+      opacity: 0;
+      transition-delay: 0ms;
+    }
+    .pane-header {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 12px 0 14px;
+      border-bottom: 1px solid var(--line);
+      background: #f2f5f1;
+    }
+    .pane-heading { min-width: 0; }
+    .pane-heading strong { display: block; font-size: 12px; }
+    .pane-heading span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--faint); font: 10px var(--mono); }
+    .search-wrap { padding: 10px 11px 6px; }
+    .search, .input, .select, .textarea {
+      width: 100%;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: white;
+      color: var(--ink);
+    }
+    .search, .input, .select { height: 32px; padding: 0 9px; }
+    .textarea { min-height: 72px; padding: 8px 9px; resize: vertical; }
+    :is(.search, .input, .select, .textarea):focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+    .mono { font-family: var(--mono); }
+
+    .resource-tree { min-height: 0; overflow: auto; padding: 2px 7px 12px; }
+    .resource-group { margin-top: 6px; }
+    .group-toggle {
+      width: 100%;
+      height: 29px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 7px;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--faint);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .055em;
+      text-transform: uppercase;
+    }
+    .group-toggle:hover { background: #e9eee9; color: var(--ink); }
+    .group-label { display: inline-flex; align-items: center; gap: 6px; }
+    .chevron { width: 10px; transition: transform .12s ease; }
+    .resource-group.collapsed .chevron { transform: rotate(-90deg); }
+    .resource-group.collapsed .resource-item { display: none; }
+    .group-count {
+      min-width: 18px;
+      padding: 0 5px;
+      border-radius: 8px;
+      background: #e2e8e1;
+      text-align: center;
+      font: 10px/17px var(--mono);
+    }
+    .group-toggle.has-current .group-count { background: var(--accent-soft); color: var(--accent); }
+    .resource-item {
+      width: 100%;
+      height: 34px;
+      display: grid;
+      grid-template-columns: 23px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 5px;
+      padding: 0 8px;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      text-align: left;
+    }
+    .resource-item:hover { background: #e9eee9; }
+    .resource-item.active { background: var(--accent-soft); color: #1c543b; }
+    .resource-glyph {
+      width: 18px;
+      height: 18px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #bac5bb;
+      border-radius: 4px;
+      background: white;
+      color: var(--muted);
+      font: 700 9px var(--mono);
+    }
+    .resource-item.active .resource-glyph { border-color: #91c3a4; color: var(--accent); }
+    .resource-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 12px var(--mono); }
+    .draft-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+    .pane-footer { padding: 9px 11px; border-top: 1px solid var(--line); color: var(--faint); font-size: 10px; }
+
+    .workspace {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      background: var(--surface);
+    }
+    .resource-header {
+      min-width: 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 20px 13px;
+      border-bottom: 1px solid var(--line);
+    }
+    .resource-title { min-width: 0; flex: 1; }
+    .eyebrow { color: var(--faint); font-size: 10px; font-weight: 800; letter-spacing: .065em; text-transform: uppercase; }
+    h1 { margin: 2px 0 2px; font: 680 21px/1.25 var(--mono); }
+    .resource-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 11px; }
+    .resource-actions { display: flex; align-items: center; gap: 7px; padding-top: 2px; }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 8px;
+      border: 1px solid #dfc18a;
+      border-radius: 12px;
+      background: var(--warn-soft);
+      color: #7c480c;
+      font-size: 10px;
+      font-weight: 750;
+    }
+    .tabs {
+      height: 42px;
+      display: flex;
+      align-items: end;
+      gap: 20px;
+      padding: 0 20px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--line);
+      background: #fafcfa;
+    }
+    .tab {
+      height: 42px;
+      flex: 0 0 auto;
+      padding: 0 1px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 650;
+    }
+    .tab:hover { color: var(--ink); }
+    .tab.active { border-bottom-color: var(--accent); color: var(--accent); }
+    .tab-count { color: var(--faint); font: 10px var(--mono); }
+
+    .editor-scroll { min-height: 0; overflow: auto; }
+    .view { padding: 15px 18px 28px; }
+    .section-heading {
+      min-width: 0;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .section-heading h2 { margin: 0; font-size: 13px; }
+    .section-heading p { margin: 2px 0 0; color: var(--faint); font-size: 10px; }
+    .field-table { overflow-x: auto; border: 1px solid var(--line); border-radius: 7px; background: white; }
+    .field-grid {
+      --field-columns: minmax(170px, 1.05fr) minmax(190px, 1.25fr) 112px minmax(130px, .9fr) 29px;
+      min-width: 690px;
+    }
+    .field-header, .field-row { display: grid; grid-template-columns: var(--field-columns); align-items: center; }
+    .field-header {
+      height: 34px;
+      border-bottom: 1px solid var(--line);
+      background: #f0f3ef;
+      color: var(--faint);
+      font-size: 10px;
+      font-weight: 750;
+      letter-spacing: .035em;
+      text-transform: uppercase;
+    }
+    .field-header > div, .field-row > :not(.row-more) { min-width: 0; padding: 0 10px; }
+    .field-row {
+      position: relative;
+      width: 100%;
+      min-height: 47px;
+      padding: 0;
+      border: 0;
+      border-bottom: 1px solid #e8ece7;
+      background: white;
+      text-align: left;
+    }
+    .field-row:last-child { border-bottom: 0; }
+    .field-row:hover { background: #f7faf8; }
+    .field-row.selected { background: #eaf5ed; box-shadow: inset 3px 0 0 var(--accent); }
+    .field-row.changed::after {
+      content: "";
+      position: absolute;
+      top: 9px;
+      right: 0;
+      width: 3px;
+      height: 29px;
+      border-radius: 2px 0 0 2px;
+      background: var(--warn);
+    }
+    .field-row.deleted { background: #fff8f8; color: #7c5559; }
+    .field-row.deleted::after { background: var(--danger); }
+    .field-row.deleted .field-name { text-decoration: line-through; }
+    .field-main { display: flex; align-items: center; gap: 7px; overflow: hidden; }
+    .drag { color: #9ba79f; letter-spacing: -2px; }
+    .field-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 650 12px var(--mono); }
+    .field-state { color: var(--faint); font-size: 10px; white-space: nowrap; }
+    .type-expr { color: var(--ink); font: 12px var(--mono); white-space: nowrap; }
+    .type-link { color: var(--accent); font-weight: 700; }
+    .excel { color: var(--muted); font: 10px var(--mono); white-space: nowrap; }
+    .roles { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+    .role {
+      display: inline-flex;
+      align-items: center;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 4px;
+      background: #ebefea;
+      color: #536057;
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .role.primary { background: #f7edc9; color: #72570d; }
+    .role.code { background: var(--accent-soft); color: #1c543b; }
+    .role.ref { background: #e5f2ed; color: var(--safe); }
+    .role.group { background: #e5f1f6; color: #17647d; }
+    .row-more { color: var(--faint); text-align: center; font-weight: 750; }
+    .add-row {
+      width: 100%;
+      height: 38px;
+      border: 0;
+      border-top: 1px dashed var(--line-strong);
+      background: #fafcfa;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .add-row:hover { background: var(--accent-soft); }
+
+    .notice {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 9px;
+      margin-top: 12px;
+      padding: 9px 11px;
+      border: 1px solid #c8ded0;
+      border-radius: 6px;
+      background: #f0f7f2;
+      color: #40594a;
+      font-size: 10px;
+    }
+    .notice strong { display: block; color: #254b36; }
+    .card-list { display: grid; gap: 8px; }
+    .index-card {
+      min-width: 600px;
+      display: grid;
+      grid-template-columns: 42px minmax(130px, 1fr) minmax(180px, 1.2fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: white;
+    }
+    .index-badge { width: 34px; height: 30px; display: grid; place-items: center; border-radius: 5px; background: var(--accent-soft); color: var(--accent); font: 750 10px var(--mono); }
+    .index-card strong { display: block; font: 650 11px var(--mono); }
+    .index-card span { color: var(--faint); font-size: 10px; }
+    .index-fields, .index-api { color: var(--muted); font: 10px var(--mono); }
+
+    .taskbar {
+      min-width: 0;
+      min-height: 57px;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 8px 10px 8px 14px;
+      border-top: 1px solid #33473b;
+      background: #1c2b22;
+      color: #f4f8f5;
+    }
+    .change-count { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 5px; background: #f0b24e; color: #38250b; font: 800 12px var(--mono); }
+    .change-copy { min-width: 0; flex: 1; }
+    .change-copy strong { display: block; font-size: 11px; }
+    .change-copy span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #aebbb3; font-size: 9px; }
+
+    .inspector-body { min-height: 0; overflow: auto; padding: 14px 13px 76px; }
+    .form-section { margin-bottom: 18px; }
+    .form-title { margin-bottom: 8px; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .065em; text-transform: uppercase; }
+    .form-grid { display: grid; gap: 10px; }
+    .form-group label { display: block; margin-bottom: 4px; color: var(--muted); font-size: 10px; font-weight: 700; }
+    .helper { margin-top: 4px; color: var(--faint); font-size: 9px; }
+    .type-builder {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-height: 38px;
+      padding: 5px 6px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: white;
+      font: 11px var(--mono);
+    }
+    .type-token { padding: 5px 7px; border: 1px solid #a7cbb4; border-radius: 5px; background: var(--accent-soft); color: #205940; font-weight: 700; }
+    .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .choice { padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: white; }
+    .choice.active { border-color: #9fc9ae; background: #eef7f0; }
+    .choice strong { display: block; font-size: 10px; }
+    .choice span { display: block; color: var(--faint); font-size: 9px; }
+    .excel-column-count { margin-top: 9px; }
+    .inspector-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 7px;
+      padding: 9px 12px;
+      border-top: 1px solid var(--line);
+      background: rgba(247,249,246,.97);
+    }
+    .danger { border-color: #dfb0b5; color: var(--danger); }
+    .danger:hover { border-color: #d68c94; background: var(--danger-soft); }
+
+    .review {
+      grid-row: 2;
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      background: var(--canvas);
+      /* 页面式审查视图的进入/退出过渡 */
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 180ms var(--pane-easing), transform 180ms var(--pane-easing);
+    }
+    .review.show { opacity: 1; transform: translateY(0); }
+    .review-header, .review-footer { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: white; }
+    .review-header { border-bottom: 1px solid var(--line); }
+    .review-header h2 { margin: 0; font-size: 14px; }
+    .review-header p { margin: 1px 0 0; color: var(--faint); font-size: 10px; }
+    .review-header .spacer, .review-footer .spacer { flex: 1; }
+    .risk { padding: 4px 7px; border-radius: 10px; background: var(--danger-soft); color: var(--danger); font-size: 9px; font-weight: 800; }
+    .review-body { min-height: 0; display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 12px; padding: 12px; }
+    .review-list, .review-detail { min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 7px; background: white; }
+    .review-list { padding: 7px; }
+    .review-item { width: 100%; display: grid; grid-template-columns: 8px 1fr auto; gap: 8px; align-items: center; padding: 9px 8px; border: 0; border-radius: 5px; background: transparent; text-align: left; }
+    .review-item.active { background: var(--danger-soft); }
+    .risk-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger); }
+    .risk-dot.warning { background: var(--warn); }
+    .review-item strong { display: block; font-size: 10px; }
+    .review-item span span { color: var(--faint); font-size: 9px; }
+    .review-item code { color: var(--danger); font: 8px var(--mono); }
+    .review-item code.warning { color: var(--warn); }
+    .review-detail { padding: 18px; }
+    .review-detail h3 { margin: 0 0 5px; font-size: 15px; }
+    .review-detail > p { margin: 0 0 14px; color: var(--muted); }
+    .blocker { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; padding: 11px; border: 1px solid #e2b9bd; border-radius: 7px; background: #fff7f7; }
+    .blocker > span { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--danger); color: white; font-weight: 800; }
+    .blocker strong { display: block; }
+    .blocker p { margin: 2px 0 0; color: #77565a; font-size: 10px; }
+    .review-footer { border-top: 1px solid var(--line); }
+    .review-note { color: var(--muted); font-size: 10px; }
+
+    .toast {
+      position: fixed;
+      z-index: 100;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      min-width: 280px;
+      padding: 9px 12px;
+      border: 1px solid #aac7b9;
+      border-radius: 7px;
+      background: #eff8f4;
+      color: #245d49;
+      box-shadow: var(--shadow);
+      text-align: center;
+      font-weight: 650;
+    }
+
+    @media (min-width: 960px) and (max-width: 1359px) {
+      :root { --left-pane: 234px; --right-pane: 274px; }
+      .topbar { grid-template-columns: 56px minmax(0, 1fr) auto; }
+      .brand { justify-content: center; padding: 0; }
+      .brand > span:last-child { display: none; }
+      .crumbs { padding: 0 10px; }
+      .workbench { grid-template-columns: var(--left-activity) var(--resolved-left-pane) minmax(0,1fr) var(--resolved-right-pane) var(--right-activity); }
+      .field-grid { min-width: 620px; }
+      .section-heading p { display: none; }
+    }
+
+    @media (max-width: 959px) {
+      .topbar { grid-template-columns: 52px minmax(0, 1fr) auto; }
+      .brand { justify-content: center; padding: 0; }
+      .brand > span:last-child { display: none; }
+      .crumbs { padding: 0 8px; }
+      .crumbs strong, .crumb-path, .crumb-separator { display: none; }
+      .compact-context { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #f0f6f2; font: 650 11px var(--mono); }
+      .back-button { min-height: 27px; padding: 3px 8px; }
+      .app[data-page="editor"] .back-button,
+      .app[data-page="properties"] .back-button { display: inline-flex; }
+      .workbench {
+        grid-template-columns: 52px minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
+      }
+      .activity-bar.left { grid-column: 1; grid-row: 1; }
+      .side-pane.left, .workspace, .side-pane.right { grid-column: 2; grid-row: 1; display: none; }
+      .workbench[data-page="resources"] .side-pane.left { display: block; border-right: 0; }
+      .workbench[data-page="editor"] .workspace { display: grid; }
+      .workbench[data-page="properties"] .side-pane.right { display: block; border-left: 0; }
+      .activity-bar.right { display: none; }
+      .side-pane.left .side-pane-inner, .side-pane.right .side-pane-inner { width: 100%; }
+      .side-pane-inner { opacity: 1 !important; transition: none; }
+      .field-header { display: none; }
+      .field-grid { min-width: 0; }
+      .field-row {
+        min-height: 66px;
+        grid-template-columns: minmax(0, 1fr) auto 25px;
+        grid-template-areas: "main roles more" "type excel more";
+        row-gap: 6px;
+        padding: 8px 6px;
+      }
+      .field-row > :not(.row-more) { padding: 0; }
+      .field-main { grid-area: main; }
+      .field-type { grid-area: type; }
+      .excel { grid-area: excel; }
+      .roles { grid-area: roles; justify-content: flex-end; }
+      .row-more { grid-area: more; align-self: center; font-size: 0; }
+      .row-more::after { content: "›"; font: 700 19px var(--sans); }
+      .drag { display: none; }
+      .view { padding: 13px 11px 20px; }
+      .resource-header { padding: 13px 14px 11px; }
+      h1 { font-size: 18px; }
+      .tabs { padding: 0 14px; gap: 16px; }
+      .taskbar { min-height: 55px; }
+      .review-body { grid-template-columns: 1fr; overflow: auto; }
+      .review-list { max-height: 190px; }
+      .review-detail { overflow: visible; }
+    }
+
+    @media (max-width: 720px) {
+      #validateButton { display: none; }
+      .resource-actions .status { display: none; }
+      .change-copy span, #discardButton { display: none; }
+      .review-note { display: none; }
+      .blocker { grid-template-columns: 28px 1fr; }
+      .blocker .button { grid-column: 2; justify-self: start; }
+    }
+
+    @media (max-width: 599px) {
+      .topbar { grid-template-columns: 46px minmax(0,1fr) auto; }
+      .brand-mark { width: 23px; height: 23px; }
+      .top-actions { padding-right: 6px; }
+      .workbench { grid-template-columns: minmax(0, 1fr); padding-bottom: 54px; }
+      .side-pane.left, .workspace, .side-pane.right { grid-column: 1; }
+      .activity-bar.left {
+        position: fixed;
+        z-index: 70;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 54px;
+        min-height: 0;
+        flex-direction: row;
+        justify-content: space-around;
+        gap: 2px;
+        padding: 5px 6px;
+        border-top: 1px solid #0c1510;
+        border-right: 0;
+      }
+      .activity-button { width: 48px; height: 42px; }
+      .activity-button.module-current.pane-open { border-color: #5c9d77; background: var(--accent); color: white; }
+      .activity-button.module-current.pane-open::before { display: none; }
+      .activity-button::after, .activity-spacer, .health { display: none !important; }
+      .resource-header { gap: 8px; }
+      .resource-actions .button { padding-inline: 8px; }
+      .field-row {
+        min-height: 73px;
+        grid-template-columns: minmax(0,1fr) 25px;
+        grid-template-areas: "main more" "type more" "roles more";
+      }
+      .excel { display: none; }
+      .roles { justify-content: flex-start; }
+      .choice-grid { grid-template-columns: 1fr; }
+      .toast { bottom: 65px; min-width: min(280px, calc(100vw - 22px)); }
+      .review-header { padding-inline: 8px; }
+      .review-header p, .risk { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app" data-page="editor">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">ct</span><span>Workspace</span></div>
+      <div class="crumbs">
+        <button class="button dark small back-button" id="backButton">← 返回</button>
+        <strong>fabulous-game</strong><span class="crumb-separator">/</span><span class="crumb-path">Config/gd/config</span>
+        <span class="compact-context" id="compactContext">Item · 字段</span>
+      </div>
+      <div class="top-actions">
+        <button class="button dark small" id="validateButton">校验工作区</button>
+        <button class="button primary small" id="reviewButton">审查 5 项变更</button>
+      </div>
+    </header>
+
+    <main class="workbench" id="workbench" data-left-open="true" data-right-open="true" data-page="editor" data-init="true">
+      <nav class="activity-bar left" aria-label="模块与左侧工具">
+        <button class="activity-button" data-module="export" data-tooltip="导出" aria-label="导出">EX</button>
+        <button class="activity-button" data-module="i18n" data-tooltip="翻译 i18n" aria-label="翻译 i18n">文</button>
+        <button class="activity-button module-current pane-open" id="schemaActivity" data-module="schema" data-tooltip="Schema 资源" aria-label="Schema 资源" aria-controls="resourcePane" aria-expanded="true">SC</button>
+        <button class="activity-button" data-module="logs" data-tooltip="日志" aria-label="日志">&gt;_</button>
+        <button class="activity-button" data-module="history" data-tooltip="历史" aria-label="历史">HI</button>
+        <span class="activity-spacer"></span>
+        <span class="health" title="工作区健康">✓</span>
+      </nav>
+
+      <aside class="side-pane left" id="resourcePane" aria-label="Schema 资源">
+        <div class="side-pane-inner">
+          <header class="pane-header">
+            <div class="pane-heading"><strong>Schema 资源</strong><span>Tables · Records · Enums</span></div>
+            <button class="icon-button" id="addResource" title="新增资源" aria-label="新增资源">＋</button>
+          </header>
+          <div class="search-wrap"><input class="search" id="resourceSearch" placeholder="搜索资源"></div>
+          <div class="resource-tree">
+            <section class="resource-group">
+              <button class="group-toggle" data-group="table" aria-expanded="true"><span class="group-label"><span class="chevron">⌄</span>Tables</span><span class="group-count">4</span></button>
+              <button class="resource-item active" data-resource="Item"><span class="resource-glyph">T</span><span class="resource-name">Item</span><span class="draft-dot" title="包含草稿"></span></button>
+              <button class="resource-item" data-resource="Quest"><span class="resource-glyph">T</span><span class="resource-name">Quest</span><span></span></button>
+              <button class="resource-item" data-resource="ItemType"><span class="resource-glyph">T</span><span class="resource-name">ItemType</span><span></span></button>
+              <button class="resource-item" data-resource="UIConfig"><span class="resource-glyph">T</span><span class="resource-name">UIConfig</span><span></span></button>
+            </section>
+            <section class="resource-group">
+              <button class="group-toggle" data-group="record" aria-expanded="true"><span class="group-label"><span class="chevron">⌄</span>Records</span><span class="group-count">3</span></button>
+              <button class="resource-item" data-resource="DropReward"><span class="resource-glyph">R</span><span class="resource-name">DropReward</span><span></span></button>
+              <button class="resource-item" data-resource="ValueRange"><span class="resource-glyph">R</span><span class="resource-name">ValueRange</span><span></span></button>
+              <button class="resource-item" data-resource="UiAnchor"><span class="resource-glyph">R</span><span class="resource-name">UiAnchor</span><span></span></button>
+            </section>
+            <section class="resource-group">
+              <button class="group-toggle" data-group="enum" aria-expanded="true"><span class="group-label"><span class="chevron">⌄</span>Enums</span><span class="group-count">2</span></button>
+              <button class="resource-item" data-resource="ItemRarity"><span class="resource-glyph">E</span><span class="resource-name">ItemRarity</span><span></span></button>
+              <button class="resource-item" data-resource="UiLayer"><span class="resource-glyph">E</span><span class="resource-name">UiLayer</span><span></span></button>
+            </section>
+          </div>
+          <div class="pane-footer">9 个资源 · 1 个草稿 · 状态已保存</div>
+        </div>
+      </aside>
+
+      <section class="workspace" id="workspace">
+        <header class="resource-header">
+          <div class="resource-title">
+            <div class="eyebrow" id="resourceKind">Table</div>
+            <h1 id="resourceName" tabindex="-1">Item</h1>
+            <div class="resource-meta" id="resourceMeta">item.xlsx · 9 个字段 · 主键 Id</div>
+          </div>
+          <div class="resource-actions"><span class="status" id="resourceStatus">草稿未保存</span><button class="button small">更多</button></div>
+        </header>
+        <nav class="tabs" aria-label="资源编辑区域">
+          <button class="tab active" data-view="fields"><span id="primaryTabLabel">字段</span> <span class="tab-count" id="fieldCount">9</span></button>
+          <button class="tab" data-view="indexes" id="indexTab">查询索引 <span class="tab-count" id="indexCount">3</span></button>
+          <button class="tab" data-view="dependencies">依赖 <span class="tab-count" id="dependencyCount">4</span></button>
+        </nav>
+        <div class="editor-scroll">
+          <section class="view" id="fieldsView">
+            <div class="section-heading"><div><h2 id="structureTitle">字段结构</h2><p>字段选择与属性区开关互不耦合，当前上下文始终保留。</p></div></div>
+            <div class="field-table">
+              <div class="field-grid">
+                <div class="field-header"><div>字段</div><div>类型表达式</div><div>Excel</div><div>角色与约束</div><div></div></div>
+                <div id="fieldRows"></div>
+              </div>
+              <button class="add-row" id="addRow">＋ 添加字段</button>
+            </div>
+            <div class="notice"><span>i</span><div><strong>编辑只改变 Workspace Draft</strong>Schema、Excel、Binary 和 Accessor 在审查并应用前都不会写入。</div></div>
+          </section>
+          <section class="view" id="indexesView" hidden>
+            <div class="section-heading"><div><h2>查询索引</h2><p>索引定义查询契约，生成器据此输出稳定访问 API。</p></div><button class="button primary small">新增索引</button></div>
+            <div class="card-list">
+              <article class="index-card"><div class="index-badge">PK</div><div><strong>primary</strong><span>唯一，内置</span></div><div class="index-fields">fields: [Id]</div><div class="index-api">ById(id)</div></article>
+              <article class="index-card"><div class="index-badge">1:1</div><div><strong>code</strong><span>唯一字符串查询</span></div><div class="index-fields">fields: [CodeName]</div><div class="index-api">ByCode(code)</div></article>
+              <article class="index-card"><div class="index-badge">1:N</div><div><strong>reward_group</strong><span>非唯一分组查询</span></div><div class="index-fields">fields: [RewardGroup]</div><div class="index-api">ByGroupKey(key)</div></article>
+            </div>
+          </section>
+          <section class="view" id="dependenciesView" hidden>
+            <div class="section-heading"><div><h2>资源依赖</h2><p>删除或改名之前必须先解决所有反向引用。</p></div></div>
+            <div class="card-list">
+              <article class="index-card"><div class="index-badge">IN</div><div><strong>Shop.Items</strong><span>表字段引用</span></div><div class="index-fields">ref: Item.Id</div><div class="index-api">打开</div></article>
+              <article class="index-card"><div class="index-badge">OUT</div><div><strong>Item.ItemTypeId</strong><span>跨表引用</span></div><div class="index-fields">ref: ItemType.Id</div><div class="index-api">打开</div></article>
+              <article class="index-card"><div class="index-badge">TYPE</div><div><strong>Item.Rewards</strong><span>值包含关系</span></div><div class="index-fields">vector&lt;DropReward&gt;</div><div class="index-api">打开</div></article>
+            </div>
+          </section>
+        </div>
+        <footer class="taskbar">
+          <span class="change-count">5</span>
+          <div class="change-copy"><strong>Item 有未应用的结构变更</strong><span>1 新增，2 修改，1 移除，1 索引变更</span></div>
+          <button class="button dark small" id="discardButton">放弃草稿</button>
+          <button class="button primary small" id="reviewChanges">审查并应用</button>
+        </footer>
+      </section>
+
+      <aside class="side-pane right" id="propertyPane" aria-label="字段属性">
+        <div class="side-pane-inner">
+          <header class="pane-header"><div class="pane-heading"><strong>字段属性</strong><span id="inspectorPath">Item.Rewards</span></div></header>
+          <div class="inspector-body">
+            <section class="form-section"><div class="form-title">定义</div><div class="form-grid"><div class="form-group"><label for="fieldName">字段名</label><input class="input mono" id="fieldName" value="Rewards"></div><div class="form-group"><label>类型表达式</label><div class="type-builder"><span>vector</span><span>&lt;</span><span class="type-token" id="fieldType">DropReward</span><span>&gt;</span></div><div class="helper" id="typeHelper">DropReward 是可复用命名类型。</div></div></div></section>
+            <section class="form-section"><div class="form-title">Excel 表达</div><div class="choice-grid"><div class="choice" id="singleChoice"><strong>单单元格</strong><span>标量或分隔符 vector</span></div><div class="choice active" id="expandedChoice"><strong>展开列</strong><span>每个元素一组列</span></div></div><div class="form-group excel-column-count"><label for="excelColumns">可填写组数</label><input class="input mono" id="excelColumns" type="number" value="3"></div></section>
+            <section class="form-section"><div class="form-title">约束</div><div class="form-group"><label for="fieldRef">跨表引用</label><select class="select mono" id="fieldRef"><option>无</option></select><div class="helper">命名类型包含与跨表 ref 是两种不同约束。</div></div></section>
+            <section class="form-section"><div class="form-title">说明</div><textarea class="textarea" id="fieldNote">掉落奖励列表，每行最多配置 3 组。</textarea></section>
+          </div>
+          <footer class="inspector-footer"><button class="button small danger" id="deleteField">标记移除</button><button class="button small" id="resetField">撤销字段修改</button></footer>
+        </div>
+      </aside>
+
+      <nav class="activity-bar right" aria-label="右侧工具">
+        <button class="right-activity-button pane-open" id="propertyActivity" aria-label="字段属性" aria-controls="propertyPane" aria-expanded="true">属性</button>
+        <span class="activity-spacer"></span>
+      </nav>
+    </main>
+
+    <section class="review" id="review" hidden>
+      <header class="review-header"><button class="button small" id="backToEditor">返回编辑</button><div><h2>Workspace Change Plan</h2><p>应用前检查 Schema、Excel、Binary、Accessor 和现有数据。</p></div><span class="spacer"></span><span class="risk">1 个阻塞项</span></header>
+      <div class="review-body">
+        <nav class="review-list" aria-label="变更清单"><button class="review-item active"><span class="risk-dot"></span><span><strong>CodeName 唯一索引</strong><span>发现 2 个重复值</span></span><code>BLOCK</code></button><button class="review-item"><span class="risk-dot warning"></span><span><strong>移除 LegacyRank</strong><span>812 行存在数据</span></span><code class="warning">DATA</code></button><button class="review-item"><span class="risk-dot warning"></span><span><strong>Rewards 展开列</strong><span>1 列调整为 9 列</span></span><code class="warning">EXCEL</code></button></nav>
+        <article class="review-detail"><h3>CodeName 唯一索引无法建立</h3><p>这是数据依赖型变更。必须先修正 Excel 中的重复值，才会生成 ByCode 查询索引。</p><div class="blocker"><span>!</span><div><strong>重复值 Sword_Starter</strong><p>Item.xlsx 第 18 行和第 73 行的 CodeName 相同。</p></div><button class="button small danger" id="locateExcel">定位 Excel 行</button></div><div class="notice"><span>i</span><div><strong>原子应用</strong>候选 Workspace 完成全局校验与 postcheck 后才替换原文件，失败时不会留下半成品。</div></div></article>
+      </div>
+      <footer class="review-footer"><span class="review-note">原工作区不会被修改，直到所有阻塞项解决。</span><span class="spacer"></span><button class="button small">导出计划</button><button class="button primary small" disabled>应用变更</button></footer>
+    </section>
+
+    <div class="toast" id="toast" hidden></div>
+  </div>
+
+  <script>
+    const $ = selector => document.querySelector(selector);
+    const $$ = selector => [...document.querySelectorAll(selector)];
+    const LAYOUT_KEY = "ct.schema-editor.layout";
+
+    const fieldSets = {
+      Item: [
+        { name: "Id", type: "int32", excel: "1 column", roles: [["PRIMARY", "primary"]], note: "表内唯一的数值主键。" },
+        { name: "CodeName", type: "string", excel: "1 column", roles: [["BY CODE", "code"]], note: "稳定的代码查询名称。" },
+        { name: "Name", type: "string", excel: "1 column", roles: [["I18N", ""]], note: "显示名称，参与 i18n。" },
+        { name: "Rarity", type: "ItemRarity", excel: "1 column", note: "物品稀有度枚举。" },
+        { name: "ItemTypeId", type: "int32", excel: "1 column", roles: [["REF ItemType.Id", "ref"]], ref: "ItemType.Id", note: "引用 ItemType.Id。" },
+        { name: "Rewards", type: "vector<DropReward>", excel: "expanded × 3", changed: true, state: "已修改", note: "掉落奖励列表，每行最多配置 3 组。" },
+        { name: "RewardGroup", type: "string", excel: "1 column", roles: [["GROUP", "group"]], changed: true, state: "新增", note: "用于分组查询的稳定键。" },
+        { name: "Tags", type: "vector<int32>", excel: "single cell", note: "逗号分隔标签。" },
+        { name: "LegacyRank", type: "int32", excel: "1 column", changed: true, deleted: true, state: "待移除", note: "数据将在迁移计划中保留备份。" }
+      ],
+      Quest: [
+        { name: "Id", type: "int32", excel: "1 column", roles: [["PRIMARY", "primary"]] },
+        { name: "Title", type: "string", excel: "1 column", roles: [["I18N", ""]] },
+        { name: "Rewards", type: "vector<DropReward>", excel: "expanded × 3" },
+        { name: "NextQuestId", type: "int32", excel: "1 column", roles: [["REF Quest.Id", "ref"]] }
+      ],
+      ItemType: [{ name: "Id", type: "int32", excel: "1 column", roles: [["PRIMARY", "primary"]] }, { name: "Code", type: "string", excel: "1 column" }, { name: "Name", type: "string", excel: "1 column", roles: [["I18N", ""]] }],
+      UIConfig: [{ name: "Id", type: "int32", excel: "1 column", roles: [["PRIMARY", "primary"]] }, { name: "Anchor", type: "UiAnchor", excel: "2 columns" }],
+      DropReward: [{ name: "ItemId", type: "int32", excel: "1 column", roles: [["REF Item.Id", "ref"]] }, { name: "Count", type: "ValueRange", excel: "2 columns" }],
+      ValueRange: [{ name: "Min", type: "int32", excel: "1 column" }, { name: "Max", type: "int32", excel: "1 column" }],
+      UiAnchor: [{ name: "X", type: "float", excel: "1 column" }, { name: "Y", type: "float", excel: "1 column" }],
+      ItemRarity: [{ name: "Common", type: "enum value", excel: "wire 0" }, { name: "Rare", type: "enum value", excel: "wire 1" }, { name: "Epic", type: "enum value", excel: "wire 2" }],
+      UiLayer: [{ name: "Background", type: "enum value", excel: "wire 0" }, { name: "Content", type: "enum value", excel: "wire 1" }, { name: "Overlay", type: "enum value", excel: "wire 2" }]
+    };
+
+    const resourceMeta = {
+      Item: ["table", "item.xlsx · 9 个字段 · 主键 Id", "草稿未保存", 3, 4],
+      Quest: ["table", "quest.xlsx · 4 个字段 · 主键 Id", "只读原型", 1, 2],
+      ItemType: ["table", "item_type.xlsx · 3 个字段 · 主键 Id", "已同步", 1, 1],
+      UIConfig: ["table", "ui_config.xlsx · 2 个字段 · 主键 Id", "已同步", 0, 1],
+      DropReward: ["record", "可复用记录 · 被 2 个资源使用", "已同步", 0, 2],
+      ValueRange: ["record", "可复用记录 · 被 4 个资源使用", "已同步", 0, 4],
+      UiAnchor: ["record", "可复用记录 · 被 1 个资源使用", "已同步", 0, 1],
+      ItemRarity: ["enum", "3 个枚举值 · wire number 稳定", "已同步", 0, 3],
+      UiLayer: ["enum", "3 个枚举值 · wire number 稳定", "已同步", 0, 2]
+    };
+
+    let state = {
+      currentResource: "Item",
+      currentField: "Rewards",
+      currentView: "fields",
+      page: "editor",
+      wideLeftOpen: true,
+      wideRightOpen: true,
+      mediumTool: "left",
+      groupOpen: { table: true, record: true, enum: true }
+    };
+
+    try {
+      const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) || "null");
+      if (saved) state = { ...state, ...saved, groupOpen: { ...state.groupOpen, ...(saved.groupOpen || {}) } };
+    } catch { /* file:// 受限环境使用默认状态 */ }
+
+    const mode = () => window.innerWidth >= 1360 ? "wide" : window.innerWidth >= 960 ? "medium" : window.innerWidth >= 600 ? "compact" : "phone";
+    const isCompact = layoutMode => layoutMode === "compact" || layoutMode === "phone";
+    let renderedMode = mode();
+    const saveState = () => { try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(state)); } catch {} };
+    const toast = message => {
+      const el = $("#toast");
+      el.textContent = message;
+      el.hidden = false;
+      clearTimeout(window._Toast);
+      window._Toast = setTimeout(() => { el.hidden = true; }, 2100);
+    };
+
+    function resolvedPanes(layoutMode) {
+      if (layoutMode === "wide") return { left: state.wideLeftOpen, right: state.wideRightOpen };
+      if (layoutMode === "medium") return { left: state.mediumTool === "left", right: state.mediumTool === "right" };
+      return { left: false, right: false };
+    }
+
+    function syncAccessibility(layoutMode, panes) {
+      const compact = isCompact(layoutMode);
+      const visible = compact ? { resources: $("#resourcePane"), editor: $("#workspace"), properties: $("#propertyPane") }[state.page] : null;
+      [$("#resourcePane"), $("#workspace"), $("#propertyPane")].forEach(pane => {
+        const hidden = compact ? pane !== visible : pane === $("#resourcePane") ? !panes.left : pane === $("#propertyPane") ? !panes.right : false;
+        pane.toggleAttribute("inert", hidden);
+        pane.setAttribute("aria-hidden", String(hidden));
+      });
+    }
+
+    function syncLayout() {
+      const layoutMode = mode();
+      const panes = resolvedPanes(layoutMode);
+      const compact = isCompact(layoutMode);
+      const leftVisible = panes.left || (compact && state.page === "resources");
+      const rightVisible = panes.right || (compact && state.page === "properties");
+      renderedMode = layoutMode;
+      $("#workbench").dataset.leftOpen = String(panes.left);
+      $("#workbench").dataset.rightOpen = String(panes.right);
+      $("#workbench").dataset.page = state.page;
+      $("#app").dataset.page = state.page;
+      $("#schemaActivity").classList.toggle("pane-open", leftVisible);
+      $("#schemaActivity").setAttribute("aria-expanded", String(leftVisible));
+      $("#propertyActivity").classList.toggle("pane-open", rightVisible);
+      $("#propertyActivity").setAttribute("aria-expanded", String(rightVisible));
+      const context = state.page === "resources" ? "Schema 资源" : state.page === "properties" ? `${state.currentResource}.${state.currentField}` : `${state.currentResource} · ${state.currentView === "indexes" ? "查询索引" : state.currentView === "dependencies" ? "依赖" : "字段"}`;
+      $("#compactContext").textContent = context;
+      syncAccessibility(layoutMode, panes);
+      saveState();
+      // 首帧结束后移除 data-init，让后续用户操作恢复过渡动画
+      if ($("#workbench").hasAttribute("data-init")) {
+        requestAnimationFrame(() => requestAnimationFrame(() => $("#workbench").removeAttribute("data-init")));
+      }
+    }
+
+    function toggleLeft() {
+      if (mode() === "wide") state.wideLeftOpen = !state.wideLeftOpen;
+      else if (mode() === "medium") state.mediumTool = state.mediumTool === "left" ? null : "left";
+      else state.page = "resources";
+      syncLayout();
+    }
+
+    function toggleRight() {
+      if (mode() === "wide") state.wideRightOpen = !state.wideRightOpen;
+      else if (mode() === "medium") state.mediumTool = state.mediumTool === "right" ? null : "right";
+      else state.page = "properties";
+      syncLayout();
+    }
+
+    function setPage(page, focus = false) {
+      state.page = page;
+      syncLayout();
+      if (focus) requestAnimationFrame(() => ({ resources: $("#resourceSearch"), editor: $("#resourceName"), properties: $("#fieldName") }[page]?.focus()));
+    }
+
+    function goBack() {
+      if (state.page === "properties") setPage("editor", true);
+      else if (state.page === "editor") setPage("resources", true);
+    }
+
+    function renderRows() {
+      const rows = fieldSets[state.currentResource];
+      $("#fieldRows").innerHTML = rows.map(field => {
+        const named = /^[A-Z]/.test(field.type) || field.type.includes("<");
+        const type = field.type.replace(/([A-Z][A-Za-z0-9]*)/g, '<span class="type-link">$1</span>');
+        const roles = (field.roles || []).map(([text, kind]) => `<span class="role ${kind}">${text}</span>`).join("");
+        return `<button class="field-row${field.changed ? " changed" : ""}${field.deleted ? " deleted" : ""}${field.name === state.currentField ? " selected" : ""}" data-field="${field.name}"><span class="field-main"><span class="drag">⠿</span><span class="field-name">${field.name}</span>${field.state ? `<span class="field-state">${field.state}</span>` : ""}</span><span class="field-type"><span class="type-expr">${named ? type : field.type}</span></span><span class="excel">${field.excel}</span><span class="roles">${roles}</span><span class="row-more">•••</span></button>`;
+      }).join("");
+    }
+
+    function renderSelectedField() {
+      const name = state.currentField;
+      const field = fieldSets[state.currentResource].find(item => item.name === name) || fieldSets[state.currentResource][0];
+      $$(".field-row").forEach(row => row.classList.toggle("selected", row.dataset.field === name));
+      $("#inspectorPath").textContent = `${state.currentResource}.${name}`;
+      $("#fieldName").value = name;
+      $("#fieldNote").value = field.note || "";
+      $("#fieldRef").replaceChildren(new Option(field.ref || "无"));
+      const vector = field.type.match(/^vector<(.+)>$/);
+      $("#fieldType").textContent = vector ? vector[1] : field.type;
+      $("#typeHelper").textContent = vector ? `${vector[1]} 是可复用命名类型。` : "标量或命名类型直接映射到字段定义。";
+      $("#excelColumns").value = vector ? "3" : "1";
+      $("#singleChoice").classList.toggle("active", !vector);
+      $("#expandedChoice").classList.toggle("active", Boolean(vector));
+    }
+
+    function selectField(name) {
+      const compact = isCompact(mode());
+      state.currentField = name;
+      renderSelectedField();
+      if (compact) state.page = "properties";
+      syncLayout();
+      if (compact) requestAnimationFrame(() => $("#fieldName").focus());
+    }
+
+    function renderActiveView() {
+      const view = state.currentView;
+      $$(".tab").forEach(tab => tab.classList.toggle("active", tab.dataset.view === view));
+      $("#fieldsView").hidden = view !== "fields";
+      $("#indexesView").hidden = view !== "indexes";
+      $("#dependenciesView").hidden = view !== "dependencies";
+    }
+
+    function activateView(view) {
+      state.currentView = view;
+      renderActiveView();
+      syncLayout();
+    }
+
+    function renderResource(name, preferredField = null) {
+      state.currentResource = name;
+      const [kind, meta, status, indexes, dependencies] = resourceMeta[name];
+      const rows = fieldSets[name];
+      state.currentField = rows.some(row => row.name === preferredField) ? preferredField : rows[0].name;
+      $("#resourceKind").textContent = kind;
+      $("#resourceName").textContent = name;
+      $("#resourceMeta").textContent = meta;
+      $("#resourceStatus").textContent = status;
+      $("#fieldCount").textContent = rows.length;
+      $("#indexCount").textContent = indexes;
+      $("#dependencyCount").textContent = dependencies;
+      $("#primaryTabLabel").textContent = kind === "enum" ? "枚举值" : "字段";
+      $("#structureTitle").textContent = kind === "enum" ? "枚举值" : "字段结构";
+      $("#indexTab").hidden = kind !== "table";
+      state.currentView = "fields";
+      $$(".resource-item").forEach(item => item.classList.toggle("active", item.dataset.resource === name));
+      $$(".group-toggle").forEach(toggle => toggle.classList.toggle("has-current", toggle.dataset.group === kind));
+      renderRows();
+      renderActiveView();
+      renderSelectedField();
+    }
+
+    function selectResource(name) {
+      const compact = isCompact(mode());
+      renderResource(name);
+      if (compact) state.page = "editor";
+      syncLayout();
+      if (compact) requestAnimationFrame(() => $("#resourceName").focus());
+    }
+
+    $("#schemaActivity").addEventListener("click", toggleLeft);
+    $("#propertyActivity").addEventListener("click", toggleRight);
+    $("#backButton").addEventListener("click", goBack);
+    $$("[data-module]").forEach(button => button.addEventListener("click", () => {
+      if (button.dataset.module === "schema") return;
+      const names = { export: "导出", i18n: "翻译 i18n", logs: "日志", history: "历史" };
+      toast(`${names[button.dataset.module]} 将复用同一 Workbench，但不会复制 Schema 的左右工具区`);
+    }));
+    $$(".group-toggle").forEach(toggle => toggle.addEventListener("click", () => {
+      const next = toggle.getAttribute("aria-expanded") !== "true";
+      state.groupOpen[toggle.dataset.group] = next;
+      toggle.setAttribute("aria-expanded", String(next));
+      toggle.closest(".resource-group").classList.toggle("collapsed", !next);
+      saveState();
+    }));
+    $$(".resource-item").forEach(item => item.addEventListener("click", () => selectResource(item.dataset.resource)));
+    $("#resourceSearch").addEventListener("input", event => {
+      const query = event.target.value.trim().toLowerCase();
+      $$(".resource-item").forEach(item => { item.hidden = !item.dataset.resource.toLowerCase().includes(query); });
+    });
+    $("#fieldRows").addEventListener("click", event => {
+      const row = event.target.closest(".field-row");
+      if (row) selectField(row.dataset.field);
+    });
+    $$(".tab").forEach(tab => tab.addEventListener("click", () => activateView(tab.dataset.view)));
+
+    function openReview() {
+      const review = $("#review");
+      $("#workbench").hidden = true;
+      review.hidden = false;
+      // 两步触发过渡：先入布局，再下一帧加 .show
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        review.classList.add("show");
+        $("#backToEditor").focus();
+      }));
+    }
+    function closeReview() {
+      const review = $("#review");
+      if (!review.classList.contains("show")) return;
+      review.classList.remove("show");
+      Promise.allSettled(review.getAnimations().map(animation => animation.finished)).then(() => {
+        review.hidden = true;
+        $("#workbench").hidden = false;
+        $("#reviewButton").focus();
+      });
+    }
+    [$("#reviewButton"), $("#reviewChanges")].forEach(button => button.addEventListener("click", openReview));
+    $("#backToEditor").addEventListener("click", closeReview);
+    $("#validateButton").addEventListener("click", () => toast("结构校验完成：草稿有效，发现 1 个数据阻塞项"));
+    $("#locateExcel").addEventListener("click", () => toast("真实实现会打开 Item.xlsx 并定位第 18、73 行"));
+    $("#addResource").addEventListener("click", () => toast("新增资源会先进入 Workspace Draft"));
+    $("#addRow").addEventListener("click", () => toast("新增字段已加入草稿，尚未写入工作区"));
+    $("#deleteField").addEventListener("click", () => toast("字段已标记为待移除，数据将在 Change Plan 中审查"));
+    $("#resetField").addEventListener("click", () => toast("已撤销当前字段的草稿修改"));
+    $("#discardButton").addEventListener("click", () => toast("原型不会实际丢弃草稿"));
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        if (!$("#review").hidden) closeReview();
+        else if (isCompact(mode()) && state.page !== "resources") goBack();
+      }
+    });
+
+    Object.entries(state.groupOpen).forEach(([kind, open]) => {
+      const toggle = $(`[data-group="${kind}"]`);
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.closest(".resource-group").classList.toggle("collapsed", !open);
+    });
+    const initialResource = resourceMeta[state.currentResource] ? state.currentResource : "Item";
+    const initialField = state.currentField;
+    const initialView = ["fields", "indexes", "dependencies"].includes(state.currentView) ? state.currentView : "fields";
+    const initialPage = ["resources", "editor", "properties"].includes(state.page) ? state.page : "editor";
+    renderResource(initialResource, initialField);
+    state.currentView = initialView === "indexes" && resourceMeta[initialResource][0] !== "table" ? "fields" : initialView;
+    renderActiveView();
+    state.page = initialPage;
+    syncLayout();
+    window.addEventListener("resize", () => { if (mode() !== renderedMode) syncLayout(); });
+  </script>
+</body>
+</html>

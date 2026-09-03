@@ -34,7 +34,7 @@ def bench_url(tmp_path_factory) -> Iterator[str]:
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        yield f"http://127.0.0.1:{server.server_port}/static/v4/index.html"
+        yield f"http://127.0.0.1:{server.server_port}/static/index.html"
     finally:
         server.shutdown()
         thread.join(timeout=5)

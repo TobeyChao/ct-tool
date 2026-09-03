@@ -9,7 +9,7 @@ import pytest
 from ct.app.canonical_workspace import CanonicalWorkspace
 from ct.schema.resource_repository import YamlResourceRepository
 
-from _v4_helpers import build_v4_project
+from _helpers import build_project
 
 
 def _write(root: Path, relative: str, content: str) -> None:
@@ -19,7 +19,7 @@ def _write(root: Path, relative: str, content: str) -> None:
 
 
 def test_inline_struct_rejected_with_file_and_field(tmp_path: Path) -> None:
-    root = build_v4_project(tmp_path / "gd")
+    root = build_project(tmp_path / "gd")
     _write(
         root,
         "config/schemas/Item.yaml",
@@ -39,7 +39,7 @@ fields:
 
 
 def test_inline_array_rejected(tmp_path: Path) -> None:
-    root = build_v4_project(tmp_path / "gd")
+    root = build_project(tmp_path / "gd")
     _write(
         root,
         "config/schemas/Item.yaml",
@@ -58,7 +58,7 @@ fields:
 
 
 def test_inline_enum_values_rejected(tmp_path: Path) -> None:
-    root = build_v4_project(tmp_path / "gd")
+    root = build_project(tmp_path / "gd")
     _write(
         root,
         "config/schemas/Item.yaml",
@@ -77,7 +77,7 @@ fields:
 
 
 def test_rejection_does_not_mutate_files(tmp_path: Path) -> None:
-    root = build_v4_project(tmp_path / "gd")
+    root = build_project(tmp_path / "gd")
     schema = root / "config" / "schemas" / "Item.yaml"
     original = """table: Item
 primary: Id
@@ -96,7 +96,7 @@ fields:
 
 def test_no_runtime_migration_reader(tmp_path: Path) -> None:
     # the product never parses old formats; only the canonical repository exists
-    root = build_v4_project(tmp_path / "gd")
+    root = build_project(tmp_path / "gd")
     repository = YamlResourceRepository(
         root / "config" / "schemas", root / "config" / "types"
     )

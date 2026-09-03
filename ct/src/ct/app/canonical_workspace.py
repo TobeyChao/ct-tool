@@ -1,8 +1,7 @@
-"""组合根（canonical v4）：配置 + 一个 canonical 资源图。
+"""组合根（canonical ）：配置 + 一个 canonical 资源图。
 
-CLI / Web / Excel / 校验 / 生成器在 v4 路径统一消费本对象暴露的
-``ResourceWorkspace`` 与确定性顺序；旧 ``Workspace`` 仅保留给 cutover
-之前的只读 legacy 入口，两者不混用。
+CLI / Web / Excel / 校验 / 生成器统一消费本对象暴露的
+``ResourceWorkspace`` 与确定性顺序；legacy 组合根经 cutover 移除。
 """
 
 from __future__ import annotations

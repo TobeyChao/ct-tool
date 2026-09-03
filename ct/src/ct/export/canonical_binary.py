@@ -1,4 +1,4 @@
-"""Canonical FlatBuffers binary serialization for v4 Table resources.
+"""Canonical FlatBuffers binary serialization for  Table resources.
 
 Rows (already canonical nested dicts) are serialized into a single-table
 FlatBuffers buffer with the same container shape as the legacy writer:

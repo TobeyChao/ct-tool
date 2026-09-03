@@ -1,4 +1,4 @@
-"""Stable hashes for legacy templates and canonical v4 Schema resources.
+"""Stable hashes for canonical  Schema resources.
 
 Used to detect schema drift between code and an Excel template. Every
 template-visible field (names, types, comments, enum values, struct
@@ -11,7 +11,6 @@ from __future__ import annotations
 import hashlib
 import json
 
-from ct.schema.models import TableSchema
 from ct.schema.resources import (
     EnumResource,
     RecordResource,
@@ -21,7 +20,7 @@ from ct.schema.resources import (
 )
 
 
-CANONICAL_SCHEMA_FORMAT_VERSION = "schema-resource-v4/1"
+CANONICAL_SCHEMA_FORMAT_VERSION = "schema-resource/1"
 
 
 def _stable_sha256(data: object) -> str:
@@ -35,21 +34,18 @@ def _stable_sha256(data: object) -> str:
 
 
 def compute_schema_hash(
-    schema: TableSchema | TableResource,
+    schema: TableResource,
     dependencies: tuple[RecordResource | EnumResource, ...] = (),
 ) -> str:
     """Return a 16-char hex sha256 prefix of the schema's normalized JSON."""
-    if isinstance(schema, TableResource):
-        data: object = {
-            "format": CANONICAL_SCHEMA_FORMAT_VERSION,
-            "table": resource_to_data(schema),
-            "dependencies": [
-                resource_to_data(resource)
-                for resource in sorted(dependencies, key=lambda item: item.resource_id)
-            ],
-        }
-    else:
-        data = schema.model_dump()
+    data: object = {
+        "format": CANONICAL_SCHEMA_FORMAT_VERSION,
+        "table": resource_to_data(schema),
+        "dependencies": [
+            resource_to_data(resource)
+            for resource in sorted(dependencies, key=lambda item: item.resource_id)
+        ],
+    }
     return _stable_sha256(data)[:16]
 
 

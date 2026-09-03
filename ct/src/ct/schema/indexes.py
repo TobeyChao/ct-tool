@@ -1,4 +1,4 @@
-"""Table-level Code/Group query indexes (canonical v4).
+"""Table-level Code/Group query indexes (canonical ).
 
 A Code lookup is an auxiliary unique lookup over a non-i18n string field and
 never replaces the integer primary key; a Group lookup is non-unique over a

@@ -16,8 +16,8 @@ from ct.web.app import create_app
 playwright_api = pytest.importorskip("playwright.sync_api")
 
 CT_ROOT = Path(__file__).parents[2]
-MATRIX_PATH = CT_ROOT / "tests/fixtures/web/schema_workbench_v4_matrix.json"
-CUTOVER_WORKSPACE = CT_ROOT / "tests/fixtures/repository_cutover_v4/workspace"
+MATRIX_PATH = CT_ROOT / "tests/fixtures/web/schema_workbench_matrix.json"
+CUTOVER_WORKSPACE = CT_ROOT / "tests/fixtures/repository_cutover/workspace"
 
 
 def _matrix_cases() -> list[tuple[int, int, int, str]]:
@@ -98,7 +98,7 @@ def test_local_panel_screenshot_matrix(
         page.wait_for_selector(".ct-app")
         page.wait_for_selector(".ct-topbar")
 
-        # v4 AppShell renders for every workspace (legacy monolithic entry retired)
+        #  AppShell renders for every workspace (legacy monolithic entry retired)
         assert page.locator(".ct-brand-mark", has_text="ct").count() == 1
         assert page.get_by_text("Workspace", exact=True).count() == 1
         assert page.locator(".ct-tab").count() == 5

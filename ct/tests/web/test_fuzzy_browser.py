@@ -16,14 +16,14 @@ playwright_api = pytest.importorskip("playwright.sync_api")
 
 @pytest.fixture(scope="module")
 def fuzzy_url(tmp_path_factory) -> Iterator[str]:
-    from _v4_helpers import build_v4_project
+    from _helpers import build_project
 
-    workspace = build_v4_project(tmp_path_factory.mktemp("fuzzy") / "workspace")
+    workspace = build_project(tmp_path_factory.mktemp("fuzzy") / "workspace")
     server = make_server("127.0.0.1", 0, create_app(workspace), threaded=True)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        yield f"http://127.0.0.1:{server.server_port}/static/v4/index.html"
+        yield f"http://127.0.0.1:{server.server_port}/static/index.html"
     finally:
         server.shutdown()
         thread.join(timeout=5)
@@ -41,7 +41,7 @@ def chromium_browser() -> Iterator[Any]:
 
 def _load(page) -> None:
     page.evaluate(
-        "async () => { const m = await import('/static/v4/js/core/fuzzy.js'); window.__fuzzy = m; }"
+        "async () => { const m = await import('/static/js/core/fuzzy.js'); window.__fuzzy = m; }"
     )
 
 

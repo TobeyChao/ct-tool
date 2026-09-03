@@ -1,6 +1,6 @@
-"""Canonical CLI command implementations (validate/status/gen-template).
+"""Canonical CLI command implementations (validate/status/gen-template/i18n).
 
-Used when a workspace is canonical; legacy workspaces keep the legacy path.
+These back the canonical-only CLI and Web; the legacy (pre) path is removed.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 
 from ct.app.canonical_workspace import CanonicalWorkspace
-from ct.diagnostics.errors import Issue, IssueCode, ValidationIssue
+from ct.diagnostics.errors import Issue, IssueCode, ValidationIssue, WorkspaceIssue
 from ct.excel.canonical_reader import read_canonical_excel
 from ct.excel.canonical_template import generate_canonical_template
 from ct.excel.layout import build_layout
@@ -23,26 +23,132 @@ def _records_map(ws: CanonicalWorkspace) -> dict[str, RecordResource]:
     return {r.name: r for r in ws.records}
 
 
+class CanonicalValidationError(ValueError):
+    """Canonical 校验失败：携带结构化 issues，供 CLI / Web 渲染。"""
+
+    def __init__(self, issues: list[Issue]) -> None:
+        super().__init__(f"校验发现 {len(issues)} 个问题")
+        self.issues = issues
+
+
+def _primary_issues(
+    table, parsed, seen: set
+) -> list[Issue]:
+    """主键为空 / 重复校验，填充 seen（该表主键集合）。"""
+    issues: list[Issue] = []
+    for index, row in enumerate(parsed.rows, start=1):
+        pk = row.get(table.primary)
+        excel_row = (
+            parsed.excel_rows[index - 1] if index - 1 < len(parsed.excel_rows) else None
+        )
+        if pk is None:
+            issues.append(
+                ValidationIssue(
+                    table.table,
+                    IssueCode.TYPE,
+                    "主键为空",
+                    row_index=index,
+                    excel_row=excel_row,
+                    field=table.primary,
+                )
+            )
+        elif pk in seen:
+            issues.append(
+                ValidationIssue(
+                    table.table,
+                    IssueCode.DUPLICATE_PK,
+                    f"主键重复: {pk!r}",
+                    row_index=index,
+                    excel_row=excel_row,
+                    field=table.primary,
+                    value=pk,
+                )
+            )
+        else:
+            seen.add(pk)
+    return issues
+
+
+def _ref_issues(
+    table, parsed, id_sets: dict[str, set]
+) -> list[Issue]:
+    """跨表 ref 外键值校验：field.ref 的值必须存在于引用表主键集。"""
+    ref_fields = [field for field in table.fields if field.ref]
+    if not ref_fields:
+        return []
+    issues: list[Issue] = []
+    for row_index, row in enumerate(parsed.rows, start=1):
+        excel_row = (
+            parsed.excel_rows[row_index - 1] if row_index - 1 < len(parsed.excel_rows) else None
+        )
+        for field in ref_fields:
+            target_table = field.ref.partition(".")[0]
+            target_field = field.ref.partition(".")[2] or "id"
+            value = row.get(field.name)
+            values = value if isinstance(value, list) else [value]
+            target_ids = id_sets.get(target_table)
+            if target_ids is None:
+                issues.append(
+                    ValidationIssue(
+                        table.table,
+                        IssueCode.REF,
+                        f"引用表 {target_table} 的数据未加载，无法校验",
+                        row_index=row_index,
+                        excel_row=excel_row,
+                        field=field.name,
+                        value=value,
+                    )
+                )
+                continue
+            for v in values:
+                if v is None:
+                    continue
+                if v not in target_ids:
+                    issues.append(
+                        ValidationIssue(
+                            table.table,
+                            IssueCode.REF,
+                            f"值 {v!r} 在引用表 {target_table}.{target_field} 中不存在",
+                            row_index=row_index,
+                            excel_row=excel_row,
+                            field=field.name,
+                            value=v,
+                        )
+                    )
+    return issues
+
+
 def canonical_validate(
     root: Path,
     *,
     table_filter: str | None = None,
 ) -> list[Issue]:
-    """Read + validate a canonical workspace; returns structured issues."""
+    """Read + validate a canonical workspace; returns structured issues.
+
+    Full validation: Excel read (type coercion), primary empty/duplicate and
+    cross-table ``ref`` foreign-key values (must exist in the target table's
+    primary-key set). The legacy path no longer exists.
+    """
     ws = CanonicalWorkspace.load(root)
     records = _records_map(ws)
     excel_dir = ws.resolve("excel_dir")
     issues: list[Issue] = []
     tables = [t for t in ws.tables if table_filter is None or t.table == table_filter]
     if table_filter is not None and not tables:
-        issues.append(WorkspaceIssue("", IssueCode.WORKSPACE, f"表 '{table_filter}' 不存在"))
+        issues.append(
+            WorkspaceIssue("", IssueCode.WORKSPACE, f"表 '{table_filter}' 不存在")
+        )
         return issues
-    seen_primary: dict[str, set] = {}
+
+    parsed_by_table: dict[str, object] = {}
+    id_sets: dict[str, set] = {}
     for table in tables:
         excel_path = excel_dir / (table.excel_file or f"{table.table}.xlsx")
         if not excel_path.exists():
             issues.append(
-                WorkspaceIssue(table.table, IssueCode.WORKSPACE, f"Excel 文件不存在: {excel_path}")
+                WorkspaceIssue(
+                    table.table, IssueCode.WORKSPACE, f"Excel 文件不存在: {excel_path}"
+                )
             )
             continue
         layout = build_layout(
@@ -52,34 +158,15 @@ def canonical_validate(
         )
         parsed = read_canonical_excel(excel_path, layout, table, records=records)
         issues.extend(parsed.issues)
-        seen_primary[table.table] = set()
-        for index, row in enumerate(parsed.rows, start=1):
-            pk = row.get(table.primary)
-            if pk is None:
-                issues.append(
-                    ValidationIssue(
-                        table.table,
-                        IssueCode.TYPE,
-                        "主键为空",
-                        row_index=index,
-                        excel_row=parsed.excel_rows[index - 1] if index - 1 < len(parsed.excel_rows) else None,
-                        field=table.primary,
-                    )
-                )
-            elif pk in seen_primary[table.table]:
-                issues.append(
-                    ValidationIssue(
-                        table.table,
-                        IssueCode.DUPLICATE_PK,
-                        f"主键重复: {pk!r}",
-                        row_index=index,
-                        excel_row=parsed.excel_rows[index - 1] if index - 1 < len(parsed.excel_rows) else None,
-                        field=table.primary,
-                        value=pk,
-                    )
-                )
-            else:
-                seen_primary[table.table].add(pk)
+        seen: set = set()
+        issues.extend(_primary_issues(table, parsed, seen))
+        parsed_by_table[table.table] = parsed
+        id_sets[table.table] = seen
+
+    for table in tables:
+        parsed = parsed_by_table.get(table.table)
+        if parsed is not None:
+            issues.extend(_ref_issues(table, parsed, id_sets))
     return issues
 
 
@@ -155,18 +242,28 @@ def canonical_gen_template(
     return messages
 
 
-def canonical_i18n_status(root: Path) -> dict[str, dict[str, int]]:
-    """Per-language translation counts for a canonical workspace."""
+def _i18n_progress(counts: dict[str, int]) -> float:
+    """进度 = translated / (total - orphan)，无活跃条目视为 100%。"""
+    active = counts["total"] - counts["orphan"]
+    if active <= 0:
+        return 1.0
+    return round(counts["translated"] / active, 4)
+
+
+def canonical_i18n_status(root: Path) -> dict[str, dict]:
+    """Per-language + per-table translation counts for a canonical workspace."""
     from ct.export.i18n.state import compute_status
 
     ws = CanonicalWorkspace.load(root)
     config = ws.config
     i18n_dir = config.resolve("i18n_dir")
-    tables = [t.table for t in ws.tables if any(f.i18n for f in t.fields)]
-    result: dict[str, dict[str, int]] = {}
+    i18n_tables = [t for t in ws.tables if any(f.i18n for f in t.fields)]
+    tables = [t.table for t in i18n_tables]
+    result: dict[str, dict] = {}
     for lang in config.secondary_langs:
         lang_dir = i18n_dir / lang
-        counts = {"translated": 0, "missing": 0, "stale": 0, "orphan": 0, "total": 0}
+        lang_counts = {"translated": 0, "missing": 0, "stale": 0, "orphan": 0, "total": 0}
+        table_detail: dict[str, dict] = {}
         for table in tables:
             source_path = i18n_dir / "source" / f"{table}.json"
             if not source_path.exists():
@@ -178,6 +275,7 @@ def canonical_i18n_status(root: Path) -> dict[str, dict[str, int]]:
                 if lang_path.exists()
                 else {}
             )
+            counts = {"translated": 0, "missing": 0, "stale": 0, "orphan": 0, "total": 0}
             for key, source_text in source.items():
                 entry = entries.get(key) or {}
                 text = str(entry.get("text", ""))
@@ -189,21 +287,20 @@ def canonical_i18n_status(root: Path) -> dict[str, dict[str, int]]:
                 if key not in source:
                     counts["orphan"] += 1
                     counts["total"] += 1
-        result[lang] = counts
+            table_detail[table] = {**counts, "progress": _i18n_progress(counts)}
+            for stat in ("translated", "missing", "stale", "orphan", "total"):
+                lang_counts[stat] += counts[stat]
+        result[lang] = {
+            **lang_counts,
+            "progress": _i18n_progress(lang_counts),
+            "tables": table_detail,
+        }
     return result
-
-
-def _write_compact_json(path: Path, data) -> None:
-    import json as _json
-
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        _json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
 
 
 def canonical_i18n_sync(root: Path, *, table_filter: str | None = None) -> list[str]:
     """Refresh source files and lang skeletons for a canonical workspace."""
+    from ct.export.i18n.merger import write_lang_file, write_source_file
     from ct.export.i18n.state import sync_lang_table
 
     ws = CanonicalWorkspace.load(root)
@@ -218,6 +315,7 @@ def canonical_i18n_sync(root: Path, *, table_filter: str | None = None) -> list[
     messages: list[str] = []
     for table in tables:
         i18n_fields = [f for f in table.fields if f.i18n]
+        field_order = [f.name for f in i18n_fields]
         excel_path = excel_dir / (table.excel_file or f"{table.table}.xlsx")
         if not excel_path.exists():
             continue
@@ -232,7 +330,7 @@ def canonical_i18n_sync(root: Path, *, table_filter: str | None = None) -> list[
             row_id = row.get(table.primary)
             for field in i18n_fields:
                 source[f"{row_id}.{field.name}"] = str(row.get(field.name, ""))
-        _write_compact_json(i18n_dir / "source" / f"{table.table}.json", source)
+        write_source_file(source, i18n_dir / "source" / f"{table.table}.json", field_order)
         for lang in config.secondary_langs:
             lang_path = i18n_dir / lang / f"{table.table}.json"
             existing = (
@@ -240,20 +338,35 @@ def canonical_i18n_sync(root: Path, *, table_filter: str | None = None) -> list[
                 if lang_path.exists()
                 else {}
             )
-            _write_compact_json(lang_path, sync_lang_table(source, existing))
+            write_lang_file(sync_lang_table(source, existing), lang_path, field_order)
         messages.append(f"synced {table.table}")
     return messages
 
 
-def canonical_i18n_compact(root: Path, *, table_filter: str | None = None) -> int:
-    """Physically remove orphan entries from lang files."""
+def canonical_i18n_compact(
+    root: Path,
+    *,
+    table_filter: str | None = None,
+    dry_run: bool = False,
+) -> dict:
+    """Remove orphan entries from lang files.
+
+    dry_run=True 时不落盘，返回即将删除的 files 明细供预览。
+    """
+    from ct.export.i18n.merger import write_lang_file
+
     ws = CanonicalWorkspace.load(root)
     config = ws.config
     i18n_dir = config.resolve("i18n_dir")
     removed = 0
+    touched = 0
+    files: list[dict] = []
     for table in ws.tables:
         if table_filter is not None and table.table != table_filter:
             continue
+        if not any(f.i18n for f in table.fields):
+            continue
+        field_order = [f.name for f in table.fields if f.i18n]
         source_path = i18n_dir / "source" / f"{table.table}.json"
         if not source_path.exists():
             continue
@@ -263,10 +376,112 @@ def canonical_i18n_compact(root: Path, *, table_filter: str | None = None) -> in
             if not lang_path.exists():
                 continue
             entries = json.loads(lang_path.read_text(encoding="utf-8"))
-            orphans = {k for k in entries if k not in source}
-            if orphans:
-                removed += len(orphans)
-                for key in orphans:
-                    entries.pop(key, None)
-                _write_compact_json(lang_path, entries)
-    return removed
+            orphans = sorted(k for k in entries if k not in source)
+            if not orphans:
+                continue
+            removed += len(orphans)
+            touched += 1
+            files.append(
+                {"lang": lang, "table": table.table, "removed_keys": orphans}
+            )
+            if dry_run:
+                continue
+            for key in orphans:
+                entries.pop(key, None)
+            write_lang_file(entries, lang_path, field_order)
+    return {
+        "dry_run": dry_run,
+        "touched": touched,
+        "total_removed": removed,
+        "files": files,
+    }
+
+
+def canonical_i18n_tables(root: Path) -> list[dict]:
+    """List all tables with their i18n field metadata (for the picker)."""
+    ws = CanonicalWorkspace.load(root)
+    return [
+        {
+            "table": t.table,
+            "field_count": len(t.fields),
+            "i18n_count": len(t.i18n_fields),
+            "has_i18n": t.has_i18n,
+        }
+        for t in ws.tables
+    ]
+
+
+def _i18n_table(ws: CanonicalWorkspace, table: str) -> object:
+    """Find an i18n-capable table by name, raising a friendly error otherwise."""
+    t = next((t for t in ws.tables if t.table == table), None)
+    if t is None:
+        raise ValueError(f"表 '{table}' 不存在")
+    if not t.has_i18n:
+        raise ValueError(f"表 '{table}' 没有 i18n 字段")
+    return t
+
+
+def canonical_i18n_entries(root: Path, table: str, lang: str) -> list[dict]:
+    """Return computed translation entries for a table+lang (source + text + status)."""
+    from ct.export.i18n.merger import load_translation
+    from ct.export.i18n.state import sync_lang_table
+
+    ws = CanonicalWorkspace.load(root)
+    config = ws.config
+    target = _i18n_table(ws, table)
+    if lang not in config.secondary_langs:
+        raise ValueError(f"语言 '{lang}' 不在 secondary_langs 中")
+    i18n_dir = config.resolve("i18n_dir")
+    source_path = i18n_dir / "source" / f"{table}.json"
+    source = (
+        json.loads(source_path.read_text(encoding="utf-8"))
+        if source_path.exists()
+        else {}
+    )
+    computed = sync_lang_table(source, load_translation(i18n_dir, lang, table))
+    entries: list[dict] = []
+    for key, entry in computed.items():
+        id_part, _, field = key.partition(".")
+        entries.append(
+            {
+                "key": key,
+                "id": id_part,
+                "field": field,
+                "source": str(entry.get("source", "")),
+                "text": str(entry.get("text", "")),
+                "confirmed": bool(entry.get("confirmed", False)),
+                "status": str(entry.get("status", "missing")),
+            }
+        )
+    return entries
+
+
+def canonical_i18n_save_entry(
+    root: Path,
+    table: str,
+    lang: str,
+    key: str,
+    text: str,
+    confirmed: bool,
+) -> dict:
+    """Save a single translation entry, recompute its status, and re-dump the lang file."""
+    from ct.export.i18n.merger import load_translation, write_lang_file
+    from ct.export.i18n.state import compute_status
+
+    ws = CanonicalWorkspace.load(root)
+    config = ws.config
+    target = _i18n_table(ws, table)
+    if lang not in config.secondary_langs:
+        raise ValueError(f"语言 '{lang}' 不在 secondary_langs 中")
+    i18n_dir = config.resolve("i18n_dir")
+    entries = load_translation(i18n_dir, lang, table)
+    if key not in entries:
+        raise ValueError(f"条目 {key} 不存在，请先同步骨架")
+    entries[key]["text"] = str(text)
+    entries[key]["confirmed"] = bool(confirmed)
+    entries[key]["status"] = compute_status(
+        entries[key]["text"], entries[key]["confirmed"], in_source=True
+    ).value
+    field_order = [f.name for f in target.i18n_fields]
+    write_lang_file(entries, i18n_dir / lang / f"{table}.json", field_order)
+    return entries[key]

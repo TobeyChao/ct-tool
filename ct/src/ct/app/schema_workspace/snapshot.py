@@ -17,7 +17,7 @@ from typing import Any
 from ct.app.canonical_workspace import CanonicalWorkspace
 from ct.schema.resources import resource_to_data
 
-SNAPSHOT_FORMAT = "workspace-snapshot-v4/1"
+SNAPSHOT_FORMAT = "workspace-snapshot/1"
 
 
 def _sha256(data: bytes) -> str:

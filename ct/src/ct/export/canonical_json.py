@@ -1,4 +1,4 @@
-"""Canonical JSON export for v4 Table resources.
+"""Canonical JSON export for  Table resources.
 
 Rows produced by the canonical reader already have the correct shape
 (enum -> string identifier, record -> object, vector -> array,

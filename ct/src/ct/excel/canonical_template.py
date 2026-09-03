@@ -1,4 +1,4 @@
-"""Generate Excel template workbooks from the canonical v4 ``Layout``.
+"""Generate Excel template workbooks from the canonical  ``Layout``.
 
 The header is a tree rendered from each column's stable canonical path:
 
@@ -95,7 +95,7 @@ def generate_canonical_template(
     enums: dict[str, EnumResource],
     primary: str = "",
 ) -> Path:
-    """Write a v4 template workbook for *layout* and return its path."""
+    """Write a  template workbook for *layout* and return its path."""
     wb = Workbook()
     ws = wb.active
     ws.title = layout.table_id.partition(":")[2]
@@ -243,7 +243,7 @@ def _write_metadata(wb: Workbook, layout: Layout, table_name: str) -> None:
     from datetime import datetime, timezone
 
     props = wb.custom_doc_props
-    props.append(StringProperty(name=_META_TOOL_VERSION, value="ct-v4"))
+    props.append(StringProperty(name=_META_TOOL_VERSION, value="ct"))
     props.append(StringProperty(name=_META_TABLE_NAME, value=table_name))
     props.append(IntProperty(name=_META_HEADER_ROWS, value=layout.header_rows))
     props.append(StringProperty(name=_META_SCHEMA_HASH, value=layout.schema_hash))

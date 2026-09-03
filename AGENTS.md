@@ -11,6 +11,8 @@
 - `ct/` — 配表工具（自包含 Python 项目：src 布局包、web 面板、tests、docs、打包配置）
 - `gd/` — 数据工作空间（config、excel、output 等）
 
+> 当前仅 canonical 一套实现；曾经的 legacy 双路径已随 cutover 移除。
+
 ### 命名缩写
 
 | 缩写 | 全称 | 说明 |
@@ -26,8 +28,8 @@
 ```
 仓库根目录/
 ├── ct/                   # 配表工具（自包含 Python 项目）
-│   ├── src/ct/           #   Python 包 (cli, schema, excel, export, validate, cache, web)
-│   │   └── web/static/   #     面板前端资源（Vue 无构建，随包分发）
+│   ├── src/ct/           #   Python 包 (cli, config, app, schema, excel, export, cache, diagnostics, web)
+│   │   └── web/static/   #     面板前端资源（Vue 无构建，随包分发，扁平 static/）
 │   ├── tests/            #   pytest 测试
 │   ├── docs/             #   工具文档与设计稿
 │   ├── pyproject.toml    #   打包配置（src layout + package-data）
@@ -37,11 +39,11 @@
 │   ├── macos|windows/    #   平台工程（macOS Swift 集成 / Windows 构建）
 │   └── docs/design/      #   启动器设计稿
 ├── gd/                   # 游戏数据工作空间 (--root)
-│   ├── config/           #   global.yaml + schemas/*.yaml
+│   ├── config/           #   global.yaml + schemas/*.yaml + types/*.yaml
 │   ├── excel/            #   策划填写的 Excel 数据表
 │   ├── output/           #   导出产物
 │   │   ├── json/         #     JSON (按语言分目录)
-│   │   ├── fbs/          #     FlatBuffers Schema
+│   │   ├── fbs/          #     FlatBuffers Schema (含共享 types.fbs)
 │   │   ├── binary/       #     Binary Bundle (.bin)
 │   │   └── generated/    #     C# / Lua Accessor
 │   ├── cache/            #   增量缓存 (自动维护)
@@ -59,7 +61,7 @@
 **统一使用项目 venv，不要全局安装**（macOS 上 Homebrew Python 是 PEP 668 托管环境，Windows 上全局安装易出现 pydantic 版本错配）。
 
 ```bash
-cd python
+cd ct
 
 # macOS
 python3 -m venv .venv
@@ -93,14 +95,13 @@ cd ct
 pytest
 
 # 只跑某个子模块的测试
-pytest tests/i18n/
-pytest tests/cli/
+pytest tests/app/
+pytest tests/schema/
+pytest tests/export/
+pytest tests/web/
 
 # 只跑单个测试文件
-pytest tests/i18n/test_sync.py
-
-# 只跑单个测试函数
-pytest tests/i18n/test_sync.py::test_xxx -v
+pytest tests/app/test_canonical_validate.py
 
 # 带详细输出
 pytest -v
@@ -109,7 +110,9 @@ pytest -v
 pytest -p no:warnings
 ```
 
-测试使用 `pytest` + `typer.testing.CliRunner`。每个测试通过 `_build_project(tmp_path)` 构造临时项目目录（schemas、excel、config），以 `CliRunner` 调用 `ct` 命令并断言退出码与输出产物。
+测试使用 `pytest` + `typer.testing.CliRunner`。canonical 测试通过 `_helpers.build_project(tmp_path)` 构造临时项目目录（config/global.yaml + schemas + types + excel），断言校验/导出产物。browser 测试标记 `browser`，需要 Playwright Chromium。
+
+---
 
 ## launcher 打包与分发
 
@@ -134,67 +137,41 @@ launcher 启动优先级：内置运行时 → 设置中的工具目录（venv�
 
 ## CLI 命令
 
-所有子命令均支持 `--root DIR` 指定项目根目录（默认当前目录，应为 `gd/`）。
+所有子命令均支持 `--root DIR` 指定项目根目录（默认当前目录，应为 `gd/`）。全部命令走 canonical。
 
 ```bash
-# 增量导出（只导出有变化的表）
+# 导出（canonical 恒全量重建；--all 等同 default，--table/--lang 缩小范围）
 ct export
-
-# 强制全量导出
 ct export --all
-
-# 只导出指定表
 ct export --table item
-
-# 只导出指定语言
 ct export --lang en
 
-# 只校验，不输出产物（适合 CI）
+# 只校验，不输出产物（含跨表 ref 外键校验；适合 CI）
 ct validate
 ct validate --table quest
 
-# 查看哪些表有变化（含模板漂移检测）
+# 查看数据变更 / 模板漂移 / 缺失文件
 ct status
 
-# 根据 schema 生成 Excel 模板
+# 根据 schema 生成 Excel 模板 + layout manifest
 ct gen-template --all
 ct gen-template --table item
 
-# Schema 改了？保留旧数据重建表头
-ct gen-template --table item --update-header
-
-# 强制全量覆盖（数据会丢失）
-ct gen-template --table item --force
-
 # 任意命令加 --verbose 显示详细日志
 ct export --verbose
+
+# 部署当前产物到 Unity Assets（不触发导出）
+ct deploy [--for-build]
 
 # i18n 翻译骨架与状态管理
 ct i18n sync                          # 刷新 source + 为每语言生成/更新 lang 骨架
 ct i18n sync --lang en --table item   # 缩小处理范围
 ct i18n status                        # 翻译进度（每语言一行）
-ct i18n status --by-table             # 按表细分
-ct i18n status --json                 # CI 友好的 JSON 输出
 ct i18n compact --dry-run             # 预览将被清理的 orphan 条目
 ct i18n compact                       # 物理删除所有 orphan 条目
 ```
 
-`ct export` 在校验通过后内部自动调用 sync，确保 lang 骨架与最新 source 一致。
-
-### gen-template 决策矩阵
-
-模板会在 Excel 的 Custom Document Properties 中写入元数据（表名、表头行数、schema 哈希、生成时间）。`gen-template` 会根据元数据状态决定行为，**绝不静默丢失数据**：
-
-| 文件状态 | 默认行为 | `--force` | `--update-header` |
-|---------|---------|-----------|------------------|
-| 不存在 | 生成新模板 + 元数据 | 同左 | 同左 |
-| 无元数据（legacy） | 拒绝 + 提示二选一 | 全量覆盖 | 用当前 schema header_rows 推断保留数据 |
-| `ct_table_name` 不匹配 | 拒绝 | 拒绝 | 拒绝 |
-| hash 一致（无变化） | 跳过 | 重建 | 重建 |
-| hash 不同 + 无数据 | 直接重建 | 重建 | 重建 |
-| hash 不同 + 有数据 | 拒绝 + 提示二选一 | 全量覆盖 | 保留数据重建 |
-
-`ct status` 同时输出"数据变更"（Excel 文件 hash 与缓存不一致）与"模板漂移"（schema 修改后未重建模板）两类状态。
+`ct export` 在校验闸门通过后写出产物；`ct deploy` 是独立命令，把 `output/` 同步到 Unity Assets。
 
 ---
 
@@ -203,17 +180,23 @@ ct i18n compact                       # 物理删除所有 orphan 条目
 ### 数据流
 
 ```
-config/schemas/*.yaml  ──►  Schema 加载 + 拓扑排序（按 ref 依赖关系）
-excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
-                              │
-                              ▼
-                        类型校验 + 引用校验
-                              │
-                     ┌────────┴────────────────┐
-                     ▼                         ▼
-              i18n sync 流程              导出流水线
-       (i18n/source/{table}.json     JSON + FBS + Binary Bundle
-        + i18n/{lang}/{table}.json)
+config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository 加载 + 类型解析
+        │
+        ▼
+  resource_graph (named/ref 依赖边 + 拓扑序 + 反向引用)
+        │
+        ▼
+  CanonicalWorkspace (config + 资源图 + table_order + reverse_refs)
+        │
+        ├─► excel/layout (字段→列稳定映射) ──► excel/canonical_reader (读 Excel → canonical 行)
+        │                                          │
+        │                                          ▼
+        │                              canonical_validate：类型/主键/跨表 ref 外键
+        │                                          │
+        ▼                                          ▼
+  canonical_export 五阶段 ──► export/canonical_{json,fbs,binary,accessor} + deploy
+        │
+        └─► cache/fingerprints 分层指纹 + schema_workspace 的 Draft→Plan→Apply 守卫
 ```
 
 ### i18n 文件结构与状态机
@@ -242,60 +225,64 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
 | ✓ | ✓ | 非空 | true | `translated` |
 | ✓ | ✓ | 非空 | false | `stale` |
 
-主语言原文变化时，sync 强制把 `confirmed` 重置为 `false`（条目变 stale），翻译者重新审视后再设回 `true`。被删除的行/字段进入 `orphan` 状态，需要 `ct i18n compact` 显式清理。
+主语言原文变化时，sync 强制把 `confirmed` 重置为 `false`（条目变 stale），翻译者重新审视后再设回 `true`。被删除的行/字段进入 `orphan` 状态，需要 `ct i18n compact` 显式清理。状态机实现在 `ct/export/i18n/state.py`（纯函数）；`ct/export/i18n/merger.py` 的 `load_translation` 供导出读取 lang 文件。
 
 ### 模块说明
 
 | 模块 | 职责 |
 |------|------|
-| `ct/cli.py` | Typer CLI 薄壳：参数解析 + 结果渲染；编排逻辑见 `ct/app/` |
-| `ct/config.py` | 加载 `config/global.yaml` 为 `GlobalConfig` Pydantic 模型；所有路径相对项目根目录解析 |
-| `ct/app/workspace.py` | 组合根 `Workspace`：root + config + 拓扑排序后的 schemas，所有用例的第一个参数 |
-| `ct/app/options.py` | 用例参数对象（如 `ExportOptions`），收拢结伴出现的参数 |
-| `ct/app/events.py` | 导出管道原语：`ProgressReporter` / `CancelToken` / `CancelledError` |
-| `ct/app/export.py` | 导出管道：`ExportStep` 步骤序列（解析校验 → i18n sync → JSON → FBS → Accessor → Bundle）+ `ExportResult`；取消时不写 `state.json` |
-| `ct/app/validate.py` | 共享解析校验阶段 `parse_and_validate`（读 Excel + 类型/引用校验 + id 集合） |
-| `ct/app/template.py` | `gen-template` 决策矩阵集中实现：根据文件状态 × 用户 flag 输出 Action 枚举与说明信息 |
-| `ct/app/status.py` | `ct status` 用例：`compute_status` 分类数据变更 / 模板漂移 / 未跟踪 / 缺失，返回 `StatusReport`（CLI 只渲染） |
-| `ct/app/i18n.py` | i18n 用例编排：`read_i18n_rows` 为 sync 准备行数据，返回 `ReadRowsResult`（含缺失文件列表） |
-| `ct/schema/models.py` | Pydantic 模型：`TableSchema` 和 `FieldDef`。支持字段类型：`int32`、`int64`、`float`、`double`、`bool`、`string`、`enum`、`struct`、`array` |
-| `ct/schema/loader.py` | 依据 `ref` 字段构建依赖图并拓扑排序（格式无关，只认 canonical 模型） |
-| `ct/schema/repository.py` | Schema 源抽象 `SchemaRepository` + YAML 实现：`load_all()` 读取 schema，`fbs_sources()` 提供各表 .fbs 文本（未来 .fbs 源经 `schema_format` 切换） |
-| `ct/schema/conventions.py` | fbs 结构标准 `FbsConvention` + 检查器：类型映射、容器/root_type 结构、"类型名与字段名不撞名"不变量检查 |
-| `ct/schema/hashing.py` | 计算 TableSchema 的稳定 hash（sha256 前 16 位 hex），用于模板元数据比对检测 schema 漂移 |
-| `ct/schema/naming.py` | 命名校验器 `validate_name`：表/字段名必须首字符大写、不以 `_` 开头/结尾（WYSIWYG 恒等域，schema 加载即校验，不再做任何大小写转换） |
-| `ct/excel/reader.py` | 以只读模式读取 Excel，返回 `ParsedRows`（`rows` + 与之一一对应的 `excel_rows` 绝对行号）。struct 字段展开为多列；array 字段在单元格内按 `separator` 分隔。表头行数 = `max_nesting_depth + 1` |
-| `ct/excel/diff.py` | 对比 Excel 文件 MD5 hash 与缓存，输出已变更的表名列表 |
-| `ct/excel/template.py` | 根据 schema 生成带多行表头的空白 Excel 文件；模板元数据读写 `read_template_metadata`、表头保留重建 `update_template`、共享数据行遍历 `iter_data_rows` |
-| `ct/validate/errors.py` | 结构化问题模型 `Issue` / `ValidationIssue`（含 `row_index` / `excel_row` / `column` / `value`）/ `WorkspaceIssue`；`render()` 输出 `Excel 第N行 · 列X (字段) · 当前值 ...`，无绝对定位信息时回退旧格式 |
-| `ct/validate/types.py` | 按字段类型逐一校验；主键唯一性检查；填充 `excel_row` / `column`（struct 定位到具体叶子列），返回 `ValidationIssue` |
-| `ct/validate/refs.py` | 利用已解析行数据和缓存中的 ID 集合进行跨表外键校验；填充 `excel_row` / `column`，返回 `ValidationIssue` |
-| `ct/export/json_writer.py` | 写出 `output/json/{table}_{lang}.json`，根键为 `schema.resolved_json_key` |
-| `ct/export/fbs_generator.py` | 生成 Bundle 容器 `container.fbs`；各表 `.fbs` 文本由 SchemaRepository 提供 |
-| `ct/export/binary_writer.py` | 手动将行数据序列化为 FlatBuffers bytes（无生成的 Python Accessor）；打包为 `DataBundle` 二进制（`output/binary/data_{lang}.bin`） |
-| `ct/export/accessor_model.py` | 访问器生成共享模型 `AccessorModel`（client/string/i18n 字段 + 主键），C# 与 Lua 生成器消费同一模型 |
-| `ct/export/csharp_accessor_generator.py` | 生成 C# Accessor 类至 `output/generated/csharp/` |
-| `ct/export/lua_accessor_generator.py` | 生成 Lua Accessor 模块至 `output/generated/lua/` |
-| `ct/export/i18n/extractor.py` | 将 `i18n: true` 字段的主语言原文提取为 `i18n/source/{table}.json`（扁平 `{"id.field": "text"}` 格式） |
-| `ct/export/i18n/state.py` | 翻译状态机：`LangStatus` 枚举 + `merge_lang_entry` / `sync_lang_table`（计算每条目的 `status` 与字段更新规则） |
-| `ct/export/i18n/sync.py` | sync 编排：刷新 source 文件 + 为每语言每表生成/更新 lang 骨架，返回 `SyncSummary` |
-| `ct/export/i18n/merger.py` | 将 `i18n/{lang}/{table}.json` 中 `confirmed=true` 的译文合并回行数据；其他状态回退主语言并 warning |
-| `ct/export/i18n/counts.py` | 共享状态计数 `StatusCounts`（translated/missing/stale/orphan + total/progress + 聚合）+ `count_entries()` |
-| `ct/export/i18n/status.py` | 基于 `StatusCounts` 聚合每语言每表进度，提供 default/by-table/json 三种渲染 |
-| `ct/export/i18n/writer.py` | 导出后基于 lang 文件汇总各语言的 stale/missing/orphan 统计 |
-| `ct/export/i18n/compact.py` | `ct i18n compact` 用例：物理移除 orphan 条目，返回 `CompactSummary`（CLI 只渲染） |
-| `ct/export/i18n/io.py` | 紧凑 JSON 写出（每个 key 一行）+ key 排序（id 数值升序 + schema 字段顺序） |
-| `ct/cache/state.py` | 读写 `cache/state.json`（每表存储文件 MD5 hash、ID 列表、fbs bytes hash）；同时在 `cache/fbs_bytes/*.bin` 中缓存原始 FlatBuffers bytes，未变化的表可复用 |
+| `ct/cli.py` | Typer CLI 薄壳：参数解析 + 结果渲染；全部命令走 canonical 用例 |
+| `ct/config.py` | 加载 `config/global.yaml` 为 `GlobalConfig`；所有路径相对项目根目录解析 |
+| `ct/app/canonical_workspace.py` | 组合根 `CanonicalWorkspace`：config + 资源图 + `table_order` + `reverse_refs`，CLI/Web/Excel/校验/生成器统一消费 |
+| `ct/app/canonical_export.py` | 五阶段导出（解析校验 → JSON/各语言 bytes → Accessor/模板/manifest → FBS → Bundle）；前置校验闸门，有读取/主键/外键问题即中止 |
+| `ct/app/canonical_commands.py` | canonical `validate/status/gen-template/i18n` 用例 + `canonical_validate`（类型/主键/跨表 ref 外键校验）+ `CanonicalValidationError` |
+| `ct/app/schema_workspace/` | Draft → Change Plan → 原子 apply（`snapshot`/`candidate`/`plan`/`apply`/`commands_reducer`） |
+| `ct/app/events.py` | 导出原语：`ProgressReporter` / `CancelToken` / `CancelledError` |
+| `ct/schema/resources.py` | `Table`/`Record`/`Enum` + `FieldDef`；`TableResource` 提供派生属性（`i18n_fields`/`has_i18n`/`primary_field`/`resolved_json_key`/`resolved_excel_file`） |
+| `ct/schema/type_expression.py` | 类型表达式（`scalar`/`named`/`vector<T>`）+ YAML 文本解析/序列化 |
+| `ct/schema/resource_repository.py` | YAML 持久化（`config/schemas/` + `config/types/`）+ 类型解析 + 旧格式拒绝 |
+| `ct/schema/resource_graph.py` | 依赖图（named/ref 边）+ 拓扑序 + 反向引用 + 删除保护 |
+| `ct/schema/commands.py` | 可逆 rename 命令（资源/字段） |
+| `ct/schema/hashing.py` | canonical schema 稳定 hash（检测模板漂移） |
+| `ct/schema/naming.py` / `name_validation.py` | 命名校验（首字符大写、不以 `_` 开头/结尾；WYSIWYG 恒等域） |
+| `ct/schema/indexes.py` / `identity.py` | 查询索引（Code/Group）/ 字段稳定身份 |
+| `ct/excel/layout.py` | `Layout`：字段→Excel 列的唯一映射真源（stable_path/group/depth/annotation） |
+| `ct/excel/layout_manifest.py` | Layout manifest 落 cache（schema_hash + 列布局） |
+| `ct/excel/canonical_reader.py` | 按 Layout 读 Excel，重建 canonical 行（record→dict、展开 vector<Record>→按组读） |
+| `ct/excel/canonical_template.py` | 生成模板工作簿 |
+| `ct/excel/planning.py` | 数据搬移预检：稳定字段路径 + rename 命令 |
+| `ct/export/canonical_fbs.py` | 共享 `types.fbs` + 各表 FBS + 校验 |
+| `ct/export/canonical_binary.py` | 手写 FlatBuffers bytes + `DataBundle` |
+| `ct/export/canonical_json.py` | `{json_key: rows}` JSON 序列化 |
+| `ct/export/canonical_accessor.py` / `_model.py` | C#/Lua 共享 `AccessorModel` + 生成 |
+| `ct/export/index_query.py` | Code/Group 查询 API 生成 |
+| `ct/export/deploy.py` | 同步产物到 Unity Assets（`deploy(config, for_build, reporter)`） |
+| `ct/export/i18n/state.py` | 翻译状态机（纯函数） |
+| `ct/export/i18n/merger.py` | `load_translation`（读 lang 文件） |
+| `ct/cache/fingerprints.py` | 分层指纹（schema/data/i18n[lang]/bundle）+ `decide_artifact_reuse` |
+| `ct/cache/canonical_state.py` | canonical 状态持久化 |
+| `ct/diagnostics/errors.py` | `Issue`/`ValidationIssue`/`WorkspaceIssue` + `render()`/`report_errors()` |
+| `ct/web/app.py` | Flask 薄封装 + canonical JSON API |
+| `ct/web/tasks.py` | `CanonicalExportTask` 后台导出任务（阶段上报 + 历史） |
+| `ct/web/schema_workspace_api.py` | Draft/Plan/Apply 结构化 JSON API（不接受前端 YAML 文本） |
+| `ct/web/history.py` / `logs.py` / `task_state.py` | 面板历史 / 日志缓冲 / 任务状态 |
+| `ct/web/static/` | Vue3 前端（无构建，扁平 `static/`：`js/core`、`js/modules`、`styles`、`vendor`） |
 
 ### 关键设计决策
 
-**增量导出**：缓存记录每个 Excel 文件的 MD5 hash。`ct export` 时只重新解析 hash 变化的文件；未变化的表直接复用缓存中的 FlatBuffers bytes。最终 Binary Bundle 始终全量重写（新鲜 bytes + 缓存 bytes 合并）。
+**canonical-only**：`_looks_canonical` 双路由已移除；CLI/Web 一律走 canonical workspace。旧 legacy 模块（`schema/models.py`、`excel/reader.py`、`export/*.py` legacy 生成器、`validate/*`、`cache/state.py`、`app/export.py` 等）已删除，不再提供旧格式迁移/兼容。
 
-**Schema 依赖排序**：`ref` 字段定义跨表外键（`ref: 目标表名.字段名`）。loader 对所有 schema 做拓扑排序，确保被引用表先于引用表完成校验。
+**导出校验闸门**：`run_canonical_export` 在写出产物前做完整校验（Excel 读取类型强转、主键空/重复、跨表 `ref` 外键值须存在于引用表主键集），任一问题即抛 `CanonicalValidationError`，避免脏数据落盘；CLI 渲染并退出 1，Web 任务置为 error 并记日志。
 
-**Excel 表头布局**：表头行数 = `max_nesting_depth + 1`。前 `max_nesting_depth` 行是"字段名+类型"行——每个单元格内用富文本（`CellRichText`）堆两段：上面字段名（12pt 粗体白），下面类型注解（9pt 斜体浅绿 `D8F3DC`）。struct 单元格的类型显示 `{field.name}Struct`，与 FBS 生成的 table 名一致。最后一行是注释行。struct 字段按叶子字段展开为连续列（2 个子字段占 2 列）。
+**增量 vs 全量**：canonical 当前恒全量重建；`cache/fingerprints.py` 的分层指纹（schema/data/i18n/bundle）已设计好但**尚未接线**到 `run_canonical_export`（增量复用未启用）。
 
-**FlatBuffers Binary 格式**：每张表各自序列化为独立 bytes，随后打包为 `DataBundle`（见 `container.fbs`）。`server_only` 字段在客户端 Binary 中排除。次语言 Bundle（`data_{lang}.bin`）只包含主键 + i18n 字段变体。
+**Schema 依赖排序**：`ref` 字段定义跨表外键（`ref: 目标表.字段`）、命名类型引用定义 named 依赖；`resource_graph` 做拓扑排序（命名类型先于依赖它的 Table，被引用表先于引用表），并提供反向引用与删除保护。
+
+**Excel 表头布局**：表头行数 = `max_nesting_depth + 1`。前 `max_nesting_depth` 行是"字段名+类型"行——每个单元格用富文本堆：上面字段名（12pt 粗体白）、下面类型注解（9pt 斜体浅绿 `D8F3DC`）；最后一行是注释行。`vector<Record>` 按 `excel_columns` 展开为连续列组。
+
+**FlatBuffers Binary 格式**：所有命名 Record/Enum 一次性、确定性依赖序发射进共享 `types.fbs`；每张表 `include "types.fbs"` 只定义自身 + `IndexEntry` 容器。每张表独立序列化为 bytes，随后打包为 `DataBundle`。`server_only` 字段在客户端 Binary 中排除；次语言 Bundle 只含主键 + i18n 字段变体。
+
+**事务化 Schema 写入**：schema 修改不再直接写 YAML——先入 Workspace Draft（命令流 + undo/redo），生成 Change Plan（影响面/风险/阻塞），再原子 Apply（staging + 原子替换 + 并发保护 baseRevision/candidateHash + recover）。
 
 **配置路径解析**：`config/global.yaml` 中所有路径均相对于项目根目录（含 `config/` 的目录）。通过 `cfg.resolve("key")` 获取绝对 `Path`。
 
@@ -303,37 +290,50 @@ excel/*.xlsx           ──►  Excel 读取（openpyxl 只读模式）
 
 ## Schema 文件格式
 
-Schema 存于 `config/schemas/*.yaml`，每文件定义一张表：
+canonical 资源分两类目录：
+
+- `config/schemas/*.yaml` — 每文件一张 `Table`
+- `config/types/*.yaml` — 每文件一个具名 `Record`（`kind: record`）或 `Enum`（`kind: enum`），可被多张表复用
+
+字段类型使用**统一类型表达式**：`int32`/`int64`/`float`/`double`/`bool`/`string` 标量、具名类型（`ItemRarity`、`DropReward`）、`vector<DropReward>`。`ref: Table.Field` 定义跨表外键。`i18n` 与 `server_only` 不可同时标记，`i18n` 仅限 Table 顶层 `string` 字段，`server_only` 仅限 Table 顶层字段。
 
 ```yaml
-table: item          # 唯一表名
-primary: id          # 主键字段名
-excel_file: item.xlsx  # 可选，默认 {table}.xlsx
-json_key: items        # 可选，默认 {table}s
+# config/schemas/Item.yaml
+table: Item
+primary: Id
+excel_file: item.xlsx        # 可选，默认 {table}.xlsx
+json_key: items              # 可选，默认 {table}s
 fields:
-  - name: id
+  - name: Id
     type: int32
-  - name: name
+  - name: Name
     type: string
-    i18n: true         # 提取为翻译源字符串
-  - name: item_type_id
+    i18n: true               # 提取为翻译源字符串
+  - name: ItemTypeId
     type: int32
-    ref: item_type.id  # 外键；item_type 必须存在于 schemas
-  - name: rarity
-    type: enum
-    values: [common, rare, epic]
-  - name: drop_range
-    type: struct
-    fields:
-      - {name: min, type: int32}
-      - {name: max, type: int32}
-  - name: tags
-    type: array
-    element: int32
+    ref: ItemType.Id         # 跨表外键；值须存在于 ItemType 主键集
+  - name: Rarity
+    type: ItemRarity         # 具名 Enum（config/types/ItemRarity.yaml）
+  - name: DropRange
+    type: DropReward         # 具名 Record（config/types/DropReward.yaml）
+  - name: Tags
+    type: vector<int32>
     separator: ","
-  - name: is_active
+  - name: IsActive
     type: bool
-    server_only: true  # 排除出客户端 FlatBuffers binary
+    server_only: true        # 排除出客户端 FlatBuffers binary
+
+# config/types/ItemRarity.yaml
+kind: enum
+name: ItemRarity
+values: [Common, Rare, Epic]
+
+# config/types/DropReward.yaml
+kind: record
+name: DropReward
+fields:
+  - {name: Min, type: int32}
+  - {name: Max, type: int32}
 ```
 
-约束：`i18n` 与 `server_only` 不可同时标记；`i18n` 只能用于 `string` 类型；不支持 `array<struct>`。
+约束：`i18n` 与 `server_only` 不可同时标记；`i18n` 只能用于 `string` 类型；不支持 `vector<vector<T>>`；Enum FlatBuffers wire type 固定为 `byte`。旧格式（`type: enum/struct/array` + `values/element/element_values`）会被 `resource_repository` 拒绝且不自动迁移。

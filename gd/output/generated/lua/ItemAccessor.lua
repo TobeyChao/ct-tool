@@ -1,4 +1,4 @@
--- Auto-generated canonical Lua accessor for Item (v4)
+-- Auto-generated canonical Lua accessor for Item ()
 local GD = require("gd")
 local _tbl = "Item"
 

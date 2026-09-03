@@ -16,9 +16,9 @@ playwright_api = pytest.importorskip("playwright.sync_api")
 
 @pytest.fixture
 def editor_url(tmp_path) -> Iterator[str]:
-    from _v4_helpers import build_v4_project
+    from _helpers import build_project
 
-    workspace = build_v4_project(
+    workspace = build_project(
         tmp_path / "workspace",
         schemas=[
             {
@@ -43,7 +43,7 @@ def editor_url(tmp_path) -> Iterator[str]:
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        yield f"http://127.0.0.1:{server.server_port}/static/v4/index.html"
+        yield f"http://127.0.0.1:{server.server_port}/static/index.html"
     finally:
         server.shutdown()
         thread.join(timeout=5)
@@ -366,7 +366,7 @@ def test_blocked_delete_with_references(editor_url: str, chromium_browser: Any, 
     import shutil
     import threading as _t
     from werkzeug.serving import make_server as _ms
-    from _v4_helpers import build_v4_project as _bvp
+    from _helpers import build_project as _bvp
 
     ws = tmp_path / "refws"
     _bvp(ws, schemas=[
@@ -379,7 +379,7 @@ def test_blocked_delete_with_references(editor_url: str, chromium_browser: Any, 
     ])
     server = _ms("127.0.0.1", 0, create_app(ws), threaded=True)
     _t.Thread(target=server.serve_forever, daemon=True).start()
-    url = f"http://127.0.0.1:{server.server_port}/static/v4/index.html"
+    url = f"http://127.0.0.1:{server.server_port}/static/index.html"
     try:
         context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
         page = context.new_page()

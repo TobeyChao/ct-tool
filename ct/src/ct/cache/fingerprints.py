@@ -1,4 +1,4 @@
-"""Layered export fingerprints for the canonical v4 pipeline.
+"""Layered export fingerprints for the canonical  pipeline.
 
 Artifacts are invalidated by exactly the inputs that change them, never by a
 single all-or-nothing fingerprint:
@@ -24,12 +24,12 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Iterable
 
-SCHEMA_FMT_VERSION = "schema-fp-v4/1"
-DATA_FMT_VERSION = "data-fp-v4/1"
-I18N_FMT_VERSION = "i18n-fp-v4/1"
-BUNDLE_FMT_VERSION = "bundle-fp-v4/1"
+SCHEMA_FMT_VERSION = "schema-fp/1"
+DATA_FMT_VERSION = "data-fp/1"
+I18N_FMT_VERSION = "i18n-fp/1"
+BUNDLE_FMT_VERSION = "bundle-fp/1"
 MERGE_POLICY_VERSION = "merge-v1"
-BUNDLE_CONTAINER_VERSION = "bundle-container-v4/1"
+BUNDLE_CONTAINER_VERSION = "bundle-container/1"
 
 
 def _stable_sha256(data: object) -> str:
