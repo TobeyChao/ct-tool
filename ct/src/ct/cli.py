@@ -83,6 +83,30 @@ class CLIProgressReporter:
         typer.echo(line, err=err)
 
 
+def _looks_canonical(root: Path) -> bool:
+    """Positive evidence of the canonical v4 workspace format."""
+    types_dir = root / "config" / "types"
+    if types_dir.exists() and any(types_dir.glob("*.yaml")):
+        return True
+    import yaml
+
+    schemas_dir = root / "config" / "schemas"
+    if not schemas_dir.exists():
+        return False
+    for path in schemas_dir.glob("*.yaml"):
+        try:
+            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        except OSError:
+            continue
+        for field in data.get("fields", []):
+            type_text = field.get("type", "") if isinstance(field, dict) else ""
+            if isinstance(type_text, str) and (
+                type_text.startswith("vector<") or ":" in type_text
+            ):
+                return True
+    return False
+
+
 @app.command()
 def export(
     all_tables: bool = typer.Option(False, "--all", help="强制全量导出"),
@@ -98,6 +122,23 @@ def export(
     )
     _setup_logging(opts.verbose)
     root = Path(project_root) if project_root else Path(".")
+
+    # 路由：canonical v4 工作区走新管线；legacy 工作区维持原实现。
+    # 仅当存在 config/types 目录或任一字段使用 vector<...>/具名类型时才判定为 canonical，
+    # 避免把纯标量的 legacy 项目误路由。
+    from ct.app.canonical_export import run_canonical_export
+
+    if _looks_canonical(root):
+        try:
+            result = run_canonical_export(
+                root, table_filter=opts.table, lang_filter=opts.lang
+            )
+        except FileNotFoundError as e:
+            typer.echo(f"[export error] {e}", err=True)
+            raise typer.Exit(1)
+        typer.echo(f"\n导出完成（v4）: {result['tables']} 张表")
+        return
+
     ws = _load_workspace(root)
 
     if not ws.schemas:
@@ -174,6 +215,16 @@ def validate(
     """只走解析和校验，不输出产物。"""
     _setup_logging(verbose)
     root = Path(project_root) if project_root else Path(".")
+    if _looks_canonical(root):
+        from ct.app.canonical_commands import canonical_validate
+
+        errors = canonical_validate(root, table_filter=table)
+        if errors:
+            report_errors(errors, verbose)
+            raise typer.Exit(1)
+        typer.echo("校验通过（v4）")
+        return
+
     ws = _load_workspace(root)
 
     schemas, order = ws.schemas, ws.order
@@ -216,6 +267,20 @@ def gen_template(
     """根据 schema 生成 Excel 模板头部。"""
     _setup_logging()
     root = Path(project_root) if project_root else Path(".")
+    if _looks_canonical(root):
+        from ct.app.canonical_commands import canonical_gen_template
+
+        try:
+            messages = canonical_gen_template(
+                root, table_filter=table, all_tables=all_tables
+            )
+        except ValueError as e:
+            typer.echo(str(e), err=True)
+            raise typer.Exit(1)
+        for message in messages:
+            typer.echo(message)
+        return
+
     ws = _load_workspace(root)
 
     schemas, _ = ws.schemas, ws.order
@@ -275,6 +340,26 @@ def status(
     """
     _setup_logging()
     root = Path(project_root) if project_root else Path(".")
+    if _looks_canonical(root):
+        from ct.app.canonical_commands import canonical_status
+
+        report = canonical_status(root)
+        if report["missing"]:
+            typer.echo("缺失文件:")
+            for name in report["missing"]:
+                typer.echo(f"  [missing] {name}")
+        if report["changed"]:
+            typer.echo("数据变更（待导出）:")
+            for name in report["changed"]:
+                typer.echo(f"  [changed] {name}")
+        if report["drifted"]:
+            typer.echo("模板已过时（schema 修改后未重建）:")
+            for name in report["drifted"]:
+                typer.echo(f"  [template-stale] {name}  (建议: ct gen-template --table {name} --update-header)")
+        if not report["missing"] and not report["changed"] and not report["drifted"]:
+            typer.echo("[OK] 所有表已是最新（数据 + 模板）")
+        return
+
     ws = _load_workspace(root)
 
     cache = load_cache(ws.resolve("cache_dir"))
@@ -326,8 +411,13 @@ def panel(
     """启动本地面板（浏览器打开即用）。"""
     _setup_logging()
     root = Path(project_root) if project_root else Path(".")
-    # 先加载一次，配置/schema 错误立即以友好提示退出
-    _load_workspace(root)
+    # 先加载一次，配置/schema 错误立即以友好提示退出（canonical 工作区用 canonical 加载）
+    if _looks_canonical(root):
+        from ct.app.canonical_workspace import CanonicalWorkspace
+
+        CanonicalWorkspace.load(root)
+    else:
+        _load_workspace(root)
 
     from ct.web.app import create_app
 

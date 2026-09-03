@@ -171,7 +171,7 @@ def test_i18n_sync_entries_save_compact(tmp_path):
     assert "en" in status
 
 
-def test_schema_crud(tmp_path):
+def test_schema_legacy_entry_is_read_only(tmp_path):
     client, root = _make_client(tmp_path)
     # 列表与详情
     schemas = client.get("/api/schemas").get_json()["data"]
@@ -181,7 +181,12 @@ def test_schema_crud(tmp_path):
     # 测试夹具的 Excel 是手写的（无模板元数据），属 legacy/未跟踪
     assert detail["template_status"] == "untracked"
 
-    # 新增
+    schema_path = root / "config" / "schemas" / "Item.yaml"
+    excel_path = root / "excel" / "item.xlsx"
+    original_schema = schema_path.read_bytes()
+    original_excel = excel_path.read_bytes()
+
+    # 旧写协议已退役：写路由不再存在（405），不能直接改 YAML/Excel。
     resp = client.post(
         "/api/schemas",
         json={
@@ -190,40 +195,26 @@ def test_schema_crud(tmp_path):
             "fields_yaml": "- name: Id\n  type: int32\n- name: Name\n  type: string\n  i18n: true",
         },
     )
-    assert resp.status_code == 200, resp.get_json()
-    assert (root / "config" / "schemas" / "Quest.yaml").exists()
-    assert (root / "excel" / "quest.xlsx").exists()
-
-    # 非法 schema（主键不是 int）→ 400
-    resp = client.post(
-        "/api/schemas",
-        json={"table": "Bad", "primary": "Id", "fields_yaml": "- name: Id\n  type: string"},
-    )
-    assert resp.status_code == 400
-    assert "int32" in resp.get_json()["error"]
-
-    # 编辑（加字段，保留数据重建模板）
-    resp = client.put(
-        "/api/schemas/Item",
-        json={
-            "table": "Item",
-            "primary": "Id",
-            "fields_yaml": (
-                "- name: Id\n  type: int32\n- name: Name\n  type: string\n  i18n: true\n"
-                "- name: Price\n  type: float\n- name: Desc\n  type: string"
-            ),
-        },
-    )
-    assert resp.status_code == 200, resp.get_json()
-    detail = client.get("/api/schemas/Item").get_json()["data"]
-    assert len(detail["fields"]) == 4
-    assert detail["template_status"] == "ok"
-
-    # 删除
-    resp = client.delete("/api/schemas/Quest")
-    assert resp.status_code == 200
+    assert resp.status_code == 405
     assert not (root / "config" / "schemas" / "Quest.yaml").exists()
     assert not (root / "excel" / "quest.xlsx").exists()
+
+    resp = client.put("/api/schemas/Item", json={})
+    assert resp.status_code == 405
+
+    resp = client.delete("/api/schemas/Item")
+    assert resp.status_code == 405
+    assert schema_path.read_bytes() == original_schema
+    assert excel_path.read_bytes() == original_excel
+
+
+def test_schema_write_routes_removed_after_cutover(tmp_path):
+    root = tmp_path / "gd"
+    _build_project(root)
+    client = create_app(root).test_client()
+    assert client.post("/api/schemas", json={}).status_code == 405
+    assert client.put("/api/schemas/Item", json={}).status_code == 405
+    assert client.delete("/api/schemas/Item").status_code == 405
 
 
 def test_logs_module_filter(tmp_path):

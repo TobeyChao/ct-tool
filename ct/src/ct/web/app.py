@@ -8,16 +8,12 @@ from functools import wraps
 from pathlib import Path
 from typing import Any, Callable
 
-import pydantic
-import yaml
 from flask import Flask, jsonify, request, send_from_directory
 
 from ct.app.i18n import read_i18n_rows
 from ct.app.status import compute_status as compute_workspace_status
-from ct.app.template import Action, decide_template_action
 from ct.app.workspace import Workspace
 from ct.cache.state import load_cache
-from ct.excel.template import generate_template, update_template
 from ct.export.i18n.compact import CompactError, compact_i18n
 from ct.export.i18n.io import dump_lang_file
 from ct.export.i18n.merger import load_translation
@@ -27,10 +23,12 @@ from ct.export.i18n.state import (
 )
 from ct.export.i18n.status import compute_status_report, render_json
 from ct.export.i18n.sync import sync_all
-from ct.schema.models import FieldDef, TableSchema
+from ct.schema.models import FieldDef
 from ct.web.history import load_history
 from ct.web.logs import PanelLogHandler, log_buffer
+from ct.web.schema_workspace_api import register_schema_workspace_api
 from ct.web.tasks import export_task
+from ct.web.task_state import task_state
 
 
 class PanelError(Exception):
@@ -39,19 +37,6 @@ class PanelError(Exception):
     def __init__(self, message: str, status: int = 400) -> None:
         super().__init__(message)
         self.status = status
-
-
-def _schema_error_text(exc: Exception) -> str:
-    if isinstance(exc, pydantic.ValidationError):
-        parts = []
-        for e in exc.errors():
-            loc = ".".join(str(p) for p in e.get("loc", ()))
-            ctx = e.get("ctx") or {}
-            obj = ctx.get("error")
-            msg = str(obj) if obj is not None else e.get("msg", str(exc))
-            parts.append(f"{loc}: {msg}" if loc else msg)
-        return "; ".join(parts)
-    return str(exc)
 
 
 def ok(data: Any):
@@ -93,47 +78,6 @@ def _load_ws(app: Flask) -> Workspace:
         ) from e
 
 
-def _field_dict(f: FieldDef) -> dict:
-    d: dict = {
-        "name": f.name,
-        "type": f.type,
-        "i18n": f.i18n,
-        "server_only": f.server_only,
-        "ref": f.ref,
-        "comment": f.comment,
-    }
-    if f.type == "enum":
-        d["values"] = f.values or []
-    elif f.type == "struct":
-        d["fields"] = [_field_dict(sf) for sf in (f.fields or [])]
-    elif f.type == "array":
-        d["element"] = f.element
-        d["separator"] = f.separator
-        if f.element_values:
-            d["element_values"] = f.element_values
-    return d
-
-
-def _build_schema(data: dict) -> TableSchema:
-    fields_yaml = data.get("fields_yaml", "")
-    try:
-        fields = yaml.safe_load(fields_yaml) if str(fields_yaml).strip() else []
-    except yaml.YAMLError as e:
-        raise PanelError(f"字段定义 YAML 解析失败: {e}") from e
-    if not isinstance(fields, list):
-        raise PanelError("字段定义必须是 YAML 列表")
-    try:
-        return TableSchema(
-            table=str(data.get("table", "")).strip(),
-            primary=str(data.get("primary", "")).strip(),
-            json_key=data.get("json_key") or None,
-            excel_file=data.get("excel_file") or None,
-            fields=fields,
-        )
-    except pydantic.ValidationError as e:
-        raise PanelError(f"schema 校验失败: {_schema_error_text(e)}") from e
-
-
 def _deploy_summary(ws) -> dict:
     """deploy 配置摘要：绝对路径，供前端展示。"""
     cfg = ws.config
@@ -151,23 +95,76 @@ def _deploy_summary(ws) -> dict:
     }
 
 
-def create_app(root: Path | None = None) -> Flask:
+def _looks_canonical(root: Path) -> bool:
+    """Positive evidence of the canonical v4 workspace format."""
+    import yaml
+
+    types_dir = root / "config" / "types"
+    if types_dir.exists() and any(types_dir.glob("*.yaml")):
+        return True
+    schemas_dir = root / "config" / "schemas"
+    if not schemas_dir.exists():
+        return False
+    for path in schemas_dir.glob("*.yaml"):
+        try:
+            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        except OSError:
+            continue
+        for field in data.get("fields", []):
+            type_text = field.get("type", "") if isinstance(field, dict) else ""
+            if isinstance(type_text, str) and (
+                type_text.startswith("vector<") or ":" in type_text
+            ):
+                return True
+    return False
+
+
+def create_app(
+    root: Path | None = None,
+) -> Flask:
     # 前端静态资源随包分发：与 app.py 同处 ct/web/static
     static_dir = Path(__file__).resolve().parent / "static"
     app = Flask(__name__, static_folder=str(static_dir), static_url_path="/static")
     app.config["ROOT"] = Path(root or Path(".")).resolve()
 
     logging.getLogger("ct").addHandler(PanelLogHandler(log_buffer))
+    register_schema_workspace_api(app)
+    from ct.web.schema_routes import schema_routes
+    app.register_blueprint(schema_routes)
+
+    @app.get("/api/tasks")
+    @safe
+    def tasks():
+        return ok(task_state.snapshot())
 
     @app.get("/")
     @safe
     def index():
-        return send_from_directory(static_dir, "index.html")
+        return send_from_directory(static_dir, "v4/index.html")
 
     # ---------------- 工作区 ----------------
     @app.get("/api/workspace")
     @safe
     def workspace():
+        if _looks_canonical(app.config["ROOT"]):
+            from ct.app.canonical_commands import canonical_status
+            from ct.config import load_config
+
+            root = app.config["ROOT"]
+            cfg = load_config(root)
+            report = canonical_status(root)
+            return ok(
+                {
+                    "root": str(root),
+                    "config": {
+                        "primary_lang": cfg.primary_lang,
+                        "secondary_langs": cfg.secondary_langs,
+                        "schema_format": "yaml",
+                        "deploy": {"enabled": False, "unity_project": "", "targets": []},
+                    },
+                    "status": report,
+                }
+            )
         ws = _load_ws(app)
         cache = load_cache(ws.resolve("cache_dir"))
         report = compute_workspace_status(ws, cache)
@@ -193,6 +190,12 @@ def create_app(root: Path | None = None) -> Flask:
     @app.post("/api/export")
     @safe
     def start_export():
+        if _looks_canonical(app.config["ROOT"]):
+            from ct.app.canonical_export import run_canonical_export
+
+            result = run_canonical_export(app.config["ROOT"])
+            log_buffer.add("导出", "INFO", f"[v4] 导出完成: {result['tables']} 张表")
+            return ok({"running": False, "total": result["tables"], "current": result["tables"], "message": "导出完成（v4）"})
         data = request.get_json(silent=True) or {}
         forced = bool(data.get("forced", False))
         try:
@@ -293,6 +296,12 @@ def create_app(root: Path | None = None) -> Flask:
     @app.post("/api/i18n/sync")
     @safe
     def i18n_sync():
+        if _looks_canonical(app.config["ROOT"]):
+            from ct.app.canonical_commands import canonical_i18n_sync
+
+            data = request.get_json(silent=True) or {}
+            messages = canonical_i18n_sync(app.config["ROOT"], table_filter=data.get("table"))
+            return ok({"synced": messages})
         ws = _load_ws(app)
         data = request.get_json(silent=True) or {}
         table = str(data.get("table", ""))
@@ -328,6 +337,12 @@ def create_app(root: Path | None = None) -> Flask:
     @app.post("/api/i18n/compact")
     @safe
     def i18n_compact():
+        if _looks_canonical(app.config["ROOT"]):
+            from ct.app.canonical_commands import canonical_i18n_compact
+
+            data = request.get_json(silent=True) or {}
+            removed = canonical_i18n_compact(app.config["ROOT"], table_filter=data.get("table"))
+            return ok({"total_removed": removed})
         ws = _load_ws(app)
         data = request.get_json(silent=True) or {}
         table = str(data.get("table", ""))
@@ -360,174 +375,13 @@ def create_app(root: Path | None = None) -> Flask:
     @app.get("/api/i18n/status")
     @safe
     def i18n_status():
+        if _looks_canonical(app.config["ROOT"]):
+            from ct.app.canonical_commands import canonical_i18n_status
+
+            return ok(canonical_i18n_status(app.config["ROOT"]))
         ws = _load_ws(app)
         report = compute_status_report(ws.config, ws.schemas)
         return ok(json.loads(render_json(report))["langs"])
-
-    # ---------------- 表格管理 ----------------
-    def _template_status(ws: Workspace) -> dict[str, str]:
-        cache = load_cache(ws.resolve("cache_dir"))
-        report = compute_workspace_status(ws, cache)
-        status_map: dict[str, str] = {}
-        for name in ws.order:
-            if name in report.missing:
-                status_map[name] = "missing"
-            elif name in report.untracked:
-                status_map[name] = "untracked"
-            elif name in report.drifted:
-                status_map[name] = "drift"
-            else:
-                status_map[name] = "ok"
-        return status_map
-
-    @app.get("/api/schemas")
-    @safe
-    def schemas_list():
-        ws = _load_ws(app)
-        status_map = _template_status(ws)
-        return ok(
-            [
-                {
-                    "table": s.table,
-                    "excel_file": s.resolved_excel_file,
-                    "json_key": s.resolved_json_key,
-                    "primary": s.primary,
-                    "pk_type": s.primary_field.type,
-                    "field_count": len(s.fields),
-                    "i18n_count": len(s.i18n_fields),
-                    "template_status": status_map.get(s.table, "ok"),
-                }
-                for s in ws.schemas
-            ]
-        )
-
-    @app.get("/api/schemas/<table>")
-    @safe
-    def schemas_detail(table: str):
-        ws = _load_ws(app)
-        if table not in ws.schema_map:
-            raise PanelError(f"表 '{table}' 不存在", 404)
-        schema = ws.schema_map[table]
-        status_map = _template_status(ws)
-        return ok(
-            {
-                "table": schema.table,
-                "excel_file": schema.resolved_excel_file,
-                "json_key": schema.resolved_json_key,
-                "primary": schema.primary,
-                "pk_type": schema.primary_field.type,
-                "template_status": status_map.get(table, "ok"),
-                "fields": [_field_dict(f) for f in schema.fields],
-            }
-        )
-
-    @app.post("/api/schemas")
-    @safe
-    def schemas_create():
-        ws = _load_ws(app)
-        data = request.get_json(silent=True) or {}
-        schema = _build_schema(data)
-        schemas_dir = ws.resolve("schemas_dir")
-        yaml_path = schemas_dir / f"{schema.table}.yaml"
-        if yaml_path.exists():
-            raise PanelError(f"表 '{schema.table}' 已存在")
-        schemas_dir.mkdir(parents=True, exist_ok=True)
-        yaml_path.write_text(
-            yaml.safe_dump(
-                schema.model_dump(exclude_none=True), allow_unicode=True, sort_keys=False
-            ),
-            encoding="utf-8",
-        )
-        log_buffer.add("模板", "INFO", f"[new] {schema.table}: schema 已创建")
-        ws = _load_ws(app)
-        schema = ws.schema_map[schema.table]
-        out_path = ws.resolve("excel_dir") / schema.resolved_excel_file
-        decision = decide_template_action(schema, out_path, force=False, update_header=False)
-        if decision.action in (Action.CREATE_NEW, Action.REBUILD):
-            generate_template(schema, out_path)
-        log_buffer.add("模板", "INFO", decision.message)
-        return ok({"table": schema.table, "message": decision.message})
-
-    @app.put("/api/schemas/<table>")
-    @safe
-    def schemas_update(table: str):
-        ws = _load_ws(app)
-        if table not in ws.schema_map:
-            raise PanelError(f"表 '{table}' 不存在", 404)
-        data = request.get_json(silent=True) or {}
-        new_schema = _build_schema(data)
-        schemas_dir = ws.resolve("schemas_dir")
-        old_yaml = schemas_dir / f"{table}.yaml"
-
-        if new_schema.table != table:
-            # 改名：写新 schema 文件，移除旧文件；旧 Excel 不自动迁移
-            new_yaml = schemas_dir / f"{new_schema.table}.yaml"
-            new_yaml.write_text(
-                yaml.safe_dump(
-                    new_schema.model_dump(exclude_none=True),
-                    allow_unicode=True,
-                    sort_keys=False,
-                ),
-                encoding="utf-8",
-            )
-            old_yaml.unlink(missing_ok=True)
-            log_buffer.add(
-                "模板", "WARN", f"[rename] {table} → {new_schema.table}（旧 Excel 未迁移）"
-            )
-        else:
-            old_yaml.write_text(
-                yaml.safe_dump(
-                    new_schema.model_dump(exclude_none=True),
-                    allow_unicode=True,
-                    sort_keys=False,
-                ),
-                encoding="utf-8",
-            )
-
-        ws = _load_ws(app)
-        schema = ws.schema_map[new_schema.table]
-        excel_dir = ws.resolve("excel_dir")
-        excel_dir.mkdir(parents=True, exist_ok=True)
-        out_path = excel_dir / schema.resolved_excel_file
-        decision = decide_template_action(schema, out_path, force=False, update_header=True)
-        if decision.action == Action.REFUSE:
-            raise PanelError(decision.message)
-        if decision.action in (Action.CREATE_NEW, Action.REBUILD):
-            generate_template(schema, out_path)
-        elif decision.action == Action.UPDATE_PRESERVE:
-            preserved = update_template(schema, out_path)
-            decision = decide_template_action(schema, out_path, force=False, update_header=False)
-            log_buffer.add(
-                "模板", "INFO", f"[update] {schema.table}: 保留 {preserved} 行数据重建表头"
-            )
-        else:
-            log_buffer.add("模板", "INFO", decision.message)
-        return ok(
-            {
-                "table": schema.table,
-                "renamed": new_schema.table != table,
-                "message": decision.message,
-            }
-        )
-
-    @app.delete("/api/schemas/<table>")
-    @safe
-    def schemas_delete(table: str):
-        ws = _load_ws(app)
-        if table not in ws.schema_map:
-            raise PanelError(f"表 '{table}' 不存在", 404)
-        schema = ws.schema_map[table]
-        removed = []
-        yaml_path = ws.resolve("schemas_dir") / f"{table}.yaml"
-        if yaml_path.exists():
-            yaml_path.unlink()
-            removed.append(str(yaml_path))
-        xlsx_path = ws.resolve("excel_dir") / schema.resolved_excel_file
-        if xlsx_path.exists():
-            xlsx_path.unlink()
-            removed.append(str(xlsx_path))
-        log_buffer.add("模板", "WARN", f"[delete] {table}: 已移除 schema 与模板")
-        return ok({"table": table, "removed": removed})
 
     # ---------------- 日志与历史 ----------------
     @app.get("/api/logs")
@@ -539,6 +393,9 @@ def create_app(root: Path | None = None) -> Flask:
     @app.get("/api/history")
     @safe
     def history():
+        if _looks_canonical(app.config["ROOT"]):
+            cache_dir = app.config["ROOT"] / "cache"
+            return ok(load_history(cache_dir))
         ws = _load_ws(app)
         return ok(load_history(ws.resolve("cache_dir")))
 
