@@ -1,0 +1,7 @@
+{
+  "ItemTypes": [
+    {"Id": 1, "Name": "消耗品", "Code": "consumable"},
+    {"Id": 2, "Name": "装备", "Code": "equipment"},
+    {"Id": 3, "Name": "材料", "Code": "material"}
+  ]
+}

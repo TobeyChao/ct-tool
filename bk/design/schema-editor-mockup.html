@@ -1,0 +1,1919 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ct 配表工具 · 结构化 Schema 编辑器 & 类型库 · 设计预览</title>
+<style>
+/* ==========================================================================
+   ct 配表工具 · 结构化 Schema 编辑器 & 全局类型库（R1 + R8 设计预览）
+   设计判读：内部工具型操作面板 / 策划用户 / 沉稳、清晰、数据密集
+   DESIGN_VARIANCE 4 · MOTION_INTENSITY 2 · VISUAL_DENSITY 7
+   ★ 设计语言一致 = 每个元素的宽/高/圆角/间距与 ct/web/static/index.html + app.js
+     逐值对齐，切页不跳变。公共类直接复用 web 端真实值；新增组件类（类型库/字段
+     编辑器）沿用同一尺寸语言。调色板 / 形状 / 类名与现有 web 完全一致。
+   ========================================================================== */
+:root {
+  --bg: #F5F6F4;
+  --surface: #FFFFFF;
+  --surface-2: #F0F2EE;
+  --border: #E1E6DD;
+  --border-strong: #CBD2C6;
+  --ink: #1B241F;
+  --ink-2: #5A645E;
+  --ink-3: #8B948E;
+  --primary: #1B4332;
+  --primary-hover: #153728;
+  --accent: #2F7A56;
+  --accent-hover: #266544;
+  --accent-soft: #D8F3DC;
+  --accent-softer: #ECF7ED;
+  --gold: #C9A227;
+  --gold-soft: #F7EECB;
+  --danger: #B23B3B;
+  --danger-soft: #F9E8E8;
+  --warn: #B7791F;
+  --warn-soft: #F9EFD9;
+  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  --r: 8px;
+  --shadow-panel: 0 1px 2px rgba(27, 36, 31, 0.04), 0 8px 28px rgba(27, 36, 31, 0.05);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+/* ---------- 顶栏（与 web 逐字一致） ---------- */
+.topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 18px; height: 56px; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.brand { display: flex; align-items: center; gap: 9px; font-weight: 650; white-space: nowrap; }
+.brand-mark { width: 22px; height: 22px; border-radius: 5px; background: var(--primary); display: grid; place-items: center; color: #fff; font-family: var(--font-mono); font-size: 11px; font-weight: 700; }
+.brand-name { font-size: 14px; }
+.brand-sub { color: var(--ink-3); font-size: 12px; font-weight: 400; }
+.topbar-spacer { flex: 1; }
+.workspace-path { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); padding: 6px 12px; white-space: nowrap; }
+
+/* ---------- 页签（与 web 逐字一致） ---------- */
+.tabs { position: sticky; top: 56px; z-index: 18; display: flex; gap: 6px; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.tab { appearance: none; border: 0; background: transparent; font-family: inherit; font-size: 14px; color: var(--ink-2); padding: 13px 16px 11px; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+.tab:hover { color: var(--ink); }
+.tab:focus-visible { outline: none; box-shadow: inset 0 -2px 0 var(--accent); }
+.tab.active { color: var(--primary); font-weight: 600; border-bottom-color: var(--primary); }
+.tab-count { display: inline-block; min-width: 18px; margin-left: 6px; padding: 0 5px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); font-size: 11px; text-align: center; }
+.tab.active .tab-count { background: var(--accent-soft); color: var(--primary); }
+
+/* ---------- 单列布局（与 web 逐字一致） ---------- */
+.layout { max-width: 1160px; margin: 0 auto; padding: 22px; display: grid; gap: 20px; }
+.tab-page { display: none; }
+.tab-page.active { display: block; }
+
+/* ---------- 命令条（与 web 逐字一致） ---------- */
+.cmd-bar { position: sticky; top: 105px; z-index: 15; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; min-height: 64px; padding: 12px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow-panel); }
+.cmd-group { display: flex; align-items: center; gap: 8px; }
+.cmd-label { font-size: 11px; font-weight: 700; color: var(--ink-3); letter-spacing: 0.04em; white-space: nowrap; }
+.cmd-value { font-family: var(--font-mono); font-size: 12.5px; font-weight: 650; color: var(--ink); }
+.cmd-spacer { flex: 1; }
+.cmd-search { font-family: var(--font-mono); font-size: 12.5px; padding: 6px 10px; border: 1px solid var(--border-strong); border-radius: var(--r); background: var(--surface); color: var(--ink); width: 180px; }
+.pill { appearance: none; border: 1px solid var(--border-strong); background: var(--surface); color: var(--ink-2); font-family: inherit; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+.pill:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.pill:active { transform: translateY(1px); }
+.pill:hover { background: var(--surface-2); }
+.pill.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.seg { display: inline-flex; gap: 4px; }
+
+/* ---------- 面板 / 按钮 / 徽章（与 web 逐字一致） ---------- */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow-panel); }
+.panel-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px 0; }
+.panel-title { font-size: 15px; font-weight: 650; }
+.panel-sub { font-size: 12px; color: var(--ink-3); }
+.panel-body { padding: 16px 20px 20px; }
+
+.btn { appearance: none; border: 1px solid transparent; border-radius: var(--r); font-family: inherit; font-size: 13.5px; font-weight: 600; padding: 9px 18px; cursor: pointer; transition: background 0.12s ease, transform 0.06s ease; }
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover { background: var(--accent-hover); }
+.btn-ghost { background: var(--surface); border-color: var(--border-strong); color: var(--ink); }
+.btn-ghost:hover { background: var(--surface-2); }
+.btn-danger { background: var(--surface); border-color: #D9A6A6; color: var(--danger); }
+.btn-danger:hover { background: var(--danger-soft); }
+.btn-sm { padding: 5px 10px; font-size: 12.5px; }
+.btn[disabled] { opacity: 0.55; cursor: not-allowed; }
+.badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+.badge-ok { background: var(--accent-soft); color: var(--primary); }
+.badge-warn { background: var(--warn-soft); color: var(--warn); }
+.badge-err { background: var(--danger-soft); color: var(--danger); }
+.badge-mute { background: var(--surface-2); color: var(--ink-2); }
+.tag { display: inline-block; font-size: 11px; color: var(--ink-2); background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 8px; line-height: 20px; }
+
+/* ---------- 字段行状态 tag（类型表达式列 + 字段名后只读徽章） ---------- */
+.tag-lock { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 11px; padding: 1px 8px; border-radius: 4px; letter-spacing: 0.02em; white-space: nowrap; line-height: 20px; }
+.tag-lock.pk { background: var(--gold-soft); color: #7A6214; border: 1px solid #E9DCA8; }
+.tag-lock.code { background: var(--accent-soft); color: var(--primary); border: 1px solid #B5E3BE; }
+.tag-attr { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 11px; padding: 1px 8px; border-radius: 4px; letter-spacing: 0.02em; white-space: nowrap; line-height: 20px; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--border); }
+.tag-ref { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 11px; padding: 1px 8px; border-radius: 4px; letter-spacing: 0.02em; white-space: nowrap; line-height: 20px; background: var(--accent-softer); color: var(--primary); border: 1px solid #C4E8CD; font-weight: 600; }
+.pk-cell { font-family: var(--font-mono); font-weight: 650; color: #7A6214; background: var(--gold-soft); border-radius: 4px; padding: 2px 8px; }
+.mono { font-family: var(--font-mono); font-size: 12.5px; }
+
+/* ---------- Schema 表列表（与 web 逐字一致） ---------- */
+.schema-list { display: grid; gap: 10px; margin-top: 14px; }
+.schema-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 13px 16px; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); cursor: pointer; }
+.schema-row:hover { border-color: var(--border-strong); }
+.schema-row:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.schema-row .schema-id { min-width: 150px; }
+.schema-name { font-weight: 650; font-size: 14px; }
+.schema-pk { font-size: 12px; color: var(--ink-3); }
+.schema-row .row-meta { color: var(--ink-3); }
+.schema-row .row-actions { margin-left: auto; display: flex; gap: 6px; }
+
+/* ---------- 表单（与 web 逐字一致） ---------- */
+.field { margin-bottom: 16px; }
+.field-label { font-size: 12px; font-weight: 700; color: var(--ink-2); display: block; margin-bottom: 6px; }
+.field-label .req { color: var(--danger); }
+.hint { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+.form-input { width: 100%; padding: 7px 10px; font-family: var(--font-mono); font-size: 12.5px; border: 1px solid var(--border-strong); border-radius: var(--r); background: var(--surface); color: var(--ink); }
+.form-area { height: 150px; resize: vertical; line-height: 1.55; }
+
+/* ---------- 模态（与 web 逐字一致） ---------- */
+.modal-mask { position: fixed; inset: 0; background: rgba(27, 36, 31, 0.35); display: grid; place-items: center; z-index: 50; }
+.modal-anim { animation: mask-fade 0.14s ease-out; }
+.modal-anim .modal { animation: modal-pop 0.16s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes mask-fade { from { opacity: 0; } }
+@keyframes modal-pop { from { opacity: 0; transform: translateY(6px) scale(0.98); } }
+@media (prefers-reduced-motion: reduce) {
+  .modal-anim, .modal-anim .modal { animation: none; }
+}
+.modal { width: min(560px, calc(100vw - 40px)); background: var(--surface); border-radius: var(--r); box-shadow: 0 20px 60px rgba(27, 36, 31, 0.25); overflow: hidden; }
+.modal-lg { width: min(680px, calc(100vw - 40px)); }
+.modal-head { display: flex; align-items: center; padding: 16px 22px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 650; }
+.modal-body { padding: 18px 22px; max-height: 70vh; overflow: auto; }
+.modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 22px; border-top: 1px solid var(--border); }
+.modal-close { appearance: none; border: 0; background: transparent; color: var(--ink-3); font-size: 18px; cursor: pointer; width: 28px; height: 28px; border-radius: 6px; margin-left: auto; }
+.modal-close:hover { background: var(--surface-2); color: var(--ink); }
+.modal-close:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.modal-close:active { transform: translateY(1px); }
+.type-crumb { display: flex; align-items: center; gap: 6px; padding: 8px 22px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--ink-3); background: var(--surface-2); }
+.type-crumb .crumb-root { font-weight: 600; color: var(--ink-2); }
+.type-crumb .crumb-sep { color: var(--ink-3); opacity: 0.6; }
+.type-crumb .crumb-item { appearance: none; border: 0; background: transparent; font-family: var(--font-mono); font-size: 12px; color: var(--accent); cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+.type-crumb .crumb-item:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.type-crumb .crumb-item:hover { background: var(--accent-soft); }
+.type-crumb .crumb-item.current { color: var(--ink); font-weight: 650; cursor: default; }
+.type-crumb .crumb-item.current:hover { background: transparent; }
+
+/* ==========================================================================
+   类型库页签（新增组件，沿用 web 尺寸语言）
+   ========================================================================== */
+.type-list { display: grid; gap: 10px; margin-top: 14px; }
+.type-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 13px 16px; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); cursor: pointer; }
+.type-row:hover { border-color: var(--border-strong); }
+.type-row:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.type-kind { font-family: var(--font-mono); font-size: 10.5px; padding: 1px 7px; border-radius: 999px; letter-spacing: 0.04em; }
+.type-kind.enum { background: var(--gold-soft); color: #8a6d12; }
+.type-kind.struct { background: var(--accent-soft); color: var(--primary); }
+.type-name-cell { min-width: 130px; font-weight: 650; font-size: 13.5px; }
+.type-summary { flex: 1; min-width: 120px; font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-3); }
+.type-ref-count { font-family: var(--font-mono); font-size: 11px; color: var(--ink-2); background: var(--surface-2); border-radius: 999px; padding: 1px 8px; white-space: nowrap; margin-left: 6px; }
+.type-row .row-actions { margin-left: auto; display: flex; gap: 6px; }
+.type-row .type-ref-count { cursor: pointer; }
+.type-row .type-ref-count:hover { background: var(--accent-soft); color: var(--primary); }
+.type-group-title { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; color: var(--ink-2); margin: 18px 0 8px; }
+.type-group-title .grp-module { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); font-weight: 400; }
+.type-group-title::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+/* ==========================================================================
+   结构化字段编辑器（新增组件，沿用 web 尺寸语言）
+   ========================================================================== */
+.field-editor { display: grid; gap: 6px; }
+.fe-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); }
+.fe-row:hover { border-color: var(--border-strong); }
+.fe-name { flex: 0 1 auto; max-width: 42%; min-width: 0; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13.5px; white-space: nowrap; padding: 0 6px; }
+.fe-name .lock-badge { font-family: var(--font-mono); font-size: 10px; padding: 1px 6px; border-radius: 4px; letter-spacing: 0.03em; white-space: nowrap; }
+.fe-name .lock-badge.pk { background: var(--gold-soft); color: #8a6d12; }
+.fe-name .lock-badge.code { background: var(--accent-soft); color: var(--primary); }
+.fe-name .name-text { white-space: nowrap; cursor: text; padding: 2px 0; border-radius: 4px; }
+.fe-name .name-text.empty { min-width: 84px; }
+.fe-name .name-text.empty::before { content: "未命名字段"; color: var(--ink-3); font-weight: 400; }
+.fe-name .name-text:hover { background: var(--surface-2); }
+.fe-name .name-input { width: 130px; padding: 3px 6px; font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; border: 1px solid var(--accent); border-radius: 4px; background: var(--surface); color: var(--ink); }
+.fe-name .name-input:focus { outline: 2px solid var(--accent-soft); outline-offset: -1px; }
+.fe-tags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fe-type-col { flex: none; display: flex; align-items: center; gap: 4px; min-width: 0; }
+.fe-type-col .view-btn { flex: none; padding: 4px 6px; }
+
+/* ---------- 类型胶囊（固定长度类型名 + pick 按钮，一组整体；pick 打开类型模态） ---------- */
+.type-pill { flex: none; display: inline-flex; align-items: stretch; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); height: 30px; overflow: hidden; width: 116px; }
+.type-pill .tp-name { flex: 1; display: inline-flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; padding: 0 10px; font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.type-pill.ref .tp-name { background: var(--accent-softer); color: var(--primary); }
+.type-pill.link .tp-name { cursor: pointer; }
+.type-pill.link .tp-name:hover { text-decoration: underline; text-underline-offset: 3px; }
+.type-pill .tp-pick { appearance: none; border: 0; border-left: 1px solid var(--border); background: var(--surface-2); color: var(--ink-2); width: 28px; cursor: pointer; display: grid; place-items: center; font-size: 13px; line-height: 1; }
+.type-pill .tp-pick:hover { background: var(--accent-soft); color: var(--primary); }
+.type-pill .tp-pick:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-soft); }
+
+/* ---------- 类型 pick 模态（分组 + 搜索 + 数组标记） ---------- */
+.tp-search { width: 100%; font-family: var(--font-mono); font-size: 12.5px; padding: 7px 10px; border: 1px solid var(--border-strong); border-radius: var(--r); background: var(--surface); color: var(--ink); margin-bottom: 12px; }
+.tp-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.tp-group-title { font-size: 11px; font-weight: 700; color: var(--ink-3); letter-spacing: 0.04em; margin: 12px 0 6px; }
+.tp-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.tp-item { appearance: none; border: 1px solid var(--border-strong); background: var(--surface); font-family: var(--font-mono); font-size: 12.5px; color: var(--ink); border-radius: 6px; padding: 7px 14px; cursor: pointer; min-width: 72px; }
+.tp-item:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.tp-item:active { transform: translateY(1px); }
+.tp-item:hover { border-color: var(--accent); }
+.tp-item.active { background: var(--accent-soft); border-color: var(--accent); color: var(--primary); font-weight: 600; }
+.tp-item .tp-kind { font-family: var(--font-sans); font-size: 10.5px; color: var(--ink-3); margin-left: 6px; font-weight: 400; }
+.tp-item.active .tp-kind { color: var(--primary); }
+.tp-item.hidden { display: none; }
+.tp-lib-list { display: grid; gap: 4px; max-height: 190px; overflow-y: auto; padding-right: 2px; }
+.tp-lib-item { display: flex; align-items: center; gap: 10px; width: 100%; border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 6px 10px; font-family: var(--font-mono); font-size: 12.5px; color: var(--ink); cursor: pointer; text-align: left; }
+.tp-lib-item:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.tp-lib-item:active { transform: translateY(1px); }
+.tp-lib-item:hover { border-color: var(--accent); }
+.tp-lib-item.active { background: var(--accent-soft); border-color: var(--accent); color: var(--primary); font-weight: 600; }
+.tp-lib-item .tp-name-cell { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.tp-lib-item .tp-kind { font-family: var(--font-sans); font-size: 10.5px; color: var(--ink-3); font-weight: 400; }
+.tp-lib-item .tp-cmt { flex: 1; min-width: 0; font-family: var(--font-sans); font-size: 11px; color: var(--ink-2); font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tp-lib-item.active .tp-cmt { color: var(--primary); }
+.tp-lib-item .tp-module { flex: none; font-family: var(--font-sans); font-size: 10.5px; color: var(--ink-3); font-weight: 400; }
+.tp-lib-item.hidden { display: none; }
+.tp-module-seg { margin: 0 0 8px; }
+.tp-module-seg .pill { padding: 3px 10px; font-size: 11.5px; }
+.tp-recent { display: flex; flex-wrap: wrap; gap: 6px; }
+.tp-recent .tp-item { min-width: 0; padding: 4px 10px; }
+.tp-recent.hidden { display: none; }
+.tp-group-title.tp-gt-hidden { display: none; }
+.tp-array-row { display: flex; align-items: center; gap: 14px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+/* ---------- 空态（Supabase empty-states 模式：与列表同构 + 行动引导） ---------- */
+.list-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 30px 16px; text-align: center; border: 1px dashed var(--border-strong); border-radius: var(--r); background: var(--surface); margin-top: 14px; }
+.list-empty .le-title { font-size: 13.5px; font-weight: 650; color: var(--ink-2); }
+.list-empty .le-desc { font-size: 12px; color: var(--ink-3); }
+.list-empty .le-cta { margin-top: 6px; }
+.tp-empty-search { padding: 22px 16px; text-align: center; font-size: 12.5px; color: var(--ink-3); border: 1px dashed var(--border-strong); border-radius: 6px; margin-top: 4px; }
+.tp-empty-search b { color: var(--ink-2); }
+.fe-type-pick { flex: none; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.type-select {
+  appearance: none; border: 1px solid var(--border-strong); background: var(--surface);
+  font-family: var(--font-mono); font-size: 12.5px; color: var(--ink); border-radius: var(--r);
+  padding: 5px 24px 5px 9px; cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235A645E' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.type-select:hover { border-color: var(--accent); }
+.type-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }.ref-select {
+  appearance: none; border: 1px solid var(--accent); background: var(--accent-softer);
+  font-family: var(--font-mono); font-size: 12.5px; color: var(--primary); font-weight: 600;
+  border-radius: var(--r); padding: 5px 24px 5px 9px; cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231B4332' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.ref-select:focus { outline: none; border-color: var(--accent-hover); box-shadow: 0 0 0 3px var(--accent-soft); }
+.fe-ops { margin-left: auto; display: flex; gap: 2px; }
+.icon-btn { appearance: none; border: 0; background: transparent; color: var(--ink-3); width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 14px; line-height: 1; display: grid; place-items: center; }
+.icon-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.icon-btn:active { transform: translateY(1px); }
+.icon-btn:hover { background: var(--surface-2); color: var(--ink); }
+.icon-btn.danger:hover { background: var(--danger-soft); color: var(--danger); }
+.link-btn { appearance: none; border: 0; background: transparent; color: var(--accent); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.link-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.link-btn:active { transform: translateY(1px); }
+.link-btn:hover { background: var(--accent-soft); }
+
+.fe-detail, .compound-block { flex-basis: 100%; display: grid; gap: 8px; padding: 10px 12px; margin-top: 2px; border-top: 1px dashed var(--border); background: var(--surface-2); border-radius: 6px; }
+.fe-detail-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fe-detail-item { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); white-space: nowrap; }
+.check { width: 14px; height: 14px; accent-color: var(--accent); margin: 0; }
+.detail-input { padding: 4px 8px; font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); }
+.detail-input:disabled { opacity: 0.5; background: var(--surface-2); }
+.comment-input { flex: 1; min-width: 200px; resize: vertical; min-height: 34px; line-height: 1.4; font-family: var(--font-sans); font-size: 12px; padding: 5px 8px; white-space: pre-wrap; }
+/* 注释独占一行：标题与内容紧贴融合，textarea 自适应多行 */
+.fe-detail-item.field-comment { flex-basis: 100%; align-items: flex-start; gap: 8px; }
+.fe-detail-item.field-comment .item-label { flex: none; padding-top: 5px; }
+
+/* 复合类型块与属性行同风格（虚线顶边 + 浅灰底 + 6px 圆角） */
+.compound-block { border-left: 0; }
+.compound-title { font-size: 11px; font-weight: 600; color: var(--ink-3); letter-spacing: 0.04em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.compound-title .type-name { font-family: var(--font-mono); color: var(--primary); text-transform: none; font-size: 12px; }
+.compound-body { display: grid; gap: 8px; }
+.compound-divider { height: 1px; background: var(--border); margin: 2px 0; }
+
+.chip-input { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 999px; padding: 3px 8px 3px 10px; font-family: var(--font-mono); font-size: 12px; }
+.chip .chip-x { border: 0; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 13px; padding: 0 2px; }
+.chip .chip-x:hover { color: var(--danger); }
+.chip-add { border: 1px dashed var(--border-strong); background: transparent; border-radius: 999px; padding: 3px 12px; font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); min-width: 90px; }
+.chip-hint { font-size: 11px; color: var(--ink-3); }
+
+.sub-fields { display: grid; gap: 6px; }
+.sub-field-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.sub-name-input { min-width: 90px; width: 110px; font-weight: 600; font-size: 13px; font-family: var(--font-mono); padding: 3px 8px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--ink); }
+.sub-name-input:hover { border-color: var(--border); background: var(--surface-2); }
+.sub-name-input:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+.sub-comment { flex: 1; min-width: 140px; font-size: 12px; font-family: var(--font-sans); padding: 3px 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); color: var(--ink-2); }
+.sub-comment:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.sub-struct-ref { display: inline-flex; align-items: center; gap: 4px; }
+.module-pick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.module-add-input { display: inline-flex; align-items: center; gap: 6px; }
+.sub-field-row .type-select { font-size: 12px; padding: 3px 22px 3px 8px; }
+.add-sub { border: 1px dashed var(--border-strong); background: transparent; border-radius: 8px; padding: 5px 12px; font-size: 12px; color: var(--ink-2); cursor: pointer; width: fit-content; }
+.add-sub:hover { border-color: var(--accent); color: var(--accent); }
+
+.vector-opts { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.radio-pair { display: inline-flex; gap: 0; border: 1px solid var(--border-strong); border-radius: 6px; overflow: hidden; }
+.radio-opt { appearance: none; border: 0; background: var(--surface); font-family: inherit; font-size: 12px; padding: 4px 12px; cursor: pointer; color: var(--ink-2); }
+.radio-opt:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.radio-opt:active { transform: translateY(1px); }
+.radio-opt.active { background: var(--primary); color: #fff; }
+.fixed-len { width: 56px; padding: 3px 8px; font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--border-strong); border-radius: 6px; }
+.len-preview { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+
+.kind-seg { display: inline-flex; gap: 0; border: 1px solid var(--border-strong); border-radius: 6px; overflow: hidden; width: fit-content; }
+.kind-seg button { appearance: none; border: 0; background: var(--surface); font-family: inherit; font-size: 12.5px; padding: 6px 18px; cursor: pointer; color: var(--ink-2); }
+.kind-seg button.active { background: var(--primary); color: #fff; }
+
+.error-inline { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--danger); background: var(--danger-soft); border: 1px solid #E8B7B7; border-radius: 6px; padding: 7px 12px; }
+.error-inline .mono { color: var(--danger); }
+
+/* ---------- 字段编辑器校验错误态（R1：校验错误即时显示） ---------- */
+.fe-row.invalid { border-color: #E8B7B7; background: var(--danger-soft); }
+.fe-row.invalid .fe-name { color: var(--danger); }
+.fe-row.invalid .fe-type-pick, .fe-row.invalid .fe-ops { opacity: 1; }
+.fe-err { flex-basis: 100%; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--danger); padding: 1px 2px 0; }
+.fe-err::before { content: "⚠"; font-size: 12px; }
+.form-input.invalid { border-color: var(--danger); }
+.check:disabled { opacity: 0.4; cursor: not-allowed; }
+.attr-lock { opacity: 0.5; }
+
+/* ---------- 查看/编辑类型模态（新增组件） ---------- */
+.type-viewer { display: grid; gap: 14px; }
+.tv-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tv-kind-big { font-family: var(--font-mono); font-size: 12px; padding: 2px 10px; border-radius: 999px; letter-spacing: 0.04em; }
+.tv-kind-big.enum { background: var(--gold-soft); color: #8a6d12; }
+.tv-kind-big.struct { background: var(--accent-soft); color: var(--primary); }
+.tv-name-big { font-size: 17px; font-weight: 700; }
+.tv-module { font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); margin-left: auto; }
+.tv-sec { border-top: 1px solid var(--border); padding-top: 12px; }
+.tv-sec-label { font-size: 11px; font-weight: 700; color: var(--ink-3); letter-spacing: 0.04em; margin-bottom: 8px; }
+.tv-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tv-chip { background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 3px 12px; font-family: var(--font-mono); font-size: 12px; color: var(--ink); }
+.tv-chip-struct { display: inline-flex; align-items: center; gap: 6px; }
+.tv-chip-cmt { font-family: var(--font-sans); font-size: 11px; font-style: normal; color: var(--ink-3); border-left: 1px solid var(--border-strong); padding-left: 6px; }
+.tv-underlying { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+.tv-underlying .mono { background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 8px; font-size: 12px; color: var(--ink); }
+.tv-comment { font-size: 13px; color: var(--ink-2); }
+.tv-ref-row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); margin-bottom: 6px; font-family: var(--font-mono); font-size: 12.5px; }
+.tv-ref-row .ref-table { font-weight: 650; color: var(--ink); }
+.tv-ref-row .ref-field { color: var(--ink-2); }
+.tv-ref-row .ref-role { margin-left: auto; font-size: 11px; color: var(--ink-3); }
+.mode-badge { font-family: var(--font-mono); font-size: 11px; padding: 2px 9px; border-radius: 999px; }
+.mode-badge.read { background: var(--surface-2); color: var(--ink-2); }
+.mode-badge.edit { background: var(--accent-soft); color: var(--primary); }
+
+/* ==========================================================================
+   自定义下拉（参考 deepseek-harness ui-primitives Menu：
+   浮层卡片、圆角、阴影、hover 高亮、选中打勾；亮暗主题用 CSS 变量预留）
+   ========================================================================== */
+.dsh-select { position: relative; display: inline-flex; width: 116px; flex: none; }
+.dsh-select.wide { width: 132px; }
+.dsh-select-trigger {
+  appearance: none; border: 1px solid var(--border-strong); background: var(--surface);
+  font-family: var(--font-mono); font-size: 12.5px; color: var(--ink); border-radius: var(--r);
+  padding: 5px 24px 5px 9px; cursor: pointer; width: 100%;
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  white-space: nowrap; line-height: 1.4; min-height: 30px; box-sizing: border-box;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.dsh-select-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.dsh-select-trigger:hover { border-color: var(--accent); }
+.dsh-select-trigger:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.dsh-select.ref .dsh-select-trigger { border-color: var(--accent); background: var(--accent-softer); color: var(--primary); font-weight: 600; }
+.dsh-select.open .dsh-select-trigger { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.dsh-select-arrow {
+  flex: none; width: 10px; height: 6px; pointer-events: none; color: var(--ink-3);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.dsh-select.ref .dsh-select-arrow { color: var(--primary); }
+.dsh-select-menu {
+  position: fixed; z-index: 1000;
+  min-width: 116px; width: max-content; max-width: 260px; box-sizing: border-box; padding: 4px;
+  border: 1px solid var(--border-strong); border-radius: 10px;
+  background: var(--surface); box-shadow: 0 8px 28px rgba(27, 36, 31, 0.14);
+  display: none; max-height: 240px; overflow-y: auto;
+}
+.dsh-select.open .dsh-select-menu { display: block; }
+.dsh-option {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 32px; padding: 5px 9px; border-radius: 7px; cursor: pointer;
+  font-family: var(--font-mono); font-size: 12.5px; color: var(--ink);
+  white-space: nowrap;
+}
+.dsh-option:hover { background: var(--accent-softer); }
+.dsh-option.selected { color: var(--primary); font-weight: 600; }
+.dsh-option-check { margin-left: auto; color: var(--accent); visibility: hidden; }
+.dsh-option.selected .dsh-option-check { visibility: visible; }
+/* 亮暗主题预留（deepseek-harness 用 body[data-ds-dark-theme] + token） */
+[data-theme="dark"] .dsh-select-menu { background: #232B27; border-color: #3A4540; }
+[data-theme="dark"] .dsh-option:hover { background: #2E3833; }
+[data-theme="dark"] .dsh-option.selected { color: #8FD6B2; }
+</style>
+</head>
+<body>
+
+<!-- ================= 顶栏 ================= -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">ct</div>
+    <div class="brand-name">ct 配表工具</div>
+  </div>
+  <span class="topbar-spacer"></span>
+  <span class="workspace-path">~/fabulous-game/Config/gd</span>
+</header>
+
+<!-- ================= 页签 ================= -->
+<nav class="tabs" role="tablist">
+  <button class="tab active" onclick="switchTab('tables')">表格管理</button>
+  <button class="tab" onclick="switchTab('types')">类型库 <span class="tab-count">3</span></button>
+  <button class="tab">导出</button>
+  <button class="tab">翻译 i18n <span class="tab-count">2</span></button>
+  <button class="tab">日志</button>
+  <button class="tab">历史</button>
+</nav>
+
+<main class="layout">
+
+  <!-- ============ 表格管理页签（单列，只管表） ============ -->
+  <section class="tab-page active" id="page-tables">
+    <div class="cmd-bar">
+      <div class="cmd-group">
+        <span class="cmd-label">表名</span>
+        <input class="cmd-search" placeholder="搜索…">
+      </div>
+      <div class="cmd-group">
+        <span class="cmd-label">状态</span>
+        <div class="seg">
+          <button class="pill active">全部</button>
+          <button class="pill">模板已同步</button>
+          <button class="pill">模板漂移</button>
+        </div>
+      </div>
+      <span class="cmd-spacer"></span>
+      <button class="btn btn-primary" onclick="openEdit('create')">新增表</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Schema 表</span>
+        <span class="panel-sub">4 张</span>
+      </div>
+      <div class="panel-body">
+        <div class="schema-list">
+          <div class="schema-row" tabindex="0" onclick="openEdit('edit')">
+            <div class="schema-id"><div class="schema-name">Item</div><div class="schema-pk">item.xlsx</div></div>
+            <span class="mono row-meta">9 字段 · i18n 2</span>
+            <span class="badge badge-ok">模板已同步</span>
+            <div class="row-actions">
+              <button class="btn btn-sm btn-ghost" onclick="openEdit('edit')">编辑</button>
+              <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); openDelete(this)">删除</button>
+            </div>
+          </div>
+          <div class="schema-row" tabindex="0" onclick="openEdit('edit')">
+            <div class="schema-id"><div class="schema-name">Quest</div><div class="schema-pk">quest.xlsx</div></div>
+            <span class="mono row-meta">6 字段 · i18n 2</span>
+            <span class="badge badge-warn">模板漂移</span>
+            <div class="row-actions">
+              <button class="btn btn-sm btn-ghost" onclick="openEdit('edit')">编辑</button>
+              <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); openDelete(this)">删除</button>
+            </div>
+          </div>
+          <div class="schema-row" tabindex="0" onclick="openEdit('edit')">
+            <div class="schema-id"><div class="schema-name">ItemType</div><div class="schema-pk">item_type.xlsx</div></div>
+            <span class="mono row-meta">3 字段 · i18n 1</span>
+            <span class="badge badge-ok">模板已同步</span>
+            <div class="row-actions">
+              <button class="btn btn-sm btn-ghost" onclick="openEdit('edit')">编辑</button>
+              <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); openDelete(this)">删除</button>
+            </div>
+          </div>
+          <div class="schema-row" tabindex="0" onclick="openEdit('edit')">
+            <div class="schema-id"><div class="schema-name">UIConfig</div><div class="schema-pk">ui_config.xlsx</div></div>
+            <span class="mono row-meta">4 字段</span>
+            <span class="badge badge-ok">模板已同步</span>
+            <div class="row-actions">
+              <button class="btn btn-sm btn-ghost" onclick="openEdit('edit')">编辑</button>
+              <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); openDelete(this)">删除</button>
+            </div>
+          </div>
+          <div class="list-empty" id="tables-empty" hidden>
+            <div class="le-title">暂无表</div>
+            <div class="le-desc">创建第一张表开始配置 schema</div>
+            <button class="btn btn-primary le-cta" onclick="openEdit('create')">新增表</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 类型库页签（独立，单列） ============ -->
+  <section class="tab-page" id="page-types">
+    <div class="cmd-bar">
+      <div class="cmd-group">
+        <span class="cmd-label">类型</span>
+        <input class="cmd-search" placeholder="搜索…">
+      </div>
+      <div class="cmd-group">
+        <span class="cmd-label">模块</span>
+        <div class="seg" id="module-filter">
+          <button class="pill active">全部</button>
+          <button class="pill">common</button>
+          <button class="pill">combat</button>
+          <button class="pill">ui</button>
+        </div>
+      </div>
+      <span class="cmd-spacer"></span>
+      <button class="btn btn-primary" onclick="openTypeModal('create')">新建类型</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">类型库</span>
+        <span class="panel-sub">全局具名类型 · 3 类型</span>
+      </div>
+      <div class="panel-body">
+        <div class="type-list">
+          <div class="type-group-title">common <span class="grp-module">types/common.yaml</span></div>
+          <div class="type-row" tabindex="0" onclick="openTypeModal('view','Rarity')">
+            <span class="type-kind enum">enum</span>
+            <span class="type-name-cell">Rarity</span>
+            <span class="type-summary">common · rare · epic</span>
+            <span class="type-ref-count" onclick="event.stopPropagation(); openTypeModal('view','Rarity')" title="查看引用详情">2 引用</span>
+            <div class="row-actions">
+              <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation(); openTypeModal('view','Rarity')">查看</button>
+              <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); showTypeDelete('Rarity')">删除</button>
+            </div>
+          </div>
+          <div class="type-row" tabindex="0" onclick="openTypeModal('view','DropRange')">
+            <span class="type-kind struct">struct</span>
+            <span class="type-name-cell">DropRange</span>
+            <span class="type-summary">Min: int32 · Max: int32</span>
+            <span class="type-ref-count" onclick="event.stopPropagation(); openTypeModal('view','DropRange')" title="查看引用详情">1 引用</span>
+            <div class="row-actions">
+              <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation(); openTypeModal('view','DropRange')">查看</button>
+              <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); showTypeDelete('DropRange')">删除</button>
+            </div>
+          </div>
+
+          <div class="type-group-title">ui <span class="grp-module">types/ui.yaml</span></div>
+          <div class="type-row" tabindex="0" onclick="openTypeModal('view','Layer')">
+            <span class="type-kind enum">enum</span>
+            <span class="type-name-cell">Layer</span>
+            <span class="type-summary">Page · Modal · Panel · Overlay</span>
+            <span class="type-ref-count" onclick="event.stopPropagation(); openTypeModal('view','Layer')" title="查看引用详情">1 引用</span>
+            <div class="row-actions">
+              <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation(); openTypeModal('view','Layer')">查看</button>
+              <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); showTypeDelete('Layer')">删除</button>
+            </div>
+          </div>
+        </div>
+        <div class="list-empty" id="types-empty" hidden>
+          <div class="le-title">暂无类型</div>
+          <div class="le-desc">全局类型库为空，创建第一个具名类型</div>
+          <button class="btn btn-primary le-cta" onclick="openTypeModal('create')">新建类型</button>
+        </div>
+        <div class="hint" style="margin-top:12px">类型增删改查在模态中完成；从表编辑的字段引用处点「查看↗」也会打开此模态（默认只读）。</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ================= 结构化字段编辑器模态（编辑表 / 新增表共用） ================= -->
+<div class="modal-mask modal-anim" id="edit-modal" hidden>
+  <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+    <div class="modal-head">
+      <span id="edit-title">编辑表 · Item</span>
+      <span class="mono" style="font-size:12px;color:var(--ink-3)">结构化编辑 · 保存后自动校验</span>
+      <button class="modal-close" onclick="closeEdit()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="error-inline" id="edit-errors" hidden>⚠ <span id="edit-errors-text"></span></div>
+      <div class="field" style="display:flex;gap:16px;flex-wrap:wrap;">
+        <div>
+          <label class="field-label">表名</label>
+          <input class="form-input" id="table-name-input" value="Item" style="width:200px">
+        </div>
+      </div>
+
+      <span class="field-label">字段定义</span>
+      <div class="field-editor">
+
+        <!-- Id：int32 主键（锁定：命名 + 类型仅 int32/int64） -->
+        <div class="fe-row">
+          <div class="fe-type-col" data-expr="int32">
+            <div class="type-pill">
+              <span class="tp-name"></span>
+              <button class="tp-pick" title="选择类型" onclick="openTypePick(this)">✎</button>
+            </div>
+          </div>
+          <span class="fe-name">Id</span>
+          <div class="fe-tags">
+            <span class="tag-lock pk">🔒 主键</span>
+            <span class="tag-attr" data-tag="i18n" hidden>🌐 i18n</span>
+            <span class="tag-attr" data-tag="server_only" hidden>🖥 server</span>
+            <span class="tag-attr" data-tag="group_key" hidden>🗂 按品类</span>
+            <span class="tag-ref" data-tag="ref" hidden>🔗 <span class="ref-name"></span></span>
+          </div>
+          <div class="fe-ops">
+            <button class="icon-btn" title="上移">↑</button>
+            <button class="icon-btn" title="下移">↓</button>
+            <button class="icon-btn" title="属性" onclick="toggleDetail(this)">⚙</button>
+            <button class="icon-btn danger" title="删除" onclick="removeFieldRow(this)">✕</button>
+          </div>
+          <div class="fe-detail" id="id-detail" hidden>
+            <div class="fe-detail-row">
+              <label class="fe-detail-item"><input type="checkbox" class="check" disabled>i18n</label>
+              <label class="fe-detail-item"><input type="checkbox" class="check">server_only</label>
+              <span class="fe-detail-item field-comment"><span class="item-label">注释</span><textarea class="detail-input comment-input" rows="1" placeholder="唯一标识"></textarea></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CodeName：string，code 字段（锁定：命名 + 类型固定 string） -->
+        <div class="fe-row">
+          <div class="fe-type-col" data-expr="string">
+            <div class="type-pill">
+              <span class="tp-name"></span>
+              <button class="tp-pick" title="选择类型" onclick="openTypePick(this)">✎</button>
+            </div>
+          </div>
+          <span class="fe-name">CodeName</span>
+          <div class="fe-tags">
+            <span class="tag-lock code">🔒 CodeName</span>
+            <span class="tag-attr" data-tag="i18n" hidden>🌐 i18n</span>
+            <span class="tag-attr" data-tag="server_only" hidden>🖥 server</span>
+            <span class="tag-attr" data-tag="group_key" hidden>🗂 按品类</span>
+            <span class="tag-ref" data-tag="ref" hidden>🔗 <span class="ref-name"></span></span>
+          </div>
+          <div class="fe-ops">
+            <button class="icon-btn" title="上移">↑</button>
+            <button class="icon-btn" title="下移">↓</button>
+            <button class="icon-btn" title="属性" onclick="toggleDetail(this)">⚙</button>
+            <button class="icon-btn danger" title="删除" onclick="removeFieldRow(this)">✕</button>
+          </div>
+          <div class="fe-detail" hidden>
+            <div class="fe-detail-row">
+              <label class="fe-detail-item"><input type="checkbox" class="check">i18n</label>
+              <label class="fe-detail-item"><input type="checkbox" class="check">server_only</label>
+              <span class="fe-detail-item field-comment"><span class="item-label">注释</span><textarea class="detail-input comment-input" rows="1" placeholder="字符串唯一键"></textarea></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Name：string + i18n -->
+        <div class="fe-row">
+          <div class="fe-type-col" data-expr="string">
+            <div class="type-pill">
+              <span class="tp-name"></span>
+              <button class="tp-pick" title="选择类型" onclick="openTypePick(this)">✎</button>
+            </div>
+          </div>
+          <span class="fe-name"><span class="name-text" onclick="editFieldName(this)">Name</span></span>
+          <div class="fe-tags">
+            <span class="tag-attr" data-tag="i18n">🌐 i18n</span>
+            <span class="tag-attr" data-tag="server_only" hidden>🖥 server</span>
+            <span class="tag-attr" data-tag="group_key" hidden>🗂 按品类</span>
+            <span class="tag-ref" data-tag="ref" hidden>🔗 <span class="ref-name"></span></span>
+          </div>
+          <div class="fe-ops">
+            <button class="icon-btn" title="上移">↑</button>
+            <button class="icon-btn" title="下移">↓</button>
+            <button class="icon-btn" title="属性" onclick="toggleDetail(this)">⚙</button>
+            <button class="icon-btn danger" title="删除" onclick="removeFieldRow(this)">✕</button>
+          </div>
+          <div class="fe-detail" hidden>
+            <div class="fe-detail-row">
+              <label class="fe-detail-item"><input type="checkbox" class="check" checked>i18n</label>
+              <label class="fe-detail-item"><input type="checkbox" class="check">server_only</label>
+              <span class="fe-detail-item field-comment"><span class="item-label">注释</span><textarea class="detail-input comment-input" rows="1" placeholder="物品名称"></textarea></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ItemTypeId：int32 + ref（外键 tag 镜像 ⚙ 展开区 ref 下拉） -->
+        <div class="fe-row">
+          <div class="fe-type-col" data-expr="int32">
+            <div class="type-pill">
+              <span class="tp-name"></span>
+              <button class="tp-pick" title="选择类型" onclick="openTypePick(this)">✎</button>
+            </div>
+          </div>
+          <span class="fe-name"><span class="name-text" onclick="editFieldName(this)">ItemTypeId</span></span>
+          <div class="fe-tags">
+            <span class="tag-attr" data-tag="i18n" hidden>🌐 i18n</span>
+            <span class="tag-attr" data-tag="server_only" hidden>🖥 server</span>
+            <span class="tag-attr" data-tag="group_key" hidden>🗂 按品类</span>
+            <span class="tag-ref" data-tag="ref">🔗 <span class="ref-name">ItemType</span></span>
+          </div>
+          <div class="fe-ops">
+            <button class="icon-btn" title="上移">↑</button>
+            <button class="icon-btn" title="下移">↓</button>
+            <button class="icon-btn" title="属性" onclick="toggleDetail(this)">⚙</button>
+            <button class="icon-btn danger" title="删除" onclick="removeFieldRow(this)">✕</button>
+          </div>
+          <div class="fe-detail" hidden>
+            <div class="fe-detail-row">
+              <label class="fe-detail-item"><input type="checkbox" class="check">i18n</label>
+              <label class="fe-detail-item"><input type="checkbox" class="check">server_only</label>
+              <span class="fe-detail-item">ref
+                <select class="type-select ref-in-detail" onchange="updateRefTag(this)"><option>ItemType</option><option>Item</option><option>Quest</option></select>
+              </span>
+              <span class="fe-detail-item field-comment"><span class="item-label">注释</span><textarea class="detail-input comment-input" rows="1" placeholder="物品类型"></textarea></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rarity：enum → 类型表达式显示具名类型名 Rarity -->
+        <div class="fe-row">
+          <div class="fe-type-col" data-expr="Rarity">
+            <div class="type-pill">
+              <span class="tp-name"></span>
+              <button class="tp-pick" title="选择类型" onclick="openTypePick(this)">✎</button>
+            </div>
+          </div>
+          <span class="fe-name"><span class="name-text" onclick="editFieldName(this)">Rarity</span></span>
+          <div class="fe-tags">
+            <span class="tag-attr" data-tag="i18n" hidden>🌐 i18n</span>
+            <span class="tag-attr" data-tag="server_only" hidden>🖥 server</span>
+            <span class="tag-attr" data-tag="group_key" hidden>🗂 按品类</span>
+            <span class="tag-ref" data-tag="ref" hidden>🔗 <span class="ref-name"></span></span>
+          </div>
+          <div class="fe-ops">
+            <button class="icon-btn" title="上移">↑</button>
+            <button class="icon-btn" title="下移">↓</button>
+            <button class="icon-btn" title="属性" onclick="toggleDetail(this)">⚙</button>
+            <button class="icon-btn danger" title="删除" onclick="removeFieldRow(this)">✕</button>
+          </div>
+          <div class="fe-detail" id="rarity-detail" hidden>
+            <div class="compound-block" style="padding:0;border:0;background:transparent;">
+              <div class="compound-title">引用类型 <span class="type-name">Rarity</span>
+                <span class="tag">common.yaml</span>
+                <button class="link-btn" onclick="openTypeModal('view','Rarity')">查看↗</button>
+              </div>
+              <div class="chip-input">
+                <span class="chip">common</span>
+                <span class="chip">rare</span>
+                <span class="chip">epic</span>
+              </div>
+            </div>
+            <div class="compound-divider"></div>
+            <div class="fe-detail-row">
+              <label class="fe-detail-item"><input type="checkbox" class="check">i18n</label>
+              <label class="fe-detail-item"><input type="checkbox" class="check">server_only</label>
+              <label class="fe-detail-item"><input type="checkbox" class="check">按品类查询</label>
+              <span class="fe-detail-item field-comment" style="flex:1;min-width:200px"><span class="item-label">注释</span><textarea class="detail-input comment-input" rows="1" placeholder="品质说明"></textarea></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- DropRange：struct → 类型表达式显示具名类型名 DropRange -->
+        <div class="fe-row">
+          <div class="fe-type-col" data-expr="DropRange">
+            <div class="type-pill">
+              <span class="tp-name"></span>
+              <button class="tp-pick" title="选择类型" onclick="openTypePick(this)">✎</button>
+            </div>
+          </div>
+          <span class="fe-name"><span class="name-text" onclick="editFieldName(this)">DropRange</span></span>
+          <div class="fe-tags">
+            <span class="tag-attr" data-tag="i18n" hidden>🌐 i18n</span>
+            <span class="tag-attr" data-tag="server_only" hidden>🖥 server</span>
+            <span class="tag-attr" data-tag="group_key" hidden>🗂 按品类</span>
+            <span class="tag-ref" data-tag="ref" hidden>🔗 <span class="ref-name"></span></span>
+          </div>
+          <div class="fe-ops">
+            <button class="icon-btn" title="上移">↑</button>
+            <button class="icon-btn" title="下移">↓</button>
+            <button class="icon-btn" title="属性" onclick="toggleDetail(this)">⚙</button>
+            <button class="icon-btn danger" title="删除" onclick="removeFieldRow(this)">✕</button>
+          </div>
+          <div class="fe-detail" id="droprange-detail" hidden>
+            <div class="compound-block" style="padding:0;border:0;background:transparent;">
+              <div class="compound-title">引用类型 <span class="type-name">DropRange</span>
+                <span class="tag">common.yaml</span>
+                <button class="link-btn" onclick="openTypeModal('view','DropRange')">查看↗</button>
+              </div>
+              <div class="chip-input">
+                <span class="tv-chip">Min: int32</span>
+                <span class="tv-chip">Max: int32</span>
+              </div>
+            </div>
+            <div class="compound-divider"></div>
+            <div class="fe-detail-row">
+              <label class="fe-detail-item"><input type="checkbox" class="check">i18n</label>
+              <label class="fe-detail-item"><input type="checkbox" class="check">server_only</label>
+              <label class="fe-detail-item"><input type="checkbox" class="check">按品类查询</label>
+              <span class="fe-detail-item field-comment" style="flex:1;min-width:200px"><span class="item-label">注释</span><textarea class="detail-input comment-input" rows="1" placeholder="掉落区间"></textarea></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tags：vector → 类型表达式显示 int32[]（元素并入类型控件） -->
+        <div class="fe-row">
+          <div class="fe-type-col" data-expr="int32[]">
+            <div class="type-pill">
+              <span class="tp-name"></span>
+              <button class="tp-pick" title="选择类型" onclick="openTypePick(this)">✎</button>
+            </div>
+          </div>
+          <span class="fe-name"><span class="name-text" onclick="editFieldName(this)">Tags</span></span>
+          <div class="fe-tags">
+            <span class="tag-attr" data-tag="i18n" hidden>🌐 i18n</span>
+            <span class="tag-attr" data-tag="server_only" hidden>🖥 server</span>
+            <span class="tag-attr" data-tag="group_key" hidden>🗂 按品类</span>
+            <span class="tag-ref" data-tag="ref" hidden>🔗 <span class="ref-name"></span></span>
+          </div>
+          <div class="fe-ops">
+            <button class="icon-btn" title="上移">↑</button>
+            <button class="icon-btn" title="下移">↓</button>
+            <button class="icon-btn" title="属性" onclick="toggleDetail(this)">⚙</button>
+            <button class="icon-btn danger" title="删除" onclick="removeFieldRow(this)">✕</button>
+          </div>
+          <div class="fe-detail compound-block" id="tags-detail" hidden>
+            <div class="vector-opts">
+              <span style="font-size:12px;color:var(--ink-3)">长度模式</span>
+              <div class="radio-pair">
+                <button class="radio-opt active" onclick="setLenMode(this,'var')">变长</button>
+                <button class="radio-opt" onclick="setLenMode(this,'fixed')">定长</button>
+              </div>
+              <span class="fe-detail-item" data-len-input style="display:none">定长 <input class="fixed-len" value="5"></span>
+              <span class="len-preview" data-len-preview style="display:none">→ 表头 Tags_1 .. Tags_5</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-ghost" id="add-field-btn" onclick="addFieldRow()" style="border-style:dashed;width:100%;padding:10px;color:var(--ink-2)">+ 添加字段</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <span class="hint" style="margin-right:auto">结构改动将影响 Excel 表头与导出二进制</span>
+      <button class="btn btn-ghost" onclick="closeEdit()">取消</button>
+      <button class="btn btn-primary" onclick="saveSchema()">保存 Schema</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 类型 pick 模态（基础类型 / 类型库分组 + 搜索 + 数组标记） ================= -->
+<div class="modal-mask modal-anim" id="type-pick-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tp-title">
+    <div class="modal-head">
+      <span id="tp-title">选择类型</span>
+      <button class="modal-close" onclick="closeTypePick()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input class="tp-search" id="tp-search" placeholder="搜索类型…" oninput="filterTypes(this)">
+      <div id="tp-groups">
+        <div class="tp-group-title" id="tp-recent-title" hidden>最近使用</div>
+        <div class="tp-recent" id="tp-recent" hidden></div>
+        <div class="tp-group-title">基础类型</div>
+        <div class="tp-grid">
+          <button class="tp-item" data-type="int32">int32</button>
+          <button class="tp-item" data-type="int64">int64</button>
+          <button class="tp-item" data-type="float">float</button>
+          <button class="tp-item" data-type="double">double</button>
+          <button class="tp-item" data-type="bool">bool</button>
+          <button class="tp-item" data-type="string">string</button>
+        </div>
+        <div class="tp-group-title">类型库 <span class="hint" id="tp-lib-count">共 0 个 · 滚动查看</span></div>
+        <div class="seg tp-module-seg" id="tp-module-filter">
+          <button class="pill active" data-module="">全部</button>
+          <button class="pill" data-module="common">common</button>
+          <button class="pill" data-module="ui">ui</button>
+        </div>
+        <div class="tp-lib-list" id="tp-lib-list"></div>
+        <div class="tp-empty-search" id="tp-empty-search" hidden></div>
+      </div>
+      <div class="tp-array-row">
+        <label class="fe-detail-item"><input type="checkbox" class="check" id="tp-array" onchange="toggleTpArray(this)">标记为数组类型</label>
+        <span class="hint" style="margin-left:auto" id="tp-array-hint">勾选后当前类型变为数组（如 int32[] / DropRange[]）</span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <span class="hint" style="margin-right:auto">当前：<span id="tp-current" class="mono"></span></span>
+      <button class="btn btn-ghost" onclick="closeTypePick()">取消</button>
+      <button class="btn btn-primary" onclick="applyTypePick()">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 删除表确认模态 ================= -->
+<div class="modal-mask modal-anim" id="delete-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+    <div class="modal-head"><span id="delete-title">删除表</span></div>
+    <div class="modal-body">
+      <p style="margin:0 0 4px">将删除 <b class="mono" id="delete-target">Item</b> 的 schema 定义与 Excel 模板，此操作不可恢复。</p>
+      <div class="hint">已导出的产物与翻译文件不受影响。</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeDelete()">取消</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 查看/编辑类型模态（同一模态，两种模式） ================= -->
+<div class="modal-mask modal-anim" id="type-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="type-title">
+    <div class="modal-head">
+      <span id="type-title">查看类型 · Rarity</span>
+      <span class="mode-badge read" id="type-mode-badge">只读</span>
+      <button class="modal-close" onclick="closeTypeModal()">✕</button>
+    </div>
+    <div class="type-crumb" id="type-crumb" hidden>
+      <span class="crumb-root">类型库</span><span class="crumb-sep">/</span>
+      <button class="crumb-item" onclick="goCrumb(0)">DropRange</button><span class="crumb-sep">/</span>
+      <button class="crumb-item current" onclick="goCrumb(1)">嵌套:DamageRange</button>
+    </div>
+
+    <div class="modal-body" id="type-view">
+      <div class="type-viewer">
+        <div class="tv-head">
+          <span class="tv-kind-big enum" id="tv-kind">enum</span>
+          <span class="tv-name-big" id="tv-name">Rarity</span>
+          <span class="tv-module" id="tv-module">module: common</span>
+        </div>
+        <div class="tv-underlying" id="tv-underlying">
+          底层类型 <span class="mono" id="tv-underlying-val">int32</span>
+        </div>
+
+        <div class="tv-sec">
+          <div class="tv-sec-label">枚举值</div>
+          <div class="tv-chips" id="tv-chips">
+            <span class="tv-chip">common</span>
+            <span class="tv-chip">rare</span>
+            <span class="tv-chip">epic</span>
+          </div>
+        </div>
+
+        <div class="tv-sec">
+          <div class="tv-sec-label">注释</div>
+          <div class="tv-comment" id="tv-comment">物品品质等级，控制掉落与显示颜色。</div>
+        </div>
+
+        <div class="tv-sec">
+          <div class="tv-sec-label" id="tv-ref-label">被 2 个字段引用</div>
+          <div id="tv-refs">
+            <div class="tv-ref-row">
+              <span class="ref-table">Item</span><span class="ref-field">.Rarity</span>
+              <span class="ref-role">直接引用</span>
+            </div>
+            <div class="tv-ref-row">
+              <span class="ref-table">Quest</span><span class="ref-field">.RewardRarity</span>
+              <span class="ref-role">直接引用</span>
+            </div>
+          </div>
+          <div class="hint">修改该类型会影响以上表，导出后需同步。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-body" id="type-edit" hidden>
+      <div class="field">
+        <label class="field-label">类型名 <span class="req">*</span></label>
+        <input class="form-input" id="te-name" value="Rarity" placeholder="如 DropRange / Rarity" oninput="onTypeNameInput(this)">
+        <div class="hint">全局唯一，不能与字段名或其他类型重名</div>
+        <div class="error-inline" id="rename-warn" hidden>
+          <span>改名会影响 <b class="mono" id="rename-refs">2</b> 个字段引用，保存后需同步导出。</span>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">类型</label>
+        <div class="kind-seg">
+          <button class="active" id="te-kind-enum" onclick="switchTypeKind('enum')">enum</button>
+          <button id="te-kind-struct" onclick="switchTypeKind('struct')">struct</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">所属模块</label>
+        <div class="module-pick">
+          <select class="form-input" style="width:auto" id="te-module">
+            <option>common</option><option>combat</option><option>ui</option>
+          </select>
+          <button class="link-btn" id="te-module-add" onclick="startAddModule()">+ 新增模块</button>
+          <span class="module-add-input" id="te-module-new" hidden>
+            <input class="form-input" id="te-module-name" placeholder="如 audio / quest" style="width:160px">
+            <button class="btn btn-sm btn-primary" onclick="confirmAddModule()">确认</button>
+            <button class="btn btn-sm btn-ghost" onclick="cancelAddModule()">取消</button>
+          </span>
+        </div>
+        <div class="hint">决定保存到 types/&lt;module&gt;.yaml；新模块首次使用会自动创建该文件</div>
+      </div>
+      <div class="field" id="te-kind-enum-fields">
+        <label class="field-label">枚举值 <span class="req">*</span></label>
+        <div class="chip-input">
+          <span class="chip">common<span class="chip-x">×</span></span>
+          <span class="chip">rare<span class="chip-x">×</span></span>
+          <span class="chip">epic<span class="chip-x">×</span></span>
+          <input class="chip-add" placeholder="+ 添加">
+        </div>
+        <div class="hint">值必须是合法标识符；顺序决定枚举数值</div>
+        <div class="enum-underlying" style="margin-top:10px">
+          <label class="fe-detail-item">底层类型
+            <select class="type-select" style="font-size:12px;padding:3px 22px 3px 8px"><option selected>int32</option><option>int8</option><option>int16</option><option>int64</option><option>uint8</option><option>uint16</option><option>uint32</option><option>uint64</option></select>
+          </label>
+          <div class="hint" style="display:inline-block;margin-left:10px">FlatBuffers 枚举需整数底层类型；决定二进制宽度与 C# 生成类型</div>
+        </div>
+      </div>
+      <div class="field" id="te-kind-struct-fields" hidden>
+        <label class="field-label">子字段</label>
+        <div class="sub-fields">
+          <div class="sub-field-row">
+            <input class="sub-name-input" value="Min">
+            <select class="type-select"><option>int32</option><option>int64</option><option>float</option><option>double</option><option>bool</option><option>struct</option></select>
+            <input class="sub-comment" placeholder="字段注释（可选）" value="掉落下限">
+            <button class="icon-btn danger">✕</button>
+          </div>
+          <div class="sub-field-row">
+            <input class="sub-name-input" value="Range">
+            <select class="type-select"><option>struct</option><option>int32</option><option>int64</option><option>float</option><option>double</option><option>bool</option></select>
+            <span class="sub-struct-ref">
+              <select class="type-select" style="border-color:var(--accent);background:var(--accent-softer);color:var(--primary);font-weight:600"><option>DropRange</option><option>DamageRange</option></select>
+              <button class="link-btn" onclick="pushTypeView('DamageRange')">查看↗</button>
+            </span>
+            <input class="sub-comment" placeholder="字段注释（可选）" value="嵌套结构体">
+            <button class="icon-btn danger">✕</button>
+          </div>
+          <button class="add-sub">+ 添加子字段</button>
+        </div>
+        <div class="hint">子字段支持标量或引用具名 struct（FlatBuffers struct 不能含 string/vector/table）；注释会进 Excel 表头</div>
+      </div>
+      <div class="field">
+        <label class="field-label">注释</label>
+        <input class="form-input" id="te-comment" value="物品品质等级，控制掉落与显示颜色。">
+      </div>
+      <div class="error-inline" id="ref-protect-demo" hidden>
+        <span>无法删除：类型 <span class="mono" id="te-delete-name">DropRange</span> 被 <span class="mono">Item.DropRange</span> 引用，请先解除引用</span>
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="cancelTypeModal()">取消</button>
+      <button class="btn btn-danger" id="type-delete" onclick="showDeleteProtect()" hidden>删除类型</button>
+      <button class="btn btn-ghost" id="type-enter-edit" onclick="enterEditMode()">编辑</button>
+      <button class="btn btn-primary" id="type-save" onclick="saveType()" hidden>保存类型</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- 页签切换 ----------
+function switchTab(name) {
+  document.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("active"); });
+  document.querySelectorAll(".tab-page").forEach(function (p) { p.classList.remove("active"); });
+  document.getElementById("page-" + name).classList.add("active");
+  document.querySelectorAll(".tab")[name === "tables" ? 0 : 1].classList.add("active");
+}
+
+// ---------- 字段名 inline edit（普通字段可编辑，主键/code 锁定无编辑入口） ----------
+function editFieldName(textEl) {
+  var name = textEl.textContent.trim();
+  var input = document.createElement("input");
+  input.type = "text";
+  input.className = "name-input";
+  input.value = name;
+  textEl.replaceWith(input);
+  input.focus();
+  input.select();
+  function commit() {
+    var val = input.value.trim();
+    var span = document.createElement("span");
+    span.className = "name-text";
+    span.setAttribute("onclick", "editFieldName(this)");
+    span.textContent = val || name;
+    // 空名：占位提示（未命名字段）保持可点击再编辑，不丢失编辑入口
+    span.classList.toggle("empty", !(val || name));
+    input.replaceWith(span);
+    // R1：校验错误即时显示（空名 / 与现有字段重名）
+    var row = span.closest(".fe-row");
+    row.classList.remove("invalid");
+    var oldErr = row.querySelector(".fe-err");
+    if (oldErr) oldErr.remove();
+    if (!val) { markInvalid(row, "字段名必填"); return; }
+    var dup = false;
+    document.querySelectorAll(".fe-row").forEach(function (o) {
+      if (o !== row && fieldNameOf(o) === val) dup = true;
+    });
+    if (dup) markInvalid(row, "与字段 " + val + " 重复");
+  }
+  input.addEventListener("blur", commit);
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { input.blur(); }
+    if (e.key === "Escape") { commit(); }
+  });
+}
+
+// ---------- 字段编辑器校验（R1：校验错误即时显示） ----------
+function fieldNameOf(row) {
+  var nt = row.querySelector(".name-text");
+  if (nt) return nt.textContent.trim();
+  var fn = row.querySelector(".fe-name");
+  if (!fn) return "";
+  var clone = fn.cloneNode(true);
+  clone.querySelectorAll(".lock-badge").forEach(function (b) { b.remove(); });
+  return clone.textContent.trim();
+}
+function markInvalid(row, msg) {
+  row.classList.add("invalid");
+  var err = document.createElement("div");
+  err.className = "fe-err";
+  err.textContent = msg;
+  row.appendChild(err);
+}
+function validateFieldRow(row) {
+  row.classList.remove("invalid");
+  var err = row.querySelector(".fe-err");
+  if (err) err.remove();
+  var name = fieldNameOf(row);
+  if (!name) { markInvalid(row, "字段名必填"); return false; }
+  var dup = false;
+  document.querySelectorAll(".fe-row").forEach(function (o) {
+    if (o !== row && fieldNameOf(o) === name) dup = true;
+  });
+  if (dup) { markInvalid(row, "与字段 " + name + " 重复"); return false; }
+  return true;
+}
+
+// ---------- 添加 / 删除字段行 ----------
+function addFieldRow() {
+  var btn = document.getElementById("add-field-btn");
+  var row = document.createElement("div");
+  row.className = "fe-row invalid";   // 新行默认空名 → 即时展示校验错误态
+  row.innerHTML =
+    '<div class="fe-type-col" data-expr="int32">' +
+    '<div class="type-pill">' +
+    '<span class="tp-name"></span>' +
+    '<button class="tp-pick" title="选择类型" onclick="openTypePick(this)">✎</button>' +
+    '</div>' +
+    '</div>' +
+    '<span class="fe-name"><span class="name-text" onclick="editFieldName(this)"></span></span>' +
+    '<div class="fe-tags">' +
+    '<span class="tag-attr" data-tag="i18n" hidden>🌐 i18n</span>' +
+    '<span class="tag-attr" data-tag="server_only" hidden>🖥 server</span>' +
+    '<span class="tag-attr" data-tag="group_key" hidden>🗂 按品类</span>' +
+    '<span class="tag-ref" data-tag="ref" hidden>🔗 <span class="ref-name"></span></span>' +
+    '</div>' +
+    '<div class="fe-ops">' +
+    '<button class="icon-btn" title="上移">↑</button>' +
+    '<button class="icon-btn" title="下移">↓</button>' +
+    '<button class="icon-btn" title="属性" onclick="toggleDetail(this)">⚙</button>' +
+    '<button class="icon-btn danger" title="删除" onclick="removeFieldRow(this)">✕</button>' +
+    '</div>' +
+    '<div class="fe-detail" hidden>' +
+    '<div class="fe-detail-row">' +
+    '<label class="fe-detail-item"><input type="checkbox" class="check">i18n</label>' +
+    '<label class="fe-detail-item"><input type="checkbox" class="check">server_only</label>' +
+    '<label class="fe-detail-item"><input type="checkbox" class="check">按品类查询</label>' +
+    '<span class="fe-detail-item field-comment"><span class="item-label">注释</span><textarea class="detail-input comment-input" rows="1" placeholder="字段说明"></textarea></span>' +
+    '</div></div>' +
+    '<div class="fe-err">字段名必填</div>';
+  btn.parentNode.insertBefore(row, btn);
+  // 动态行的手动初始化：类型表达式控件 + 属性互斥/tag 联动
+  initTypePill(row.querySelector(".fe-type-col"));
+  bindAttrChecks(row);
+  editFieldName(row.querySelector(".name-text"));
+}
+function removeFieldRow(btn) {
+  var row = btn.closest(".fe-row");
+  // 主键锁定：不可删除（R9.5：建表时就有，不能删）
+  if (row.querySelector(".tag-lock.pk")) { showEditError("主键字段不可删除"); return; }
+  row.remove();
+}
+
+// ---------- 保存 Schema：全量校验 → 错误条汇总 ----------
+function showEditError(msg) {
+  document.getElementById("edit-errors-text").textContent = msg;
+  document.getElementById("edit-errors").hidden = false;
+}
+function saveSchema() {
+  var problems = [];
+  document.querySelectorAll(".fe-row").forEach(function (row) {
+    if (!validateFieldRow(row)) problems.push(fieldNameOf(row) || "未命名字段");
+  });
+  var nameInput = document.getElementById("table-name-input");
+  if (!nameInput.value.trim()) {
+    nameInput.classList.add("invalid");
+    problems.push("表名");
+  } else {
+    nameInput.classList.remove("invalid");
+  }
+  if (problems.length) {
+    showEditError("存在 " + problems.length + " 处校验问题（" + problems.join("、") + "），请修复后再保存");
+    return;
+  }
+  closeEdit();
+}
+
+// ---------- 属性互斥联动：i18n ⇄ server_only（勾一个禁另一个）+ 状态 tag 同步 ----------
+function bindAttrChecks(scope) {
+  (scope || document).querySelectorAll(".fe-detail-row").forEach(function (r) {
+    var i18n = null, so = null;
+    r.querySelectorAll("label.fe-detail-item").forEach(function (lb) {
+      var t = lb.textContent.trim();
+      if (t === "i18n") i18n = lb.querySelector("input.check");
+      if (t === "server_only") so = lb.querySelector("input.check");
+    });
+    if (!i18n || !so) return;
+    function sync() {
+      var i18nLocked = so.checked, soLocked = i18n.checked;
+      i18n.disabled = i18nLocked;
+      so.disabled = soLocked;
+      i18n.closest("label").classList.toggle("attr-lock", i18nLocked);
+      so.closest("label").classList.toggle("attr-lock", soLocked);
+      if (i18nLocked && i18n.checked) i18n.checked = false;
+      if (soLocked && so.checked) so.checked = false;
+      var row = r.closest(".fe-row");
+      if (row) syncTags(row);
+    }
+    i18n.addEventListener("change", sync);
+    so.addEventListener("change", sync);
+    sync();
+  });
+  // 其余属性 checkbox（按品类查询）→ tag 显隐
+  (scope || document).querySelectorAll("label.fe-detail-item").forEach(function (lb) {
+    var t = lb.textContent.trim();
+    var cb = lb.querySelector("input.check");
+    if (t === "按品类查询" && cb) {
+      cb.addEventListener("change", function () {
+        var row = lb.closest(".fe-row");
+        if (row) syncTags(row);
+      });
+    }
+  });
+}
+
+// ---------- 状态 tag 同步：⚙ 展开区 checkbox / ref 下拉 → 行级 tag 镜像（只读徽章） ----------
+function syncTags(row) {
+  var tags = row.querySelector(".fe-tags");
+  var detail = row.querySelector(".fe-detail");
+  if (!tags) return;
+  if (detail) {
+    detail.querySelectorAll("label.fe-detail-item").forEach(function (lb) {
+      var t = lb.textContent.trim();
+      var cb = lb.querySelector("input.check");
+      var map = { i18n: "i18n", server_only: "server_only", "按品类查询": "group_key" };
+      if (map[t] && cb) {
+        var el = tags.querySelector('[data-tag="' + map[t] + '"]');
+        if (el) el.hidden = !cb.checked;
+      }
+    });
+    // ref 下拉（可能已被 initCustomSelect 换成 .dsh-select）
+    var refSel = detail.querySelector(".ref-in-detail");
+    if (refSel) {
+      var refTag = tags.querySelector('[data-tag="ref"]');
+      var label = refSel.classList.contains("dsh-select") ? refSel.querySelector(".dsh-select-label").textContent.trim() : (refSel.value || "");
+      if (refTag) {
+        if (label) { refTag.querySelector(".ref-name").textContent = label; refTag.hidden = false; }
+        else refTag.hidden = true;
+      }
+    }
+  }
+}
+function updateRefTag(wrap) {
+  var row = wrap.closest(".fe-row");
+  if (row) syncTags(row);
+}
+
+// ---------- 字段详情展开（⚙ 按钮：引用类型块 + 属性行统一展开区） ----------
+function toggleDetail(btn) {
+  var detail = btn.closest(".fe-row").querySelector(".fe-detail");
+  if (detail) detail.hidden = !detail.hidden;
+}
+
+// ---------- 类型胶囊 + 类型 pick 模态（类型列：固定长度类型名 + pick 按钮一组；模态分组/搜索/数组标记） ----------
+// 类型表达式形态与 Excel 表头注解同语言：int32 / string / Rarity / DropRange / int32[] / DropRange[]
+var TYPE_LIB = {
+  Rarity:    { kind: "enum",   module: "common", comment: "物品品质等级，控制掉落与显示颜色。" },
+  DropRange: { kind: "struct", module: "common", comment: "掉落数量区间。" },
+  Layer:     { kind: "enum",   module: "ui",     comment: "界面层级。" }
+};   // 全局具名类型库（演示子集；注释在类型库编辑，条目上显示）
+var SCALAR_TYPES = ["int32", "int64", "float", "double", "bool", "string"];
+var VEC_ELEM_TYPES = SCALAR_TYPES.concat(Object.keys(TYPE_LIB));          // vector 元素：标量 + 具名类型
+
+function exprInfo(expr) {
+  var isVec = /\[\]$/.test(expr);
+  var core = isVec ? expr.slice(0, -2) : expr;
+  return { isVec: isVec, core: core, isNamed: Object.prototype.hasOwnProperty.call(TYPE_LIB, core) };
+}
+
+// 行内类型胶囊：从 data-expr 渲染（固定长度类型名 + pick 按钮；具名类型 ref 样式 + tp-name 即 link 可查看）
+function initTypePill(col) {
+  var expr = col.getAttribute("data-expr") || "int32";
+  var pill = col.querySelector(".type-pill");
+  if (!pill) return;
+  var nameEl = pill.querySelector(".tp-name");
+  var info = exprInfo(expr);
+  nameEl.textContent = expr;
+  pill.classList.toggle("ref", info.isNamed);
+  // 具名类型 → tp-name 本身是 link（查看类型定义，tag-link 形式，减少样式）
+  pill.classList.toggle("link", info.isNamed);
+  nameEl.title = info.isNamed ? "查看类型 " + info.core : "";
+  if (info.isNamed) {
+    nameEl.setAttribute("onclick", "openTypeModal('view','" + info.core + "')");
+  } else {
+    nameEl.removeAttribute("onclick");
+  }
+  col.setAttribute("data-expr", expr);
+}
+
+// ---------- 类型 pick 模态 ----------
+var TP_TARGET = null;   // 当前打开 pick 的目标类型列
+
+// 最近使用（命令面板式：去重置顶，最多 5 个）
+var TP_RECENT = [];
+// 类型库模块筛选（全部 / common / ui…）
+var TP_MODULE = "";
+
+// 类型库列表：从 TYPE_LIB 渲染（条目带注释 + 模块，可滚动 + 搜索/模块筛选）
+function renderTpLib() {
+  var box = document.getElementById("tp-lib-list");
+  if (!box) return;
+  box.innerHTML = "";
+  Object.keys(TYPE_LIB).forEach(function (name) {
+    var d = TYPE_LIB[name];
+    var b = document.createElement("button");
+    b.className = "tp-lib-item";
+    b.setAttribute("data-type", name);
+    b.setAttribute("data-module", d.module);
+    b.innerHTML =
+      '<span class="tp-name-cell">' + name + '<span class="tp-kind">' + d.kind + '</span></span>' +
+      '<span class="tp-cmt">' + (d.comment || "") + '</span>' +
+      '<span class="tp-module">' + d.module + '</span>';
+    b.addEventListener("click", function () { selectTpType(b); });
+    box.appendChild(b);
+  });
+  var cnt = document.getElementById("tp-lib-count");
+  if (cnt) cnt.textContent = "共 " + Object.keys(TYPE_LIB).length + " 个 · 滚动查看";
+}
+function setTpModule(mod) {
+  TP_MODULE = mod;
+  document.querySelectorAll("#tp-module-filter .pill").forEach(function (p) {
+    p.classList.toggle("active", p.getAttribute("data-module") === mod);
+  });
+  var search = document.getElementById("tp-search");
+  filterTypes(search);
+}
+
+function tpSelectedType() {
+  var it = document.querySelector("#tp-groups .tp-item.active, #tp-groups .tp-lib-item.active");
+  return it ? it.getAttribute("data-type") : null;
+}
+// 选中类型 → 数组开关联动（依赖控件模式：先选类型，能数组才可标记；当前类型库全部支持数组，机制保留扩展）
+function canBeArray(t) {
+  // 未来类型库中不支持数组的类型在此返回 false（当前全部支持；vector 元素不可再嵌套数组）
+  return t !== "vector";
+}
+function selectTpType(item) {
+  document.querySelectorAll("#tp-groups .tp-item, #tp-groups .tp-lib-item").forEach(function (it) {
+    it.classList.toggle("active", it === item);
+  });
+  // 数组开关可用性 = 已选类型 && 该类型可数组
+  var arr = document.getElementById("tp-array");
+  var sel = tpSelectedType();
+  var can = sel && canBeArray(sel);
+  arr.disabled = !can;
+  arr.closest("label").classList.toggle("attr-lock", !can);
+}
+
+function openTypePick(btn) {
+  var col = btn.closest(".fe-type-col");
+  if (!col) return;
+  TP_TARGET = col;
+  var expr = col.getAttribute("data-expr") || "int32";
+  var info = exprInfo(expr);
+  // 选中当前类型项（tp-item / tp-lib-item 都要清/设）
+  document.querySelectorAll("#tp-groups .tp-item, #tp-groups .tp-lib-item").forEach(function (it) {
+    it.classList.toggle("active", it.getAttribute("data-type") === info.core);
+  });
+  // 数组态 + 开关可用性
+  var arr = document.getElementById("tp-array");
+  arr.checked = info.isVec;
+  toggleTpArray(arr);
+  selectTpType(document.querySelector("#tp-groups .tp-item.active, #tp-groups .tp-lib-item.active"));
+  // 打开时重置搜索 + 空态 + 聚焦搜索框（键盘优先）
+  var search = document.getElementById("tp-search");
+  if (search) { search.value = ""; search.focus(); }
+  filterTypes(search);
+  // 当前预览
+  document.getElementById("tp-current").textContent = expr;
+  document.getElementById("type-pick-modal").hidden = false;
+}
+function closeTypePick() {
+  document.getElementById("type-pick-modal").hidden = true;
+  TP_TARGET = null;
+}
+function filterTypes(input) {
+  var q = input ? (input.value || "").trim().toLowerCase() : "";
+  var anyVisible = false;
+  document.querySelectorAll("#tp-groups .tp-item, #tp-groups .tp-lib-item").forEach(function (it) {
+    var name = it.getAttribute("data-type").toLowerCase();
+    var mod = (it.querySelector(".tp-module") || {}).textContent || "";
+    var searchMatch = !q || name.indexOf(q) >= 0 || mod.toLowerCase().indexOf(q) >= 0;
+    var moduleMatch = it.classList.contains("tp-lib-item") ? (!TP_MODULE || it.getAttribute("data-module") === TP_MODULE) : true;
+    var vis = searchMatch && moduleMatch;
+    it.classList.toggle("hidden", !vis);
+    if (vis) anyVisible = true;
+  });
+  // 空态（Zero results）：搜索/模块筛选无结果提示
+  var es = document.getElementById("tp-empty-search");
+  if (es) {
+    es.hidden = anyVisible;
+    if (!anyVisible) {
+      var parts = [];
+      if (q) parts.push('"' + q + '"');
+      if (TP_MODULE) parts.push("模块 " + TP_MODULE);
+      es.innerHTML = "未找到匹配的类型" + (parts.length ? "（" + parts.join(" · ") + "）" : "") + "，试试其他关键词或模块";
+    }
+  }
+}
+function toggleTpArray(cb) {
+  // 勾选数组 = 当前选中类型直接变数组（元素即所选类型，无独立元素选择）
+  var sel = tpSelectedType();
+  document.getElementById("tp-current").textContent = (cb.checked && sel) ? sel + "[]" : (sel || "");
+}
+function applyTypePick() {
+  if (!TP_TARGET) return;
+  var cur = tpSelectedType();
+  if (!cur) return;
+  var arr = document.getElementById("tp-array");
+  var expr = arr.checked ? cur + "[]" : cur;
+  TP_TARGET.setAttribute("data-expr", expr);
+  initTypePill(TP_TARGET);
+  // 记录最近使用（去重置顶）
+  TP_RECENT = [cur].concat(TP_RECENT.filter(function (t) { return t !== cur; })).slice(0, 5);
+  renderTpRecent();
+  // 数组元素是具名 struct → 强制定长（R4：vector<struct> 必须配 fixed_length）
+  if (arr.checked && TYPE_LIB[cur] && TYPE_LIB[cur].kind === "struct") {
+    var vec = TP_TARGET.closest(".fe-row").querySelector(".vector-opts");
+    if (vec) {
+      var varBtn = vec.querySelector(".radio-opt");
+      setLenMode(vec.querySelectorAll(".radio-opt")[1], "fixed");
+      varBtn.disabled = true; varBtn.style.opacity = "0.4"; varBtn.style.cursor = "not-allowed";
+    }
+  }
+  closeTypePick();
+}
+function renderTpRecent() {
+  var box = document.getElementById("tp-recent");
+  var title = document.getElementById("tp-recent-title");
+  if (!box) return;
+  box.innerHTML = "";
+  if (!TP_RECENT.length) { box.hidden = true; if (title) title.hidden = true; return; }
+  TP_RECENT.forEach(function (t) {
+    var b = document.createElement("button");
+    b.className = "tp-item" + (tpSelectedType() === t ? " active" : "");
+    b.setAttribute("data-type", t);
+    b.innerHTML = "<span>" + t + "</span>";
+    b.addEventListener("click", function () { selectTpType(b); });
+    box.appendChild(b);
+  });
+  box.hidden = false;
+  if (title) title.hidden = false;
+}
+
+// ---------- vector 长度模式 ----------
+function setLenMode(btn, mode) {
+  var wrap = btn.closest(".vector-opts");
+  wrap.querySelectorAll(".radio-opt").forEach(function (b) { b.classList.remove("active"); });
+  btn.classList.add("active");
+  var isFixed = mode === "fixed";
+  wrap.querySelector("[data-len-input]").style.display = isFixed ? "" : "none";
+  wrap.querySelector("[data-len-preview]").style.display = isFixed ? "" : "none";
+}
+
+// ---------- 编辑表模态 ----------
+function openEdit(mode) {
+  var title = document.getElementById("edit-title");
+  title.textContent = mode === "create" ? "新增表" : "编辑表 · Item";
+  // 复位校验错误态（上次保存/取消残留）
+  document.getElementById("edit-errors").hidden = true;
+  var nameInput = document.getElementById("table-name-input");
+  if (nameInput) nameInput.classList.remove("invalid");
+  document.querySelectorAll(".fe-row").forEach(function (r) {
+    r.classList.remove("invalid");
+    var e = r.querySelector(".fe-err");
+    if (e) e.remove();
+  });
+  document.getElementById("edit-modal").hidden = false;
+}
+function closeEdit() { document.getElementById("edit-modal").hidden = true; }
+
+// ---------- 删除表确认模态 ----------
+function openDelete(btn) {
+  var row = btn.closest(".schema-row");
+  var name = row ? row.querySelector(".schema-name").textContent.trim() : "Item";
+  document.getElementById("delete-target").textContent = name;
+  document.getElementById("delete-modal").hidden = false;
+}
+function closeDelete() { document.getElementById("delete-modal").hidden = true; }
+function updateEmptyStates() {
+  var tl = document.getElementById("tables-empty");
+  if (tl) tl.hidden = document.querySelectorAll(".schema-list .schema-row").length > 0;
+  var yl = document.getElementById("types-empty");
+  if (yl) yl.hidden = document.querySelectorAll(".type-list .type-row").length > 0;
+}
+function confirmDelete() {
+  var target = document.getElementById("delete-target").textContent;
+  var row = null;
+  document.querySelectorAll(".schema-list .schema-row").forEach(function (r) {
+    if (r.querySelector(".schema-name").textContent.trim() === target) row = r;
+  });
+  if (row) row.remove();
+  updateEmptyStates();
+  closeDelete();
+}
+
+// ---------- 查看/编辑类型模态（同一模态两种模式） ----------
+var TYPE_DATA = {
+  Rarity: { kind: "enum", module: "common", values: ["common","rare","epic"], comment: "物品品质等级，控制掉落与显示颜色。", refs: [["Item",".Rarity"],["Quest",".RewardRarity"]] },
+  DropRange: { kind: "struct", module: "common", struct: [["Min","int32","掉落下限"],["Max","int32","掉落上限"],["Range","struct:DamageRange","嵌套结构体"]], comment: "掉落数量区间。", refs: [["Item",".DropRange"]] },
+  DamageRange: { kind: "struct", module: "common", struct: [["Min","float","伤害下限"],["Max","float","伤害上限"]], comment: "伤害浮动区间（嵌套示例）。", refs: [["DropRange",".Range"]] },
+  Layer: { kind: "enum", module: "ui", values: ["Page","Modal","Panel","Overlay"], comment: "界面层级。", refs: [["UIConfig",".Layer"]] }
+};
+
+// ============================================================================
+// 类型模态导航栈（Modal Stack）
+// 架构：仿 React Navigation StackRouter 的「routes[] + index」状态模型，
+//       配合浏览器 History API（WICG Navigation API 思路）做物理返回键同步，
+//       焦点逐层保存/恢复（HeadlessUI 焦点管理思路）。
+// 为什么不用嵌套模态叠加：嵌套模态是 UX 反模式（Back/Esc 混乱、上下文丢失），
+//       单模态内导航栈 + 面包屑（Hackolade 模式）规避该问题。
+// ============================================================================
+
+// ---- 导航状态（单一数据源，仿 React Navigation navigation state） ----
+// { routes: [{key, name, mode, params}], index }
+var TYPE_NAV = { routes: [], index: -1 };
+
+// ---- 命令式 API（仿 @kolirt/vue-modal：任意函数可打开，可 await） ----
+function openTypeModal(mode, name) {
+  // 根层打开：从类型库/编辑表进入，重置导航状态
+  TYPE_NAV = { routes: [{ key: "type-" + name + "-" + mode, name: name, mode: mode, params: {} }], index: 0 };
+  renderTypeModal();
+  document.getElementById("type-modal").hidden = false;
+  // 浏览器历史同步：打开模态 = pushState（物理返回键可关闭）
+  history.pushState({ modal: "type", nav: TYPE_NAV }, "");
+}
+
+function pushTypeView(name) {
+  // 下钻：嵌套 struct 查看（同一模态内进入子类型，不新开模态）
+  // 若之前返回过（index < routes.length-1），截断旧前进分支再 push（React Navigation navigate 语义）
+  TYPE_NAV.routes = TYPE_NAV.routes.slice(0, TYPE_NAV.index + 1);
+  TYPE_NAV.routes.push({ key: "type-" + name + "-view", name: name, mode: "view", params: {} });
+  TYPE_NAV.index = TYPE_NAV.routes.length - 1;
+  renderTypeModal();
+  history.pushState({ modal: "type", nav: TYPE_NAV }, "");
+}
+
+function goCrumb(i) {
+  // 面包屑点击：回退到 i 层（history.go 一次回退多层，popstate 恢复快照）
+  if (i < 0 || i >= TYPE_NAV.routes.length || i >= TYPE_NAV.index) return;
+  history.go(i - TYPE_NAV.index);
+}
+
+function goBackType() {
+  // 返回上一层：history.back()（popstate 恢复父层快照并渲染，不新增历史条目）
+  if (TYPE_NAV.index > 0) history.back();
+}
+
+function closeTypeModal() {
+  // 关闭整个模态：history.back() 回到打开前状态（popstate else 分支负责关闭+清空）
+  // 评审 P1：关闭必须消费 history 条目，否则浏览器 Back 会复活已关闭的模态
+  history.back();
+}
+
+// 取消：非底层回退一层，底层才关闭整个模态（保留导航链）
+function cancelTypeModal() {
+  if (TYPE_NAV.index > 0) {
+    goBackType();
+  } else {
+    closeTypeModal();
+  }
+}
+
+// 保存：模拟保存当前层 → 回退一层；底层保存后关闭模态
+function saveType() {
+  var cur = TYPE_NAV.routes[TYPE_NAV.index];
+  if (cur) cur.mode = "view";   // 保存后该层变只读（演示）
+  if (TYPE_NAV.index > 0) {
+    goBackType();
+  } else {
+    closeTypeModal();
+  }
+}
+
+// ---- 浏览器物理返回键同步（WICG Navigation API / History API 思路） ----
+window.addEventListener("popstate", function (e) {
+  var s = e.state;
+  if (s && s.modal === "type" && s.nav) {
+    TYPE_NAV = s.nav;
+    document.getElementById("type-modal").hidden = false;
+    renderTypeModal();
+  } else {
+    document.getElementById("type-modal").hidden = true;
+    TYPE_NAV = { routes: [], index: -1 };
+  }
+});
+
+// ---- 渲染（状态 → DOM 纯函数） ----
+function fillViewData(name) {
+  var d = TYPE_DATA[name] || {};
+  document.getElementById("tv-kind").textContent = d.kind;
+  document.getElementById("tv-kind").className = "tv-kind-big " + d.kind;
+  document.getElementById("tv-name").textContent = name;
+  document.getElementById("tv-module").textContent = "module: " + d.module;
+  if (d.kind === "enum") {
+    document.getElementById("tv-chips").innerHTML = (d.values||[]).map(function (v) { return '<span class="tv-chip">' + v + '</span>'; }).join("");
+    document.getElementById("tv-chips").parentElement.querySelector(".tv-sec-label").textContent = "枚举值";
+    document.getElementById("tv-underlying").hidden = false;
+    document.getElementById("tv-underlying-val").textContent = d.underlying || "int32";
+  } else {
+    document.getElementById("tv-chips").innerHTML = (d.struct||[]).map(function (s) {
+      return '<span class="tv-chip tv-chip-struct">' + s[0] + ': ' + s[1] + (s[2] ? ' <em class="tv-chip-cmt">' + s[2] + '</em>' : '') + '</span>';
+    }).join("");
+    document.getElementById("tv-chips").parentElement.querySelector(".tv-sec-label").textContent = "子字段";
+    document.getElementById("tv-underlying").hidden = true;
+  }
+  document.getElementById("tv-comment").textContent = d.comment;
+  document.getElementById("tv-ref-label").textContent = "被 " + (d.refs||[]).length + " 个字段引用";
+  document.getElementById("tv-refs").innerHTML = (d.refs||[]).map(function (r) {
+    return '<div class="tv-ref-row"><span class="ref-table">' + r[0] + '</span><span class="ref-field">' + r[1] + '</span><span class="ref-role">直接引用</span></div>';
+  }).join("");
+}
+
+function renderTypeModal() {
+  var route = TYPE_NAV.routes[TYPE_NAV.index] || { name: "", mode: "view" };
+  var name = route.name;
+  var mode = route.mode;
+  var title = document.getElementById("type-title");
+  var badge = document.getElementById("type-mode-badge");
+  var view = document.getElementById("type-view");
+  var edit = document.getElementById("type-edit");
+  var del = document.getElementById("type-delete");
+  var enterEdit = document.getElementById("type-enter-edit");
+  var save = document.getElementById("type-save");
+  var crumb = document.getElementById("type-crumb");
+
+  // 面包屑：仅当栈深度 > 1 时显示（当前层是嵌套进入的）
+  crumb.hidden = TYPE_NAV.routes.length <= 1;
+  if (TYPE_NAV.routes.length > 1) {
+    crumb.innerHTML = '<span class="crumb-root">类型库</span>';
+    TYPE_NAV.routes.forEach(function (r, idx) {
+      crumb.insertAdjacentHTML("beforeend", '<span class="crumb-sep">/</span><button class="crumb-item' + (idx === TYPE_NAV.index ? ' current' : '') + '" onclick="goCrumb(' + idx + ')">' + (r.mode === "create" ? "新建:" + r.name : r.name) + '</button>');
+    });
+  }
+
+  if (mode === "create") {
+    title.textContent = "新建类型";
+    badge.textContent = "编辑";
+    badge.className = "mode-badge edit";
+    view.hidden = true;
+    edit.hidden = false;
+    del.hidden = true;
+    enterEdit.hidden = true;
+    save.hidden = false;
+    switchTypeKind("enum");
+  } else if (mode === "edit") {
+    // 栈层是编辑态：直接显示编辑表单
+    title.textContent = "编辑类型 · " + name;
+    fillViewData(name);
+    document.getElementById("te-name").value = name;
+    TYPE_ORIG_NAME = name;
+    document.getElementById("rename-warn").hidden = true;
+    document.getElementById("te-comment").value = (TYPE_DATA[name] || {}).comment;
+    switchTypeKind((TYPE_DATA[name] || {}).kind);
+    badge.textContent = "编辑";
+    badge.className = "mode-badge edit";
+    view.hidden = true;
+    edit.hidden = false;
+    del.hidden = false;
+    enterEdit.hidden = true;
+    save.hidden = false;
+  } else {
+    // 查看态
+    title.textContent = "查看类型 · " + name;
+    fillViewData(name);
+    document.getElementById("te-name").value = name;
+    TYPE_ORIG_NAME = name;
+    document.getElementById("rename-warn").hidden = true;
+    document.getElementById("te-comment").value = (TYPE_DATA[name] || {}).comment;
+    switchTypeKind((TYPE_DATA[name] || {}).kind);
+    badge.textContent = "只读";
+    badge.className = "mode-badge read";
+    view.hidden = false;
+    edit.hidden = true;
+    del.hidden = true;
+    enterEdit.hidden = false;
+    save.hidden = true;
+  }
+}
+
+function enterEditMode() {
+  // 更新当前路由为 edit（面包屑返回该层时保持编辑态）
+  var cur = TYPE_NAV.routes[TYPE_NAV.index];
+  if (cur) cur.mode = "edit";
+  renderTypeModal();
+}
+function showDeleteProtect() { document.getElementById("ref-protect-demo").hidden = false; }
+
+// ---------- 类型名输入：改名时显示引用影响警告 ----------
+var TYPE_ORIG_NAME = "";
+
+// ---------- 所属模块：新增模块（下拉 + 输入切换） ----------
+function startAddModule() {
+  document.getElementById("te-module-add").hidden = true;
+  document.getElementById("te-module-new").hidden = false;
+  var input = document.getElementById("te-module-name");
+  input.value = "";
+  input.focus();
+}
+function cancelAddModule() {
+  document.getElementById("te-module-new").hidden = true;
+  document.getElementById("te-module-add").hidden = false;
+}
+function confirmAddModule() {
+  var input = document.getElementById("te-module-name");
+  var name = input.value.trim();
+  var sel = document.getElementById("te-module");
+  var exists = false;
+  Array.prototype.forEach.call(sel.options, function (o) { if (o.value === name) exists = true; });
+  if (!name) { input.focus(); return; }
+  if (!exists) {
+    var opt = document.createElement("option");
+    opt.textContent = name;
+    sel.appendChild(opt);
+    // 同步类型库页签的模块筛选 pill
+    var seg = document.getElementById("module-filter");
+    if (seg) {
+      var pill = document.createElement("button");
+      pill.className = "pill";
+      pill.textContent = name;
+      seg.appendChild(pill);
+    }
+  }
+  sel.value = name;
+  cancelAddModule();
+}
+
+// ---------- 类型种类切换（enum / struct 联动编辑区） ----------
+function switchTypeKind(kind) {
+  var isEnum = kind === "enum";
+  document.getElementById("te-kind-enum").classList.toggle("active", isEnum);
+  document.getElementById("te-kind-struct").classList.toggle("active", !isEnum);
+  document.getElementById("te-kind-enum-fields").hidden = !isEnum;
+  document.getElementById("te-kind-struct-fields").hidden = isEnum;
+}
+
+function onTypeNameInput(input) {
+  var warn = document.getElementById("rename-warn");
+  var val = input.value.trim();
+  if (!TYPE_ORIG_NAME || val === TYPE_ORIG_NAME) { warn.hidden = true; return; }
+  // 从当前打开的类型数据取引用数
+  var cur = TYPE_DATA[val] || TYPE_DATA[TYPE_ORIG_NAME];
+  var n = (cur && cur.refs) ? cur.refs.length : 0;
+  document.getElementById("rename-refs").textContent = n;
+  warn.hidden = n === 0;
+}
+
+// ---------- 类型行删除（引用保护：被引用 → 打开编辑模态提示；无引用 → 确认删除） ----------
+function showTypeDelete(name) {
+  var d = TYPE_DATA[name] || {};
+  if (d.refs && d.refs.length > 0) {
+    // 被引用：根层打开该类型并进入编辑态展示删除保护
+    openTypeModal("view", name);
+    enterEditMode();
+    document.getElementById("te-delete-name").textContent = name;
+    document.getElementById("ref-protect-demo").hidden = false;
+  } else {
+    // 无引用：直接移除行（演示）
+    var row = null;
+    document.querySelectorAll(".type-list .type-row").forEach(function (r) {
+      if (r.querySelector(".type-name-cell").textContent.trim() === name) row = r;
+    });
+    if (row) row.remove();
+    updateEmptyStates();
+  }
+}
+
+// ---------- 自定义下拉（替换原生 select，风格统一；参考 deepseek-harness Menu） ----------
+function initCustomSelect(sel) {
+  var onChange = sel.getAttribute("onchange") || "";
+  var isRef = sel.classList.contains("ref-select");
+  var options = Array.prototype.slice.call(sel.options);
+  var selectedVal = sel.value;
+  var disabled = sel.disabled;
+
+  var wrap = document.createElement("div");
+  wrap.className = "dsh-select" + (isRef ? " ref wide" : "");
+  var trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "dsh-select-trigger";
+  trigger.innerHTML = '<span class="dsh-select-label"></span>';
+  var arrow = document.createElement("span");
+  arrow.className = "dsh-select-arrow";
+  arrow.innerHTML = '<svg width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>';
+  trigger.appendChild(arrow);
+  wrap.appendChild(trigger);
+
+  var menu = document.createElement("div");
+  menu.className = "dsh-select-menu";
+  options.forEach(function (opt) {
+    var item = document.createElement("div");
+    item.className = "dsh-option" + (opt.value === selectedVal ? " selected" : "");
+    item.innerHTML = '<span>' + opt.text + '</span><span class="dsh-option-check">✓</span>';
+    item.addEventListener("click", function () {
+      menu.querySelectorAll(".dsh-option").forEach(function (o) { o.classList.remove("selected"); });
+      item.classList.add("selected");
+      trigger.querySelector(".dsh-select-label").textContent = opt.text;
+      wrap.classList.remove("open");
+      if (onChange) {
+        // 模拟 select 值变化后触发原回调（this 指向自定义下拉 wrap）
+        sel.value = opt.value;
+        try { (function () { eval(onChange.replace(/this/g, "wrap")); })(); } catch (e) {}
+      }
+    });
+    menu.appendChild(item);
+  });
+  wrap.appendChild(menu);
+  trigger.querySelector(".dsh-select-label").textContent = sel.options[sel.selectedIndex].text;
+
+  trigger.addEventListener("click", function (e) {
+    e.stopPropagation();
+    document.querySelectorAll(".dsh-select.open").forEach(function (w) {
+      if (w !== wrap) { w.classList.remove("open"); w.querySelector(".dsh-select-menu").style.left = ""; }
+    });
+    var willOpen = !wrap.classList.contains("open");
+    wrap.classList.toggle("open");
+    if (willOpen) positionMenu(wrap);
+  });
+  trigger.addEventListener("focus", function () { /* keep focus ring */ });
+
+  sel.parentNode.replaceChild(wrap, sel);
+  return wrap;
+}
+
+// ---------- 定位下拉菜单（fixed + 视口钳制 + 底部不足向上翻转，参考 dsh Menu） ----------
+function positionMenu(wrap) {
+  var trigger = wrap.querySelector(".dsh-select-trigger");
+  var menu = wrap.querySelector(".dsh-select-menu");
+  if (!trigger || !menu) return;
+  var r = trigger.getBoundingClientRect();
+  menu.style.display = "block"; // 先显示以量尺寸
+  var mw = menu.offsetWidth;
+  var mh = menu.offsetHeight;
+  var MARGIN = 8;
+  var vw = window.innerWidth;
+  var vh = window.innerHeight;
+  var left = r.left;
+  if (left + mw > vw - MARGIN) left = Math.max(MARGIN, vw - mw - MARGIN);
+  // 默认向下展开；底部放不下则向上翻转（dsh side: top）
+  var top = r.bottom + 4;
+  if (top + mh > vh - MARGIN && r.top - mh - 4 > MARGIN) {
+    top = r.top - mh - 4;
+  } else {
+    top = Math.min(top, vh - mh - MARGIN);
+  }
+  menu.style.left = left + "px";
+  menu.style.top = top + "px";
+  menu.style.display = ""; // 恢复由 .open 控制
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".type-select, .ref-select").forEach(function (sel) {
+    if (sel.tagName === "SELECT") initCustomSelect(sel);
+  });
+  // 类型胶囊（类型列）：静态行初始化
+  document.querySelectorAll(".fe-type-col").forEach(function (col) { initTypePill(col); });
+  // 类型 pick 模态：基础类型网格点击 + 类型库列表渲染（含注释/模块）+ 模块筛选
+  document.querySelectorAll("#tp-groups .tp-item").forEach(function (it) {
+    it.addEventListener("click", function () { selectTpType(it); });
+  });
+  renderTpLib();
+  document.querySelectorAll("#tp-module-filter .pill").forEach(function (p) {
+    p.addEventListener("click", function () { setTpModule(p.getAttribute("data-module")); });
+  });
+  renderTpRecent();
+  bindAttrChecks(document);
+});
+document.addEventListener("click", function (e) {
+  if (!e.target.closest(".dsh-select")) {
+    document.querySelectorAll(".dsh-select.open").forEach(function (w) {
+      w.classList.remove("open");
+      var m = w.querySelector(".dsh-select-menu");
+      if (m) { m.style.left = ""; m.style.top = ""; }
+    });
+  }
+});
+</script>
+
+</body>
+</html>

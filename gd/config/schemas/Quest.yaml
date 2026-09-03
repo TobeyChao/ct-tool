@@ -1,21 +1,21 @@
 table: Quest
 primary: Id
 fields:
-  - name: Id
-    type: int32
-    comment: "任务唯一ID，禁止修改"
-  - name: Title
-    type: string
-    i18n: true
-    comment: "任务标题（多语言）"
-  - name: Description
-    type: string
-    i18n: true
-    comment: "任务描述（多语言）"
-  - name: RewardItemId
-    type: int32
-    ref: Item.Id
-    comment: "奖励道具ID，关联 Item.Id"
-  - name: RequiredLevel
-    type: int32
-    comment: "接取等级要求"
+- name: Id
+  type: int32
+  comment: 任务唯一ID，禁止修改
+- name: Title
+  type: string
+  i18n: true
+  comment: 任务标题（多语言）
+- name: Description
+  type: string
+  i18n: true
+  comment: 任务描述（多语言）
+- name: RewardItemId
+  type: int32
+  ref: Item.Id
+  comment: 奖励道具ID，关联 Item.Id
+- name: RequiredLevel
+  type: int32
+  comment: 接取等级要求

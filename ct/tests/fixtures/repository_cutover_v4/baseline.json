@@ -1,0 +1,32 @@
+{
+  "format_version": 1,
+  "captured_on": "2026-09-01",
+  "source_workspace": "gd",
+  "commands": {
+    "tests": "cd ct && .venv/bin/python -m pytest",
+    "full_export": "cd ct && .venv/bin/ct export --root ../gd --all --verbose"
+  },
+  "recorded_result": {
+    "tests": "198 passed",
+    "full_export": "4 tables; zh, en and ja bundles"
+  },
+  "global_config_sha256": "a3b66667afe5920c734d364aef5cfbff753618c859860ecb3561fe73b551998d",
+  "sections": {
+    "config/schemas": {
+      "file_count": 4,
+      "tree_sha256": "ccc06f0f98ee0445e40a65d5ae17f594e2c398949c8ee66400effe3f648b0425"
+    },
+    "excel": {
+      "file_count": 4,
+      "tree_sha256": "37a21aebb9de328538300d422d2000123f43848cda2dbcb2d41e376c17bfa0ca"
+    },
+    "i18n": {
+      "file_count": 9,
+      "tree_sha256": "0a58e41652af920a09a9b1980f805daa830648bc62b208a3579a98a7f2bbe97c"
+    },
+    "output": {
+      "file_count": 31,
+      "tree_sha256": "3b51eeb4d3bd17af2ad540135e7cfac58a8f5892e6f3f494de27cb448134743b"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "1.Name": {"source": "药水", "text": "ポーション", "confirmed": true, "status": "translated"},
+  "2.Name": {"source": "铁剑", "text": "鉄の剣", "confirmed": true, "status": "translated"},
+  "3.Name": {"source": "魔法石", "text": "魔法石", "confirmed": true, "status": "translated"},
+  "4.Name": {"source": "面包", "text": "パン", "confirmed": true, "status": "translated"}
+}

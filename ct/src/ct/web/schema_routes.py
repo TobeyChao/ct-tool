@@ -116,6 +116,7 @@ def schemas_list():
         ]
     )
 
+
 @schema_routes.get("/api/schemas/<table>")
 @safe
 def schemas_detail(table: str):

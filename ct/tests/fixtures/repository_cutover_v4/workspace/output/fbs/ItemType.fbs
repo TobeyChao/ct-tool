@@ -1,0 +1,17 @@
+table ItemType {
+  Id: int32;
+  Name: string;
+  Code: string;
+}
+
+struct IndexEntry {
+  id: int32;
+  row: int32;
+}
+
+table ItemTypeTable {
+  items: [ItemType];
+  index: [IndexEntry];
+}
+
+root_type ItemTypeTable;

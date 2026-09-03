@@ -1,0 +1,10 @@
+table ItemI18nEntry {
+  Id: int32;
+  Name: string;
+}
+
+table ItemI18nTable {
+  entries: [ItemI18nEntry];
+}
+
+root_type ItemI18nTable;

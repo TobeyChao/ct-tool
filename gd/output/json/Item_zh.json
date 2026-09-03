@@ -1,8 +1,67 @@
 {
   "Items": [
-    {"Id": 1, "Name": "药水", "Price": 10.5, "Rarity": "common", "ItemTypeId": 1, "DropRange": {"Min": 1, "Max": 5}, "Tags": [101, 102], "IsActive": true},
-    {"Id": 2, "Name": "铁剑", "Price": 100.0, "Rarity": "rare", "ItemTypeId": 2, "DropRange": {"Min": 1, "Max": 1}, "Tags": [201], "IsActive": true},
-    {"Id": 3, "Name": "魔法石", "Price": 250.0, "Rarity": "epic", "ItemTypeId": 3, "DropRange": {"Min": 0, "Max": 3}, "Tags": [301, 302, 303], "IsActive": false},
-    {"Id": 4, "Name": "面包", "Price": 5.0, "Rarity": "common", "ItemTypeId": 1, "DropRange": {"Min": 1, "Max": 10}, "Tags": [101], "IsActive": true}
+    {
+      "Id": 1,
+      "Name": "药水",
+      "Price": 10.5,
+      "Rarity": "common",
+      "ItemTypeId": 1,
+      "DropRange": {
+        "Min": 1,
+        "Max": 5
+      },
+      "Tags": [
+        101,
+        102
+      ],
+      "IsActive": true
+    },
+    {
+      "Id": 2,
+      "Name": "铁剑",
+      "Price": 100.0,
+      "Rarity": "rare",
+      "ItemTypeId": 2,
+      "DropRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "Tags": [
+        201
+      ],
+      "IsActive": true
+    },
+    {
+      "Id": 3,
+      "Name": "魔法石",
+      "Price": 250.0,
+      "Rarity": "epic",
+      "ItemTypeId": 3,
+      "DropRange": {
+        "Min": 0,
+        "Max": 3
+      },
+      "Tags": [
+        301,
+        302,
+        303
+      ],
+      "IsActive": false
+    },
+    {
+      "Id": 4,
+      "Name": "面包",
+      "Price": 5.0,
+      "Rarity": "common",
+      "ItemTypeId": 1,
+      "DropRange": {
+        "Min": 1,
+        "Max": 10
+      },
+      "Tags": [
+        101
+      ],
+      "IsActive": true
+    }
   ]
 }

@@ -1,0 +1,10 @@
+{
+  "UIConfigs": [
+    {"Id": 10001, "Layer": "Page", "ResourceKey": "Content/UI/Page/MainMenu.prefab", "BlocksRaycast": false, "Stack": true},
+    {"Id": 10002, "Layer": "Page", "ResourceKey": "Content/UI/Page/Settings.prefab", "BlocksRaycast": false, "Stack": true},
+    {"Id": 11001, "Layer": "Modal", "ResourceKey": "Content/UI/Modal/ConfirmDialog.prefab", "BlocksRaycast": false, "Stack": false},
+    {"Id": 12001, "Layer": "Panel", "ResourceKey": "Content/UI/Panel/QuestTracker.prefab", "BlocksRaycast": false, "Stack": false},
+    {"Id": 13001, "Layer": "Overlay", "ResourceKey": "Content/UI/Overlay/Toast.prefab", "BlocksRaycast": false, "Stack": false},
+    {"Id": 13002, "Layer": "Overlay", "ResourceKey": "Content/UI/Overlay/Loading.prefab", "BlocksRaycast": true, "Stack": false}
+  ]
+}

@@ -1,0 +1,28 @@
+enum RarityEnum : byte { common = 0, rare = 1, epic = 2 }
+
+table DropRangeStruct {
+  Min: int32;
+  Max: int32;
+}
+
+table Item {
+  Id: int32;
+  Name: string;
+  Price: float32;
+  Rarity: RarityEnum;
+  ItemTypeId: int32;
+  DropRange: DropRangeStruct;
+  Tags: [int32];
+}
+
+struct IndexEntry {
+  id: int32;
+  row: int32;
+}
+
+table ItemTable {
+  items: [Item];
+  index: [IndexEntry];
+}
+
+root_type ItemTable;

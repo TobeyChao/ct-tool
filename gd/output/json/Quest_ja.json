@@ -1,6 +1,18 @@
 {
   "Quests": [
-    {"Id": 1, "Title": "初心者の冒険", "Description": "初めての冒険をクリアしよう", "RewardItemId": 1, "RequiredLevel": 1},
-    {"Id": 2, "Title": "ドラゴンスレイヤー", "Description": "邪悪なドラゴンを倒そう", "RewardItemId": 2, "RequiredLevel": 10}
+    {
+      "Id": 1,
+      "Title": "初心者の冒険",
+      "Description": "初めての冒険をクリアしよう",
+      "RewardItemId": 1,
+      "RequiredLevel": 1
+    },
+    {
+      "Id": 2,
+      "Title": "ドラゴンスレイヤー",
+      "Description": "邪悪なドラゴンを倒そう",
+      "RewardItemId": 2,
+      "RequiredLevel": 10
+    }
   ]
 }
