@@ -33,6 +33,7 @@ class _BaseTask:
     tables_exported: int = 0
     elapsed: float = 0.0
     cancelled: bool = False
+    root: Path | None = field(default=None, repr=False)
 
     _token: CancelToken = field(default_factory=CancelToken, repr=False)
     _thread: threading.Thread | None = field(default=None, repr=False)
@@ -51,6 +52,7 @@ class _BaseTask:
             if self.status == "running":
                 raise RuntimeError("已有导出任务进行中")
             self.status = "running"
+            self.root = root.resolve()
             self.forced = forced
             self.step_index = -1
             self.step_name = ""
@@ -83,6 +85,23 @@ class _BaseTask:
                 "tables_exported": self.tables_exported,
                 "elapsed": round(self.elapsed, 2),
                 "cancelled": self.cancelled,
+            }
+
+    def global_task(self, root: Path) -> dict | None:
+        """Return the persistent shell projection for the active workspace."""
+        with self._lock:
+            if self.root != root.resolve() or self.status not in {"running", "error"}:
+                return None
+            message = self.message
+            if self.step_name:
+                message = f"{self.step_name} · {message}"
+            return {
+                "id": "canonical-export",
+                "kind": "导出",
+                "scope": "全部表 × 全量语言",
+                "status": self.status,
+                "message": message,
+                "target": "/logs",
             }
 
     def _run(self, root: Path, forced: bool) -> None:

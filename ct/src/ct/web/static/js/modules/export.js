@@ -1,176 +1,216 @@
-/* export module: workspace summary, forced toggle, phase progress cells,
-   last-export summary restored from /api/history. */
+/* Export module: full-rebuild context, phase progress, and persistent task state. */
 import { api } from "../core/api.js";
 import { escapeHtml } from "../core/dom.js";
 
+const STATUS = {
+  idle: { label: "准备就绪", badge: "ct-badge-mute" },
+  running: { label: "导出中", badge: "ct-badge-mute" },
+  done: { label: "导出成功", badge: "ct-badge-ok" },
+  cancelled: { label: "已取消", badge: "ct-badge-warn" },
+  error: { label: "导出中止", badge: "ct-badge-err" },
+};
+
+const _state = {};
+
+function statusView(progress, changed, lastExport) {
+  if (!progress || progress.status === "idle") {
+    if (changed.length) return { label: `${changed.length} 张表待导出`, badge: "ct-badge-warn" };
+    if (lastExport) return { label: "上次导出成功", badge: "ct-badge-ok" };
+    return STATUS.idle;
+  }
+  const base = STATUS[progress.status] || STATUS.error;
+  const label = progress.status === "done"
+    ? `成功 · ${progress.tables_exported || 0} 张表`
+    : base.label;
+  return { ...base, label };
+}
+
+function phaseClass(progress, index) {
+  if (!progress) return "";
+  if (index < progress.step_index) return "done";
+  if (index > progress.step_index) return "";
+  if (progress.status === "error") return "error";
+  if (progress.status === "running") return "active";
+  return progress.status === "done" ? "done" : "";
+}
+
 export async function mount(container) {
-  const state = getState();
+  const state = _state;
+  let timer = null;
   if (state.mounted) return state;
   state.mounted = true;
-  state.forced = true; // 管线当前恒为全量重建
-  let ws = null;
-  let lastExport = null;
-  try { ws = await api("/api/workspace"); } catch (e) { ws = null; }
+
+  try { state.workspace = await api("/api/workspace"); } catch (error) { state.workspaceError = error.message; }
+  try { state.progress = await api("/api/export/progress"); } catch (error) { state.progress = null; }
   try {
     const entries = await api("/api/history");
-    lastExport = (entries && entries.length) ? entries[entries.length - 1] : null;
-  } catch (e) { /* 忽略瞬时失败 */ }
-  const changed = (ws && ws.status && ws.status.changed) || [];
-  render(changed, lastExport);
-  if (state.progress && state.progress.status === "running") poll();
+    state.lastExport = entries?.length ? entries[entries.length - 1] : null;
+  } catch (error) { state.lastExport = null; }
 
-  function render(changed, lastExport) {
-    const p = state.progress;
-    const running = !!(p && p.status === "running");
+  state.changed = state.workspace?.status?.changed || [];
+  state.hasRun = state.progress?.status !== "idle" || Boolean(state.lastExport);
+  renderShell();
+  update();
+  if (state.progress?.status === "running") poll();
+
+  function renderShell() {
     container.innerHTML = `
       <div class="ct-page-wrap">
         <div class="ct-panel">
           <div class="ct-panel-head">
-            <span class="ct-panel-title">导出</span>
+            <span class="ct-panel-title">导出工作区</span>
             <span class="ct-topbar-spacer" style="flex:1"></span>
-            <button class="ct-btn ct-btn-ghost" id="cancel" ${running ? "" : "disabled"}>取消</button>
-            <button class="ct-btn ct-btn-primary" id="export" ${running ? "disabled" : ""}>${state.hasRun ? "重新导出" : "导出"}</button>
+            <span class="ct-badge" id="export-badge"></span>
+            <div class="ct-command-actions" id="export-actions"></div>
           </div>
           <div class="ct-panel-body">
-            <div class="ct-export-toolbar">
-              <label class="ct-check"><input type="checkbox" id="forced" ${state.forced ? "checked" : ""} ${running ? "disabled" : ""}>强制重建</label>
-              <span class="ct-hint">当前恒为全量重建</span>
-              <span style="flex:1"></span>
-              <span class="ct-badge ${badgeClass(p, changed, lastExport)}" id="badge">${badgeText(p, changed, lastExport)}</span>
+            ${state.workspaceError ? `<div class="ct-error-inline">${escapeHtml(state.workspaceError)}</div>` : ""}
+            <div class="ct-export-layout">
+              <section class="ct-workbench-section" aria-labelledby="export-progress-title">
+                <div class="ct-section-bar">
+                  <div><h2 id="export-progress-title">执行进度</h2><p id="export-message">尚未开始导出</p></div>
+                  <span class="ct-live-note"><span aria-hidden="true"></span>任务状态自动更新</span>
+                </div>
+                <div id="progress" aria-live="polite"></div>
+              </section>
+              <aside class="ct-export-context" aria-label="导出上下文">
+                <h2>本次导出</h2>
+                <dl class="ct-context-list">
+                  <div><dt>构建模式</dt><dd>全量重建</dd></div>
+                  <div><dt>待处理</dt><dd id="export-context-pending"></dd></div>
+                  <div><dt>执行结果</dt><dd id="export-context-result"></dd></div>
+                  <div class="ct-context-path"><dt>产物目录</dt><dd>${outputPath()}</dd></div>
+                </dl>
+              </aside>
             </div>
-            <div id="progress"></div>
-            ${ws ? `<div class="ct-progress-line ct-mono">产物目录 ${escapeHtml(String(ws.root))}/output</div>` : ""}
           </div>
         </div>
       </div>`;
+  }
 
-    container.querySelector("#forced").addEventListener("change", (e) => {
-      state.forced = e.target.checked;
-    });
-    container.querySelector("#export").addEventListener("click", async () => {
-      try {
-        state.progress = await api("/api/export", {
-          method: "POST",
-          body: JSON.stringify({ forced: state.forced }),
-        });
-        state.hasRun = true;
-        state.sessionRun = true;
-        updateChrome();
-        poll();
-      } catch (e) { showError(e.message); }
-    });
-    container.querySelector("#cancel").addEventListener("click", async () => {
-      try {
-        state.progress = await api("/api/export/cancel", { method: "POST" });
-        updateChrome();
-      } catch (e) { showError(e.message); }
-    });
+  function renderActions() {
+    const host = container.querySelector("#export-actions");
+    if (!host) return;
+    const running = state.progress?.status === "running";
+    host.innerHTML = `
+      <button class="ct-btn ct-btn-ghost" id="export-cancel" ${running ? "" : "hidden"}>取消</button>
+      <button class="ct-btn ct-btn-primary" id="export-start" ${running ? "disabled" : ""}>${state.hasRun ? "重新导出" : "开始导出"}</button>`;
+    host.querySelector("#export-start").addEventListener("click", startExport);
+    host.querySelector("#export-cancel")?.addEventListener("click", cancelExport);
+  }
+
+  async function startExport() {
+    try {
+      state.progress = await api("/api/export", { method: "POST", body: JSON.stringify({}) });
+      state.hasRun = true;
+      state.sessionRun = true;
+      update();
+      poll();
+    } catch (error) { showError(error.message); }
+  }
+
+  async function cancelExport() {
+    try {
+      state.progress = await api("/api/export/cancel", { method: "POST" });
+      update();
+    } catch (error) { showError(error.message); }
+  }
+
+  function update() {
+    const view = statusView(state.progress, state.changed, state.lastExport);
+    const badge = container.querySelector("#export-badge");
+    if (badge) {
+      badge.className = `ct-badge ${view.badge}`;
+      badge.textContent = view.label;
+    }
+    renderContext();
     renderProgress();
+    renderActions();
+  }
+
+  function renderContext() {
+    const progress = state.progress;
+    const pending = container.querySelector("#export-context-pending");
+    const result = container.querySelector("#export-context-result");
+    if (pending) {
+      pending.textContent = progress?.status === "done" ? "0 张表" : `${state.changed.length} 张表`;
+    }
+    if (!result) return;
+    if (!progress || progress.status === "idle") {
+      result.textContent = lastExportText();
+    } else if (progress.status === "running") {
+      result.textContent = progress.step_name ? `进行中 · ${progress.step_name}` : "准备中";
+    } else if (progress.status === "done") {
+      result.textContent = `成功 · ${progress.tables_exported || 0} 张表 · ${progress.elapsed || 0}s`;
+    } else if (progress.status === "cancelled") {
+      result.textContent = "已取消";
+    } else {
+      result.textContent = progress.message || "导出中止";
+    }
+  }
+
+  function renderProgress() {
+    const progress = state.progress;
+    const host = container.querySelector("#progress");
+    const message = container.querySelector("#export-message");
+    if (!host || !message) return;
+
+    if (progress && (state.sessionRun || progress.status !== "idle")) {
+      message.textContent = progress.message || STATUS[progress.status]?.label || "正在处理";
+      const phases = progress.steps?.length
+        ? `<ol class="ct-prog-cells">${progress.steps.map((step, index) => {
+          const cls = phaseClass(progress, index);
+          return `<li class="ct-prog-cell${cls ? ` ${cls}` : ""}"><span class="ct-prog-num">${index + 1}</span><span>${escapeHtml(step)}</span></li>`;
+        }).join("")}</ol>`
+        : "";
+      const errors = progress.errors?.length
+        ? `<div class="ct-export-errors">${progress.errors.map((error) => `<div class="ct-error-inline">${escapeHtml(error)}</div>`).join("")}</div>`
+        : "";
+      host.innerHTML = `${phases}${errors}<div class="ct-summary-line">
+        <span>已导出 <b>${progress.tables_exported || 0}</b> 张表</span>
+        <span>当前阶段 <b>${escapeHtml(progress.step_name || "—")}</b></span>
+        <span>耗时 <b>${progress.elapsed || 0}s</b></span>
+      </div>`;
+      return;
+    }
+
+    message.textContent = state.lastExport ? "可以重新生成当前工作区产物" : "完成首次导出后，这里会保留阶段结果";
+    host.innerHTML = `<div class="ct-empty ct-export-empty">
+      <div class="ct-empty-title">${state.lastExport ? "工作区可以导出" : "还没有导出记录"}</div>
+      <div class="ct-empty-sub">${state.changed.length ? `${state.changed.length} 张表存在待导出变更` : "当前源数据与模板状态正常"}</div>
+    </div>`;
   }
 
   function showError(message) {
     const host = container.querySelector("#progress");
-    if (host) host.innerHTML = '<div class="ct-error-inline">' + escapeHtml(message) + "</div>";
+    if (host) host.innerHTML = `<div class="ct-error-inline">${escapeHtml(message)}</div>`;
   }
 
-  function updateChrome() {
-    const p = state.progress;
-    const running = !!(p && p.status === "running");
-    const cancel = container.querySelector("#cancel");
-    const exportBtn = container.querySelector("#export");
-    if (cancel) cancel.disabled = !running;
-    if (exportBtn) exportBtn.disabled = running;
-    const forced = container.querySelector("#forced");
-    if (forced) forced.disabled = running;
-    renderProgress();
+  function lastExportText() {
+    const entry = state.lastExport;
+    if (!entry) return "暂无记录";
+    return `${String(entry.time)} · ${String(entry.result)}`;
   }
 
-  function badgeClass(p, changed, lastExport) {
-    if (!p || p.status === "idle") {
-      if (lastExport) return "ct-badge-mute";
-      return changed.length ? "ct-badge-warn" : "ct-badge-ok";
-    }
-    if (p.status === "running") return "ct-badge-mute";
-    if (p.status === "done") return "ct-badge-ok";
-    if (p.status === "cancelled") return "ct-badge-warn";
-    return "ct-badge-err";
+  function outputPath() {
+    if (!state.workspace?.root) return "—";
+    const path = `${String(state.workspace.root)}/output`;
+    return `<code title="${escapeHtml(path)}">${escapeHtml(path)}</code>`;
   }
 
-  function badgeText(p, changed, lastExport) {
-    if (!p || p.status === "idle") {
-      if (lastExport) return lastExport.result;
-      return changed.length ? changed.length + " 张表待导出" : "数据与模板均已同步";
-    }
-    if (p.status === "running") return "进行中";
-    if (p.status === "done") return "成功 · " + p.tables_exported + " 张表" + (p.forced ? " · 强制重建" : "");
-    if (p.status === "cancelled") return "已取消";
-    return "已中止";
-  }
-
-  function cellClass(p, i) {
-    if (p.status === "cancelled") return i < p.step_index ? "done" : (i === p.step_index ? "active" : "");
-    if (p.status === "error") return i < p.step_index ? "done" : (i === p.step_index ? "error" : "");
-    if (i < p.step_index) return "done";
-    if (i === p.step_index) return p.status === "running" ? "active" : "done";
-    return "";
-  }
-
-  function renderProgress() {
-    const p = state.progress;
-    const host = container.querySelector("#progress");
-    const badgeEl = container.querySelector("#badge");
-    if (badgeEl) {
-      badgeEl.className = "ct-badge " + badgeClass(p, changed, lastExport);
-      badgeEl.textContent = badgeText(p, changed, lastExport);
-    }
-    if (!host) return;
-    // 本会话内任务或运行中：进度格子视图；否则回退到上次导出摘要/空态
-    if (p && (state.sessionRun || p.status === "running")) {
-      let html = "";
-      if (p.steps && p.steps.length) {
-        html += '<div class="ct-prog-cells">' + p.steps.map((s, i) => {
-          const cls = cellClass(p, i);
-          return `<span class="ct-prog-cell${cls ? " " + cls : ""}"><span class="ct-prog-num">${i + 1}</span>${escapeHtml(s)}</span>`;
-        }).join("") + "</div>";
-      }
-      if (p.message) html += `<div class="ct-progress-line">${escapeHtml(p.message)}</div>`;
-      if (p.errors && p.errors.length) {
-        html += p.errors.map((e) => `<div class="ct-error-inline">${escapeHtml(e)}</div>`).join("");
-      }
-      if (p.status === "running" || p.status === "done" || p.status === "cancelled" || p.status === "error") {
-        html += `<div class="ct-summary-line">`
-          + `<span>已导出 <b>${p.tables_exported || 0}</b> 张表</span>`
-          + `<span>状态 <b>${escapeHtml(p.status)}</b></span>`
-          + `<span>耗时 <b>${p.elapsed || 0}s</b></span>`
-          + `</div>`;
-      }
-      host.innerHTML = html;
-    } else if (lastExport) {
-      host.innerHTML = `<div class="ct-progress-line">上次导出 ${escapeHtml(String(lastExport.time))}`
-        + ` · ${escapeHtml(String(lastExport.scope))} · ${lastExport.tables} 张表 · ${lastExport.elapsed}s</div>`;
-    } else {
-      host.innerHTML = '<div class="ct-empty"><div class="ct-empty-title">还没有导出记录</div>'
-        + '<div class="ct-empty-sub">点击「导出」进行第一次导出</div></div>';
-    }
-  }
-
-  let timer = null;
   function poll() {
     if (timer) return;
     timer = window.setInterval(async () => {
       try {
         state.progress = await api("/api/export/progress");
-        updateChrome();
+        update();
         if (state.progress.status !== "running") {
           window.clearInterval(timer);
           timer = null;
         }
-      } catch (e) { /* keep polling */ }
-    }, 700);
+      } catch (error) { /* retain the last known task state */ }
+    }, 500);
   }
 
   return state;
 }
-
-const _state = {};
-function getState() { return _state; }

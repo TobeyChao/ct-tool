@@ -46,7 +46,7 @@ def _cases():
 
 @pytest.fixture(scope="module")
 def _matrix_url(tmp_path_factory) -> Iterator[str]:
-    from _helpers import build_project
+    from web_helpers import build_project
 
     workspace = build_project(
         tmp_path_factory.mktemp("matrix") / "workspace",

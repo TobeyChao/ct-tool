@@ -79,7 +79,11 @@ def create_app(
     @app.get("/api/tasks")
     @safe
     def tasks():
-        return ok(task_state.snapshot())
+        tasks = task_state.snapshot()
+        export = canonical_export_task.global_task(_root(app))
+        if export:
+            tasks.insert(0, export)
+        return ok(tasks)
 
     @app.get("/")
     @safe

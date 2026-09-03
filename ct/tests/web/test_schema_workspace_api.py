@@ -9,7 +9,7 @@ from ct.app.schema_workspace.apply import create_plan
 from ct.app.schema_workspace.snapshot import build_snapshot
 from ct.web.app import create_app
 
-from _helpers import build_project
+from web_helpers import build_project
 
 
 def _client(tmp_path: Path):
@@ -111,6 +111,26 @@ def test_tasks_endpoint(tmp_path: Path) -> None:
     resp = client.get("/api/tasks")
     assert resp.status_code == 200
     assert isinstance(resp.get_json()["data"], list)
+
+
+def test_tasks_endpoint_includes_export_projection(tmp_path: Path, monkeypatch) -> None:
+    client, _ = _client(tmp_path)
+    projected = {
+        "id": "canonical-export",
+        "kind": "导出",
+        "scope": "全部表 × 全量语言",
+        "status": "error",
+        "message": "校验未通过",
+        "target": "/logs",
+    }
+    monkeypatch.setattr(
+        "ct.web.app.canonical_export_task.global_task", lambda root: projected
+    )
+
+    resp = client.get("/api/tasks")
+
+    assert resp.status_code == 200
+    assert projected in resp.get_json()["data"]
 
 
 def test_prepare_apply_creates_plan_and_applies(tmp_path: Path) -> None:

@@ -1,6 +1,38 @@
 {
-  "1.Title": {"source": "新手冒险", "text": "初心者の冒険", "confirmed": true, "status": "translated"},
-  "1.Description": {"source": "完成你的第一次冒险", "text": "初めての冒険をクリアしよう", "confirmed": true, "status": "translated"},
-  "2.Title": {"source": "屠龙勇士", "text": "ドラゴンスレイヤー", "confirmed": true, "status": "translated"},
-  "2.Description": {"source": "击败邪恶的巨龙", "text": "邪悪なドラゴンを倒そう", "confirmed": true, "status": "translated"}
+  "1.Title": {
+    "source": "新手冒险",
+    "text": "初心者の冒険",
+    "confirmed": true,
+    "status": "translated"
+  },
+  "1.Description": {
+    "source": "完成你的第一次冒险",
+    "text": "初めての冒険をクリアしよう",
+    "confirmed": true,
+    "status": "translated"
+  },
+  "2.Title": {
+    "source": "屠龙勇士",
+    "text": "ドラゴンスレイヤー",
+    "confirmed": true,
+    "status": "translated"
+  },
+  "2.Description": {
+    "source": "击败邪恶的巨龙",
+    "text": "邪悪なドラゴンを倒そう",
+    "confirmed": true,
+    "status": "translated"
+  },
+  "3.Title": {
+    "source": "一个非常非常非常非常非常非常非常非常非常非常非常非常非常长的任务标题用来验证长文本预览",
+    "text": "これは非常に非常に非常に非常に非常に非常に非常に長いクエストタイトルで、長文プレビューを確認するために使用します",
+    "confirmed": true,
+    "status": "translated"
+  },
+  "3.Description": {
+    "source": "这段任务描述特别特别长：它用来验证翻译编辑器里长文本的两行截断预览、点击展开成完整 textarea、失焦收起回到预览，同时原文列也会随之展开便于对照翻译，请确认这一整套交互都正常工作、保存按钮始终垂直居中且与操作列表头对齐。",
+    "text": "このクエストの説明は意図的にとても長くしています：長文が2行に省略されたプレビューとして表示され、クリックで完全なテキストエリアに展開され、フォーカスを失うと折りたたまれ、原文列も展開されて対訳でき、保存ボタンが常に垂直中央で操作ヘッダーと揃っていることを確認します。",
+    "confirmed": true,
+    "status": "translated"
+  }
 }

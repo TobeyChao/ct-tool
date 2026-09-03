@@ -16,7 +16,7 @@ playwright_api = pytest.importorskip("playwright.sync_api")
 
 @pytest.fixture
 def editor_url(tmp_path) -> Iterator[str]:
-    from _helpers import build_project
+    from web_helpers import build_project
 
     workspace = build_project(
         tmp_path / "workspace",
@@ -366,7 +366,7 @@ def test_blocked_delete_with_references(editor_url: str, chromium_browser: Any, 
     import shutil
     import threading as _t
     from werkzeug.serving import make_server as _ms
-    from _helpers import build_project as _bvp
+    from web_helpers import build_project as _bvp
 
     ws = tmp_path / "refws"
     _bvp(ws, schemas=[

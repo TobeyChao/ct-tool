@@ -1,6 +1,38 @@
 {
-  "1.Title": {"source": "新手冒险", "text": "Novice Adventure", "confirmed": true, "status": "translated"},
-  "1.Description": {"source": "完成你的第一次冒险", "text": "Complete your first adventure", "confirmed": true, "status": "translated"},
-  "2.Title": {"source": "屠龙勇士", "text": "Dragon Slayer", "confirmed": true, "status": "translated"},
-  "2.Description": {"source": "击败邪恶的巨龙", "text": "Defeat the evil dragon", "confirmed": true, "status": "translated"}
+  "1.Title": {
+    "source": "新手冒险",
+    "text": "Novice Adventure",
+    "confirmed": true,
+    "status": "translated"
+  },
+  "1.Description": {
+    "source": "完成你的第一次冒险",
+    "text": "Complete your first adventure",
+    "confirmed": true,
+    "status": "translated"
+  },
+  "2.Title": {
+    "source": "屠龙勇士",
+    "text": "Dragon Slayer",
+    "confirmed": true,
+    "status": "translated"
+  },
+  "2.Description": {
+    "source": "击败邪恶的巨龙",
+    "text": "Defeat the evil dragon",
+    "confirmed": true,
+    "status": "translated"
+  },
+  "3.Title": {
+    "source": "一个非常非常非常非常非常非常非常非常非常非常非常非常非常长的任务标题用来验证长文本预览",
+    "text": "An extremely extremely extremely extremely extremely extremely long quest title used to verify the long-text preview",
+    "confirmed": true,
+    "status": "translated"
+  },
+  "3.Description": {
+    "source": "这段任务描述特别特别长：它用来验证翻译编辑器里长文本的两行截断预览、点击展开成完整 textarea、失焦收起回到预览，同时原文列也会随之展开便于对照翻译，请确认这一整套交互都正常工作、保存按钮始终垂直居中且与操作列表头对齐。",
+    "text": "This quest description is deliberately very very long: it verifies that long text renders as a two-line truncated preview, expands into a full textarea on click, collapses back on blur, the source column also expands for side-by-side comparison, and the save button stays vertically centered and aligned with the actions header throughout this whole interaction.",
+    "confirmed": true,
+    "status": "translated"
+  }
 }

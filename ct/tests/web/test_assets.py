@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ct.web.app import create_app
 
-from _helpers import build_project
+from web_helpers import build_project
 
 ASSETS = [
     "/static/index.html",

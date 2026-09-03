@@ -1,4 +1,4 @@
-"""Shared  canonical workspace builders for schema tests."""
+"""Shared canonical workspace builders for web tests."""
 
 from __future__ import annotations
 

@@ -18,7 +18,7 @@ CT_ROOT = Path(__file__).parents[2]
 
 @pytest.fixture(scope="module")
 def _panel_url(tmp_path_factory) -> Iterator[str]:
-    from _helpers import build_project
+    from web_helpers import build_project
 
     workspace = build_project(
         tmp_path_factory.mktemp("-shell") / "workspace",

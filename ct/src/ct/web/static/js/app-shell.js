@@ -45,7 +45,6 @@ function renderTopbar(ws) {
         <strong>${escapeHtml(workspaceName)}</strong><span class="ct-context-separator">/</span>
         <span class="ct-workspace-path" title="${escapeHtml(root)}">${escapeHtml(root)}</span>
       </div>
-      <div class="ct-topbar-actions" id="ct-module-actions"></div>
       <span class="ct-health"><span class="ct-health-dot"></span>${escapeHtml(summaryText(ws))}</span>
     </header>`;
 }
@@ -65,8 +64,12 @@ function renderPages(active) {
 function renderTaskbar(tasks) {
   const items = tasks || [];
   if (!items.length) return "";
-  return `<div class="ct-taskbar">${items.map((t) =>
-    `<div class="ct-task ${t.status === "error" ? "error" : ""}">${escapeHtml(t.kind)} · ${escapeHtml(t.scope)} · ${escapeHtml(t.message || t.status)}</div>`
+  return `<div class="ct-taskbar" role="status" aria-live="polite">${items.map((t) =>
+    `<div class="ct-task ${t.status === "error" ? "error" : ""}">
+      <span class="ct-task-indicator" aria-hidden="true"></span>
+      <span class="ct-task-copy"><strong>${escapeHtml(t.kind)}</strong><span>${escapeHtml(t.scope)} · ${escapeHtml(t.message || t.status)}</span></span>
+      ${t.target ? `<a class="ct-task-link" href="#${escapeHtml(t.target)}">查看日志</a>` : ""}
+    </div>`
   ).join("")}</div>`;
 }
 

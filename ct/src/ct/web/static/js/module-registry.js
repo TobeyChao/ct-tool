@@ -32,7 +32,7 @@ async function mountActive() {
 }
 
 function currentModule() {
-  const match = location.hash.match(/#\/([a-z]+)/);
+  const match = location.hash.match(/#\/([a-z0-9]+)/);
   return match ? match[1] : "export";
 }
 

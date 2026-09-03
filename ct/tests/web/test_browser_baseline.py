@@ -23,31 +23,14 @@ CUTOVER_WORKSPACE = CT_ROOT / "tests/fixtures/repository_cutover/workspace"
 def _matrix_cases() -> list[tuple[int, int, int, str]]:
     # baseline is a quick smoke (full 18-combo matrix lives in 13.3)
     return [(1600, 900, 100, "wide"), (720, 460, 100, "compact"), (390, 844, 100, "phone")]
-
-
-
-def _load_web_helpers():
-    """Load tests/web/_helpers.py deterministically (the bare `_helpers`
-    top-level name is ambiguous across the per-dir helper copies)."""
-    import importlib.util
-    import sys
-
-    name = "_web_helpers"
-    if name in sys.modules:
-        return sys.modules[name]
-    spec = importlib.util.spec_from_file_location(name, Path(__file__).parent / "_helpers.py")
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[name] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
 @pytest.fixture(scope="module")
 def panel_url(tmp_path_factory: pytest.TempPathFactory) -> Iterator[str]:
     workspace = tmp_path_factory.mktemp("browser-workspace") / "workspace"
     for source_dir in ("config", "excel", "i18n"):
         shutil.copytree(CUTOVER_WORKSPACE / source_dir, workspace / source_dir)
-    _load_web_helpers().convert_cutover_workspace(workspace)
+    from web_helpers import convert_cutover_workspace
+
+    convert_cutover_workspace(workspace)
 
     server = make_server("127.0.0.1", 0, create_app(workspace), threaded=True)
     thread = threading.Thread(target=server.serve_forever, daemon=True)

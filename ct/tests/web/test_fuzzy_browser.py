@@ -16,7 +16,7 @@ playwright_api = pytest.importorskip("playwright.sync_api")
 
 @pytest.fixture(scope="module")
 def fuzzy_url(tmp_path_factory) -> Iterator[str]:
-    from _helpers import build_project
+    from web_helpers import build_project
 
     workspace = build_project(tmp_path_factory.mktemp("fuzzy") / "workspace")
     server = make_server("127.0.0.1", 0, create_app(workspace), threaded=True)

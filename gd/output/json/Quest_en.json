@@ -13,6 +13,13 @@
       "Description": "Defeat the evil dragon",
       "RewardItemId": 2,
       "RequiredLevel": 10
+    },
+    {
+      "Id": 3,
+      "Title": "An extremely extremely extremely extremely extremely extremely long quest title used to verify the long-text preview",
+      "Description": "This quest description is deliberately very very long: it verifies that long text renders as a two-line truncated preview, expands into a full textarea on click, collapses back on blur, the source column also expands for side-by-side comparison, and the save button stays vertically centered and aligned with the actions header throughout this whole interaction.",
+      "RewardItemId": 1,
+      "RequiredLevel": 10
     }
   ]
 }
