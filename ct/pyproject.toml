@@ -16,6 +16,12 @@ dependencies = [
     "flask>=3.0",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "playwright>=1.55,<2",
+]
+
 [project.scripts]
 ct = "ct.cli:app"
 
@@ -25,3 +31,8 @@ include = ["ct*"]
 
 [tool.setuptools.package-data]
 "ct.web" = ["static/*", "static/vendor/*"]
+
+[tool.pytest.ini_options]
+markers = [
+    "browser: requires the Playwright Chromium runtime",
+]

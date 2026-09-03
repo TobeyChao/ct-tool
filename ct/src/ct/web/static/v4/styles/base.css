@@ -1,0 +1,10 @@
+/* v4 base: reset, typography, focus-visible and reduced-motion. */
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--ct-bg); color: var(--ct-ink); font-family: var(--ct-font-sans); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+[hidden] { display: none !important; }
+
+:focus-visible { outline: 3px solid var(--ct-accent-soft); outline-offset: 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

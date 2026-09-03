@@ -1,0 +1,14 @@
+{
+  "format_version": 1,
+  "route": "/#tables",
+  "capture": "schema",
+  "viewports": [
+    {"width": 1600, "height": 900, "projection": "wide"},
+    {"width": 1360, "height": 768, "projection": "wide"},
+    {"width": 1280, "height": 720, "projection": "medium"},
+    {"width": 960, "height": 640, "projection": "medium"},
+    {"width": 720, "height": 460, "projection": "compact"},
+    {"width": 390, "height": 844, "projection": "phone"}
+  ],
+  "zoom_percentages": [100, 125, 150]
+}
