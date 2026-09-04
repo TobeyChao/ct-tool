@@ -40,14 +40,10 @@ public static unsafe class Program
         RunVersionGuard(table);
 
         foreach (var t in all) t.Dispose();
+        if (!all.Contains(table)) table.Dispose();
     }
 
-    static List<ConfigTable> LoadAllTables(byte[] bundle)
-    {
-        var list = new List<ConfigTable>();
-        foreach (var kv in WireReader.ReadBundle(bundle)) list.Add(new ConfigTable(kv.Key, kv.Value));
-        return list;
-    }
+    static List<ConfigTable> LoadAllTables(byte[] bundle) => ConfigReader.LoadBundle(bundle);
 
     // 生成 accessor（*Accessor.g.cs）冒烟：通过 Runtime 走 ItemAccessor.ByID 等
     static void RunGeneratedAccessorSmoke(ConfigTable t)

@@ -3,13 +3,18 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
+// NOTE: 本 reader 只面向【可信、工具生成、不可变】的 FlatBuffers 配置数据。
+// Release（未定义 CONFIG_DEBUG）下，逐元素的版本/越界检查被编译掉（harmony LH_DEBUG 同款），
+// 以获得 VecBase 直读的性能；调用方必须传合法下标，且只使用“当前已加载这套 bin”里的句柄。
+// 仅 `_base == null`（缺失字段）做无条件安全兜底。若喂脏数据/损坏 bundle，属未定义行为。
+
 /// <summary>read-only 回调式 struct 读取协议（对齐 harmony IConfigStruct）。</summary>
 public interface IConfigStruct
 {
     unsafe void SetPointer(byte* p, int pVersion);
 }
 
-/// <summary>版本守卫：表重载/切语言时递增，防 stale 指针。热路径用条件编译（CONFIG_DEBUG）零开销。</summary>
+/// <summary>版本守卫：整套已加载配置（bin）的世代号。加载/重载/切语言/销毁【整套】时才 Bump。</summary>
 public static unsafe class TableVersion
 {
     private static int _version;
@@ -20,14 +25,14 @@ public static unsafe class TableVersion
     public static void Check(int v)
     {
         if (v != _version)
-            throw new InvalidOperationException($"[Config] stale reader (version {v} != {_version}), table was reloaded or language switched");
+            throw new InvalidOperationException($"[Config] stale reader (version {v} != {_version}): config set reloaded or language switched");
     }
 
     // 非条件断言：供版本守卫演示/诊断用（Release 下也生效）
     public static void AssertFresh(int v)
     {
         if (v != _version)
-            throw new InvalidOperationException($"[Config] stale reader (version {v} != {_version}), table was reloaded or language switched");
+            throw new InvalidOperationException($"[Config] stale reader (version {v} != {_version}): config set reloaded or language switched");
     }
 }
 
@@ -52,6 +57,8 @@ public unsafe struct NArray<T> : IEnumerable<T> where T : unmanaged
     {
         get
         {
+            // 缺失字段（Indirect 返回 null）→ 无条件安全兜底，避免 Release 下解引用 null
+            if (_base == null) return default;
 #if CONFIG_DEBUG
             TableVersion.Check(_pVersion);
             if ((uint)index >= (uint)_len) throw new IndexOutOfRangeException($"index {index} len {_len}");
@@ -91,6 +98,7 @@ public unsafe struct NStructArray<T> : IEnumerable<T> where T : struct, IConfigS
     {
         get
         {
+            if (_elements == null) return default;
 #if CONFIG_DEBUG
             TableVersion.Check(_pVersion);
             if ((uint)index >= (uint)_len) throw new IndexOutOfRangeException();
@@ -115,26 +123,28 @@ public unsafe struct NString : IConfigStruct
     public NString(byte* ptr, int pVersion) { _ptr = ptr; _pVersion = pVersion; }
     public void SetPointer(byte* p, int pVersion) { _ptr = p; _pVersion = pVersion; }
     public int Length => _ptr == null ? 0 : *(int*)_ptr;
-    public override string ToString() => NStringCache.Get(_ptr, _pVersion);
+    public override string ToString()
+    {
+        TableVersion.Check(_pVersion); // 与 harmony 一致：访问字符串前先做版本检查（Release 条件编译掉）
+        return NStringCache.Get(_ptr, _pVersion);
+    }
     public static implicit operator string(NString ns) => ns.ToString();
 }
 
-/// <summary>字符串驻留：按字符串数据指针缓存解码结果，避免重复 UTF-8 解码；随表版本失效。</summary>
+/// <summary>
+/// 字符串驻留：按字符串数据指针缓存解码结果，避免重复 UTF-8 解码。
+/// 版本（整套 bin 世代）变化时【无条件清空】，既防“地址复用返回陈旧字符串”，也防无限增长。
+/// 清缓存只在加载/重载/切语言/销毁整套时发生，不属于热路径。
+/// </summary>
 public static unsafe class NStringCache
 {
     private static readonly Dictionary<nint, string> _cache = new Dictionary<nint, string>();
-    private static int _version;
-
-    [System.Diagnostics.Conditional("CONFIG_DEBUG")]
-    public static void OnVersion(int version)
-    {
-        if (version != _version) { _version = version; _cache.Clear(); }
-    }
+    private static int _lastVersion = -1;
 
     public static string Get(byte* ptr, int pVersion)
     {
         if (ptr == null) return null;
-        OnVersion(pVersion);
+        if (pVersion != _lastVersion) { _cache.Clear(); _lastVersion = pVersion; }
         nint key = (nint)ptr;
         if (_cache.TryGetValue(key, out var s)) return s;
         int len = *(int*)ptr;
@@ -145,15 +155,25 @@ public static unsafe class NStringCache
 }
 
 /// <summary>
-/// 表级运行时 registry：按表名注册已加载的 ConfigTable，供生成的 accessor 查询
-/// （Count/ByID/ByIndex/Version + 可选 ByCode/GroupKey）。独立于 Unity/游戏。
+/// 表级运行时 registry：按表名注册已加载的 ConfigTable，供生成的 accessor 查询。
+/// 生命周期：先用 ConfigReader.LoadBundle 一次性加载整套 bin（版本前进一次），再 Register；
+/// 覆盖同名表（重载）时释放旧句柄。独立于 Unity/游戏。
 /// </summary>
 public static unsafe class Runtime
 {
     private static readonly Dictionary<string, ConfigTable> _tables = new Dictionary<string, ConfigTable>();
 
-    public static void Register(ConfigTable table) => _tables[table.Name] = table;
-    public static void Clear() => _tables.Clear();
+    public static void Register(ConfigTable table)
+    {
+        if (_tables.TryGetValue(table.Name, out var old)) old?.Dispose();
+        _tables[table.Name] = table;
+    }
+
+    public static void Clear()
+    {
+        foreach (var t in _tables.Values) t.Dispose();
+        _tables.Clear();
+    }
 
     public static int Count(string tableName) => _tables[tableName].Count;
     public static IntPtr ByID(string tableName, int id) => _tables[tableName].ByID(id);
