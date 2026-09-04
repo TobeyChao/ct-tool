@@ -61,7 +61,7 @@ def _build_project(root: Path, unity: Path | None = None) -> None:
     ws.append(["id", "name", "price"])
     ws.append(["主键", "名称", "价格"])
     ws.append([1001, "铁剑", 100.0])
-    wb.save(root / "excel" / "item.xlsx")
+    wb.save(root / "excel" / "Item.xlsx")
 
 
 def test_export_deploys_to_unity(tmp_path: Path) -> None:
