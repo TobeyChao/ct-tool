@@ -1,7 +1,7 @@
 kind: enum
 name: ItemRarity
 values:
-- common
-- rare
-- epic
+  - common
+  - rare
+  - epic
 comment: 稀有度

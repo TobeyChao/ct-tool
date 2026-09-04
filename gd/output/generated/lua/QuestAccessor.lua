@@ -1,4 +1,4 @@
--- Auto-generated canonical Lua accessor for Quest ()
+-- Auto-generated canonical Lua accessor for Quest
 local GD = require("gd")
 local _tbl = "Quest"
 

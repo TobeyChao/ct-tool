@@ -1,31 +1,31 @@
 table: Item
 primary: Id
 fields:
-- name: Id
-  type: int32
-  comment: 道具唯一ID，禁止修改
-- name: Name
-  type: string
-  i18n: true
-  comment: 道具名称（多语言）
-- name: Price
-  type: float
-  comment: 售价（金币），0=不可出售
-- name: Rarity
-  type: ItemRarity
-  comment: 稀有度
-- name: ItemTypeId
-  type: int32
-  ref: ItemType.Id
-  comment: 道具类型，关联 ItemType.Id
-- name: DropRange
-  type: ItemDropRange
-  comment: 掉落范围
-- name: Tags
-  type: vector<int32>
-  separator: ','
-  comment: 标签列表，逗号分隔
-- name: IsActive
-  type: bool
-  server_only: true
-  comment: 是否启用（仅服务端）
+  - name: Id
+    type: int32
+    comment: 道具唯一ID，禁止修改
+  - name: Name
+    type: string
+    i18n: true
+    comment: 道具名称（多语言）
+  - name: Price
+    type: float
+    comment: 售价（金币），0=不可出售
+  - name: Rarity
+    type: ItemRarity
+    comment: 稀有度
+  - name: ItemTypeId
+    type: int32
+    ref: ItemType.Id
+    comment: 道具类型，关联 ItemType.Id
+  - name: DropRange
+    type: ItemDropRange
+    comment: 掉落范围
+  - name: Tags
+    type: vector<int32>
+    separator: ','
+    comment: 标签列表，逗号分隔
+  - name: IsActive
+    type: bool
+    server_only: true
+    comment: 是否启用（仅服务端）

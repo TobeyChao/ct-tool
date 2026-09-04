@@ -26,6 +26,31 @@ _OLD_FIELD_KEYS = frozenset({"values", "fields", "element", "element_values"})
 _OLD_TYPE_NAMES = frozenset({"enum", "struct", "array"})
 
 
+class _IndentedDumper(yaml.SafeDumper):
+    """PyYAML dumper that indents block sequences under their parent key.
+
+    The default SafeDumper emits ``fields:`` immediately followed by a
+    top-level ``- name:`` line.  Overriding ``increase_indent`` pushes each
+    sequence item one level deeper, matching the conventional style::
+
+        fields:
+          - name: Id
+            type: int32
+    """
+
+    def increase_indent(self, flow: bool = False, indentless: bool = False) -> None:
+        return super().increase_indent(flow, indentless=False)
+
+
+def dump_yaml(data: Any) -> str:
+    """Serialize ``data`` as deterministic, human-diffable YAML.
+
+    Sequences are indented under their parent key (see ``_IndentedDumper``);
+    keys keep their model order and unicode is written verbatim.
+    """
+    return yaml.dump(data, Dumper=_IndentedDumper, allow_unicode=True, sort_keys=False)
+
+
 @dataclass(frozen=True)
 class ResourceWorkspace:
     tables: tuple[TableResource, ...]
@@ -235,10 +260,6 @@ class YamlResourceRepository:
         )
         target_dir.mkdir(parents=True, exist_ok=True)
         target = target_dir / f"{resource.name}.yaml"
-        text = yaml.safe_dump(
-            resource_to_data(resource),
-            allow_unicode=True,
-            sort_keys=False,
-        )
+        text = dump_yaml(resource_to_data(resource))
         target.write_text(text, encoding="utf-8")
         return target

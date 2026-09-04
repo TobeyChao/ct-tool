@@ -1,18 +1,18 @@
 table: UIConfig
 primary: Id
 fields:
-- name: Id
-  type: int32
-  comment: 界面唯一 ID（行主键，禁止修改；Config Lua 生成时从本表读取）
-- name: Layer
-  type: UIConfigLayer
-  comment: UI 层级：Page 全屏页栈 / Modal 弹窗栈 / Panel 常驻面板 / Overlay 浮层
-- name: ResourceKey
-  type: string
-  comment: Addressables 资源 key（prefab 路径）
-- name: BlocksRaycast
-  type: bool
-  comment: Overlay 专用：是否拦截输入（Toast 透传 / Loading 拦截），其他层忽略
-- name: Stack
-  type: bool
-  comment: Page 专用：是否入历史栈
+  - name: Id
+    type: int32
+    comment: 界面唯一 ID（行主键，禁止修改；Config Lua 生成时从本表读取）
+  - name: Layer
+    type: UIConfigLayer
+    comment: UI 层级：Page 全屏页栈 / Modal 弹窗栈 / Panel 常驻面板 / Overlay 浮层
+  - name: ResourceKey
+    type: string
+    comment: Addressables 资源 key（prefab 路径）
+  - name: BlocksRaycast
+    type: bool
+    comment: Overlay 专用：是否拦截输入（Toast 透传 / Loading 拦截），其他层忽略
+  - name: Stack
+    type: bool
+    comment: Page 专用：是否入历史栈

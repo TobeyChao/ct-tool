@@ -94,7 +94,9 @@ def test_csharp_pointer_row_and_query_api() -> None:
     assert "public static int Count => Runtime.Count(TableName);" in text
     assert "public static ItemRow? ByID(int id)" in text
     assert "public static ItemRow? ByIndex(int i)" in text
-    assert "return p == IntPtr.Zero ? (ItemRow?)null : new ItemRow(p, Runtime.Version(TableName));" in text
+    assert "        if (p == IntPtr.Zero)" in text
+    assert "            return null;" in text
+    assert "            return new ItemRow(p, Runtime.Version(TableName));" in text
     # vtable slot = 4 + 2*字段序: Id=4, CodeName=6, Category=8
     assert "public int Id => WireReader.I32(_row, 4);" in text
     assert "public string CodeName => new NString((byte*)WireReader.Indirect(_row, 6), _version);" in text
@@ -156,7 +158,9 @@ def test_csharp_record_accessor() -> None:
     table, records = _item_with_records()
     text = golden_csharp(table=table, indexes=(), records=records)
     # 嵌套 record 子行（指针式行句柄） + 类型化 enum + 向量容器
-    assert "ItemAccessor.ItemDropRangeRow DropRange => new ItemAccessor.ItemDropRangeRow(WireReader.Indirect(_row, 10), _version);" in text
+    # DropRange 表达式超 100 列 → 展开为 block body
+    assert "public ItemAccessor.ItemDropRangeRow DropRange" in text
+    assert "            return new ItemAccessor.ItemDropRangeRow(WireReader.Indirect(_row, 10), _version);" in text
     assert "public unsafe readonly struct ItemDropRangeRow" in text
     assert "public int Min => WireReader.I32(_row, 4);" in text
     assert "public int Max => WireReader.I32(_row, 6);" in text
@@ -175,11 +179,27 @@ def test_lua_record_accessor() -> None:
     assert "GD.VecI32(_tbl, 4, s, i - 1)" in text
 
 
+def test_lua_ref_keeps_bare_id_line() -> None:
+    """跨表 ref 字段在 Lua 中必须同时保留裸 id 与类型化访问（与 C# 一致）。"""
+    table = TableResource(
+        table="Quest",
+        primary="Id",
+        fields=[
+            FieldDef(name="Id", type="int32"),
+            FieldDef(name="RewardItemId", type="int32", ref="Item.Id"),
+        ],
+    )
+    text = golden_lua(table=table, indexes=())
+    assert "RewardItemId = function(s) return GD.I32(_tbl, 1, s) end," in text
+    assert "Item = function(s) local rid = GD.I32(_tbl, 1, s) return ItemAccessor.ByID(rid) end," in text
+
+
 def test_csharp_vector_of_record() -> None:
     table, records = _chest_with_vector_records()
     text = golden_csharp(table=table, indexes=(), records=records)
-    # vector<Record> → NStructArray 单容器
-    assert "public NStructArray<ChestAccessor.DropRewardRow> Rewards => new NStructArray<ChestAccessor.DropRewardRow>(_row, 6, _version);" in text
+    # vector<Record> → NStructArray 单容器；Rewards 表达式超 100 列 → block body
+    assert "public NStructArray<ChestAccessor.DropRewardRow> Rewards" in text
+    assert "            return new NStructArray<ChestAccessor.DropRewardRow>(_row, 6, _version);" in text
     assert "public NStructArray<NString> Tags => new NStructArray<NString>(_row, 8, _version);" in text
     assert "public NArray<ItemRarity> Types => new NArray<ItemRarity>(_row, 10, _version);" in text
 

@@ -312,17 +312,11 @@ def recover(workspace: CanonicalWorkspace) -> list[str]:
 
 def stage_candidate_yaml(manifest: PlanManifest, resources: list) -> None:
     """Write canonical candidate YAML into the plan staging dir (app layer)."""
-    import yaml
-
     from ct.schema.resources import TableResource, resource_to_data
+    from ct.schema.resource_repository import dump_yaml
 
     for resource in resources:
         directory = "config/schemas" if isinstance(resource, TableResource) else "config/types"
         target = manifest.staging_dir / f"{resource.name}.yaml"
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(
-            yaml.safe_dump(
-                resource_to_data(resource), allow_unicode=True, sort_keys=False
-            ),
-            encoding="utf-8",
-        )
+        target.write_text(dump_yaml(resource_to_data(resource)), encoding="utf-8")

@@ -35,6 +35,8 @@ from ct.schema.indexes import QueryIndex
 
 # ---------------------------------------------------------------- C# helpers
 
+_CSHARP_MAX_LINE = 100  # 表达式体 vs block body 的行长阈值（.NET IDE0022 when_on_single_line 共识）
+
 
 def _vtable_slot(field: AccessorField) -> int:
     """FlatBuffers vtable slot = 4 + 2*字段序（与指针式 reader 一致）。"""
@@ -69,9 +71,44 @@ def _csharp_type(field: AccessorField) -> str:
     return "int"  # enum (byte wire, exposed as int)
 
 
-def _emit_csharp_field(field: AccessorField, qualified_row: str, nested: bool) -> list[str]:
-    """Emit one field's accessor lines. ``qualified_row`` prefixes a nested row ref
-    at top level (e.g. ``ItemAccessor.``); inside the accessor class use ``""``"""
+def _csharp_ctor_lines(type_name: str) -> list[str]:
+    """Emit an Allman-style constructor body for a row struct."""
+    return [
+        f"internal {type_name}(IntPtr row, int version)",
+        "{",
+        "    _row = row;",
+        "    _version = version;",
+        "}",
+    ]
+
+
+def _csharp_member_lines(type_text: str, name: str, expr: str, indent: int) -> list[str]:
+    """Emit one property as lines already indented ``indent`` spaces, choosing
+    expression-body vs block-body by final line length (``_CSHARP_MAX_LINE``)."""
+    pad = " " * indent
+    one_line = f"{pad}public {type_text} {name} => {expr};"
+    if len(one_line) <= _CSHARP_MAX_LINE:
+        return [one_line]
+    return [
+        f"{pad}public {type_text} {name}",
+        f"{pad}{{",
+        f"{pad}    get",
+        f"{pad}    {{",
+        f"{pad}        return {expr};",
+        f"{pad}    }}",
+        f"{pad}}}",
+    ]
+
+
+def _indent(lines: list[str], width: int) -> list[str]:
+    pad = " " * width
+    return [f"{pad}{line}" for line in lines]
+
+
+def _emit_csharp_field(field: AccessorField, qualified_row: str, indent: int) -> list[str]:
+    """Emit one field's accessor as lines indented ``indent`` spaces.
+    ``qualified_row`` prefixes a nested row ref at top level (e.g.
+    ``ItemAccessor.``); inside the accessor class pass ``""``"""
     slot = _vtable_slot(field)
     if field.kind == "vector":
         # harmony 风格单一容器（NArray<T> / NStructArray<T>）；record 行类型需带 qualified 前缀
@@ -81,31 +118,40 @@ def _emit_csharp_field(field: AccessorField, qualified_row: str, nested: bool) -
             container = field.container_text
         else:
             container = "NArray<int>"
-        return [
-            f"    public {container} {field.name} => new {container}(_row, {slot}, _version);",
-        ]
+        return _csharp_member_lines(
+            container, field.name, f"new {container}(_row, {slot}, _version)", indent
+        )
     if field.kind == "record":
-        return [
-            f"    public {qualified_row}{field.record_name}Row {field.name} => "
-            f"new {qualified_row}{field.record_name}Row(WireReader.Indirect(_row, {slot}), _version);",
-        ]
+        return _csharp_member_lines(
+            f"{qualified_row}{field.record_name}Row",
+            field.name,
+            f"new {qualified_row}{field.record_name}Row(WireReader.Indirect(_row, {slot}), _version)",
+            indent,
+        )
     reader = _csharp_scalar_reader(field)
     if field.kind == "string":
         # 字符串走 NString（隐式转 string）+ NStringCache 驻留
-        return [
-            f"    public string {field.name} => new NString((byte*)WireReader.Indirect(_row, {slot}), _version);",
-        ]
+        return _csharp_member_lines(
+            "string",
+            field.name,
+            f"new NString((byte*)WireReader.Indirect(_row, {slot}), _version)",
+            indent,
+        )
     if field.kind == "enum":
-        return [
-            f"    public {field.type_text} {field.name} => ({field.type_text}){reader}(_row, {slot});",
-        ]
-    lines = [
-        f"    public {_csharp_type(field)} {field.name} => {reader}(_row, {slot});",
-    ]
+        return _csharp_member_lines(
+            field.type_text,
+            field.name,
+            f"({field.type_text}){reader}(_row, {slot})",
+            indent,
+        )
+    lines = _csharp_member_lines(
+        _csharp_type(field), field.name, f"{reader}(_row, {slot})", indent
+    )
     # 跨表 ref：保留裸 id + 类型化访问（目标表 ByID，走 id→行缓存）
     if field.ref_table:
+        pad = " " * indent
         lines.append(
-            f"    public {field.ref_table}Row? {field.ref_table} => {field.ref_table}Accessor.ByID({field.name});"
+            f"{pad}public {field.ref_table}Row? {field.ref_table} => {field.ref_table}Accessor.ByID({field.name});"
         )
     return lines
 
@@ -119,10 +165,9 @@ def _emit_csharp_record_structs(model: CanonicalAccessorModel) -> list[str]:
         lines.append("    {")
         lines.append("        private readonly IntPtr _row;")
         lines.append("        private readonly int _version;")
-        lines.append(f"        internal {record.name}Row(IntPtr row, int version) {{ _row = row; _version = version; }}")
+        lines.extend(_indent(_csharp_ctor_lines(f"{record.name}Row"), 8))
         for field in fields:
-            for line in _emit_csharp_field(field, qualified_row="", nested=True):
-                lines.append(line.replace("    ", "        ", 1))
+            lines.extend(_emit_csharp_field(field, "", 8))
         lines.append("    }")
         lines.append("")
     return lines
@@ -140,14 +185,28 @@ def _emit_csharp_query_api(model: CanonicalAccessorModel) -> list[str]:
     lines.append(f"    public static {table}Row? ByID(int id)")
     lines.append("    {")
     lines.append("        IntPtr p = Runtime.ByID(TableName, id);")
-    lines.append(f"        return p == IntPtr.Zero ? ({table}Row?)null : new {table}Row(p, Runtime.Version(TableName));")
+    lines.append("        if (p == IntPtr.Zero)")
+    lines.append("        {")
+    lines.append("            return null;")
+    lines.append("        }")
+    lines.append("        else")
+    lines.append("        {")
+    lines.append(f"            return new {table}Row(p, Runtime.Version(TableName));")
+    lines.append("        }")
     lines.append("    }")
     lines.append("")
     lines.append("    /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>")
     lines.append(f"    public static {table}Row? ByIndex(int i)")
     lines.append("    {")
     lines.append("        IntPtr p = Runtime.RowAt(TableName, i);")
-    lines.append(f"        return p == IntPtr.Zero ? ({table}Row?)null : new {table}Row(p, Runtime.Version(TableName));")
+    lines.append("        if (p == IntPtr.Zero)")
+    lines.append("        {")
+    lines.append("            return null;")
+    lines.append("        }")
+    lines.append("        else")
+    lines.append("        {")
+    lines.append(f"            return new {table}Row(p, Runtime.Version(TableName));")
+    lines.append("        }")
     lines.append("    }")
     for index in model.indexes:
         if index.kind == "code":
@@ -156,7 +215,14 @@ def _emit_csharp_query_api(model: CanonicalAccessorModel) -> list[str]:
             lines.append(f"    public static {table}Row? ByCode(string code)")
             lines.append("    {")
             lines.append(f"        int row = Runtime.ByCode(TableName, {index.slot}, code);")
-            lines.append(f"        return row < 0 ? ({table}Row?)null : new {table}Row(Runtime.RowAt(TableName, row), Runtime.Version(TableName));")
+            lines.append("        if (row < 0)")
+            lines.append("        {")
+            lines.append("            return null;")
+            lines.append("        }")
+            lines.append("        else")
+            lines.append("        {")
+            lines.append(f"            return new {table}Row(Runtime.RowAt(TableName, row), Runtime.Version(TableName));")
+            lines.append("        }")
             lines.append("    }")
         else:
             lines.append("")
@@ -165,7 +231,10 @@ def _emit_csharp_query_api(model: CanonicalAccessorModel) -> list[str]:
             lines.append("    {")
             lines.append(f"        var rows = Runtime.GroupKey(TableName, {index.slot}, value);")
             lines.append(f"        var result = new List<{table}Row>(rows.Length);")
-            lines.append("        foreach (var row in rows) result.Add(new " + table + "Row(Runtime.RowAt(TableName, row), Runtime.Version(TableName)));")
+            lines.append("        foreach (var row in rows)")
+            lines.append("        {")
+            lines.append(f"            result.Add(new {table}Row(Runtime.RowAt(TableName, row), Runtime.Version(TableName)));")
+            lines.append("        }")
             lines.append("        return result;")
             lines.append("    }")
     return lines
@@ -175,7 +244,7 @@ def generate_csharp_accessor(model: CanonicalAccessorModel) -> str:
     table = model.table.table
     lines: list[str] = []
     lines.append("// <auto-generated/>")
-    lines.append(f"// Canonical C# accessor for {table} ()")
+    lines.append(f"// Canonical C# accessor for {table}")
     lines.append("using System;")
     lines.append("using System.Collections.Generic;")
     lines.append("")
@@ -192,11 +261,10 @@ def generate_csharp_accessor(model: CanonicalAccessorModel) -> str:
     lines.append("{")
     lines.append("    private readonly IntPtr _row;")
     lines.append("    private readonly int _version;")
-    lines.append(f"    internal {table}Row(IntPtr row, int version) {{ _row = row; _version = version; }}")
+    lines.extend(_indent(_csharp_ctor_lines(f"{table}Row"), 4))
     qualified = f"{table}Accessor."
     for field in model.client_fields:
-        for line in _emit_csharp_field(field, qualified_row=qualified, nested=False):
-            lines.append(line)
+        lines.extend(_emit_csharp_field(field, qualified_row=qualified, indent=4))
     lines.append("}")
     return "\n".join(lines)
 
@@ -218,7 +286,7 @@ def _lua_reader(field: AccessorField) -> str:
     return "GD.I8"  # enum (byte wire)
 
 
-def _lua_vec(field: AccessorField) -> tuple[str, str, bool]:
+def _lua_vector_parts(field) -> tuple[str, str, bool]:
     if field.element_kind == "record":
         return "GD.VecLen", "GD.RecVec", True
     if field.element_kind == "string":
@@ -234,19 +302,50 @@ def _lua_vec(field: AccessorField) -> tuple[str, str, bool]:
     }.get(field.element_type, ("GD.VecLen", "GD.VecI32", False))
 
 
-def _lua_vector_body(field) -> str:
-    """Return the body of a vector accessor (`local n ... return out`)."""
-    count_reader, at_reader, is_record = _lua_vec(field)
+def _lua_vector_body(field: AccessorField) -> str:
+    """Return the one-line body of a vector accessor (``local n ... return out``)."""
+    count_reader, at_reader, is_record = _lua_vector_parts(field)
     if is_record:
         return (
             f"local n = {count_reader}(_tbl, {field.slot}, s) local out = {{}} "
-            f"for i = 1, n do out[i] = setmetatable({{_row = {at_reader}(_tbl, {field.slot}, s, i - 1)}}, "
-            f"{field.record_name}Meta) end return out"
+            f"for i = 1, n do out[i] = setmetatable("
+            f"{{_row = {at_reader}(_tbl, {field.slot}, s, i - 1)}}, {field.record_name}Meta) end "
+            f"return out"
         )
     return (
         f"local n = {count_reader}(_tbl, {field.slot}, s) local out = {{}} "
-        f"for i = 1, n do out[i] = {at_reader}(_tbl, {field.slot}, s, i - 1) end return out"
+        f"for i = 1, n do out[i] = {at_reader}(_tbl, {field.slot}, s, i - 1) end "
+        f"return out"
     )
+
+
+def _lua_member_lines(field: AccessorField, indent: str) -> list[str]:
+    """Emit one Lua accessor entry as single-line(s) (compact rowmeta style).
+
+    A cross-table ref emits two lines — the bare id and the typed lookup —
+    matching C# so the raw id is never dropped.
+    """
+    if field.kind == "vector":
+        return [f"{indent}{field.name} = function(s) {_lua_vector_body(field)} end,"]
+    if field.kind == "record":
+        return [
+            f"{indent}{field.name} = function(s) return setmetatable("
+            f"{{_row = GD.Rec(_tbl, {field.slot}, s)}}, {field.record_name}Meta) end,",
+        ]
+    reader = _lua_reader(field)
+    if field.kind == "bool":
+        return [
+            f"{indent}{field.name} = function(s) return {reader}(_tbl, {field.slot}, s) ~= 0 end,",
+        ]
+    lines = [
+        f"{indent}{field.name} = function(s) return {reader}(_tbl, {field.slot}, s) end,",
+    ]
+    if field.ref_table:
+        lines.append(
+            f"{indent}{field.ref_table} = function(s) local rid = {reader}(_tbl, {field.slot}, s) "
+            f"return {field.ref_table}Accessor.ByID(rid) end,"
+        )
+    return lines
 
 
 def _emit_lua_record_metas(model: CanonicalAccessorModel) -> list[str]:
@@ -256,22 +355,7 @@ def _emit_lua_record_metas(model: CanonicalAccessorModel) -> list[str]:
         fields = record_accessor_fields(record, model.records)
         lines.append(f"local {record.name}Meta = {{")
         for field in fields:
-            if field.kind == "vector":
-                lines.append(f"  {field.name} = function(s) {_lua_vector_body(field)} end,")
-            elif field.kind == "record":
-                lines.append(
-                    f"  {field.name} = function(s) return setmetatable({{_row = GD.Rec(_tbl, {field.slot}, s)}}, {field.record_name}Meta) end,"
-                )
-            else:
-                reader = _lua_reader(field)
-                if field.kind == "bool":
-                    lines.append(
-                        f"  {field.name} = function(s) return {reader}(_tbl, {field.slot}, s) ~= 0 end,"
-                    )
-                else:
-                    lines.append(
-                        f"  {field.name} = function(s) return {reader}(_tbl, {field.slot}, s) end,"
-                    )
+            lines.extend(_lua_member_lines(field, "  "))
         lines.append("}")
         lines.append("")
     return lines
@@ -280,7 +364,7 @@ def _emit_lua_record_metas(model: CanonicalAccessorModel) -> list[str]:
 def generate_lua_accessor(model: CanonicalAccessorModel) -> str:
     table = model.table.table
     lines: list[str] = []
-    lines.append(f"-- Auto-generated canonical Lua accessor for {table} ()")
+    lines.append(f"-- Auto-generated canonical Lua accessor for {table}")
     lines.append('local GD = require("gd")')
     lines.append(f"local _tbl = \"{table}\"")
     lines.append("")
@@ -290,24 +374,7 @@ def generate_lua_accessor(model: CanonicalAccessorModel) -> str:
         lines.extend(record_metas)
     lines.append("local RowMeta = {")
     for field in model.client_fields:
-        if field.kind == "vector":
-            lines.append(f"  {field.name} = function(s) {_lua_vector_body(field)} end,")
-        elif field.kind == "record":
-            lines.append(
-                f"  {field.name} = function(s) return setmetatable({{_row = GD.Rec(_tbl, {field.slot}, s)}}, {field.record_name}Meta) end,"
-            )
-        elif field.kind == "bool":
-            lines.append(
-                f"  {field.name} = function(s) return GD.I8(_tbl, {field.slot}, s) ~= 0 end,"
-            )
-        elif field.kind == "string":
-            lines.append(f"  {field.name} = function(s) return GD.Str(_tbl, {field.slot}, s) end,")
-        else:
-            reader = _lua_reader(field)
-            lines.append(f"  {field.name} = function(s) return {reader}(_tbl, {field.slot}, s) end,")
-            # 跨表 ref：类型化查找（目标表 accessor 的 ByID）
-            if field.ref_table:
-                lines.append(f"  {field.ref_table} = function(s) local rid = {reader}(_tbl, {field.slot}, s) return {field.ref_table}Accessor.ByID(rid) end,")
+        lines.extend(_lua_member_lines(field, "  "))
     lines.append("}")
     lines.append("")
     lines.append("local M = {}")
