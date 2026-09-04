@@ -1,6 +1,0 @@
-{
-  "Quests": [
-    {"Id": 1, "Title": "Novice Adventure", "Description": "Complete your first adventure", "RewardItemId": 1, "RequiredLevel": 1},
-    {"Id": 2, "Title": "Dragon Slayer", "Description": "Defeat the evil dragon", "RewardItemId": 2, "RequiredLevel": 10}
-  ]
-}

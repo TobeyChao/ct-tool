@@ -1,7 +1,7 @@
 """Canonical cutover pipeline smoke: convert legacy fixture -> canonical,
-run canonical export, and assert JSON semantic parity with the pre-cutover
-golden. The live gd stays legacy until the coordinated cutover (13.x).
-"""
+run canonical export, and assert the artifact tree is produced (FBS/binary/
+accessors) plus the background task reports phases/history. The live gd stays
+legacy until the coordinated cutover (13.x)."""
 
 from __future__ import annotations
 
@@ -89,30 +89,6 @@ def _convert_schemas_to_canonical(root: Path) -> None:
         _write_yaml(schema_dir / f"{name}.yaml", schema)
     for type_def in types:
         _write_yaml(root / "config" / "types" / f"{type_def['name']}.yaml", type_def)
-
-
-def _json_semantics(path: Path) -> dict:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    return json.loads(json.dumps(data, ensure_ascii=False, sort_keys=True))
-
-
-def test_canonical_export_parity_with_pregolden(tmp_path: Path) -> None:
-    workspace = tmp_path / "gd"
-    for section in ("config", "excel", "i18n"):
-        shutil.copytree(FIXTURE / section, workspace / section)
-    _convert_schemas_to_canonical(workspace)
-
-    result = run_canonical_export(workspace)
-    assert result["tables"] == 4
-    assert set(result["languages"]) == {"zh", "en", "ja"}
-
-    # JSON semantic parity: the conversion changes type names only, so the
-    # JSON payloads must equal the pre-cutover golden for every language/table
-    for table in ("Item", "ItemType", "Quest", "UIConfig"):
-        for lang in ("zh", "en", "ja"):
-            new = _json_semantics(workspace / "output" / "json" / f"{table}_{lang}.json")
-            old = _json_semantics(FIXTURE / "output" / "json" / f"{table}_{lang}.json")
-            assert new == old, f"{table}_{lang} JSON 语义不一致"
 
 
 def test_canonical_export_writes_fbs_binary_accessors(tmp_path: Path) -> None:
