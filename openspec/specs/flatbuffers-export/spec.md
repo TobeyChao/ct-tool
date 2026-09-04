@@ -1,3 +1,7 @@
+## Purpose
+
+把配表 schema 与数据导出为 FlatBuffers 相关产物（`.fbs` 定义、按语言的二进制 Bundle）以及与之配套的 canonical C#/Lua 读取 Accessor，供客户端零拷贝读取配置。
+
 ## Requirements
 
 ### Requirement: Generate .fbs files from schema
@@ -8,20 +12,20 @@
 - **THEN** 生成 `item.fbs`，包含 `table Item` 和 `table ItemTable { items: [Item]; }` 定义
 
 #### Scenario: Enum field fbs generation
-- **WHEN** schema 含 `type: enum, values: [common, rare, epic]` 的 rarity 字段
-- **THEN** `item.fbs` 包含 `enum Rarity: byte { common = 0, rare = 1, epic = 2 }`，Item 表中字段类型为 `Rarity`
+- **WHEN** schema 含 `Rarity: ItemRarity` 枚举字段（`config/types/ItemRarity.yaml`，values `[common, rare, epic]`）
+- **THEN** `item.fbs` 包含 `enum ItemRarity: byte { common = 0, rare = 1, epic = 2 }`，Item 表中字段类型为 `ItemRarity`
 
-#### Scenario: Nested struct generated as FlatBuffers table
-- **WHEN** schema 含 `type: struct, fields: [{name: min, type: int32}, {name: max, type: int32}]` 的 drop_range 字段
-- **THEN** `item.fbs` 包含 `table DropRange { min: int32; max: int32; }`，Item 中字段类型为 `DropRange`（使用 FlatBuffers table，而非 struct）
+#### Scenario: Nested record generated as FlatBuffers table
+- **WHEN** schema 含 `DropRange: ItemDropRange` 记录字段（`config/types/ItemDropRange.yaml`，字段 `min/max` 均为 int32）
+- **THEN** `item.fbs` 包含 `table ItemDropRange { min: int32; max: int32; }`，Item 中字段类型为 `ItemDropRange`（使用 FlatBuffers table，而非 struct）
 
-#### Scenario: Array of primitives generated as vector
-- **WHEN** schema 含 `type: array, element: int32` 的 tags 字段
+#### Scenario: Vector of primitives generated as vector
+- **WHEN** schema 含 `Tags: vector<int32>` 字段
 - **THEN** Item 中该字段生成为 `tags: [int32]`
 
-#### Scenario: Array of enum generated as vector of enum
-- **WHEN** schema 含 `type: array, element: enum, values: [common, rare]` 的字段
-- **THEN** 生成对应 enum 类型，字段为 `[EnumType]` vector
+#### Scenario: Vector of enum generated as vector of enum
+- **WHEN** schema 含 `vector<ItemRarity>` 字段
+- **THEN** 生成对应 enum 类型，字段为 `[ItemRarity]` vector
 
 #### Scenario: i18n variant generation
 - **WHEN** item schema 中 name 字段标记 `i18n: true`
@@ -35,66 +39,72 @@
 - **WHEN** 工具初始化或 schema 更新后
 - **THEN** 生成 `output/fbs/container.fbs`，包含 `BundledTable` 和 `DataBundle` 定义
 
-### Requirement: Compile .fbs via flatc for C++, C#, and Lua
-工具 SHALL 调用 `flatc` 分别为三种语言编译生成的 .fbs 文件：C++ 头文件输出至 `output/generated/cpp/`，C# 文件输出至 `output/generated/csharp/`，Lua 文件输出至 `output/generated/lua/`。
+### Requirement: Generate canonical C# Accessor with query API and typed fields
+工具 SHALL 为每张表生成 C# Accessor，与 canonical 指针式 reader（`WireReader`）对齐 harmony 的接口与性能：行句柄持 `IntPtr`；每表提供 `Count/ByID/ByIndex` 查询；字段类型化暴露（enum 返回 `(EnumType)`，跨表 `ref` 提供类型化访问）；vector 字段暴露为**单一可索引/可枚举容器**（`NArray<T>`/`NStructArray<T>`）并在构造时捕获向量基址（`VecBase`）实现 O(1) 直读。i18n 字段按当前语言表读取。
 
-#### Scenario: flatc not found
-- **WHEN** `config/global.yaml` 中配置的 `flatc_path` 指向的文件不存在
-- **THEN** 报错并输出安装指引（提示将 flatc 放入项目目录如 `tools/flatc`），跳过编译步骤（不影响 JSON 导出）
+#### Scenario: C# Accessor exposes per-table query API
+- **WHEN** 生成 `ItemAccessor.cs`
+- **THEN** 包含 `public static int Count`、`public static ItemRow? ByID(int id)`、`public static ItemRow? ByIndex(int i)`（越界返回 null）；若配置了 Code/Group 索引，还包含 `ByCode`/`ByGroupKey`
 
-#### Scenario: C++ header generated
-- **WHEN** flatc 可用，item.fbs 合法
-- **THEN** 生成 `output/generated/cpp/item_generated.h`
+#### Scenario: C# row is a pointer handle
+- **WHEN** 通过 `ItemAccessor.ByID(id)` 取到一行
+- **THEN** `ItemRow` 持有行对象指针，字段读取用 `WireReader.I32(_row, slot)`（`slot = 4 + 2*字段序`）
 
-#### Scenario: C# file generated
-- **WHEN** flatc 可用，item.fbs 合法
-- **THEN** 生成 `output/generated/csharp/ItemGenerated.cs`（包含 `ItemTable`、`Item`、`ItemI18nEntry`、`ItemI18nTable` 类）
+#### Scenario: C# enum field typed
+- **WHEN** item 表有 `Rarity: ItemRarity` 枚举字段
+- **THEN** 生成 `public ItemRarity Rarity => (ItemRarity)WireReader.I8(_row, slot);`（返回类型化枚举，而非裸 int）
 
-#### Scenario: Lua file generated
-- **WHEN** flatc 可用，item.fbs 合法
-- **THEN** 生成 `output/generated/lua/item_generated.lua`
+#### Scenario: C# cross-table ref typed accessor
+- **WHEN** item 表有 `ItemTypeId: int32` 且 `ref: ItemType.Id`
+- **THEN** 保留裸 id 快路径 `public int ItemTypeId => WireReader.I32(_row, slot)`，并生成类型化访问 `public ItemTypeRow ItemType => ItemTypeAccessor.ByID(ItemTypeId);`（底层用 id→行缓存，避免每字段 P/Invoke）
 
-### Requirement: Generate C# Accessor with i18n logic
-工具 SHALL 为每张表生成 C# Accessor 类，封装主包 + i18n 包双查找逻辑，上层业务代码访问 i18n 字段时无需感知双包结构。C# Accessor 调用手写的 `GDNative` P/Invoke 接口获取原始 FlatBuffers 字节，使用 `ByteBuffer` 零拷贝读取。Accessor 提供 `Preload()` 静态方法：构建 `Dictionary<int, int>`（id → 行索引）+ 将所有 string 字段 eager materialize 到 `string[]` 数组；标量字段仍从 ByteBuffer 读取（天然零 GC）。`Preload()` 后所有字段访问零 GC。
+#### Scenario: C# vector field as single container
+- **WHEN** item 表有 `Tags: vector<int32>`
+- **THEN** 生成 `public NArray<int> Tags => new NArray<int>(WireReader.VecBase(_row, slot), count);`，支持 `Tags.Length`、`Tags[i]`、`foreach`；`vector<Record>` 生成 `NStructArray<T>`；`vector<string>` 生成 `NStructArray<NString>`
 
-#### Scenario: C# Accessor generated
-- **WHEN** item 表有 i18n 字段 name
-- **THEN** 生成 `output/generated/csharp/ItemAccessor.cs`，包含 `ItemAccessor` 类；调用 `GetName(id)` 时优先返回 i18n 包中的译文，缺失时回退主包原文
+### Requirement: Generate canonical Lua Accessor with query API and typed fields
+工具 SHALL 为每张表生成 Lua Accessor，与 canonical reader（`GD`）对齐 harmony 的接口与性能：提供 `M.Count/M.ByID/M.ByIndex` 查询，enum 返回类型化值，跨表 `ref` 提供类型化访问，vector 返回惰性表（数组值）经基址捕获读取。i18n 字段按当前语言表读取。
 
-#### Scenario: C# Accessor for non-i18n table
-- **WHEN** item_type 表无 i18n 字段
-- **THEN** 生成 `output/generated/csharp/ItemTypeAccessor.cs`，所有字段直接透传主包，无 i18n 查找逻辑
+#### Scenario: Lua Accessor exposes per-table query API
+- **WHEN** 生成 `ItemAccessor.lua`
+- **THEN** 包含 `M.Count`、`M.ByID(id)`、`M.ByIndex(i)`；若配置索引还包含 `M.ByCode`/`M.ByGroupKey`
 
-#### Scenario: C# non-i18n field passthrough
-- **WHEN** 访问 `price`（非 i18n 字段）
-- **THEN** 直接返回主包中的值，不查询 i18n 包
+#### Scenario: Lua enum field typed
+- **WHEN** item 表有 `Rarity: ItemRarity` 枚举字段
+- **THEN** 生成返回类型化值（数字或字符串映射，按 Lua 消费约定）的 `Rarity` 访问器，而非裸数字
 
-#### Scenario: C# Preload materializes strings
-- **WHEN** 调用 `ItemAccessor.Preload()`
-- **THEN** 遍历主包所有行，构建 `Dictionary<int, int>`（id → 行索引）；所有 string 字段（如 name）被 eager materialize 到 `string[]` 数组（每个字符串只分配一次）；标量字段（如 price）不预取，仍从 ByteBuffer 按需读取；若 i18n 包存在，同样 materialize i18n string 字段到独立 `string[]`
+#### Scenario: Lua cross-table ref typed accessor
+- **WHEN** item 表有 `ref: ItemType.Id`
+- **THEN** 生成 `M.ItemType()` 类型化访问，底层用 id→行缓存；保留裸 id 快路径
 
-#### Scenario: Zero GC after Preload
-- **WHEN** `Preload()` 完成后调用 `GetName(id)` 或 `GetPrice(id)`
-- **THEN** `GetName(id)` 返回已存入 `string[]` 的对象引用，零 GC；`GetPrice(id)` 从 ByteBuffer 读取标量，零 GC；整个字段访问路径无托管堆分配
+### Requirement: Vector container captures the vector base once
+工具 SHALL 让 vector 容器在构造时一次性捕获向量基址（读端 `VecBase(obj, slot)`），使 `[i]` 读取为 O(1) 直读，而非每元素重复解析 FlatBuffers vtable/offset。
 
-#### Scenario: Access before Preload throws
-- **WHEN** 未调用 `Preload()` 直接调用 `GetName(id)` 等字段访问方法
-- **THEN** 抛出 `InvalidOperationException("ItemAccessor.Preload() must be called before accessing fields")`，不做 lazy init
+#### Scenario: vector access does not re-resolve per element
+- **WHEN** 访问 `row.Tags[i]`
+- **THEN** 容器持有基址，`[i]` 直接按 `base + i*stride` 读取；不逐元素调用 `WireReader.Indirect`
 
-### Requirement: Generate Lua Accessor with i18n logic
-工具 SHALL 为每张表生成 Lua Accessor 模块，封装主包 + i18n 包双查找逻辑，通过 xLua 注册的 C++ 函数获取原始字节。Lua Accessor 与 C# Accessor 逻辑对称，独立运行，不依赖 C# 层。`M.preload()` 构建 id→行索引的 Lua table，并将 string 字段缓存为 Lua string（驻留复用），后续访问 O(1) 且不再触发 xLua bridge 调用。
+#### Scenario: container construction resolves base once
+- **WHEN** 创建 `NArray<int>`/`NStructArray<T>`
+- **THEN** 构造器调用一次 `VecBase(obj, slot)` 获取基址与 `len`，后续索引不再解析 vtable
 
-#### Scenario: Lua Accessor generated
-- **WHEN** item 表有 i18n 字段 name
-- **THEN** 生成 `output/generated/lua/item_accessor.lua`，`M.get_name(id)` 优先返回 i18n 译文，缺失时回退主包
+### Requirement: Cross-table ref typed accessor is backed by cache
+工具 SHALL 为跨表 `ref` 生成类型化访问，其底层用**一次建立的 id→行缓存**，避免每个字段访问都触发原生 P/Invoke（对齐 harmony 的 `{RefType}.ByID(id)`，但不牺牲性能）。
 
-#### Scenario: Lua Accessor for non-i18n table
-- **WHEN** item_type 表无 i18n 字段
-- **THEN** 生成 `output/generated/lua/item_type_accessor.lua`，所有字段直接透传主包
+#### Scenario: ref typed lookup uses cached id→row
+- **WHEN** 首次调用 `item.ItemType` 访问目标表
+- **THEN** 通过目标表 `ByID` 的 id→行缓存返回目标行；后续命中缓存，不重复 P/Invoke
 
-#### Scenario: Lua preload materializes strings and builds index
-- **WHEN** 调用 `M.preload()`
-- **THEN** 遍历主包所有行，构建 `_main_index`（id → 行索引）；string 字段缓存为 Lua string 存入 `_main_strings`（二维 table，`[row][field]`）；若 i18n 包存在同样构建 `_i18n_index` 和 `_i18n_strings`；后续 `M.get_name(id)` 直接查 Lua table，不再调用 xLua bridge
+### Requirement: Reader runs standalone and String fields are interned
+reader SHALL 作为独立运行时（纯 C# + unsafe 读 FlatBuffers），不依赖 Unity/游戏；并 SHALL 提供字符串驻留（`NStringCache` 等价物），使相同字符串只分配一次。
+
+#### Scenario: reader can be exercised without the game
+- **WHEN** 在 `test-proj/ConfigAccessorBench`（无 Unity/游戏依赖）加载 `gd/output/binary/data_zh.bin`
+- **THEN** 能通过 reader 的引导层取表、按 id/行读取字段与向量，正确性校验通过
+
+#### Scenario: repeated string read reuses allocation
+- **WHEN** 多次读取同一行的 `Name` 字段
+- **THEN** 返回驻留后的同一字符串引用，降低 GC 分配；驻留随表版本/语言切换失效
 
 ### Requirement: Write primary language Binary Bundle
 工具 SHALL 为主语言构建包含所有表完整数据的 FlatBuffers Bundle，输出 `output/binary/data_{primary}.bin`。Bundle 结构为 `DataBundle { tables: [BundledTable] }`，每个 BundledTable 的 `data` 为对应表的原始 FlatBuffers bytes。
@@ -113,21 +123,3 @@
 #### Scenario: No i18n tables
 - **WHEN** 所有表均无 i18n 字段，请求导出次语言
 - **THEN** 不生成次语言 .bin 文件，记录 info 日志
-
-### Non-Requirement: C++ runtime code is hand-written
-工具 SHALL NOT 生成任何 C++ 运行时代码。以下均为手写代码，由游戏工程维护，不随配表变更而变动：
-- `GD_Load` / `GD_GetMainBytes` / `GD_GetI18nBytes` / `GD_Unload` C API（集成进 xLua DLL）
-- xLua 注册代码：`lua["GD"]["Load"]` / `lua["GD"]["GetMainBytes"]` 等
-
-工具仅生成：
-- `.fbs` → `flatc --cpp` 生成的类型头文件（`output/generated/cpp/`）
-- C# Accessor（`output/generated/csharp/{Table}Accessor.cs`）
-- Lua Accessor（`output/generated/lua/{table}_accessor.lua`）
-
-#### Scenario: No C++ accessor generated
-- **WHEN** 工具完成所有导出步骤
-- **THEN** `output/generated/cpp/` 目录仅包含 `flatc --cpp` 生成的头文件，无工具自行生成的 C++ 源文件
-
-#### Scenario: Lua preload access before preload throws
-- **WHEN** 未调用 `M.preload()` 直接调用 `M.get_name(id)`
-- **THEN** 抛出错误 `"item_accessor.preload() must be called before accessing fields"`
