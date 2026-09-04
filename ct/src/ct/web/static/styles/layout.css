@@ -255,7 +255,7 @@
     position: relative;
     grid-template-columns: minmax(0, 1fr) var(--ct-right-track) var(--ct-right-activity-w);
   }
-  .ct-resource-pane {
+  .ct-workspace-layout .ct-resource-pane {
     position: absolute;
     z-index: 40;
     inset: 0 auto 0 0;
