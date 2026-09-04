@@ -28,9 +28,6 @@ def panel_url(tmp_path_factory: pytest.TempPathFactory) -> Iterator[str]:
     workspace = tmp_path_factory.mktemp("browser-workspace") / "workspace"
     for source_dir in ("config", "excel", "i18n"):
         shutil.copytree(CUTOVER_WORKSPACE / source_dir, workspace / source_dir)
-    from web_helpers import convert_cutover_workspace
-
-    convert_cutover_workspace(workspace)
 
     server = make_server("127.0.0.1", 0, create_app(workspace), threaded=True)
     thread = threading.Thread(target=server.serve_forever, daemon=True)

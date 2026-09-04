@@ -1,7 +1,7 @@
-# repository-cutover fixture（canonical 输入源）
+# repository-cutover fixture（canonical 工作区输入）
 
-供 cutover 集成测试与 Web 浏览器测试作为工作区**输入**：
+供 export/e2e 集成测试与 Web 浏览器测试作为工作区**输入**：
 
-- `config/` `excel/` `i18n/` —— 输入源（4 张表 schema + Excel + 翻译），测试拷贝到临时工作区后做 canonical 转换/导出。
+- `config/` `excel/` `i18n/` —— canonical 工作区输入源（4 张表 schema + `config/types/` 具名类型 + Excel + 翻译），测试拷贝到临时工作区后直接导出。
 
-输出产物一律由测试在临时工作区重新导出，**不落库**。旧格式产物快照（`output/generated|fbs|binary|json`、`baseline.json`、`tests/fixtures/accessor/*.golden`）已随 canonical-only 收口删除。
+已收口为 canonical-only：无 legacy→canonical 转换环节，无落库输出产物。输出一律由测试在临时工作区重新生成。

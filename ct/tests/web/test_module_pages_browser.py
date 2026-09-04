@@ -25,9 +25,6 @@ def module_url(tmp_path) -> Iterator[str]:
     workspace = tmp_path / "workspace"
     for section in ("config", "excel", "i18n"):
         shutil.copytree(FIXTURE / section, workspace / section)
-    from web_helpers import convert_cutover_workspace
-
-    convert_cutover_workspace(workspace)
     server = make_server("127.0.0.1", 0, create_app(workspace), threaded=True)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()

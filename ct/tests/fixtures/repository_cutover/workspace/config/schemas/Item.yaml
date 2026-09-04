@@ -12,25 +12,17 @@ fields:
     type: float
     comment: "售价（金币），0=不可出售"
   - name: Rarity
-    type: enum
-    values: [common, rare, epic]
+    type: ItemRarity
     comment: "稀有度"
   - name: ItemTypeId
     type: int32
     ref: ItemType.Id
     comment: "道具类型，关联 ItemType.Id"
   - name: DropRange
-    type: struct
-    fields:
-      - name: Min
-        type: int32
-        comment: "掉落数量下限"
-      - name: Max
-        type: int32
-        comment: "掉落数量上限"
+    type: ItemDropRange
+    comment: "掉落范围"
   - name: Tags
-    type: array
-    element: int32
+    type: vector<int32>
     separator: ","
     comment: "标签列表，逗号分隔"
   - name: IsActive
