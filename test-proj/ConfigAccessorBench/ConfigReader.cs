@@ -4,9 +4,11 @@ using System.Runtime.InteropServices;
 
 /// <summary>
 /// 引导层：把 ct 导出的 DataBundle 解析为可独立读取的“表句柄”。
-/// 版本属于【整套已加载配置（bin）】：（1）ConfigReader.LoadBundle 一次性整套加载时 Bump 一次；
-/// （2）各 ConfigTable 创建时只【捕获】当前版本，不再各自 Bump —— 避免“建第 2 张表就误判第 1 张 stale”。
-/// （3）Dispose（销毁）一套时 Bump，使旧句柄失效（防 UAF，Debug 守卫生效）。
+/// 版本 = 整套已加载配置（bin）的世代号，只在【整套边界】推进：
+/// （1）ConfigReader.LoadBundle 加载新一套时 Bump 一次；
+/// （2）各 ConfigTable 创建时只【捕获】当前世代（不各自 Bump）；
+/// （3）Runtime.Clear 整套销毁时 Bump 一次，使任何残留旧句柄失效（防 UAF，Debug 守卫生效）。
+/// 单表 Dispose 仅释放钉住句柄、不推进世代 —— bin 为原子单元，禁止整套生命周期外单独销毁单表。
 /// 纯 C# + unsafe，不依赖 Unity/游戏，可在本工程独立运行。
 /// </summary>
 public unsafe sealed class ConfigTable : IDisposable
@@ -43,11 +45,11 @@ public unsafe sealed class ConfigTable : IDisposable
         return idx < 0 ? IntPtr.Zero : WireReader.RowAt(ItemsBase, idx);
     }
 
+    /// <summary>释放钉住句柄。世代（TableVersion）只在整套边界推进（LoadBundle/Clear），此处不 Bump。</summary>
     public void Dispose()
     {
         if (!_pin.IsAllocated) return;
         _pin.Free();
-        TableVersion.Bump(); // 销毁（一套）→ 世代前进 → 旧句柄失效（Debug 守卫触发）
     }
 }
 

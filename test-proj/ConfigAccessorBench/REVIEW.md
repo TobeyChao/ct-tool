@@ -100,3 +100,25 @@
 | **P1** | Runtime 重载泄漏 GCHandle（#5）+ Demo .bin 路径泄漏（#6） | 热更/重载内存只增不减 |
 
 **核心教训**：性能优化可以，但正确性路径（至少 NStringCache 驻留、索引/版本语义）**不应是条件编译**的产物。
+
+---
+
+## 修复记录
+
+### 第一轮（commit `97dd218`）—— P0/P1 修复
+版本改为【整套 bin 世代】捕获（`LoadBundle` 单次 Bump）、`Dispose` 释放 pin + Bump（防 UAF）、`NStringCache` 无条件按世代清缓存、`Runtime.Register/Clear` 释放旧 GCHandle、`NArray/NStructArray` 无条件 null 兜底、demo `.bin` 路径补 Dispose。
+
+### 第二轮（本文件对应提交）—— 整套边界世代 + 只读并发
+**问题**：第一轮的"每表 `Dispose` 都 Bump"与"`LoadBundle` Bump"叠加，导致切语言/重载整套（`LoadBundle` → `Register` 全部）时世代追尾，**新加载数据被误判 stale**（`CONFIG_DEBUG` 实测 `version 2 != 6` 崩溃）。
+
+**修复**（对齐"bin 是原子整套、无部分更新"模型）：
+- 世代只在**整套边界**推进：`ConfigReader.LoadBundle`（加载新一套）Bump 一次；`Runtime.Clear`（整套销毁）Bump 一次。
+- `Runtime.Register` 仅替换句柄并释放旧 pin，**不再**因 `Dispose` 间接 Bump；单表 `ConfigTable.Dispose` 也不再 Bump。
+- 验证：reload 回归 phase2 `captured=2 current=2` 正常读；`Clear` 后旧句柄正确失效；Release 与 CONFIG_DEBUG 官方 demo 均通过。
+
+**只读并发**（Unity 主线程 + worker 读，无需读写并发）：
+- `NStringCache` 改为 `ConcurrentDictionary` + `GetOrAdd`，`_lastVersion` 用 `Volatile` —— 多线程可同时读，清缓存只发生在整套边界。
+- `TableVersion` 用 `Interlocked.Increment` / `Volatile.Read`（Bump 仅整套边界，热路径零成本）。
+- 契约（文件头 NOTE）：**只支持只读并发**；世代推进不得与读取并发；单表重载（不经 `LoadBundle`）不受支持。
+
+**仍未修（记录在案）**：`ByIndex` 越界 Release 无兜底且无"未找到"语义；`NArray<T>` 非对齐直读（T 对齐 >4）；root 表槽位（slot 4/6）硬编码耦合；未注册表访问抛 `KeyNotFoundException`；`FieldOffset` slot 0–3 无防护；构造中途异常泄漏 pin。

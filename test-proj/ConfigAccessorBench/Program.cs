@@ -39,8 +39,7 @@ public static unsafe class Program
         Console.WriteLine();
         RunVersionGuard(table);
 
-        foreach (var t in all) t.Dispose();
-        if (!all.Contains(table)) table.Dispose();
+        Runtime.Clear(); // 整套拆包：释放全部已注册句柄 + 世代前进一次
     }
 
     static List<ConfigTable> LoadAllTables(byte[] bundle) => ConfigReader.LoadBundle(bundle);

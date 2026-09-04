@@ -1,12 +1,17 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 
 // NOTE: 本 reader 只面向【可信、工具生成、不可变】的 FlatBuffers 配置数据。
 // Release（未定义 CONFIG_DEBUG）下，逐元素的版本/越界检查被编译掉（harmony LH_DEBUG 同款），
 // 以获得 VecBase 直读的性能；调用方必须传合法下标，且只使用“当前已加载这套 bin”里的句柄。
 // 仅 `_base == null`（缺失字段）做无条件安全兜底。若喂脏数据/损坏 bundle，属未定义行为。
+// 并发契约：只支持【只读并发】——多线程可同时读；世代推进（LoadBundle 加载 / Clear 销毁整套）
+// 只允许发生在整套边界，不得与读取并发。bin 为原子单元，无“部分更新/单表重载”语义：
+// 单表重载（不经 LoadBundle）不受支持、不失效旧句柄与驻留缓存。
 
 /// <summary>read-only 回调式 struct 读取协议（对齐 harmony IConfigStruct）。</summary>
 public interface IConfigStruct
@@ -14,12 +19,12 @@ public interface IConfigStruct
     unsafe void SetPointer(byte* p, int pVersion);
 }
 
-/// <summary>版本守卫：整套已加载配置（bin）的世代号。加载/重载/切语言/销毁【整套】时才 Bump。</summary>
+/// <summary>版本守卫：整套已加载配置（bin）的世代号。只在整套边界（LoadBundle/Clear）Bump；读侧 Volatile 可见。</summary>
 public static unsafe class TableVersion
 {
     private static int _version;
-    public static int Current => _version;
-    public static int Bump() => ++_version;
+    public static int Current => Volatile.Read(ref _version);
+    public static int Bump() => Interlocked.Increment(ref _version);
 
     [System.Diagnostics.Conditional("CONFIG_DEBUG")]
     public static void Check(int v)
@@ -134,30 +139,34 @@ public unsafe struct NString : IConfigStruct
 /// <summary>
 /// 字符串驻留：按字符串数据指针缓存解码结果，避免重复 UTF-8 解码。
 /// 版本（整套 bin 世代）变化时【无条件清空】，既防“地址复用返回陈旧字符串”，也防无限增长。
-/// 清缓存只在加载/重载/切语言/销毁整套时发生，不属于热路径。
+/// 只读并发安全：多线程可同时读；清缓存（ConcurrentDictionary.Clear）只发生在整套边界，不与读并发。
 /// </summary>
 public static unsafe class NStringCache
 {
-    private static readonly Dictionary<nint, string> _cache = new Dictionary<nint, string>();
+    private static readonly ConcurrentDictionary<nint, string> _cache = new ConcurrentDictionary<nint, string>();
     private static int _lastVersion = -1;
 
     public static string Get(byte* ptr, int pVersion)
     {
         if (ptr == null) return null;
-        if (pVersion != _lastVersion) { _cache.Clear(); _lastVersion = pVersion; }
+        if (Volatile.Read(ref _lastVersion) != pVersion)
+        {
+            _cache.Clear();
+            Volatile.Write(ref _lastVersion, pVersion);
+        }
         nint key = (nint)ptr;
         if (_cache.TryGetValue(key, out var s)) return s;
         int len = *(int*)ptr;
         s = Encoding.UTF8.GetString(ptr + 4, len);
-        _cache[key] = s;
-        return s;
+        return _cache.GetOrAdd(key, s);
     }
 }
 
 /// <summary>
 /// 表级运行时 registry：按表名注册已加载的 ConfigTable，供生成的 accessor 查询。
-/// 生命周期：先用 ConfigReader.LoadBundle 一次性加载整套 bin（版本前进一次），再 Register；
-/// 覆盖同名表（重载）时释放旧句柄。独立于 Unity/游戏。
+/// 生命周期：先用 ConfigReader.LoadBundle 一次性加载整套 bin（世代前进一次），再 Register 全部；
+/// 覆盖同名表时释放旧句柄（不推进世代）；整套销毁走 Clear（释放全部 + 世代前进一次）。
+/// 只读并发：多线程可同时查询；Register/Clear 只发生在整套边界，不与读取并发。独立于 Unity/游戏。
 /// </summary>
 public static unsafe class Runtime
 {
@@ -165,6 +174,7 @@ public static unsafe class Runtime
 
     public static void Register(ConfigTable table)
     {
+        // 只替换句柄并释放旧 pin；世代由整套边界（LoadBundle/Clear）负责，此处不 Bump
         if (_tables.TryGetValue(table.Name, out var old)) old?.Dispose();
         _tables[table.Name] = table;
     }
@@ -173,6 +183,7 @@ public static unsafe class Runtime
     {
         foreach (var t in _tables.Values) t.Dispose();
         _tables.Clear();
+        TableVersion.Bump(); // 整套销毁 → 世代前进一次 → 任何残留旧句柄失效（Debug 守卫触发）
     }
 
     public static int Count(string tableName) => _tables[tableName].Count;
