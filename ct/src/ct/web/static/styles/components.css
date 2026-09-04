@@ -90,10 +90,14 @@ mark { background: var(--ct-gold-soft); color: var(--ct-gold); border-radius: 3p
 .ct-page-wrap > .ct-module-head { min-height: 74px; padding: 0 22px; border-bottom: 1px solid var(--ct-border); flex: 0 0 auto; }
 .ct-page-wrap > .ct-panel > .ct-panel-body { padding: 18px 22px 28px; }
 /* unified module head: title + subtitle left, status/actions right */
-.ct-module-head { justify-content: space-between; }
+.ct-module-head { justify-content: space-between; flex-wrap: wrap; }
 .ct-module-head h1 { margin: 0; font-size: 15px; font-weight: 650; }
 .ct-module-head p { margin: 2px 0 0; color: var(--ct-ink-3); font-size: 12px; }
-.ct-module-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+/* action buttons never collapse to vertical text when the head narrows:
+   nowrap keeps min-content at the full label width, wrap moves the whole
+   action group below the title instead of squeezing it */
+.ct-module-head .ct-btn { white-space: nowrap; flex-shrink: 0; }
+.ct-module-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-left: auto; flex-wrap: wrap; }
 .ct-spacer { flex: 1 1 auto; min-width: 0; }
 .ct-hint { color: var(--ct-ink-3); font-size: 12px; }
 .ct-command-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
