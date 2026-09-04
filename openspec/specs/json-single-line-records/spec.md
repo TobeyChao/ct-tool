@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+规定 JSON 导出中每条记录以单行紧凑格式输出的约定，便于 diff 与脚本处理。
+
+## Requirements
 
 ### Requirement: 每条记录单行 JSON 输出
 `write_json` 函数 SHALL 将每条记录序列化为单行紧凑 JSON，整体结构保留根键和数组格式：

@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+提供 `ct` 命令行接口，用统一的子命令（export/validate/status/gen-template/i18n/deploy）驱动 canonical 导出、校验与 i18n 工作流，供脚本与 CI 调用。
+
+## Requirements
 
 ### Requirement: ct export command
 `ct export` SHALL 执行增量导出流程：变更检测 → 解析 → 校验 → **i18n sync（自动）** → JSON/Binary 输出 → 缓存更新。

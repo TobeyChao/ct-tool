@@ -1,8 +1,4 @@
-## Purpose
-
-基于分层指纹（schema/数据/i18n/bundle）检测变更，决定哪些产物可复用，支持 --all 强制全量，并维护缓存以加速后续导出。
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Hash-based incremental change detection
 工具 SHALL 在每次 export 前计算每个 Excel 文件的 MD5 hash，与 `cache/state.json` 中记录的上次 hash 比对，只将 hash 变化的表加入导出队列。
@@ -18,31 +14,6 @@
 #### Scenario: New table always exported
 - **WHEN** cache 中无某张表的记录（首次运行或新增表）
 - **THEN** 该表视为变化，进入导出流程
-
-### Requirement: Force full export with --all flag
-`ct export --all` SHALL 忽略 hash 缓存，强制重新导出所有表。
-
-#### Scenario: Force export all
-- **WHEN** 用户执行 `ct export --all`
-- **THEN** 所有表均进入导出流程，无论 hash 是否变化
-
-### Requirement: Update cache after successful export
-导出成功后工具 SHALL 更新 `cache/state.json`，记录本次导出的每张表的 hash 和导出时间戳。导出失败的表不更新缓存。
-
-#### Scenario: Cache updated on success
-- **WHEN** item 表成功导出
-- **THEN** `cache/state.json` 中 item 的 hash 更新为本次文件 hash
-
-#### Scenario: Cache not updated on failure
-- **WHEN** item 表导出过程中发生校验错误
-- **THEN** `cache/state.json` 中 item 的 hash 保持上次成功导出的值
-
-### Requirement: Cache referenced table id sets for validation
-工具 SHALL 在 cache 中存储每张表的主键 id 集合，供引用校验时使用，避免重新解析未变化表的 Excel 文件。
-
-#### Scenario: Reference validation uses cached ids
-- **WHEN** item_type 表 hash 未变化，item 表需要校验对 item_type 的引用
-- **THEN** 工具从 cache 读取 item_type 的 id 集合，不重新解析 item_type.xlsx
 
 ### Requirement: Binary Bundle always fully rewritten
 增量导出时 Binary Bundle（`data_{lang}.bin`）SHALL 始终全量重写，包含所有表。变化的表重新序列化，未变化的表从 cache 中复用已序列化的 FlatBuffers bytes，避免重新解析 Excel。
@@ -92,6 +63,7 @@
 #### Scenario: Cache format version mismatch
 - **WHEN** 工具升级导致 cache 格式变化，`version` 不匹配
 - **THEN** 工具忽略旧缓存，全量重新导出并重建 cache
+## ADDED Requirements
 
 ### Requirement: Publish cache state with successful artifacts
 Workspace Apply 与普通 export SHALL 在对应产物全部成功后才发布其 fingerprint 与 cache bytes。Apply 在 staging 中计算候选 revision 的 layout manifests、schema/data/i18n/bundle fingerprints、ids 与缓存 bytes，并与相应 Schema、Excel 和生成产物一起纳入事务。普通 export 某语言失败时不得提前提交该语言的新 fingerprint。Apply 失败、被占用文件预检失败或 journal 恢复旧 revision 时，cache SHALL 与旧 revision 保持一致。

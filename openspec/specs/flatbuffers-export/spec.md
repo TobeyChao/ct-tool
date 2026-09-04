@@ -123,3 +123,17 @@ reader SHALL 作为独立运行时（纯 C# + unsafe 读 FlatBuffers），不依
 #### Scenario: No i18n tables
 - **WHEN** 所有表均无 i18n 字段，请求导出次语言
 - **THEN** 不生成次语言 .bin 文件，记录 info 日志
+
+### Requirement: Serialize Record and vector Record consistently
+Binary writer SHALL 按同一 canonical model 序列化单个 Record 与 `vector<Record>`，JSON、FBS、Binary 和生成 Accessor 对空元素、顺序和字段默认值 SHALL 具有一致语义。
+
+#### Scenario: Serialize a partially filled expanded vector
+- **WHEN** Excel 解析得到两个 DropReward 元素
+- **THEN** JSON 含两个对象，FlatBuffers vector 长度为 2，C#/Lua Accessor 读取到相同顺序与值
+
+### Requirement: Preserve wire type across Excel layout changes
+仅修改 `excel_columns` 或 separator SHALL NOT 改变 FlatBuffers 字段类型；Change Plan SHALL 将其归类为 Excel 输入布局变化而非 Binary wire type 变化。
+
+#### Scenario: Expand writable record groups
+- **WHEN** `excel_columns` 从 3 增加到 5 且 Type Expression 不变
+- **THEN** 生成的 FBS 字段声明不变，Binary/Accessor 兼容性检查通过

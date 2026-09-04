@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+按语言把配表数据序列化为 JSON 产物，支持复杂字段类型与 server_only/客户端字段配置，作为人类可读的调试与外部消费格式。
+
+## Requirements
 
 ### Requirement: Export table data to JSON per language
 工具 SHALL 为每张表、每种语言输出独立的 JSON 文件，i18n 字段内嵌对应语言的翻译字符串，`server_only` 字段包含在内，文件路径为 `output/json/{table}_{lang}.json`。

@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+在导出前对工作空间数据做完整校验（字段类型强转、主键唯一、跨表 ref 外键存在性），任一问题即中止落盘，避免脏数据进入产物。
+
+## Requirements
 
 ### Requirement: Validate field types against schema
 工具 SHALL 检查每行每个字段的值是否符合 schema 声明的类型，并提供
