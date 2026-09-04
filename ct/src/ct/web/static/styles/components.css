@@ -86,11 +86,16 @@ mark { background: var(--ct-gold-soft); color: var(--ct-gold); border-radius: 3p
 
 .ct-page-wrap { min-height: 100%; padding: 0; background: var(--ct-surface); }
 .ct-page-wrap > .ct-panel { min-height: 100%; border: 0; border-radius: 0; box-shadow: none; }
-.ct-page-wrap > .ct-panel > .ct-panel-head { min-height: 74px; padding: 0 22px; border-bottom: 1px solid var(--ct-border); }
+.ct-page-wrap > .ct-panel > .ct-panel-head,
+.ct-page-wrap > .ct-module-head { min-height: 74px; padding: 0 22px; border-bottom: 1px solid var(--ct-border); flex: 0 0 auto; }
 .ct-page-wrap > .ct-panel > .ct-panel-body { padding: 18px 22px 28px; }
+/* unified module head: title + subtitle left, status/actions right */
 .ct-module-head { justify-content: space-between; }
-.ct-module-head h1 { margin: 0; }
+.ct-module-head h1 { margin: 0; font-size: 15px; font-weight: 650; }
 .ct-module-head p { margin: 2px 0 0; color: var(--ct-ink-3); font-size: 12px; }
+.ct-module-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.ct-spacer { flex: 1 1 auto; min-width: 0; }
+.ct-hint { color: var(--ct-ink-3); font-size: 12px; }
 .ct-command-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .ct-mono { font-family: var(--ct-font-mono); font-size: 12px; }
 .ct-pill { appearance: none; border: 1px solid var(--ct-border); border-radius: 999px; background: var(--ct-surface); color: var(--ct-ink-2); padding: 4px 12px; font-family: inherit; font-size: 12px; cursor: pointer; margin-right: 6px; }
@@ -407,4 +412,17 @@ table.ct-col-rules th:first-child, table.ct-col-rules td:first-child { border-le
 /* 原文/译文长文本左对齐，其余列居中 */
 table.ct-col-rules th:nth-child(3), table.ct-col-rules td:nth-child(3),
 table.ct-col-rules th:nth-child(4), table.ct-col-rules td:nth-child(4) { text-align: left; }
+table.ct-col-rules th:nth-child(4) { min-width: 200px; }
 .ct-col-rules .trans-input, .ct-col-rules .trans-preview { text-align: left; }
+
+/* compact-preview dialog: one line per translation file */
+.ct-compact-file { font-weight: 650; color: var(--ct-ink-2); margin-bottom: 6px; }
+.ct-compact-keys { padding: 0 0 10px 8px; }
+
+/* very short viewports: module head compacts to a title-only bar so
+   workbench surfaces keep enough height (e.g. 720x460 at 150% zoom) */
+@media (max-height: 380px) {
+  .ct-page-wrap > .ct-panel > .ct-panel-head,
+  .ct-page-wrap > .ct-module-head { min-height: 48px; }
+  .ct-module-head p { display: none; }
+}

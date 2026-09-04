@@ -216,12 +216,13 @@ function render(container) {
   container.innerHTML = `
     <div class="ct-page-wrap">
       <div class="ct-panel">
-        <div class="ct-panel-head">
-          <span class="ct-panel-title">翻译 i18n</span>
-          <span class="ct-topbar-spacer" style="flex:1"></span>
-          <button class="ct-btn ct-btn-ghost" id="i18n-progress">全部表进度</button>
-          <button class="ct-btn ct-btn-danger" id="i18n-compact" ${orphans > 0 ? "" : "disabled"}>清理无主条目${orphans > 0 ? "（" + orphans + "）" : ""}</button>
-          <button class="ct-btn ct-btn-primary" id="i18n-sync" ${state.busy ? "disabled" : ""}>${state.busy ? "同步中…" : "同步全部语言"}</button>
+        <div class="ct-panel-head ct-module-head">
+          <div><h1 class="ct-panel-title">翻译 i18n</h1><p>选择表与语言，逐条维护译文；同步后自动合并到导出产物。</p></div>
+          <div class="ct-module-actions">
+            <button class="ct-btn ct-btn-ghost" id="i18n-progress">全部表进度</button>
+            <button class="ct-btn ct-btn-danger" id="i18n-compact" ${orphans > 0 ? "" : "disabled"}>清理无主条目${orphans > 0 ? "（" + orphans + "）" : ""}</button>
+            <button class="ct-btn ct-btn-primary" id="i18n-sync" ${state.busy ? "disabled" : ""}>${state.busy ? "同步中…" : "同步全部语言"}</button>
+          </div>
         </div>
         <div class="ct-panel-body">
           <div class="ct-controls" aria-label="翻译筛选">
@@ -258,7 +259,7 @@ function renderTable(rows) {
   if (!rows.length) {
     return '<div class="ct-empty"><div class="ct-empty-title">该状态下暂无译文条目</div></div>';
   }
-  return `<div class="ct-table-wrap ct-i18n-table"><table class="ct-data ct-col-rules"><thead><tr><th>主键</th><th>字段</th><th>${escapeHtml(state.primaryLang)} 原文</th><th style="min-width:200px">${escapeHtml(state.lang)} 译文</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows.map(rowHtml).join("")}</tbody></table></div>`;
+  return `<div class="ct-table-wrap ct-i18n-table"><table class="ct-data ct-col-rules"><thead><tr><th>主键</th><th>字段</th><th>${escapeHtml(state.primaryLang)} 原文</th><th>${escapeHtml(state.lang)} 译文</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows.map(rowHtml).join("")}</tbody></table></div>`;
 }
 
 function rowHtml(e) {
@@ -318,14 +319,14 @@ function renderPickModal() {
     return `<button class="ct-picker-row${active}" data-pick-table="${escapeHtml(t.table)}">` +
       `<span class="ct-picker-name">${escapeHtml(t.table)}</span>` +
       `<span class="ct-mono ct-picker-meta">· ${t.field_count} 字段 · i18n ${t.i18n_count}</span>` +
-      `<span class="ct-picker-spacer" style="flex:1"></span>${tag}</button>`;
+      `<span class="ct-spacer"></span>${tag}</button>`;
   }).join("");
   const empty = filtered.length
     ? ""
     : '<div class="ct-empty"><div class="ct-empty-title">没有匹配的表</div><div class="ct-empty-sub">试试其他关键词或筛选条件</div></div>';
   return `<div class="ct-dialog-mask">
     <div class="ct-dialog ct-picker" role="dialog">
-      <div class="ct-dialog-head"><span>选择翻译表</span><span style="flex:1"></span><span class="ct-mono ct-hint">含 i18n 字段</span></div>
+      <div class="ct-dialog-head"><span>选择翻译表</span><span class="ct-spacer"></span><span class="ct-mono ct-hint">含 i18n 字段</span></div>
       <div class="ct-dialog-body">
         <input class="ct-input" id="pick-search" placeholder="搜索表名…" value="${escapeHtml(state.pickQuery || "")}">
         <div class="ct-pick-filters">
@@ -394,7 +395,7 @@ function renderProgressModal() {
       })();
   return `<div class="ct-dialog-mask">
     <div class="ct-dialog ct-progress-dialog" role="dialog">
-      <div class="ct-dialog-head"><span>翻译进度</span><span style="flex:1"></span>
+      <div class="ct-dialog-head"><span>翻译进度</span><span class="ct-spacer"></span>
         <button class="ct-pill${state.progressView === "lang" ? " active" : ""}" data-view="lang">语言</button>
         <button class="ct-pill${state.progressView === "table" ? " active" : ""}" data-view="table">按表</button>
       </div>
@@ -410,7 +411,7 @@ function renderCompactModal() {
   const p = state.compactPreview || {};
   const files = p.files || [];
   const body = files.length
-    ? files.map((f) => `<div class="ct-progress-line" style="margin-bottom:6px">${escapeHtml(f.lang)} / ${escapeHtml(f.table)}</div><div class="ct-mono" style="padding:0 0 10px 8px">${f.removed_keys.map((k) => escapeHtml(k)).join("<br>")}</div>`).join("")
+    ? files.map((f) => `<div class="ct-compact-file">${escapeHtml(f.lang)} / ${escapeHtml(f.table)}</div><div class="ct-mono ct-compact-keys">${f.removed_keys.map((k) => escapeHtml(k)).join("<br>")}</div>`).join("")
     : '<div class="ct-empty"><div class="ct-empty-sub">没有无主条目</div></div>';
   return `<div class="ct-dialog-mask">
     <div class="ct-dialog" role="dialog">

@@ -32,8 +32,8 @@ export async function mount(container) {
       <div class="ct-page-wrap">
         <div class="ct-panel">
           <div class="ct-panel-head ct-module-head">
-            <div><h1 class="ct-panel-title">运行日志</h1><p>跟踪导出、校验与工作区操作。</p></div>
-            <span class="ct-live-note"><span aria-hidden="true"></span>自动更新</span>
+            <div><h1 class="ct-panel-title">日志</h1><p>跟踪导出、校验与工作区操作。</p></div>
+            <div class="ct-module-actions"><span class="ct-live-note"><span aria-hidden="true"></span>自动更新</span></div>
           </div>
           <div class="ct-panel-body ct-log-body">
             <div class="ct-log-controls" aria-label="日志筛选">

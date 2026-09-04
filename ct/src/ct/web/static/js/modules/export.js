@@ -57,11 +57,12 @@ export async function mount(container) {
     container.innerHTML = `
       <div class="ct-page-wrap">
         <div class="ct-panel">
-          <div class="ct-panel-head">
-            <span class="ct-panel-title">导出工作区</span>
-            <span class="ct-topbar-spacer" style="flex:1"></span>
-            <span class="ct-badge" id="export-badge"></span>
-            <div class="ct-command-actions" id="export-actions"></div>
+          <div class="ct-panel-head ct-module-head">
+            <div><h1 class="ct-panel-title">导出</h1><p>全量重建：校验通过后生成 JSON、FBS、Binary 与 C#/Lua Accessor。</p></div>
+            <div class="ct-module-actions">
+              <span class="ct-badge" id="export-badge"></span>
+              <div class="ct-command-actions" id="export-actions"></div>
+            </div>
           </div>
           <div class="ct-panel-body">
             ${state.workspaceError ? `<div class="ct-error-inline">${escapeHtml(state.workspaceError)}</div>` : ""}

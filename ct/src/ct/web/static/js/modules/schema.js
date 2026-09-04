@@ -106,7 +106,11 @@ export async function mount(container) {
   }
 
   container.innerHTML = `
-    <div class="ct-workspace-layout" data-view="${state.view}" data-resource-open="${state.resourceOpen}" data-inspector-open="${state.activeTool === "inspector"}">
+    <div class="ct-page-wrap ct-workbench-page">
+      <div class="ct-panel-head ct-module-head">
+        <div><h1 class="ct-panel-title">Schema</h1><p>编辑资源结构，变更以草稿方式校验后原子应用。</p></div>
+      </div>
+      <div class="ct-workspace-layout" data-view="${state.view}" data-resource-open="${state.resourceOpen}" data-inspector-open="${state.activeTool === "inspector"}">
       <aside class="ct-resource-pane" aria-label="Schema 资源">
         <div class="ct-resource-pane-inner">
           <header class="ct-pane-head">
@@ -155,6 +159,7 @@ export async function mount(container) {
         <button class="ct-side-tab" id="side-tab" aria-label="字段属性" aria-pressed="${state.activeTool === "inspector"}">属性</button>
         <span class="ct-activity-spacer"></span>
       </nav>
+      </div>
     </div>
     <div class="ct-dialog-mask" id="quick-open-mask" hidden>
       <div class="ct-dialog ct-quick-open" role="dialog" aria-modal="true" aria-label="快速打开资源">

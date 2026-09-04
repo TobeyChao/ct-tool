@@ -11,7 +11,9 @@ export async function mount(container) {
   container.innerHTML = `
     <div class="ct-page-wrap">
       <div class="ct-panel">
-        <div class="ct-panel-head"><span class="ct-panel-title">导出历史</span></div>
+        <div class="ct-panel-head ct-module-head">
+          <div><h1 class="ct-panel-title">历史</h1><p>最近导出记录与结果。</p></div>
+        </div>
         <div class="ct-panel-body">
           ${state.error ? '<div class="ct-error-inline">' + escapeHtml(state.error) + "</div>" : ""}
           ${history.length ? `<div class="ct-table-wrap"><table class="ct-data"><thead><tr><th>时间</th><th>范围</th><th>结果</th><th>表数</th><th>耗时</th></tr></thead>
