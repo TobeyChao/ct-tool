@@ -16,7 +16,7 @@ from ct.app.canonical_commands import (
     canonical_status,
     canonical_validate,
 )
-from ct.app.canonical_export import run_canonical_export
+from ct.app.canonical_export import persist_export_state, run_canonical_export
 from ct.app.canonical_workspace import CanonicalWorkspace
 from ct.config import load_config
 from ct.diagnostics.errors import report_errors
@@ -107,6 +107,10 @@ def export(
         raise typer.Exit(1)
     typer.echo(f"\n导出完成: {result['tables']} 张表")
     _run_deploy(root, for_build)
+    # 导出+部署整体成功后才提交缓存指纹（失败时不污染 status 的“待导出”判断）
+    persist_export_state(
+        root, result.get("excel_hashes", {}), result.get("bundle_hashes", {})
+    )
 
 
 @app.command("deploy")

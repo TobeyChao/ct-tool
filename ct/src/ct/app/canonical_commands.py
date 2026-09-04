@@ -10,6 +10,12 @@ import json
 from pathlib import Path
 
 from ct.app.canonical_workspace import CanonicalWorkspace
+from ct.cache.canonical_state import (
+    CanonicalCacheState,
+    load_state,
+    record_excel_hashes,
+    save_state,
+)
 from ct.diagnostics.errors import Issue, IssueCode, ValidationIssue, WorkspaceIssue
 from ct.excel.canonical_reader import read_canonical_excel
 from ct.excel.canonical_template import generate_canonical_template
@@ -177,11 +183,19 @@ def _file_sha256(path: Path) -> str:
 
 
 def canonical_status(root: Path) -> dict[str, list[str]]:
-    """Per-table data-change + template-drift status for a canonical workspace."""
+    """Per-table data-change + template-drift status for a canonical workspace.
+
+    `changed` reports a real data edit pending export: the current Excel file
+    hash differs from the `excel_hashes` ledger recorded at the last
+    export/gen-template, or the table has never been exported (no cache entry).
+    `drifted` reports template/schema drift: the layout manifest's
+    `schema_hash` no longer matches the current schema.
+    """
     ws = CanonicalWorkspace.load(root)
     records = _records_map(ws)
     excel_dir = ws.resolve("excel_dir")
     cache_dir = ws.resolve("cache_dir")
+    state = load_state(cache_dir)
     changed: list[str] = []
     drifted: list[str] = []
     missing: list[str] = []
@@ -192,11 +206,11 @@ def canonical_status(root: Path) -> dict[str, list[str]]:
             continue
         current_hash = _file_sha256(excel_path)
         manifest = _load_manifest(cache_dir, table.table)
-        if manifest is None or manifest.schema_hash != _schema_hash(table, records):
+        schema_hash = _schema_hash(table, records)
+        if manifest is None or manifest.schema_hash != schema_hash:
             drifted.append(table.table)
-        if manifest is None or manifest.schema_hash != _schema_hash(table, records) or _file_sha256(
-            cache_dir / "template_layouts" / f"{table.table}.json"
-        ) == "":
+        cached_hash = state.excel_hashes.get(table.table) if state else None
+        if cached_hash is None or cached_hash != current_hash:
             changed.append(table.table)
     return {"changed": sorted(set(changed)), "drifted": sorted(set(drifted)), "missing": sorted(missing)}
 
@@ -239,6 +253,13 @@ def canonical_gen_template(
         )
         save_manifest(cache_dir, table.table, LayoutManifest.from_layout(layout))
         messages.append(f"模板已生成: {table.table}")
+    if targets:
+        state = load_state(cache_dir) or CanonicalCacheState()
+        hashes = {
+            t.table: _file_sha256(excel_dir / (t.excel_file or f"{t.table}.xlsx"))
+            for t in targets
+        }
+        save_state(cache_dir, record_excel_hashes(state, hashes))
     return messages
 
 

@@ -1,4 +1,4 @@
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Generate .fbs files from schema
 工具 SHALL 从 `schemas/*.yaml` 自动生成对应的 `.fbs` 文件，输出至 `output/fbs/`。每张有 i18n 字段的表额外生成 I18n 变体结构。同时生成 `container.fbs` 定义 Bundle 容器。

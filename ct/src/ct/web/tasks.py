@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from ct.app.canonical_commands import CanonicalValidationError
-from ct.app.canonical_export import CANONICAL_STEPS, run_canonical_export
+from ct.app.canonical_export import CANONICAL_STEPS, persist_export_state, run_canonical_export
 from ct.app.events import CancelledError, CancelToken, ProgressReporter
 from ct.config import load_config
 from ct.web.history import append_history, make_entry
@@ -172,6 +172,10 @@ class CanonicalExportTask(_BaseTask):
             except CancelledError:
                 self._finish_cancelled()
                 return
+            # 导出整体成功后才提交缓存指纹（供 ct status / 面板“待导出”判断）
+            persist_export_state(
+                root, result.get("excel_hashes", {}), result.get("bundle_hashes", {})
+            )
             self._finish_ok(
                 cache_dir=load_config(root).resolve("cache_dir"),
                 scope="全部表 × 全量语言",

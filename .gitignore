@@ -13,3 +13,9 @@ ehthumbs.db
 Desktop.ini
 *.lnk
 test-artifacts/
+
+# ---------- test-proj（.NET 二进制读取测试工程） ----------
+test-proj/**/bin/
+test-proj/**/obj/
+test-proj/**/.vs/
+test-proj/ConfigAccessorBench/item_large.bin

@@ -26,6 +26,7 @@ from ct.app.canonical_commands import (
 )
 from ct.app.canonical_workspace import CanonicalWorkspace
 from ct.app.events import CancelledError, CancelToken, ProgressReporter
+from ct.cache.canonical_state import CanonicalCacheState, load_state, record_excel_hashes, save_state
 from ct.cache.fingerprints import bundle_fingerprint
 from ct.excel.canonical_reader import read_canonical_excel
 from ct.excel.canonical_template import generate_canonical_template
@@ -207,7 +208,7 @@ def run_canonical_export(
     try:
         for table, layout, excel_path, _parsed in prepared:
             _check_cancel(cancel_token)
-            model = build_accessor_model(table, ())
+            model = build_accessor_model(table, (), records=records)
             csharp_path = generated / "csharp" / f"{table.table}Accessor.cs"
             lua_path = generated / "lua" / f"{table.table}Accessor.lua"
             csharp_path.parent.mkdir(parents=True, exist_ok=True)
@@ -275,11 +276,17 @@ def run_canonical_export(
     finally:
         reporter.step_finished(CANONICAL_STEPS[4])
 
+    excel_hashes = {
+        table.table: _sha(excel_path.read_bytes())
+        for table, _layout, excel_path, _parsed in prepared
+    }
+
     return {
         "tables": len(tables),
         "languages": languages,
         "written": written,
         "bundle_hashes": bundle_hashes,
+        "excel_hashes": excel_hashes,
         "forced": forced,
         "elapsed": round(time.perf_counter() - started, 2),
     }
@@ -289,6 +296,36 @@ def _sha(data: bytes) -> str:
     import hashlib
 
     return hashlib.sha256(data).hexdigest()
+
+
+def persist_export_state(
+    root: Path,
+    excel_hashes: dict[str, str],
+    bundle_hashes: dict[str, str],
+) -> Path:
+    """Commit the export data fingerprint ledger to `cache/state.json`.
+
+    Called only after a fully successful `ct export` (including any deploy):
+    a failed run leaves the workspace cache untouched, so `ct status` keeps
+    reporting the last-good state. `excel_hashes` keys are table names and
+    values are the sha256 of the Excel file at export time; this is what
+    `canonical_status` compares to detect a data edit pending re-export.
+    Tables absent from `excel_hashes` (e.g. a `--table`-limited export)
+    keep their previously recorded hash.
+    """
+    from ct.config import load_config
+
+    config = load_config(root)
+    cache_dir = config.resolve("cache_dir")
+    state = load_state(cache_dir) or CanonicalCacheState()
+    state = record_excel_hashes(state, excel_hashes)
+    state = CanonicalCacheState(
+        tables=state.tables,
+        bundles={**state.bundles, **bundle_hashes},
+        layout_revisions=state.layout_revisions,
+        excel_hashes=state.excel_hashes,
+    )
+    return save_state(cache_dir, state)
 
 
 def _named_ref(field) -> str | None:

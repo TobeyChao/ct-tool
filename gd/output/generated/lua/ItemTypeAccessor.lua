@@ -9,5 +9,7 @@ local RowMeta = {
 }
 
 local M = {}
+function M.Count() return GD.Count(_tbl) end
+function M.ByIndex(i) return setmetatable({_row = GD.ByIndex(_tbl, i)}, RowMeta) end
 function M.ByID(id) return setmetatable({_row = GD.ByID(_tbl, id)}, RowMeta) end
 return M

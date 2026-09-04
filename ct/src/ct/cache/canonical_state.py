@@ -1,9 +1,11 @@
 """Versioned canonical cache state with layered fingerprints.
 
-Stores per-table ``ArtifactFingerprints``, per-language Bundle fingerprints
-and layout revisions in ``cache/state.json`` ( format). Any version
-mismatch, missing field or corrupt file fails safe to ``None`` so callers
-rebuild instead of trusting stale entries.
+Stores per-table ``ArtifactFingerprints``, per-language Bundle fingerprints,
+layout revisions and the last-seen Excel file hash in ``cache/state.json``.
+The ``excel_hashes`` ledger powers ``ct status`` data-change detection: a table
+is reported as ``changed`` (pending export) when its current Excel hash differs
+from the recorded one. Any version mismatch, missing field or corrupt file
+fails safe to ``None`` so callers rebuild instead of trusting stale entries.
 """
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ class CanonicalCacheState:
     tables: dict[str, ArtifactFingerprints] = field(default_factory=dict)
     bundles: dict[str, str] = field(default_factory=dict)  # lang -> bundle fp
     layout_revisions: dict[str, int] = field(default_factory=dict)  # table -> revision
+    excel_hashes: dict[str, str] = field(default_factory=dict)  # table -> excel sha256
 
 
 def _path(cache_dir: Path) -> Path:
@@ -42,8 +45,10 @@ def load_state(cache_dir: Path) -> CanonicalCacheState | None:
     raw_tables = data.get("tables", {})
     raw_bundles = data.get("bundles", {})
     raw_revisions = data.get("layout_revisions", {})
+    raw_excel = data.get("excel_hashes", {})
     if not all(
-        isinstance(value, dict) for value in (raw_tables, raw_bundles, raw_revisions)
+        isinstance(value, dict)
+        for value in (raw_tables, raw_bundles, raw_revisions, raw_excel)
     ):
         return None
     try:
@@ -59,6 +64,7 @@ def load_state(cache_dir: Path) -> CanonicalCacheState | None:
             tables=tables,
             bundles=dict(raw_bundles),
             layout_revisions=dict(raw_revisions),
+            excel_hashes=dict(raw_excel),
         )
     except (KeyError, TypeError, ValueError):
         return None
@@ -79,6 +85,7 @@ def save_state(cache_dir: Path, state: CanonicalCacheState) -> Path:
         },
         "bundles": dict(sorted(state.bundles.items())),
         "layout_revisions": dict(sorted(state.layout_revisions.items())),
+        "excel_hashes": dict(sorted(state.excel_hashes.items())),
     }
     path.write_text(
         json.dumps(payload, ensure_ascii=False, sort_keys=True),
@@ -103,6 +110,7 @@ def upsert_table(
         tables=tables,
         bundles=state.bundles,
         layout_revisions=revisions,
+        excel_hashes=state.excel_hashes,
     )
 
 
@@ -113,4 +121,25 @@ def upsert_bundle(state: CanonicalCacheState, lang: str, fingerprint: str) -> Ca
         tables=state.tables,
         bundles=bundles,
         layout_revisions=state.layout_revisions,
+        excel_hashes=state.excel_hashes,
+    )
+
+
+def record_excel_hashes(
+    state: CanonicalCacheState,
+    hashes: dict[str, str],
+    *,
+    layout_revisions: dict[str, int] | None = None,
+) -> CanonicalCacheState:
+    """Record the last-seen Excel hash (and optional layout revisions) per table."""
+    excel = dict(state.excel_hashes)
+    excel.update(hashes)
+    revisions = dict(state.layout_revisions)
+    if layout_revisions:
+        revisions.update(layout_revisions)
+    return CanonicalCacheState(
+        tables=state.tables,
+        bundles=state.bundles,
+        layout_revisions=revisions,
+        excel_hashes=excel,
     )
