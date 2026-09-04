@@ -35,8 +35,8 @@ public unsafe sealed class ConfigTable : IDisposable
 
     public int Version => _pVersion;
 
-    /// <summary>按行下标取行对象指针（0-based）。</summary>
-    public IntPtr RowAt(int index) => WireReader.RowAt(ItemsBase, index);
+    /// <summary>按行下标取行对象指针（0-based）；越界返回 IntPtr.Zero（Release 也生效的无条件兜底）。</summary>
+    public IntPtr RowAt(int index) => (uint)index >= (uint)Count ? IntPtr.Zero : WireReader.RowAt(ItemsBase, index);
 
     /// <summary>按主键查行；未找到返回 IntPtr.Zero。</summary>
     public IntPtr ByID(int id)

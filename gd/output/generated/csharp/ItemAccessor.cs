@@ -16,8 +16,12 @@ public static partial class ItemAccessor
         return p == IntPtr.Zero ? (ItemRow?)null : new ItemRow(p, Runtime.Version(TableName));
     }
 
-    /// <summary>按 Excel 序行下标取行。</summary>
-    public static ItemRow ByIndex(int i) => new ItemRow(Runtime.RowAt(TableName, i), Runtime.Version(TableName));
+    /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>
+    public static ItemRow? ByIndex(int i)
+    {
+        IntPtr p = Runtime.RowAt(TableName, i);
+        return p == IntPtr.Zero ? (ItemRow?)null : new ItemRow(p, Runtime.Version(TableName));
+    }
 
     public unsafe readonly struct ItemDropRangeRow
     {

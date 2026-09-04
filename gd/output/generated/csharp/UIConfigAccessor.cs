@@ -16,8 +16,12 @@ public static partial class UIConfigAccessor
         return p == IntPtr.Zero ? (UIConfigRow?)null : new UIConfigRow(p, Runtime.Version(TableName));
     }
 
-    /// <summary>按 Excel 序行下标取行。</summary>
-    public static UIConfigRow ByIndex(int i) => new UIConfigRow(Runtime.RowAt(TableName, i), Runtime.Version(TableName));
+    /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>
+    public static UIConfigRow? ByIndex(int i)
+    {
+        IntPtr p = Runtime.RowAt(TableName, i);
+        return p == IntPtr.Zero ? (UIConfigRow?)null : new UIConfigRow(p, Runtime.Version(TableName));
+    }
 }
 
 public unsafe readonly struct UIConfigRow

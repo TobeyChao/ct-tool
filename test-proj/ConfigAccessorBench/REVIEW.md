@@ -122,3 +122,11 @@
 - 契约（文件头 NOTE）：**只支持只读并发**；世代推进不得与读取并发；单表重载（不经 `LoadBundle`）不受支持。
 
 **仍未修（记录在案）**：`ByIndex` 越界 Release 无兜底且无"未找到"语义；`NArray<T>` 非对齐直读（T 对齐 >4）；root 表槽位（slot 4/6）硬编码耦合；未注册表访问抛 `KeyNotFoundException`；`FieldOffset` slot 0–3 无防护；构造中途异常泄漏 pin。
+
+### 第三轮（本文件对应提交）—— 只吃 ct bin 契约 + ByIndex 越界兜底
+**数据信任契约（已定）**：reader **只消费 ct 导出的 bin**。据此关闭数据信任类条目 —— 非对齐直读（ct `StartVector` 按元素大小对齐，8 字节元素亦 8 对齐）、root 表槽位（slot 4/6）硬编码（ct root 布局固定）、`FieldOffset` slot 0–3 / 损坏 bundle（数据永远来自 ct）。仍保留：构造中途异常泄漏 pin（极小）。
+
+**ByIndex 越界（动态实锤后修复）**：实测 `RowAt(rows)`（越界一格）在 Release 下即 `AccessViolationException` 崩溃（无兜底、且无"未找到"语义）。
+- reader：`ConfigTable.RowAt` 加**无条件**边界检查（`(uint)index >= Count → IntPtr.Zero`），Release 亦生效。
+- 生成器 `canonical_accessor.py`：C# `ByIndex` 改为返回 `{table}Row?`（越界 → null），与 `ByID` 对称；`gd/output/generated/csharp/*` 与 `test-proj/*.g.cs` 同步重生成/更新；测试断言同步。
+- Lua 侧不动：`GD.ByIndex` 的越界行为属游戏侧运行时契约。

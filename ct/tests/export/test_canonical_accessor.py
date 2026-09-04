@@ -93,7 +93,8 @@ def test_csharp_pointer_row_and_query_api() -> None:
     assert "internal ItemRow(IntPtr row, int version)" in text
     assert "public static int Count => Runtime.Count(TableName);" in text
     assert "public static ItemRow? ByID(int id)" in text
-    assert "public static ItemRow ByIndex(int i)" in text
+    assert "public static ItemRow? ByIndex(int i)" in text
+    assert "return p == IntPtr.Zero ? (ItemRow?)null : new ItemRow(p, Runtime.Version(TableName));" in text
     # vtable slot = 4 + 2*字段序: Id=4, CodeName=6, Category=8
     assert "public int Id => WireReader.I32(_row, 4);" in text
     assert "public string CodeName => new NString((byte*)WireReader.Indirect(_row, 6), _version);" in text

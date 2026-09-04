@@ -16,8 +16,12 @@ public static partial class ItemTypeAccessor
         return p == IntPtr.Zero ? (ItemTypeRow?)null : new ItemTypeRow(p, Runtime.Version(TableName));
     }
 
-    /// <summary>按 Excel 序行下标取行。</summary>
-    public static ItemTypeRow ByIndex(int i) => new ItemTypeRow(Runtime.RowAt(TableName, i), Runtime.Version(TableName));
+    /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>
+    public static ItemTypeRow? ByIndex(int i)
+    {
+        IntPtr p = Runtime.RowAt(TableName, i);
+        return p == IntPtr.Zero ? (ItemTypeRow?)null : new ItemTypeRow(p, Runtime.Version(TableName));
+    }
 }
 
 public unsafe readonly struct ItemTypeRow

@@ -16,8 +16,12 @@ public static partial class QuestAccessor
         return p == IntPtr.Zero ? (QuestRow?)null : new QuestRow(p, Runtime.Version(TableName));
     }
 
-    /// <summary>按 Excel 序行下标取行。</summary>
-    public static QuestRow ByIndex(int i) => new QuestRow(Runtime.RowAt(TableName, i), Runtime.Version(TableName));
+    /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>
+    public static QuestRow? ByIndex(int i)
+    {
+        IntPtr p = Runtime.RowAt(TableName, i);
+        return p == IntPtr.Zero ? (QuestRow?)null : new QuestRow(p, Runtime.Version(TableName));
+    }
 }
 
 public unsafe readonly struct QuestRow

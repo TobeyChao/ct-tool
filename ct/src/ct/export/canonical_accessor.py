@@ -143,8 +143,12 @@ def _emit_csharp_query_api(model: CanonicalAccessorModel) -> list[str]:
     lines.append(f"        return p == IntPtr.Zero ? ({table}Row?)null : new {table}Row(p, Runtime.Version(TableName));")
     lines.append("    }")
     lines.append("")
-    lines.append("    /// <summary>按 Excel 序行下标取行。</summary>")
-    lines.append(f"    public static {table}Row ByIndex(int i) => new {table}Row(Runtime.RowAt(TableName, i), Runtime.Version(TableName));")
+    lines.append("    /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>")
+    lines.append(f"    public static {table}Row? ByIndex(int i)")
+    lines.append("    {")
+    lines.append("        IntPtr p = Runtime.RowAt(TableName, i);")
+    lines.append(f"        return p == IntPtr.Zero ? ({table}Row?)null : new {table}Row(p, Runtime.Version(TableName));")
+    lines.append("    }")
     for index in model.indexes:
         if index.kind == "code":
             lines.append("")
