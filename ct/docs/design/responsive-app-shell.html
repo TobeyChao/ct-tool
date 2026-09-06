@@ -113,8 +113,8 @@ input{font:inherit;color:inherit}
 .prog-cell.active .n{background:var(--accent);color:#fff}
 @media (max-width:899px){.ev-sum .rows>div{grid-template-columns:64px minmax(0,1fr)}}
 
-.main{min-width:0;min-height:0;overflow:hidden}
-.page{display:none;height:100%;min-width:0;overflow-x:hidden;overflow-y:auto}
+.main{min-width:0;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.page{display:none;flex:1 1 auto;min-width:0;overflow-x:hidden;overflow-y:auto}
 .page.active{display:block;animation:pageIn var(--motion)}
 @keyframes pageIn{from{opacity:0}to{opacity:1}}
 /* 内容页改 flex 列：mhead/toolbar 固定，主区域弹性占满剩余高度（替代 calc 经验值，适配任意视口） */
@@ -407,6 +407,7 @@ table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}t
 .mask.open{opacity:1}
 .mask.open .dialog{transform:none;opacity:1}
 .mask.closing{opacity:0}
+.mask.closing .dialog{transform:scale(.97) translateY(8px);opacity:0}
 .dhead{display:flex;align-items:center;gap:10px;padding:16px 24px;border-bottom:1px solid var(--border);font-weight:680;font-size:14px}
 .dhead .sp{flex:1}
 .dbody{padding:18px 24px;max-height:72vh;overflow:auto}
@@ -424,6 +425,8 @@ table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}t
 .btn-danger{background:var(--danger);color:#fff;box-shadow:0 1px 2px rgba(20,30,25,.2)}
 .btn-danger:hover{background:#933232}
 .btn-danger:disabled{background:#c9a0a0;color:#fff;cursor:not-allowed;box-shadow:none}
+.btn:disabled,.ibtn:disabled{opacity:.45;cursor:not-allowed}
+.btn:disabled:hover{background:var(--surface);transform:none}
 /* 弹窗宽度变体（DEC4）：沿用现有 .dlg-wide 前缀 */
 .dialog.dlg-sm{width:min(420px,calc(100vw - 32px))}
 .dialog.dlg-plan{width:min(640px,calc(100vw - 40px))}
@@ -454,12 +457,25 @@ table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}t
 .type-trigger{display:flex;align-items:center;gap:8px;width:100%;min-height:34px;padding:0 11px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);font:600 12px var(--font-mono);color:var(--ink);text-align:left;cursor:pointer}
 .type-trigger:hover{border-color:var(--accent);background:var(--accent-softer)}
 .type-trigger .caret{margin-left:auto;color:var(--ink-3)}
-.role-opts{display:flex;gap:6px;flex-wrap:wrap}
-.role-opts label{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--border-strong);border-radius:999px;font-size:12px;cursor:pointer;color:var(--ink-2)}
-.role-opts label:has(input:checked){background:var(--accent-softer);border-color:var(--accent);color:var(--accent)}
-.role-opts input{accent-color:var(--accent)}
-.sep-row{display:none}
-.sep-row.show{display:block}
+/* 角色 / 约束 / 形态统一选项组件：浅色分组卡片 + 工具栏同款 pill（选中实心 brand） */
+.opt-group{border:1px solid var(--border);border-radius:10px;background:var(--surface-2);padding:10px 12px 8px;display:flex;flex-direction:column;gap:8px;margin-bottom:13px}
+.opt-row{display:flex;align-items:center;gap:10px;min-height:26px}
+.opt-label{font-size:11.5px;font-weight:700;color:var(--ink-2);flex:0 0 auto;width:36px;letter-spacing:.02em}
+.opt-chips{display:flex;gap:6px;flex-wrap:wrap}
+.opt-chips .chip{position:relative;display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border:1px solid var(--border);border-radius:999px;font-size:12px;line-height:1.4;cursor:pointer;color:var(--ink-2);background:var(--surface);transition:background var(--motion),color var(--motion),border-color var(--motion)}
+.opt-chips .chip:hover{background:var(--surface-2)}
+.opt-chips .chip:has(input:checked){background:var(--brand);color:#fff;border-color:var(--brand);font-weight:600}
+.opt-chips .chip input{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
+.opt-chips .chip:has(input:disabled){opacity:.45;cursor:not-allowed}
+.opt-chips .chip:has(input:disabled):hover{background:var(--surface)}
+/* 形态分段胶囊：一个胶囊左右两段（变长 / 定长） */
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:999px;background:var(--surface);padding:2px;gap:2px}
+.seg label{position:relative;display:inline-flex;align-items:center;justify-content:center;padding:3px 14px;border-radius:999px;font-size:12px;cursor:pointer;color:var(--ink-2);white-space:nowrap}
+.seg label:has(input:checked){background:var(--brand);color:#fff;font-weight:600}
+.seg label:has(input:disabled){opacity:.45;cursor:not-allowed}
+.seg input{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
+.opt-sub{font-size:11.5px;color:var(--ink-3);padding-left:46px;min-height:0}
+.opt-sub .dlg-in{width:64px;padding:3px 8px;font-size:12px;text-align:center}
 /* 选择器列表（F2/P1/Q1） */
 .dlg-list{display:flex;flex-direction:column;gap:2px;max-height:44vh;overflow:auto}
 .dlg-list .sec{font-size:11px;font-weight:700;color:var(--ink-3);letter-spacing:.08em;text-transform:uppercase;padding:8px 4px 3px}
@@ -605,15 +621,6 @@ table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}t
           <nav class="act"><button class="side-tab" id="insp-tab" aria-pressed="false">属性</button></nav>
         </div>
         <div class="backdrop" id="backdrop"></div>
-        <div class="draftbar" id="draftbar" hidden>
-          <span class="dot"></span>
-          <span class="txt" id="draftbar-txt">0 条未应用变更</span>
-          <span class="acts">
-            <button class="btn btn-ghost btn-sm" id="draft-undo" disabled>撤销</button>
-            <button class="btn btn-ghost btn-sm" id="draft-redo" disabled>重做</button>
-            <button class="btn btn-primary btn-sm" id="draft-review">审查并应用</button>
-          </span>
-        </div>
       </section>
 
       <!-- ========== 翻译 ========== -->
@@ -648,11 +655,11 @@ table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}t
           <div class="ev-progress">
             <div class="bar"><div><h3>执行进度</h3><p>尚未开始 · 等待执行</p></div></div>
             <div class="prog-cells"><span class="prog-cell"><span class="n">1</span>校验</span><span class="prog-cell"><span class="n">2</span>JSON</span><span class="prog-cell"><span class="n">3</span>FBS</span><span class="prog-cell"><span class="n">4</span>Binary</span><span class="prog-cell"><span class="n">5</span>Accessor</span></div>
-            <div class="ev-sum"><div class="rows">
+            <div class="ev-sum"><dl class="rows">
               <div><dt>待处理</dt><dd class="num">2 张表</dd></div>
               <div><dt>执行结果</dt><dd>尚未执行</dd></div>
               <div><dt>产物目录</dt><dd class="code">output/json · fbs · binary · generated</dd></div>
-            </div></div>
+            </dl></div>
           </div>
           <div class="ometa">
             <span class="om"><span class="k">最近导出</span><span class="v">12s · 8 张表 · 成功</span></span>
@@ -682,23 +689,33 @@ table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}t
         </div>
         <div class="empty"><span class="ic"><svg><use href="#i-hist"/></svg></span><div class="t">暂无导出历史</div><div class="s">完成一次导出后，这里会记录最近的结果与耗时。</div><button class="btn btn-ghost btn-sm cta">前往导出</button></div>
       </section>
+      <div class="draftbar" id="draftbar" hidden>
+        <span class="dot"></span>
+        <span class="txt" id="draftbar-txt">0 条未应用变更</span>
+        <span class="acts">
+          <button class="btn btn-ghost btn-sm" id="draft-undo" disabled>撤销</button>
+          <button class="btn btn-ghost btn-sm" id="draft-redo" disabled>重做</button>
+          <button class="btn btn-primary btn-sm" id="draft-review">审查并应用</button>
+        </span>
+      </div>
     </main>
   </div>
 </div>
 
 <script>
-function openMask(html){const m=document.createElement('div');m.className='mask';m._opener=document.activeElement&&document.activeElement.focus?document.activeElement:null;m.innerHTML=`<div class="dialog" role="dialog" aria-modal="true">${html}</div>`;m.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeMask(m)));const dlg=m.querySelector('.dialog');const dtitle=dlg.querySelector('.dhead span');if(dtitle){dtitle.id='dlg-title';dlg.setAttribute('aria-labelledby','dlg-title');}document.body.appendChild(m);requestAnimationFrame(()=>requestAnimationFrame(()=>m.classList.add('open')));m.addEventListener('click',e=>{if(e.target===m)closeMask(m);});const appEl=document.querySelector('.app');appEl.setAttribute('inert','');document.body.style.overflow='hidden';const f=m.querySelector('button,input,textarea,select,[tabindex]');if(f)f.focus();/* 焦点陷阱：Tab/Shift+Tab 在对话框内循环，避免逃逸到背景 */m.addEventListener('keydown',e=>{if(e.key!=='Tab')return;const fs=[...m.querySelectorAll('button,input,textarea,select,[tabindex]:not([tabindex="-1"])')];if(!fs.length)return;if(e.shiftKey&&document.activeElement===fs[0]){e.preventDefault();fs[fs.length-1].focus();}else if(!e.shiftKey&&document.activeElement===fs[fs.length-1]){e.preventDefault();fs[0].focus();}});return m;}
+let dlgSeq=0;
+function openMask(html){const m=document.createElement('div');m.className='mask';m._opener=document.activeElement&&document.activeElement.focus?document.activeElement:null;m.innerHTML=`<div class="dialog" role="dialog" aria-modal="true">${html}</div>`;m.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeMask(m)));const dlg=m.querySelector('.dialog');const dtitle=dlg.querySelector('.dhead span');if(dtitle){dtitle.id='dlg-title-'+(++dlgSeq);dlg.setAttribute('aria-labelledby',dtitle.id);}document.body.appendChild(m);requestAnimationFrame(()=>requestAnimationFrame(()=>m.classList.add('open')));m.addEventListener('click',e=>{if(e.target===m)closeMask(m);});const appEl=document.querySelector('.app');appEl.setAttribute('inert','');document.body.style.overflow='hidden';const FSEL='button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"]):not([disabled])';const f=m.querySelector(FSEL);if(f)f.focus();/* 焦点陷阱：Tab/Shift+Tab 在对话框内循环，避免逃逸到背景 */m.addEventListener('keydown',e=>{if(e.key!=='Tab')return;const fs=[...m.querySelectorAll(FSEL)];if(!fs.length)return;if(e.shiftKey&&document.activeElement===fs[0]){e.preventDefault();fs[fs.length-1].focus();}else if(!e.shiftKey&&document.activeElement===fs[fs.length-1]){e.preventDefault();fs[0].focus();}});return m;}
 function closeMask(m){m.classList.remove('open');m.classList.add('closing');document.querySelector('.app').removeAttribute('inert');document.body.style.overflow='';if(m._opener){try{m._opener.focus();}catch(e){}}setTimeout(()=>{m.remove();},300);}
 
 /* ---- 资源树 ---- */
 const GROUPS=[{k:'table',t:'Tables',rows:[['Item','Table',8],['ItemType','Table',3],['Quest','Table',5],['UIConfig','Table',5],['Monster','Table',9]]},{k:'record',t:'Records',rows:[['ItemDropRange','Record',2],['Buff','Record',4]]},{k:'enum',t:'Enums',rows:[['ItemRarity','Enum',3],['UIConfigLayer','Enum',4]]}];
 const tree=document.getElementById('tree');
-tree.innerHTML=GROUPS.map(g=>`<div class="group" data-open="true"><button class="group-toggle"><span class="lab"><span class="gchev"><svg width="12" height="12"><use href="#i-chev"/></svg></span>${g.t}</span><span class="gcount">${g.rows.length}</span></button><div class="gbody"><div class="rows">${g.rows.map((r,i)=>`<button class="rrow ${g.k==='table'&&i===0?'active':''}" data-name="${r[0]}"><span class="kind ${g.k}">${r[1]}</span><span class="nm">${r[0]}</span><span class="meta">${r[2]} ${g.k==='enum'?'值':'字段'}</span></button>`).join('')}</div></div></div>`).join('');
-tree.addEventListener('click',e=>{const btn=e.target.closest('.group-toggle');if(btn){const g=btn.closest('.group');g.dataset.open=g.dataset.open==='true'?'false':'true';return;}const row=e.target.closest('.rrow');if(!row)return;tree.querySelectorAll('.rrow').forEach(r=>r.classList.toggle('active',r===row));if(innerWidth<900)setPane('res',false);});
+tree.innerHTML=GROUPS.map(g=>`<div class="group" data-open="true"><button class="group-toggle" aria-expanded="true"><span class="lab"><span class="gchev"><svg width="12" height="12"><use href="#i-chev"/></svg></span>${g.t}</span><span class="gcount">${g.rows.length}</span></button><div class="gbody"><div class="rows">${g.rows.map((r,i)=>`<button class="rrow ${g.k==='table'&&i===0?'active':''}" data-name="${r[0]}" ${g.k==='table'&&i===0?'aria-current="true"':''}><span class="kind ${g.k}">${r[1]}</span><span class="nm">${r[0]}</span><span class="meta">${r[2]} ${g.k==='enum'?'值':'字段'}</span></button>`).join('')}</div></div></div>`).join('');
+tree.addEventListener('click',e=>{const btn=e.target.closest('.group-toggle');if(btn){const g=btn.closest('.group');const open=g.dataset.open!=='true';g.dataset.open=String(open);btn.setAttribute('aria-expanded',String(open));const gb=g.querySelector('.gbody');if(gb)gb.inert=!open;return;}const row=e.target.closest('.rrow');if(!row)return;tree.querySelectorAll('.rrow').forEach(r=>{const on=r===row;r.classList.toggle('active',on);if(on)r.setAttribute('aria-current','true');else r.removeAttribute('aria-current');});if(innerWidth<900)setPane('res',false);});
 
 /* ---- 内容层面板开合 ---- */
 /* 找范围内第一个可见可聚焦元素（过滤 display:none/不可见），供抽屉移焦使用 */
-function firstFocusable(scope){const all=scope.querySelectorAll('button,input,textarea,select,[tabindex]:not([tabindex="-1"])');for(const el of all){const cs=getComputedStyle(el);if(el.hidden||cs.display==='none'||cs.visibility==='hidden')continue;const r=el.getBoundingClientRect();if(r.width>0&&r.height>0)return el;}return null;}
+function firstFocusable(scope){const all=scope.querySelectorAll('button,input,textarea,select,[tabindex]:not([tabindex="-1"])');for(const el of all){if(el.disabled||el.hidden)continue;const cs=getComputedStyle(el);if(cs.display==='none'||cs.visibility==='hidden')continue;const r=el.getBoundingClientRect();if(r.width>0&&r.height>0)return el;}return null;}
 const PANE_ANIM_MS=360;/* 与 --motion-pane:300ms 对应：等展开/收起过渡完成 + 60ms 余量 */
 const wb=document.getElementById('wb'),backdropContent=document.getElementById('backdrop');
 function setPane(which,open){const key=which==='res'?'data-open-res':'data-open-insp';wb.setAttribute(key,String(open));if(which==='insp')document.getElementById('insp-tab').setAttribute('aria-pressed',String(open));if(which==='res')document.getElementById('res-toggle').setAttribute('aria-expanded',String(open));const pane=document.querySelector(which==='res'?'.res-pane':'.insp-pane');/* 焦点管理：打开时记录触发器，关闭时还焦；<900 抽屉打开时移焦入面板 */if(open){pane._opener=document.activeElement&&!pane.contains(document.activeElement)?document.activeElement:null;}else{const op=pane._opener;if(op&&op.focus&&document.contains(op)&&!pane.contains(op))op.focus();}const any=wb.getAttribute('data-open-res')==='true'||wb.getAttribute('data-open-insp')==='true';backdropContent.classList.toggle('show',any&&innerWidth<900);setSideDrawer(false);syncInert();if(open&&innerWidth<900){const f=firstFocusable(pane);if(f)f.focus();}setTimeout(refreshLayout,PANE_ANIM_MS);/* 等展开/收起过渡后重算光晕与 sticky */}
@@ -725,24 +742,30 @@ tabsEl.addEventListener('click',e=>{const t=e.target.closest('.rtab');if(t)activ
 tabsEl.addEventListener('keydown',e=>{if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;const tabs=[...tabsEl.querySelectorAll('.rtab')];const i=tabs.indexOf(document.activeElement);if(i<0)return;const n=(e.key==='ArrowRight'?i+1:i-1+tabs.length)%tabs.length;tabs[n].focus();activateTab(tabs[n]);e.preventDefault();});
 
 /* ---- i18n 表 ---- */
+const STATUS_LABEL={translated:'已译完',stale:'待审',missing:'缺失'};
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 const rows=[['1001','Name','“A Sword of Valor”','','translated'],['1002','Name','“Shield of the First Knight”','','missing'],['1003','Desc','“A legendary blade forged in the great war, said to cut through darkness itself.”','','stale'],['1004','Name','“Crystal of Swiftness”','','translated']];
-document.getElementById('tbody').innerHTML=rows.map((r,i)=>`<tr><td class="col-id id num">${r[0]}</td><td class="col-field fld">${r[1]}</td><td class="src-cell"><span class="src-wrap"><span class="src-txt">${r[2]}</span></span></td><td class="trans-cell"><div class="trans-box"><div class="trans-prev ${r[3]?'has':''}"><span class="ln">${r[3]||'点击填写译文…'}</span></div><button class="trans-expand" type="button" data-i="${i}" title="全屏编辑译文" aria-label="全屏编辑译文"><svg width="13" height="13"><use href="#i-expand"/></svg></button></div></td><td><span class="badge ${r[4]==='translated'?'badge-ok':r[4]==='stale'?'badge-warn':'badge-mute'}"><span class="b-dot"></span>${r[4]}</span></td><td><span class="rops"><button class="btn btn-accent btn-sm">保存</button></span></td></tr>`).join('');
+document.getElementById('tbody').innerHTML=rows.map((r,i)=>`<tr data-status="${r[4]}"><td class="col-id id num">${esc(r[0])}</td><td class="col-field fld">${esc(r[1])}</td><td class="src-cell"><span class="src-wrap"><span class="src-txt">${esc(r[2])}</span></span></td><td class="trans-cell"><div class="trans-box"><div class="trans-prev ${r[3]?'has':''}"><span class="ln">${esc(r[3]||'点击填写译文…')}</span></div><button class="trans-expand" type="button" data-i="${i}" title="全屏编辑译文" aria-label="全屏编辑译文"><svg width="13" height="13"><use href="#i-expand"/></svg></button></div></td><td><span class="badge ${r[4]==='translated'?'badge-ok':r[4]==='stale'?'badge-warn':'badge-mute'}"><span class="b-dot"></span>${STATUS_LABEL[r[4]]||r[4]}</span></td><td><span class="rops"><button class="btn btn-accent btn-sm">保存</button></span></td></tr>`).join('');
 /* 原文超行检测：需在 i18n 页激活、元素可测尺寸时执行（display:none 时 client/scrollHeight 为 0 会误判）；被截断的原文单元格加「展开/收起」尾标 */
 function initSrcMore(){
   if(!document.getElementById('page-i18n').classList.contains('active'))return;
   document.querySelectorAll('#tbody .src-txt').forEach(el=>{
-    if(el.dataset.moreReady)return;
-    if(el.scrollHeight>el.clientHeight+1){
-      const wrap=el.parentElement; wrap.classList.add('expandable');
-      const btn=document.createElement('button'); btn.type='button'; btn.className='src-more';
-      btn.innerHTML='<span class="lab">展开</span><span class="caret">▾</span>';
-      btn.setAttribute('aria-expanded','false'); wrap.appendChild(btn);
+    const wrap=el.parentElement; const btn=wrap.querySelector('.src-more');
+    const expanded=el.classList.contains('rows');
+    const truncated=el.scrollHeight>el.clientHeight+1;
+    if(truncated||expanded){
+      wrap.classList.add('expandable');
+      if(btn){btn.querySelector('.lab').textContent=expanded?'收起':'展开';btn.setAttribute('aria-expanded',String(expanded));}
+      else{const b=document.createElement('button');b.type='button';b.className='src-more';b.innerHTML='<span class="lab">'+(expanded?'收起':'展开')+'</span><span class="caret">▾</span>';b.setAttribute('aria-expanded',String(expanded));wrap.appendChild(b);}
+    }else{
+      wrap.classList.remove('expandable');
+      if(btn)btn.remove();
     }
-    el.dataset.moreReady='1';
   });
 }
 /* 提交某行译文并恢复预览态（行内失焦保存 / 全屏保存共用） */
-function commitInlineEdit(i,val){rows[i][3]=val;const tr=document.getElementById('tbody').children[i];tr.querySelector('.trans-cell').innerHTML=`<div class="trans-box"><div class="trans-prev ${val?'has':''}"><span class="ln">${val||'点击填写译文…'}</span></div><button class="trans-expand" type="button" data-i="${i}" title="全屏编辑译文" aria-label="全屏编辑译文"><svg width="13" height="13"><use href="#i-expand"/></svg></button></div>`;}
+function renderBadge(tr,st){const lab=STATUS_LABEL[st]||st;const cls=st==='translated'?'badge-ok':st==='stale'?'badge-warn':'badge-mute';const td=tr.children[4];if(td)td.innerHTML=`<span class="badge ${cls}"><span class="b-dot"></span>${lab}</span>`;}
+function commitInlineEdit(i,val){rows[i][3]=val;rows[i][4]=val?'translated':'missing';const tr=document.getElementById('tbody').children[i];tr.dataset.status=rows[i][4];tr.querySelector('.trans-cell').innerHTML=`<div class="trans-box"><div class="trans-prev ${val?'has':''}"><span class="ln">${esc(val||'点击填写译文…')}</span></div><button class="trans-expand" type="button" data-i="${i}" title="全屏编辑译文" aria-label="全屏编辑译文"><svg width="13" height="13"><use href="#i-expand"/></svg></button></div>`;renderBadge(tr,rows[i][4]);applyStatusFilter();}
 /* 全屏编辑长译文：译文框右下角展开角标 → 大对话框（原文只读对照 + 大 textarea），保存写回该行 */
 function openFullEditor(i){
   const tr=document.getElementById('tbody').children[i];
@@ -750,7 +773,7 @@ function openFullEditor(i){
   if(inline)commitInlineEdit(i,inline.value); /* 进入全屏前先提交行内编辑并退出编辑态：关闭弹窗(保存/取消)后直接回预览态，不再悬挂编辑框 */
   const r=rows[i];
   const current=r[3]||'';
-  const m=openMask(`<div class="dhead"><span>${r[0]} · ${r[1]} · en</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><div class="dlg-field"><label class="fl">原文（en）</label><div class="dlg-src">${r[2]}</div></div><div class="dlg-field"><label class="fl">译文</label><textarea class="dlg-trans" rows="8">${current}</textarea></div></div><div class="dfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" data-save>保存</button></div>`);
+  const m=openMask(`<div class="dhead"><span>${r[0]} · ${r[1]} · ${activeLang()}</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><div class="dlg-field"><label class="fl">原文（${activeLang()}）</label><div class="dlg-src">${esc(r[2])}</div></div><div class="dlg-field"><label class="fl">译文</label><textarea class="dlg-trans" rows="8">${esc(current)}</textarea></div></div><div class="dfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" data-save>保存</button></div>`);
   m.querySelector('.dialog').classList.add('dlg-wide');
   const ta=m.querySelector('.dlg-trans'); if(ta)ta.focus();
   m.querySelector('[data-save]').addEventListener('click',()=>{commitInlineEdit(i,ta.value);closeMask(m);});
@@ -760,8 +783,29 @@ document.getElementById('colvis-btn').addEventListener('click',e=>{e.stopPropaga
 document.addEventListener('click',e=>{if(!colvis.contains(e.target))colvis.classList.remove('open');});
 const CI={src:2,trans:3,status:4,ops:5};
 colvis.querySelectorAll('input').forEach(cb=>cb.addEventListener('change',()=>{const i=CI[cb.dataset.col];document.querySelectorAll('#page-i18n thead th')[i].style.display=cb.checked?'':'none';document.querySelectorAll('#tbody tr').forEach(tr=>tr.children[i].style.display=cb.checked?'':'none');}));
+/* 视图状态重放：状态过滤 + 列显隐（切表/重渲染后调用，修复切表后不重放的缺陷） */
+function applyStatusFilter(){const ap=document.querySelector('#page-i18n .toolbar .pill[data-status].active');const st=ap?ap.dataset.status:'all';document.querySelectorAll('#tbody tr').forEach(tr=>{tr.hidden=st!=='all'&&tr.dataset.status!==st;});}
+function applyViewState(){colvis.querySelectorAll('input').forEach(cb=>{const i=CI[cb.dataset.col];document.querySelectorAll('#page-i18n thead th')[i].style.display=cb.checked?'':'none';document.querySelectorAll('#tbody tr').forEach(tr=>{if(tr.children[i])tr.children[i].style.display=cb.checked?'':'none';});});applyStatusFilter();}
+function activeLang(){const p=document.querySelector('#page-i18n .toolbar .pill[data-lang].active');return p?p.dataset.lang:'en';}
 document.querySelector('.tablewrap').addEventListener('click',e=>{const ex=e.target.closest('.trans-expand');if(ex){openFullEditor(Number(ex.dataset.i));return;}const tv=e.target.closest('.trans-prev');if(tv){const box=tv.parentElement;if(!box.querySelector('textarea')){const i=box.querySelector('.trans-expand').dataset.i;box.innerHTML=`<textarea class="trans-in" rows="2"></textarea><button class="trans-expand" type="button" data-i="${i}" title="全屏编辑译文" aria-label="全屏编辑译文"><svg width="13" height="13"><use href="#i-expand"/></svg></button>`;const ta=box.querySelector('textarea');ta.focus();/* 失焦即保存：焦点落入 expand 角标(点全屏)时不退出，否则提交并恢复预览 */ta.addEventListener('blur',()=>setTimeout(()=>{if(document.querySelector('.mask'))return;if(document.activeElement&&document.activeElement.closest('.trans-box')&&document.activeElement.classList.contains('trans-expand'))return;commitInlineEdit(Number(i),ta.value);},0));}return;}const more=e.target.closest('.src-more');if(more){const wrap=more.closest('.src-wrap');const txt=wrap.querySelector('.src-txt');const exp=txt.classList.toggle('rows');more.setAttribute('aria-expanded',String(exp));more.querySelector('.lab').textContent=exp?'收起':'展开';}});
-document.getElementById('i18n-progress').addEventListener('click',()=>{const m=openMask(`<div class="dhead"><span>翻译进度</span><span class="sp"></span><button class="pill active">语言</button><button class="pill">按表</button><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><div class="tablewrap" style="margin:0;max-height:52vh"><table class="data matrix"><thead><tr><th>表</th><th>en</th><th>ja</th><th>汇总</th></tr></thead><tbody><tr><td style="font-weight:650">Item</td><td style="text-align:center"><span class="badge badge-ok"><span class="b-dot"></span>8/8</span></td><td style="text-align:center"><span class="badge badge-mute">2/8</span></td><td style="text-align:center">10/16</td></tr><tr><td style="font-weight:650">Quest</td><td style="text-align:center"><span class="badge badge-ok">5/5</span></td><td style="text-align:center"><span class="badge badge-mute">0/5</span></td><td style="text-align:center">5/10</td></tr></tbody></table></div></div><div class="dfoot"><button class="btn btn-ghost" data-close>关闭</button></div>`);const dtw=m.querySelector('.tablewrap');prepareGlow(dtw);markOverflow(dtw);m.querySelectorAll('.pill').forEach(p=>p.addEventListener('click',()=>m.querySelectorAll('.pill').forEach(x=>x.classList.toggle('active',x===p))));});
+document.getElementById('i18n-progress').addEventListener('click',()=>{
+  const PROG={Item:{en:[8,8],ja:[2,8]},Quest:{en:[5,5],ja:[0,5]}};
+  const m=openMask(`<div class="dhead"><span>翻译进度</span><span class="sp"></span><button class="pill active" id="pv-table" data-focus>按表</button><button class="pill" id="pv-lang">按语言</button><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><div class="tablewrap" style="margin:0;max-height:52vh"><table class="data matrix" id="pv-matrix"><thead></thead><tbody></tbody></table></div></div><div class="dfoot"><button class="btn btn-ghost" data-close>关闭</button></div>`);
+  const th=m.querySelector('#pv-matrix thead'),tb=m.querySelector('#pv-matrix tbody');
+  function render(view){
+    if(view==='table'){
+      th.innerHTML='<tr><th>表</th><th>en</th><th>ja</th><th>汇总</th></tr>';
+      tb.innerHTML=Object.entries(PROG).map(([t,ls])=>{const done=ls.en[0]+ls.ja[0],tot=ls.en[1]+ls.ja[1];return `<tr><td style="font-weight:650">${t}</td><td style="text-align:center"><span class="badge ${ls.en[0]===ls.en[1]?'badge-ok':'badge-mute'}">${ls.en[0]}/${ls.en[1]}</span></td><td style="text-align:center"><span class="badge ${ls.ja[0]===ls.ja[1]?'badge-ok':'badge-mute'}">${ls.ja[0]}/${ls.ja[1]}</span></td><td style="text-align:center">${done}/${tot}</td></tr>`;}).join('');
+    }else{
+      th.innerHTML='<tr><th>语言</th><th>已译</th><th>缺失</th><th>完成度</th></tr>';
+      tb.innerHTML=['en','ja'].map(l=>{const d=Object.values(PROG);const done=d.reduce((s,x)=>s+x[l][0],0),tot=d.reduce((s,x)=>s+x[l][1],0);return `<tr><td style="font-weight:650">${l}</td><td style="text-align:center"><span class="badge ${done===tot?'badge-ok':'badge-mute'}">${done}/${tot}</span></td><td style="text-align:center">${tot-done}</td><td style="text-align:center">${tot?Math.round(done/tot*100):0}%</td></tr>`;}).join('');
+    }
+  }
+  render('table');focusInit(m);
+  m.querySelector('#pv-table').addEventListener('click',()=>{m.querySelectorAll('.pill').forEach(x=>x.classList.toggle('active',x.id==='pv-table'));render('table');});
+  m.querySelector('#pv-lang').addEventListener('click',()=>{m.querySelectorAll('.pill').forEach(x=>x.classList.toggle('active',x.id==='pv-lang'));render('lang');});
+  const dtw=m.querySelector('.tablewrap');prepareGlow(dtw);markOverflow(dtw);
+});
 
 /* ---- 模块切换（侧栏 nav）---- 与真实 app 一致：再点当前 Schema 时切换资源面板开合 */
 document.querySelectorAll('.sitem').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.page==='schema'&&document.querySelector('.sitem.active')===b){setPane('res',wb.getAttribute('data-open-res')!=='true');return;}document.querySelectorAll('.sitem').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+b.dataset.page));setSideDrawer(false);requestAnimationFrame(refreshLayout);}));
@@ -769,35 +813,48 @@ document.querySelectorAll('.sitem').forEach(b=>b.addEventListener('click',()=>{i
 /* ================= responsive-shell-dialogs：草稿栏 + 弹窗 + 接线 ================= */
 /* 资源元信息 / 反向引用 mock */
 const META={Item:['Table','item.xlsx · 8 个字段 · 主键 Id'],ItemType:['Table','itemtype.xlsx · 3 个字段 · 主键 Id'],Quest:['Table','quest.xlsx · 5 个字段 · 主键 Id'],UIConfig:['Table','ui.xlsx · 5 个字段 · 主键 Id'],Monster:['Table','monster.xlsx · 9 个字段 · 主键 Id'],ItemDropRange:['Record','Min · Max'],Buff:['Record','Duration · Value'],ItemRarity:['Enum','Common · Rare · Epic'],UIConfigLayer:['Enum','Base · HUD · Popup']};
-const REVERSE={Item:['ItemType.Id','ItemDropRange']};
+const REVERSE={ItemType:['Item.ItemTypeId'],ItemDropRange:['Item.DropRange']};
+const FIELD_COUNT={};GROUPS.forEach(g=>g.rows.forEach(r=>FIELD_COUNT[r[0]]=r[2]));
+const RES_ROWS={Item:12,ItemType:6,Quest:5,UIConfig:8,Monster:9,ItemDropRange:4,Buff:2,ItemRarity:6,UIConfigLayer:4};
 function currentResource(){const ar=document.querySelector('#tree .rrow.active');return ar?ar.dataset.name:'Item';}
 /* 打开资源（Q1 调色板 / 类型链接共用）：更新 rhead + 资源树高亮 */
 function openResource(name){
-  const meta=META[name]||['Table',name+' · 未知'];
-  const h1=document.querySelector('.rtitle h1');if(h1)h1.textContent=name;
+  const target=(name||'').split('.')[0]||'Item';
+  const meta=META[target]||['Table',target+' · 未知'];
+  const h1=document.querySelector('.rtitle h1');if(h1)h1.textContent=target;
   const eb=document.querySelector('.eyebrow');if(eb)eb.textContent=meta[0];
   const sub=document.querySelector('.rtitle .sub');if(sub)sub.textContent=meta[1];
-  const row=document.querySelector('#tree .rrow[data-name="'+name+'"]');
-  if(row){const g=row.closest('.group');if(g)g.dataset.open='true';document.querySelectorAll('#tree .rrow').forEach(r=>r.classList.toggle('active',r===row));row.scrollIntoView({block:'nearest'});}
+  if(!document.getElementById('page-schema').classList.contains('active')){
+    document.querySelectorAll('.sitem').forEach(x=>x.classList.toggle('active',x.dataset.page==='schema'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-schema'));
+    setSideDrawer(false);
+  }
+  const row=document.querySelector('#tree .rrow[data-name="'+target+'"]');
+  if(row){const g=row.closest('.group');if(g){g.dataset.open='true';const gb=g.querySelector('.gbody');if(gb)gb.inert=false;const gt=g.querySelector('.group-toggle');if(gt)gt.setAttribute('aria-expanded','true');}document.querySelectorAll('#tree .rrow').forEach(r=>{const on=r===row;r.classList.toggle('active',on);if(on)r.setAttribute('aria-current','true');else r.removeAttribute('aria-current');});row.scrollIntoView({block:'nearest'});}
+  requestAnimationFrame(refreshLayout);
 }
 /* ---- 草稿状态（隐式草稿模型 DEC2）---- */
 const draft={cmds:[],cursor:0,persistFail:false};
 const draftbar=document.getElementById('draftbar');
 function updateDraftBar(){
-  const pending=draft.cmds.length;
-  if(!pending){draftbar.hidden=true;return;}
+  const pending=draft.cursor,hasRedo=draft.cmds.length>draft.cursor;
+  if(!pending&&!hasRedo){draftbar.hidden=true;return;}
   draftbar.hidden=false;draftbar.classList.remove('success');draftbar.classList.toggle('warn',!!draft.persistFail);
-  document.getElementById('draftbar-txt').textContent=draft.cmds.length+' 条未应用变更'+(draft.persistFail?' · 草稿未持久化（IndexedDB）':'');
-  document.getElementById('draft-undo').disabled=draft.cursor===0;
-  document.getElementById('draft-redo').disabled=draft.cursor>=draft.cmds.length;
+  const persistNote=draft.persistFail?' · 草稿未持久化（IndexedDB）':'';
+  document.getElementById('draftbar-txt').textContent=(pending?pending+' 条未应用变更':'已全部撤销 · 可重做')+persistNote;
+  document.getElementById('draft-undo').disabled=!pending;
+  document.getElementById('draft-redo').disabled=!hasRedo;
+  document.getElementById('draft-review').disabled=!pending;
 }
 function pushDraft(cmd){draft.cmds=draft.cmds.slice(0,draft.cursor);draft.cmds.push(cmd);draft.cursor=draft.cmds.length;updateDraftBar();}
 function undoDraft(){if(draft.cursor>0){draft.cursor--;updateDraftBar();}}
 function redoDraft(){if(draft.cursor<draft.cmds.length){draft.cursor++;updateDraftBar();}}
 function clearDraft(){draft.cmds=[];draft.cursor=0;updateDraftBar();}
-function showApplied(){draftbar.hidden=false;draftbar.classList.remove('warn');draftbar.classList.add('success');document.getElementById('draftbar-txt').textContent='已应用：Item · Quest';setTimeout(()=>{if(!draft.cmds.length){draftbar.hidden=true;draftbar.classList.remove('success');}},3000);}
+function showApplied(names){draftbar.hidden=false;draftbar.classList.remove('warn');draftbar.classList.add('success');document.getElementById('draftbar-txt').textContent='已应用：'+(names||'草稿变更');setTimeout(()=>{if(!draft.cursor){draftbar.hidden=true;draftbar.classList.remove('success');}},3000);}
 /* mock 开关（spec 场景「持久化失败警告」演示入口）：控制台 window.__dlgPersistFail(true) 触发 draftbar warn 态 */
 window.__dlgPersistFail=function(on){draft.persistFail=!!on;updateDraftBar();};
+/* 调试钩子：暴露草稿命令（控制台审查用） */
+window.__dbg=function(){return {cmds:draft.cmds.map(c=>Object.assign({},c)),cursor:draft.cursor};};
 /* 嵌套弹窗（P5→P6）inert 保持：关掉上层后若仍有未在关闭中的下层 mask，恢复 app inert（外部 closeMask 每次都会移除；忽略 .closing 态避免单弹窗关闭后被误加 inert） */
 const _closeMask=closeMask;
 closeMask=function(m){_closeMask(m);const live=[...document.querySelectorAll('.mask')].filter(x=>!x.classList.contains('closing'));if(live.length)document.querySelector('.app').setAttribute('inert','');};
@@ -807,9 +864,10 @@ function focusInit(m){const f=m.querySelector('[data-focus]');if(f)f.focus();}
 function openDeleteResource(){
   const name=currentResource(),meta=META[name]||['Table',''];
   const refs=REVERSE[name]||[];const blocked=refs.length>0;
-  const m=openMask(`<div class="dhead"><span>删除资源</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><p style="margin:0 0 10px;display:flex;align-items:center;gap:8px"><span class="kind ${meta[0].toLowerCase()}">${meta[0]}</span><b class="num" style="font:680 14px var(--font-mono)">${name}</b></p>${blocked?`<div class="blocker-list"><div class="blocker">⛔ 无法删除：仍被引用 ${refs.map(r=>`<span class="loc">${r}</span>`).join('、')}（不提供级联删除）</div></div>`:''}<p style="margin:0;color:var(--ink-2);font-size:12.5px;line-height:1.7">将移除：8 个字段 · 12 行数据<br>变更先进入草稿，可在底部撤销，审查并应用后才真正落盘。</p></div><div class="dfoot"><button class="btn btn-ghost" id="dl-seeplan">查看影响</button><button class="btn btn-ghost" data-focus data-close>取消</button><button class="btn btn-danger" id="dl-confirm" ${blocked?'disabled':''}>删除</button></div>`);
+  const fc=FIELD_COUNT[name]||0,rc=RES_ROWS[name]||0;
+  const m=openMask(`<div class="dhead"><span>删除资源</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><p style="margin:0 0 10px;display:flex;align-items:center;gap:8px"><span class="kind ${meta[0].toLowerCase()}">${meta[0]}</span><b class="num" style="font:680 14px var(--font-mono)">${name}</b></p>${blocked?`<div class="blocker-list"><div class="blocker">⛔ 无法删除：仍被引用 ${refs.map(r=>`<span class="loc">${r}</span>`).join('、')}（不提供级联删除）</div></div>`:''}<p style="margin:0;color:var(--ink-2);font-size:12.5px;line-height:1.7">将移除：${fc} 个字段 · ${rc} 行数据<br>变更先进入草稿，可在底部撤销，审查并应用后才真正落盘。</p></div><div class="dfoot"><button class="btn btn-ghost" id="dl-seeplan">查看影响</button><button class="btn btn-ghost" data-focus data-close>取消</button><button class="btn btn-danger" id="dl-confirm" ${blocked?'disabled':''}>删除</button></div>`);
   focusInit(m);
-  m.querySelector('#dl-seeplan').addEventListener('click',()=>openChangePlan());
+  m.querySelector('#dl-seeplan').addEventListener('click',()=>openChangePlan({type:'delete_resource',name}));
   m.querySelector('#dl-confirm').addEventListener('click',()=>{if(blocked)return;pushDraft({type:'delete_resource',name});closeMask(m);});
 }
 /* ---- D2 删除字段 ---- */
@@ -822,60 +880,144 @@ function openDeleteField(tr){
 }
 /* ---- F1 添加字段 ---- */
 let typePickerSel='int32';
+const HAS_CODE={ItemType:true};
+const RECORD_TYPES={ItemDropRange:1,Buff:1};
+function currentRoleEl(m){return m.querySelector('input[name="af-role"]:checked');}
+function isRefTypeText(t){return !!t&&t.includes('.')&&!t.startsWith('vector');}
+function isRecordTypeText(t){return !!RECORD_TYPES[t];}
 function openAddField(){
-  const m=openMask(`<div class="dhead"><span>添加字段</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><div class="dlg-field"><label class="fl">字段名</label><input class="dlg-in" id="af-name" data-focus placeholder="如 DisplayName" autocomplete="off"><div class="dlg-err">字段名须以大写字母开头，且不以 _ 结尾</div></div><div class="dlg-field"><label class="fl">类型</label><button class="type-trigger" id="af-type" type="button"><span class="mono" id="af-type-txt">int32</span><span class="caret">▾</span></button></div><div class="dlg-field"><label class="fl">角色</label><div class="role-opts"><label><input type="radio" name="af-role" value="" checked>无</label><label><input type="radio" name="af-role" value="i18n">I18N</label><label><input type="radio" name="af-role" value="server">Server-only</label></div></div><div class="dlg-field"><label class="fl">约束</label><div style="display:flex;gap:16px;flex-wrap:wrap"><label style="font-size:12px;display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="af-pk" style="accent-color:var(--accent)"> 主键</label><label style="font-size:12px;display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="af-req" style="accent-color:var(--accent)"> 必填</label></div></div><div class="dlg-field sep-row" id="af-sep-row"><label class="fl">分隔符（vector）</label><input class="dlg-in" id="af-sep" value="," style="max-width:120px;text-align:center;font-family:var(--font-mono)"></div></div><div class="dfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="af-add">添加字段</button></div>`);
+  typePickerSel='int32';
+  const table=currentResource();
+  const hasCode=!!HAS_CODE[table];
+  const m=openMask(`<div class="dhead"><span>添加字段</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><div class="dlg-field"><label class="fl">字段名</label><input class="dlg-in" id="af-name" data-focus placeholder="如 DisplayName" autocomplete="off"><div class="dlg-err">字段名须以大写字母开头，且不以 _ 结尾</div></div><div class="dlg-field"><label class="fl">类型</label><button class="type-trigger" id="af-type" type="button"><span class="mono" id="af-type-txt">int32</span><span class="caret">▾</span></button></div><div class="opt-group"><div class="opt-row"><span class="opt-label">角色</span><div class="opt-chips"><label class="chip"><input type="radio" name="af-role" value="" checked><span>无</span></label><label class="chip"><input type="radio" name="af-role" value="i18n"><span>I18N</span></label><label class="chip"><input type="radio" name="af-role" value="server"><span>Server-only</span></label></div></div><div class="opt-row"><span class="opt-label">约束</span><div class="opt-chips"><label class="chip"><input type="checkbox" id="af-code" ${hasCode?'disabled':''}><span>代号（Code）</span></label><label class="chip"><input type="checkbox" id="af-vec"><span>vector</span></label></div></div><div class="opt-row" id="af-vec-row" hidden><span class="opt-label">形态</span><div class="seg"><label><input type="radio" name="af-flavor" id="af-flavor-var" checked><span>变长</span></label><label><input type="radio" name="af-flavor" id="af-flavor-fix"><span>定长</span></label></div></div>${hasCode?'<div class="opt-sub">该表已有代号字段 Code，一表至多一个</div>':''}<div class="opt-sub" id="af-sep-note" hidden>变长 · 分隔符列表，分隔符工具内置（,）</div><div class="opt-sub" id="af-cols-row" hidden>定长 · 固定展开列组　展开组数 <input class="dlg-in" id="af-cols" value="3"> 组</div><div class="opt-sub" id="af-msg" hidden></div></div></div><div class="dfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="af-add">添加字段</button></div>`);
   const nameEl=m.querySelector('#af-name');
+  const codeEl=m.querySelector('#af-code');
+  const vecEl=m.querySelector('#af-vec');
+  const flavorVar=m.querySelector('#af-flavor-var');
+  const flavorFix=m.querySelector('#af-flavor-fix');
+  const colsRow=m.querySelector('#af-cols-row');
+  const colsEl=m.querySelector('#af-cols');
+  const sepNote=m.querySelector('#af-sep-note');
+  const vecRow=m.querySelector('#af-vec-row');
+  const typeEl=m.querySelector('#af-type');
+  const roleEls=m.querySelectorAll('input[name="af-role"]');
+  const msgEl=m.querySelector('#af-msg');
+  function showMsg(text){msgEl.hidden=!text;msgEl.textContent=text||'';}
+  function setFlavor(fix){
+    flavorFix.checked=fix;
+    colsRow.hidden=!fix;
+    sepNote.hidden=fix;
+  }
+  function syncControls(){
+    const codeOn=codeEl.checked;
+    const role=currentRoleEl(m).value;
+    nameEl.disabled=codeOn;
+    typeEl.disabled=codeOn;
+    roleEls.forEach(r=>{if(r.value==='i18n'||r.value==='server')r.disabled=codeOn;});
+    vecEl.disabled=codeOn||role==='i18n'||role==='server'||isRefTypeText(typePickerSel);
+  }
+  function syncVec(){
+    const vecOn=vecEl.checked;
+    vecRow.hidden=!vecOn;
+    if(!vecOn){colsRow.hidden=true;sepNote.hidden=true;return;}
+    if(isRecordTypeText(typePickerSel)){
+      flavorVar.disabled=true;flavorFix.disabled=false;setFlavor(true);
+    }else{
+      flavorVar.disabled=false;flavorFix.disabled=true;flavorVar.checked=true;setFlavor(false);
+    }
+  }
+  function updateMsg(){
+    if(codeEl.checked){showMsg('Code 索引要求：非空 · 表内唯一 · 非 i18n string（程序引用键）');return;}
+    if(vecEl.checked&&isRefTypeText(typePickerSel)){showMsg('ref 字段不支持 vector');return;}
+    if(vecEl.checked&&isRecordTypeText(typePickerSel)){showMsg('vector<Record> 为定长（固定展开列组），需配置展开组数');return;}
+    if(isRefTypeText(typePickerSel)){showMsg('ref 外键值必须存在于引用表主键集（空值会被校验拦截）');return;}
+    showMsg('');
+  }
+  codeEl.addEventListener('change',()=>{
+    if(codeEl.checked){
+      roleEls.forEach(r=>r.checked=(r.value===''));
+      nameEl.value='Code';
+      typePickerSel='string';
+      m.querySelector('#af-type-txt').textContent='string';
+      vecEl.checked=false;
+    }else{
+      nameEl.value='';
+    }
+    syncControls();syncVec();updateMsg();
+  });
+  vecEl.addEventListener('change',()=>{syncControls();syncVec();updateMsg();});
+  flavorVar.addEventListener('change',()=>{if(!flavorVar.disabled){setFlavor(false);updateMsg();}});
+  flavorFix.addEventListener('change',()=>{if(!flavorFix.disabled){setFlavor(true);updateMsg();}});
+  roleEls.forEach(r=>r.addEventListener('change',()=>{syncControls();syncVec();updateMsg();}));
   focusInit(m); /* 表单初始焦点=字段名（dhead ✕ 是首个可聚焦元素，需校正） */
   nameEl.addEventListener('input',()=>nameEl.classList.remove('invalid'));
-  m.querySelector('#af-type').addEventListener('click',()=>openTypePicker(v=>{typePickerSel=v;m.querySelector('#af-type-txt').textContent=v;m.querySelector('#af-sep-row').classList.toggle('show',/^vector</.test(v));}));
+  m.querySelector('#af-type').addEventListener('click',()=>openTypePicker(v=>{
+    typePickerSel=v;
+    m.querySelector('#af-type-txt').textContent=v;
+    if(isRefTypeText(v)&&vecEl.checked){vecEl.checked=false;}
+    syncControls();syncVec();updateMsg();
+  },currentRoleEl(m).value));
   m.querySelector('#af-add').addEventListener('click',()=>{
     const v=nameEl.value.trim();
     if(!/^[A-Z][A-Za-z0-9_]*$/.test(v)||/_$/.test(v)){nameEl.classList.add('invalid');nameEl.focus();return;}
-    const role=m.querySelector('input[name="af-role"]:checked').value;
-    pushDraft({type:'add_field',owner:currentResource(),field:v,type:typePickerSel,role});
+    const role=currentRoleEl(m).value;
+    const vecOn=vecEl.checked;
+    if(role==='i18n'&&(vecOn||typePickerSel!=='string')){showMsg('I18N 角色仅支持 string 类型');return;}
+    if(v==='Code'){
+      if(hasCode){showMsg('该表已有代号字段 Code，一表至多一个');return;}
+      if(vecOn||typePickerSel!=='string'||role!==''){showMsg('代号字段 Code 必须为 string 且角色为「无」');return;}
+    }
+    const baseT=vecOn?`vector<${typePickerSel}>`:typePickerSel;
+    const cmd={type:'add_field',owner:currentResource(),field:v,fieldType:baseT,role};
+    if(vecOn&&isRecordTypeText(typePickerSel))cmd.cols=colsEl.value;
+    pushDraft(cmd);
     closeMask(m);
   });
 }
 /* ---- F2 类型选择器 ---- */
-function openTypePicker(cb){
-  const SCALARS=[['int32',''],['int64',''],['float',''],['double',''],['bool',''],['string','']];
-  const NAMED=[['ItemRarity','enum'],['ItemDropRange','record'],['ItemType.Id','ref'],['Buff','record']];
-  const m=openMask(`<div class="dhead"><span>选择类型</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><input class="search" data-focus placeholder="搜索类型…" autocomplete="off"><div class="dlg-list"></div></div><div class="dfoot"><button class="btn btn-ghost" data-close>取消</button></div>`);
+function openTypePicker(cb,role){
+  const i18nOnly=role==='i18n';
+  const SCALARS=i18nOnly?[['string','']]:[['int32',''],['int64',''],['float',''],['double',''],['bool',''],['string','']];
+  const NAMED=i18nOnly?[]:[['ItemRarity','enum'],['ItemDropRange','record'],['ItemType.Id','ref'],['Buff','record']];
+  const m=openMask(`<div class="dhead"><span>选择类型</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody">${i18nOnly?'<div class="dlg-hint" style="margin-bottom:6px">I18N 角色仅支持 string 类型</div>':''}<input class="search" data-focus placeholder="搜索类型…" autocomplete="off"><div class="dlg-list"></div></div><div class="dfoot"><button class="btn btn-ghost" data-close>取消</button></div>`);
   m.querySelector('.dialog').classList.add('dlg-sm');focusInit(m);
   const search=m.querySelector('.search'),list=m.querySelector('.dlg-list');
   function render(q){q=(q||'').toLowerCase();
     const scal=SCALARS.filter(x=>!q||x[0].includes(q));
     const nam=NAMED.filter(x=>!q||x[0].toLowerCase().includes(q));
-    list.innerHTML=(scal.length?`<div class="sec">标量</div>`+scal.map(s=>`<button class="dlg-row" data-v="${s[0]}"><span class="mono">${s[0]}</span></button>`).join(''):'')+(nam.length?`<div class="sec">具名</div>`+nam.map(n=>`<button class="dlg-row" data-v="${n[0]}"><span class="mono">${n[0]}</span><span class="kind ${n[1]==='enum'?'enum':n[1]==='ref'?'table':'record'}">${n[1]}</span></button>`).join(''):'')+`<div class="sec">容器</div><button class="dlg-row" data-v="vector&lt;T&gt;"><span class="mono">vector&lt;T&gt;</span><span class="tmeta">元素类型</span></button>`+(!scal.length&&!nam.length?'<div class="dlg-empty">无匹配</div>':'');
+    list.innerHTML=(scal.length?`<div class="sec">标量</div>`+scal.map(s=>`<button class="dlg-row" data-v="${s[0]}"><span class="mono">${s[0]}</span></button>`).join(''):'')+(nam.length?`<div class="sec">具名</div>`+nam.map(n=>`<button class="dlg-row" data-v="${n[0]}"><span class="mono">${n[0]}</span><span class="kind ${n[1]==='enum'?'enum':n[1]==='ref'?'table':'record'}">${n[1]}</span></button>`).join(''):'')+(!scal.length&&!nam.length?'<div class="dlg-empty">无匹配</div>':'');
   }
   render('');
   search.addEventListener('input',()=>render(search.value));
-  list.addEventListener('click',e=>{const b=e.target.closest('.dlg-row');if(b){cb(b.dataset.v==='vector&lt;T&gt;'?'vector<int32>':b.dataset.v);closeMask(m);}});
+  list.addEventListener('click',e=>{const b=e.target.closest('.dlg-row');if(b){cb(b.dataset.v);closeMask(m);}});
 }
 /* ---- P5 变更计划 ---- */
-function planBlocked(){return draft.cmds.slice(0,draft.cursor).some(c=>c.type==='delete_resource'&&(REVERSE[c.name]||[]).length>0);}
-function impactRows(){const rows=[];draft.cmds.slice(0,draft.cursor).forEach(c=>{if(c.type==='delete_resource'){rows.push(['Schema',c.name,'删除资源'],['Excel',c.name,'移除列'],['FBS/Binary',c.name,'rebuild'],['Accessor',c.name,'rebuild']);}else if(c.type==='delete_field'){rows.push(['Schema',c.owner,'删除字段 '+c.field],['Excel',c.owner,'移除列']);}else if(c.type==='add_field'){rows.push(['Schema',c.owner,'添加字段 '+c.field],['Excel',c.owner,'新增列']);}});return rows;}
-function openChangePlan(){
-  const blocked=planBlocked();const imps=impactRows();
-  const m=openMask(`<div class="dhead"><span>审查并应用</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><div class="risk-line"><span class="badge ${blocked?'badge-warn':'badge-ok'}"><span class="b-dot"></span>风险：${blocked?'数据破坏':'安全'}</span></div>${imps.length?`<div class="impacts">${imps.map(i=>`<div class="impact"><span class="art">${i[0]}</span><span class="mono" style="font:600 12px var(--font-mono);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i[1]}</span><span class="act">${i[2]}</span></div>`).join('')}</div>`:''}${blocked?`<div class="blocker-list"><div class="blocker">⛔ 无法删除：仍被引用 <span class="loc">ItemType.Id · ItemDropRange</span>（不提供级联删除）</div></div>`:''}<div class="dlg-hint">计划有效期 2 小时，过期需重新生成</div></div><div class="dfoot"><button class="btn btn-danger-ghost" id="cp-discard" ${draft.cmds.length?'':'disabled'}>放弃草稿</button><button class="btn btn-ghost" data-focus data-close>取消</button><button class="btn btn-primary" id="cp-apply" ${blocked?'disabled':''}>应用变更</button></div>`);
+function planBlocked(cmds){return cmds.some(c=>c.type==='delete_resource'&&(REVERSE[c.name]||[]).length>0);}
+function impactRows(cmds){const rows=[];cmds.forEach(c=>{if(c.type==='delete_resource'){rows.push(['Schema',c.name,'删除资源'],['Excel',c.name,'移除列'],['FBS/Binary',c.name,'rebuild'],['Accessor',c.name,'rebuild']);}else if(c.type==='delete_field'){rows.push(['Schema',c.owner,'删除字段 '+c.field],['Excel',c.owner,'移除列']);}else if(c.type==='add_field'){rows.push(['Schema',c.owner,'添加字段 '+c.field],['Excel',c.owner,'新增列']);}});return rows;}
+function openChangePlan(extraCmd){
+  const base=draft.cmds.slice(0,draft.cursor);
+  const cmds=extraCmd?base.concat([extraCmd]):base;
+  const preview=!!extraCmd;
+  const blocked=planBlocked(cmds);const imps=impactRows(cmds);
+  const refs=[...new Set(cmds.filter(c=>c.type==='delete_resource'&&(REVERSE[c.name]||[]).length>0).flatMap(c=>REVERSE[c.name]||[]))].join('、');
+  const m=openMask(`<div class="dhead"><span>审查并应用</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody">${preview?`<div class="blocker-list"><div class="blocker" style="background:var(--accent-soft);color:var(--ink);border-color:var(--border)">预览：删除 <span class="loc">${extraCmd.name}</span> 的影响（尚未加入草稿）——确认请在删除弹窗点击「删除」</div></div>`:''}<div class="risk-line"><span class="badge ${blocked?'badge-warn':'badge-ok'}"><span class="b-dot"></span>风险：${blocked?'数据破坏':'安全'}</span></div>${imps.length?`<div class="impacts">${imps.map(i=>`<div class="impact"><span class="art">${i[0]}</span><span class="mono" style="font:600 12px var(--font-mono);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i[1]}</span><span class="act">${i[2]}</span></div>`).join('')}</div>`:''}${blocked?`<div class="blocker-list"><div class="blocker">⛔ 无法删除：仍被引用 <span class="loc">${refs}</span>（不提供级联删除）</div></div>`:''}<div class="dlg-hint">计划有效期 2 小时，过期需重新生成</div></div><div class="dfoot"><button class="btn btn-danger-ghost" id="cp-discard" ${preview||!cmds.length?'disabled':''}>放弃草稿</button><button class="btn btn-ghost" data-focus data-close>取消</button><button class="btn btn-primary" id="cp-apply" ${blocked||preview?'disabled':''}>应用变更</button></div>`);
   m.querySelector('.dialog').classList.add('dlg-plan');focusInit(m);
-  m.querySelector('#cp-discard').addEventListener('click',()=>openDiscardDraft());
-  m.querySelector('#cp-apply').addEventListener('click',()=>{clearDraft();closeMask(m);showApplied();});
+  if(!preview){m.querySelector('#cp-discard').addEventListener('click',()=>openDiscardDraft());m.querySelector('#cp-apply').addEventListener('click',()=>{const names=[...new Set(cmds.map(c=>c.owner||c.name))].join('、');clearDraft();closeMask(m);showApplied(names);});}
 }
 /* ---- P6 放弃草稿 ---- */
 function openDiscardDraft(){
-  const n=draft.cmds.length;
+  const n=draft.cursor;
   const m=openMask(`<div class="dhead"><span>放弃草稿</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><p style="margin:0;color:var(--ink)">放弃 ${n} 条未应用变更？此操作不可撤销。</p></div><div class="dfoot"><button class="btn btn-ghost" data-focus data-close>取消</button><button class="btn btn-danger" id="dd-yes">放弃</button></div>`);
   m.querySelector('.dialog').classList.add('dlg-sm');focusInit(m);
   m.querySelector('#dd-yes').addEventListener('click',()=>{clearDraft();closeMask(m);const p5=document.querySelector('.mask');if(p5)closeMask(p5);});
 }
 /* ---- P1 选择表 ---- */
 const TABLE_DATA={Item:[['1001','Name','“A Sword of Valor”','','translated'],['1002','Name','“Shield of the First Knight”','','missing'],['1003','Desc','“A legendary blade forged in the great war, said to cut through darkness itself.”','','stale'],['1004','Name','“Crystal of Swiftness”','','translated']],Quest:[['2001','Title','“The First Step”','','missing'],['2002','Desc','“A journey begins.”','','translated']],UIConfig:[['3001','Label','“Back”','','stale'],['3002','Label','“Confirm”','','missing']]};
-function renderRows(){document.getElementById('tbody').innerHTML=rows.map((r,i)=>`<tr><td class="col-id id num">${r[0]}</td><td class="col-field fld">${r[1]}</td><td class="src-cell"><span class="src-wrap"><span class="src-txt">${r[2]}</span></span></td><td class="trans-cell"><div class="trans-box"><div class="trans-prev ${r[3]?'has':''}"><span class="ln">${r[3]||'点击填写译文…'}</span></div><button class="trans-expand" type="button" data-i="${i}" title="全屏编辑译文" aria-label="全屏编辑译文"><svg width="13" height="13"><use href="#i-expand"/></svg></button></div></td><td><span class="badge ${r[4]==='translated'?'badge-ok':r[4]==='stale'?'badge-warn':'badge-mute'}"><span class="b-dot"></span>${r[4]}</span></td><td><span class="rops"><button class="btn btn-accent btn-sm">保存</button></span></td></tr>`).join('');document.querySelectorAll('#tbody .src-txt').forEach(el=>el.dataset.moreReady='');initSrcMore();}
+function renderRows(){document.getElementById('tbody').innerHTML=rows.map((r,i)=>`<tr data-status="${r[4]}"><td class="col-id id num">${esc(r[0])}</td><td class="col-field fld">${esc(r[1])}</td><td class="src-cell"><span class="src-wrap"><span class="src-txt">${esc(r[2])}</span></span></td><td class="trans-cell"><div class="trans-box"><div class="trans-prev ${r[3]?'has':''}"><span class="ln">${esc(r[3]||'点击填写译文…')}</span></div><button class="trans-expand" type="button" data-i="${i}" title="全屏编辑译文" aria-label="全屏编辑译文"><svg width="13" height="13"><use href="#i-expand"/></svg></button></div></td><td><span class="badge ${r[4]==='translated'?'badge-ok':r[4]==='stale'?'badge-warn':'badge-mute'}"><span class="b-dot"></span>${STATUS_LABEL[r[4]]||r[4]}</span></td><td><span class="rops"><button class="btn btn-accent btn-sm">保存</button></span></td></tr>`).join('');applyViewState();initSrcMore();}
 function switchTable(name){document.getElementById('pick-table-val').textContent=name;rows.splice(0,rows.length,...(TABLE_DATA[name]||[]));renderRows();refreshLayout();}
 function openPickTable(){
   const TABLES=[['Item','8','2','translated'],['Quest','5','1','stale'],['UIConfig','5','1','missing']];
-  const m=openMask(`<div class="dhead"><span>选择翻译表</span><span class="sp"></span><span class="dlg-hint">含 i18n 字段</span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><input class="search" data-focus placeholder="搜索表名…" autocomplete="off"><div class="pick-filters">${[['all','全部'],['missing','有缺失'],['stale','有待审'],['translated','已译完']].map(([v,l])=>`<button class="pill active" data-f="${v}">${l}</button>`).join('')}</div><div class="dlg-count" id="pt-count"></div><div class="dlg-list"></div></div><div class="dfoot"><button class="btn btn-ghost" data-close>关闭</button></div>`);
+  const m=openMask(`<div class="dhead"><span>选择翻译表</span><span class="sp"></span><span class="dlg-hint">含 i18n 字段</span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><input class="search" data-focus placeholder="搜索表名…" autocomplete="off"><div class="pick-filters">${[['all','全部'],['missing','有缺失'],['stale','有待审'],['translated','已译完']].map(([v,l])=>`<button class="pill ${v==='all'?'active':''}" data-f="${v}">${l}</button>`).join('')}</div><div class="dlg-count" id="pt-count"></div><div class="dlg-list"></div></div><div class="dfoot"><button class="btn btn-ghost" data-close>关闭</button></div>`);
   const search=m.querySelector('.search'),filters=m.querySelector('.pick-filters'),list=m.querySelector('.dlg-list'),count=m.querySelector('#pt-count');
   focusInit(m);
   let f='all';
@@ -908,6 +1050,7 @@ function openQuickOpen(){
 }
 document.getElementById('quick-open').addEventListener('click',openQuickOpen);
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&String(e.key).toLowerCase()==='p'){e.preventDefault();openQuickOpen();}});
+document.addEventListener('keydown',e=>{if(!(e.metaKey||e.ctrlKey)||String(e.key).toLowerCase()!=='z')return;if(e.shiftKey){e.preventDefault();redoDraft();}else{e.preventDefault();undoDraft();}});
 /* ---- 接线：字段上移/下移/删除 + 类型链接 ---- */
 function syncRowArrows(){document.querySelectorAll('.fgrid tbody tr').forEach((tr,i)=>{const bs=tr.querySelectorAll('.rops .ibtn');if(bs.length>1){bs[0].disabled=i===0;bs[1].disabled=i===document.querySelectorAll('.fgrid tbody tr').length-1;}});}
 document.querySelector('.fgrid tbody').addEventListener('click',e=>{
@@ -923,7 +1066,7 @@ document.getElementById('del-res').addEventListener('click',openDeleteResource);
 /* ---- 接线：草稿栏 ---- */
 document.getElementById('draft-undo').addEventListener('click',undoDraft);
 document.getElementById('draft-redo').addEventListener('click',redoDraft);
-document.getElementById('draft-review').addEventListener('click',openChangePlan);
+document.getElementById('draft-review').addEventListener('click',()=>openChangePlan());
 /* ---- 接线：P1 / I1 / I2 / I3 ---- */
 document.getElementById('pick-table').addEventListener('click',openPickTable);
 document.getElementById('about').addEventListener('click',openAbout);
@@ -931,7 +1074,7 @@ document.getElementById('help').addEventListener('click',openHelp);
 /* I3 导出文档：外部跳转（静态原型无 URL，仅标记外部链接） */
 document.getElementById('doc').addEventListener('click',()=>{});
 /* ---- 接线：i18n 状态过滤 + 语言/日志/历史 pills ---- */
-document.querySelectorAll('#page-i18n .toolbar .pill').forEach(p=>p.addEventListener('click',()=>{const grp=p.parentElement;grp.querySelectorAll('.pill').forEach(x=>x.classList.toggle('active',x===p));if(p.hasAttribute('data-status')){const st=p.dataset.status;document.querySelectorAll('#tbody tr').forEach(tr=>{tr.hidden=st!=='all'&&tr.querySelector('.badge').textContent!==st;});}}));
+document.querySelectorAll('#page-i18n .toolbar .pill').forEach(p=>p.addEventListener('click',()=>{const grp=p.parentElement;grp.querySelectorAll('.pill').forEach(x=>x.classList.toggle('active',x===p));if(p.hasAttribute('data-status'))applyStatusFilter();}));
 document.querySelectorAll('#page-logs .toolbar .pill,#page-history .toolbar .pill').forEach(p=>p.addEventListener('click',()=>{p.parentElement.querySelectorAll('.pill').forEach(x=>x.classList.toggle('active',x===p));}));
 /* ---- 接线：i18n 行保存 / 资源搜索 / 日志搜索 / 前往导出 ---- */
 document.getElementById('tbody').addEventListener('click',e=>{const save=e.target.closest('.rops .btn-accent');if(!save)return;const tr=save.closest('tr');const inline=tr.querySelector('.trans-in');if(inline){const ex=tr.querySelector('.trans-expand');if(ex)commitInlineEdit(Number(ex.dataset.i),inline.value);}const orig=save.textContent;save.textContent='已保存';save.disabled=true;setTimeout(()=>{save.textContent=orig;save.disabled=false;},900);});
@@ -940,7 +1083,7 @@ document.getElementById('log-search').addEventListener('input',()=>{/* 日志页
 document.querySelectorAll('.cta').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.sitem').forEach(x=>x.classList.toggle('active',x.dataset.page==='export'));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-export'));}));
 /* ---- 接线：重新导出 mock 进度 ---- */
 let reRunning=false;
-document.getElementById('re-export').addEventListener('click',()=>{if(reRunning)return;reRunning=true;const cells=[...document.querySelectorAll('#page-export .prog-cell')];const bar=document.querySelector('#page-export .bar p');cells.forEach(c=>c.classList.remove('done','active'));let i=0;const timer=setInterval(()=>{if(i<cells.length){cells[i].classList.add('active');if(i>0)cells[i-1].classList.remove('active');bar.textContent='执行中… 阶段 '+(i+1)+'/'+cells.length;}i++;if(i>cells.length){clearInterval(timer);cells.forEach(c=>{c.classList.remove('active');c.classList.add('done');});bar.textContent='已完成 · 12s · 成功';const dd=document.querySelector('#page-export .ev-sum .rows div:nth-child(2) dd');if(dd)dd.textContent='成功 · 8 张表 · 12s';reRunning=false;}},420);});
+document.getElementById('re-export').addEventListener('click',()=>{if(reRunning)return;reRunning=true;const cells=[...document.querySelectorAll('#page-export .prog-cell')];const bar=document.querySelector('#page-export .bar p');cells.forEach(c=>c.classList.remove('done','active'));let i=0;const timer=setInterval(()=>{if(i<cells.length){cells[i].classList.add('active');if(i>0)cells[i-1].classList.remove('active');bar.textContent='执行中… 阶段 '+(i+1)+'/'+cells.length;}i++;if(i>cells.length){clearInterval(timer);cells.forEach(c=>{c.classList.remove('active');c.classList.add('done');});bar.textContent='已完成 · 12s · 成功';const dd=document.querySelector('#page-export .ev-sum .rows div:nth-child(2) dd');if(dd)dd.textContent='成功 · 8 张表 · 12s';const hb=document.querySelector('#page-export .mhead .badge');if(hb){hb.classList.remove('badge-warn');hb.classList.add('badge-ok');hb.innerHTML='<span class="b-dot"></span>8 张表已导出 · 成功';}const onum=document.querySelector('#page-export .oh-num');if(onum)onum.innerHTML='0 <span class="unit">张表</span>';const osub=document.querySelector('#page-export .oh-sub');if(osub)osub.innerHTML='<b>全部产物</b> 与模板一致 · <b>重新导出</b> 将重建全部产物';reRunning=false;}},420);});
 syncRowArrows();
 
 /* ---- 初始状态 ---- */
@@ -970,6 +1113,7 @@ addEventListener('resize',()=>{if(resizeRaf)return;resizeRaf=requestAnimationFra
   syncInert();
   document.querySelectorAll('.tablewrap,.fieldtable').forEach(markOverflow);
   fitSticky();
+  initSrcMore();
   lastW=w;
 });});
 
@@ -977,7 +1121,7 @@ addEventListener('resize',()=>{if(resizeRaf)return;resizeRaf=requestAnimationFra
 function init(){setSideDrawer(false);refreshLayout();}
 init();
 /* Escape 统一：按浮层栈关闭最上层（dialog > 侧栏抽屉 > 面板抽屉 > 列菜单），逐层退；嵌套弹窗先关最上层（文档序最后一个 mask） */
-document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const mks=document.querySelectorAll('.mask');if(mks.length){const top=mks[mks.length-1];const qo=top.querySelector('#qo-search');if(qo&&qo.value){qo.value='';qo.dispatchEvent(new Event('input'));return;}closeMask(top);return;}if(innerWidth<740&&sidebar.classList.contains('open')){setSideDrawer(false);return;}if(innerWidth<900&&(wb.getAttribute('data-open-res')==='true'||wb.getAttribute('data-open-insp')==='true')){setPane('res',false);setPane('insp',false);return;}if(colvis.classList.contains('open'))colvis.classList.remove('open');});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const mks=[...document.querySelectorAll('.mask')].filter(x=>!x.classList.contains('closing'));if(mks.length){const top=mks[mks.length-1];const qo=top.querySelector('#qo-search');if(qo&&qo.value){qo.value='';qo.dispatchEvent(new Event('input'));return;}closeMask(top);return;}if(innerWidth<740&&sidebar.classList.contains('open')){setSideDrawer(false);return;}if(innerWidth<900&&(wb.getAttribute('data-open-res')==='true'||wb.getAttribute('data-open-insp')==='true')){setPane('res',false);setPane('insp',false);return;}if(colvis.classList.contains('open'))colvis.classList.remove('open');});
 </script>
 </body>
 </html>

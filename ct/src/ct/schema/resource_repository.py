@@ -136,17 +136,32 @@ def _resolve_fields(
     *,
     owner_id: str,
 ) -> list[FieldDef]:
-    return [
-        replace_field_type(
-            field,
-            _resolve_type(
-                field.type_expr,
-                by_name,
-                owner_path=f"{owner_id}/{field.name}",
-            ),
+    resolved: list[FieldDef] = []
+    for field in fields:
+        resolved_type = _resolve_type(
+            field.type_expr,
+            by_name,
+            owner_path=f"{owner_id}/{field.name}",
         )
-        for field in fields
-    ]
+        is_record_vector = (
+            isinstance(resolved_type, VectorType)
+            and isinstance(resolved_type.element, NamedType)
+            and resolved_type.element.expected_kind == "record"
+        )
+        if field.separator is not None and is_record_vector:
+            raise ValueError(
+                f"{owner_id}/{field.name}: separator 仅对单格 token 式 vector"
+                f"（vector<Scalar>/vector<Enum>）有意义，vector<Record> 按 "
+                f"excel_columns 展开为列组，不能声明 separator"
+            )
+        if field.excel_columns is not None:
+            if not is_record_vector:
+                raise ValueError(
+                    f"{owner_id}/{field.name}: excel_columns（展开组数）仅适用于"
+                    f" vector<Record>（定长展开列组），当前类型 {field.type_text}"
+                )
+        resolved.append(replace_field_type(field, resolved_type))
+    return resolved
 
 
 class YamlResourceRepository:

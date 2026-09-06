@@ -67,8 +67,21 @@ class FieldDef(BaseModel):
             isinstance(self.type_expr, ScalarType) and self.type_expr.name == "string"
         ):
             raise ValueError(f"字段 {self.name}: 只有 string 类型可以标记 i18n")
-        if self.separator is not None and not self.separator:
-            raise ValueError(f"字段 {self.name}: separator 不能为空")
+        if self.separator is not None:
+            if not self.separator:
+                raise ValueError(f"字段 {self.name}: separator 不能为空")
+            if not isinstance(self.type_expr, VectorType):
+                raise ValueError(
+                    f"字段 {self.name}: separator 仅允许配 vector<Scalar>/vector<Enum>"
+                    f"（当前类型 {self.type_text}）"
+                )
+        if self.excel_columns is not None and not isinstance(
+            self.type_expr, VectorType
+        ):
+            raise ValueError(
+                f"字段 {self.name}: excel_columns（展开组数）仅适用于 "
+                f"vector<Record>（定长展开列组），当前类型 {self.type_text}"
+            )
         return self
 
     @property
@@ -115,6 +128,11 @@ class TableResource(BaseModel):
             raise ValueError(
                 f"表 {self.table}: 主键字段 '{self.primary}' 类型必须为 "
                 f"int32 或 int64（当前: {primary.type_text}）"
+            )
+        if primary.server_only:
+            raise ValueError(
+                f"表 {self.table}: 主键字段 '{self.primary}' 不能标记 server_only"
+                f"（主键是客户端与次语言 bundle 的主键，server_only 字段不进入客户端 Binary）"
             )
         return self
 
