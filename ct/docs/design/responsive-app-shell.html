@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ct 配表工具 · 响应式适配高保真原型</title>
+<style>
+/* ==========================================================================
+   ct 配表工具 · 高保真原型（DeepSeek 式浅色侧栏 + 汉堡抽屉，无底部 tab）
+   --------------------------------------------------------------------------
+   壳层：常驻侧栏（图标+标签 + 底部次级链接 + 工作区/用户）→ 窄屏汉堡抽屉。
+   内容层：编辑器锚点 + 资源/属性「可折叠列 → 侧滑抽屉」+ 单滚动区 sticky 宽表。
+   所有展开/收起有动画，prefers-reduced-motion 全局关闭。
+   ========================================================================== */
+:root{
+  --bg:#F6F7F5; --surface:#FFFFFF; --surface-2:#F2F4F1;
+  --border:#E4E8E0; --border-strong:#CBD2C5;
+  --ink:#1B241F; --ink-2:#5A645E; --ink-3:#626C66;
+  --brand:#1E4635; --brand-hover:#17382A; --accent:#2F7A56; --accent-hover:#276949;
+  --accent-soft:#DCEFE3; --accent-softer:#EDF7F0;
+  --gold-soft:#F7EDCB;
+  --danger:#A83B3B; --danger-soft:#F7E7E7;
+  --warn-soft:#F5ECDA;
+  --r-sm:6px; --r-drawer:12px;
+  --shadow-sm:0 1px 2px rgba(20,30,25,.05),0 0 0 1px rgba(20,30,25,.03);
+  --shadow-panel:0 1px 2px rgba(20,30,25,.04),0 12px 32px rgba(20,30,25,.06);
+  --shadow-drawer:-16px 0 48px rgba(20,30,25,.16);
+  --motion:200ms cubic-bezier(.4,0,.2,1);
+  --motion-pane:300ms cubic-bezier(.2,.8,.2,1);
+  --topbar-h:52px; --sidebar-w:236px; --left-w:252px; --right-w:300px; --act-w:44px;
+  --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+  --font-mono:ui-monospace,"SF Mono",SFMono-Regular,"Cascadia Mono","JetBrains Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 var(--font-ui);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button{font:inherit;cursor:pointer;color:inherit}
+input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.num{font-variant-numeric:tabular-nums}
+
+/* ================= 应用框架 ================= */
+.app{display:grid;grid-template-rows:minmax(0,1fr);height:100vh;height:100dvh;overflow:hidden}
+/* 顶栏：仅移动端显示（桌面无顶栏；工作区上下文仅移动端顶栏可见，桌面/平板不展示） */
+.topbar{display:none;min-width:0;align-items:center;gap:4px;padding:0 14px;background:var(--surface);border-bottom:1px solid var(--border)}
+.hamb{display:none;width:36px;height:36px;place-items:center;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--ink-2)}
+.hamb:hover{background:var(--surface-2);color:var(--ink)}
+.hamb svg{width:20px;height:20px}
+.brand{display:flex;align-items:center;gap:10px;padding:0 6px}
+.brand .logo{width:30px;height:30px;display:grid;place-items:center;border-radius:8px;background:var(--brand);color:#fff;font:800 12px/1 var(--font-mono)}
+.brand .nm{font-weight:680;font-size:14px;letter-spacing:-.01em}
+.ws{min-width:0;display:flex;align-items:center;gap:9px;padding:0 14px;white-space:nowrap;overflow:hidden}
+.ws .path{min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--ink-3);font:11.5px/1.3 var(--font-mono)}
+.ws .name{color:var(--ink-2);font-weight:600}
+.ws .sep{color:var(--ink-3)}
+
+/* 壳：侧栏 + 主区 */
+.shell{min-width:0;min-height:0;display:grid;grid-template-columns:var(--sidebar-w) minmax(0,1fr);overflow:hidden}
+/* 侧栏（浅色常驻） */
+.sidebar{min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--surface);border-right:1px solid var(--border)}
+.side-head{min-height:58px;display:flex;align-items:center;gap:10px;padding:0 16px}
+.side-head .logo{width:30px;height:30px;display:grid;place-items:center;border-radius:8px;background:var(--brand);color:#fff;font:800 12px/1 var(--font-mono)}
+.side-head .t{font-weight:680;font-size:13.5px}
+.side-head .back{display:none}
+.snav{flex:1;overflow:auto;padding:12px 12px 8px}
+.snav .sec{font-size:11.5px;font-weight:700;color:var(--ink-3);letter-spacing:.09em;text-transform:uppercase;padding:6px 8px 5px}
+.sitem{display:flex;align-items:center;gap:11px;width:100%;padding:9px 11px;border:0;border-radius:8px;background:transparent;color:var(--ink-2);font-size:13px;font-weight:560;text-align:left;cursor:pointer;transition:background var(--motion),color var(--motion)}
+.sitem:hover{background:var(--surface-2);color:var(--ink)}
+.sitem.active{background:var(--accent-softer);color:var(--accent);font-weight:650}
+.sitem svg{width:18px;height:18px;color:var(--ink-3);flex:0 0 auto}
+.sitem.active svg{color:var(--accent)}
+.sfoot{margin-top:auto;border-top:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:4px}
+.ssec{display:flex;align-items:center;gap:10px;padding:7px 8px;border:0;border-radius:6px;background:transparent;color:var(--ink-3);font-size:12.5px;text-align:left;cursor:pointer}
+.ssec:hover{background:var(--surface-2);color:var(--ink-2)}
+.ssec svg{width:16px;height:16px;color:var(--ink-3)}
+/* ================= 导出页概览（工作区 + 同步提示 + 摘要卡） ================= */
+.ev{display:flex;flex-direction:column;gap:14px;padding:18px}
+/* 主视觉：待导出 + 重新导出 */
+.ohero{display:flex;align-items:center;gap:20px;padding:20px 22px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(0deg,var(--accent-softer),#fff 62%);box-shadow:var(--shadow-panel);flex-wrap:wrap}
+.oh-main{min-width:0;flex:1 1 240px}
+.oh-lab{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.05em}
+.oh-num{font-size:44px;font-weight:720;letter-spacing:-.02em;color:var(--accent);line-height:1;margin-top:2px}
+.oh-num .unit{font-size:14px;font-weight:600;color:var(--ink-3);margin-left:6px}
+.oh-sub{font-size:12.5px;color:var(--ink-2);margin-top:6px}
+.oh-sub b{font-weight:680;color:var(--ink)}
+.ohero .btn{padding:11px 22px;font-size:13.5px;border-radius:10px;box-shadow:0 2px 8px rgba(30,70,53,.26);flex:0 0 auto}
+/* 次级信息行 */
+.ometa{display:flex;flex-wrap:wrap;gap:10px 26px;padding:2px 2px;font-size:12.5px;color:var(--ink-2)}
+.ometa .om{display:inline-flex;align-items:baseline;gap:7px}
+.ometa .k{color:var(--ink-3)}
+.ometa .v{font-weight:600;color:var(--ink)}
+.ometa .v.mono{font:12px var(--font-mono);font-weight:400;color:var(--ink-2)}
+.odir{display:flex;align-items:baseline;gap:8px;padding:0 2px;font-size:12.5px;color:var(--ink-2)}
+.odir .k{color:var(--ink-3);flex:0 0 auto}
+.odir .v.mono{font:12px var(--font-mono);font-weight:400;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ev-progress{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:12px;background:var(--surface);box-shadow:var(--shadow-sm);overflow:hidden}
+.ev-progress .bar{min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.ev-progress .bar h3{margin:0;font-size:12px;font-weight:700}
+.ev-progress .bar p{margin:2px 0 0;color:var(--ink-3);font-size:11.5px}
+/* 进度卡底部状态区：待处理/执行结果/产物目录（并入执行进度卡） */
+.ev-sum{border-top:1px solid var(--border);padding:10px 16px;background:#fbfcfa}
+.ev-sum .rows>div{display:grid;grid-template-columns:82px minmax(0,1fr);gap:10px;padding:7px 0;border-top:1px solid var(--border)}
+.ev-sum .rows>div:first-child{border-top:0}
+.ev-sum dt{color:var(--ink-3);font-size:11.5px}
+.ev-sum dd{min-width:0;margin:0;font-size:12.5px;font-weight:600}
+.ev-sum dd.code{overflow-wrap:anywhere;color:var(--ink-2);font:11px/1.55 var(--font-mono);font-weight:400}
+.prog-cells{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;padding:16px;flex:1;align-content:start}
+.prog-cell{display:inline-flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--ink-3);font-size:12px}
+.prog-cell .n{width:20px;height:20px;display:grid;place-items:center;border-radius:6px;background:var(--surface-2);color:var(--ink-2);font:700 10px var(--font-mono)}
+.prog-cell.done{background:var(--accent-softer);border-color:transparent;color:#1f6a4c}
+.prog-cell.done .n{background:var(--accent);color:#fff}
+.prog-cell.active{border-color:var(--accent);color:var(--ink)}
+.prog-cell.active .n{background:var(--accent);color:#fff}
+@media (max-width:899px){.ev-sum .rows>div{grid-template-columns:64px minmax(0,1fr)}}
+
+.main{min-width:0;min-height:0;overflow:hidden}
+.page{display:none;height:100%;min-width:0;overflow-x:hidden;overflow-y:auto}
+.page.active{display:block;animation:pageIn var(--motion)}
+@keyframes pageIn{from{opacity:0}to{opacity:1}}
+/* 内容页改 flex 列：mhead/toolbar 固定，主区域弹性占满剩余高度（替代 calc 经验值，适配任意视口） */
+#page-schema.active,#page-i18n.active{display:flex;flex-direction:column;overflow:hidden}
+#page-schema .mhead,#page-i18n .mhead{flex:0 0 auto}
+#page-schema .wb{flex:1 1 auto;min-height:0;height:auto}
+#page-i18n .toolbar{flex:0 0 auto}
+#page-i18n .scroll-holder{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+#page-i18n .tablewrap{flex:1 1 auto;min-height:0;max-height:none}
+
+/* ================= 模块表头 ================= */
+.mhead{min-height:82px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 24px;border-bottom:1px solid var(--border);background:var(--surface)}
+.mhead .ttl{min-width:0}
+.mhead h1{margin:0;font-size:16px;font-weight:680;letter-spacing:-.01em}
+.mhead p{margin:2px 0 0;color:var(--ink-3);font-size:12px}
+.mhead .acts{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+.mhead .acts .btn{flex:0 0 auto;white-space:nowrap} /* 按钮文字不折行 */
+
+/* ================= 按钮/输入 ================= */
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;border-radius:var(--r-sm);font-weight:600;padding:7px 13px;font-size:12.5px;background:var(--surface);color:var(--ink);transition:background var(--motion),border-color var(--motion),transform 60ms ease,box-shadow var(--motion)}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--brand);color:#fff;box-shadow:0 1px 2px rgba(20,30,25,.2)}
+.btn-primary:hover{background:var(--brand-hover)}
+.btn-ghost{border-color:var(--border-strong);background:var(--surface)}
+.btn-ghost:hover{background:var(--surface-2)}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-accent:hover{background:var(--accent-hover)}
+.btn-danger-ghost{background:var(--surface);border-color:#E4C3C3;color:var(--danger)}
+.btn-danger-ghost:hover{background:var(--danger-soft)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.ibtn{display:inline-grid;place-items:center;width:30px;height:30px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--ink-3);transition:background var(--motion),color var(--motion)}
+.ibtn:hover{background:var(--surface-2);color:var(--ink)}
+.ibtn svg{width:15px;height:15px}
+.ibtn.danger:hover{background:var(--danger-soft);color:var(--danger)}
+.pill{appearance:none;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--ink-2);padding:4px 12px;font-size:12px;transition:background var(--motion),color var(--motion),border-color var(--motion)}
+.pill:hover{background:var(--surface-2)}
+.pill.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.search{width:100%;padding:7px 11px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--surface);font-size:12.5px;transition:border-color var(--motion),box-shadow var(--motion)}
+.search:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+/* ================= 徽标 ================= */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:650;border-radius:999px;padding:3px 10px;white-space:nowrap;letter-spacing:.01em}
+.badge .b-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.7}
+.badge-ok{background:var(--accent-soft);color:#1f6a4c}
+.badge-warn{background:var(--warn-soft);color:#9a6a1a}
+.badge-mute{background:var(--surface-2);color:var(--ink-2)}
+.badge-gold{background:var(--gold-soft);color:#7d5c0a}
+
+/* ================= Schema 工作台 ================= */
+.wb{--lt:var(--left-w);--rt:var(--right-w);min-width:0;min-height:0;display:grid;grid-template-columns:var(--lt) minmax(0,1fr) var(--rt) var(--act-w);overflow:hidden;transition:grid-template-columns var(--motion-pane)}
+.wb[data-open-res="false"]{--lt:0px}
+.wb[data-open-insp="false"]{--rt:0px}
+.pane{min-width:0;min-height:0;overflow:hidden;background:var(--surface)}
+.pane>.inner{width:var(--left-w);height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+.pane.insp>.inner{width:var(--right-w);margin-left:auto}
+/* 边框仅在面板展开时显示；折叠时宽度归零（仅透明仍占 1px，会使编辑器偏移、头部横线接不到侧栏/act 竖线） */
+.pane.res{border-right:1px solid var(--border)}
+.pane.insp{border-left:1px solid var(--border)}
+.wb[data-open-res="false"] .pane.res{border-right-width:0}
+.wb[data-open-insp="false"] .pane.insp{border-left-width:0}
+.phead{min-height:61px;display:flex;align-items:center;gap:8px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.phead>div{min-width:0;flex:1}
+.phead strong{display:block;font-size:12px;line-height:1.3}
+.phead span{display:block;overflow:hidden;color:var(--ink-3);font:11px/1.3 var(--font-mono);text-overflow:ellipsis;white-space:nowrap}
+.res-top{min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);gap:8px;padding:10px 8px 0}
+.res-top .search{margin:0 2px}
+.tree{min-height:0;overflow:auto;margin:0;padding:0 6px 12px;overscroll-behavior:contain}
+.group{margin:1px 0}
+.group-toggle{width:100%;height:32px;display:flex;align-items:center;justify-content:space-between;padding:0 6px;border:0;border-radius:6px;background:transparent;color:var(--ink-2);font:700 10.5px/1 var(--font-ui);letter-spacing:.09em;text-transform:uppercase}
+.group-toggle:hover{background:var(--surface-2);color:var(--ink)}
+.group-toggle .lab{display:flex;align-items:center;gap:6px}
+.gchev{display:inline-block;width:12px;color:var(--ink-3);transition:transform var(--motion);transform:rotate(90deg)}
+.group[data-open="false"] .gchev{transform:none}
+.gbody{display:grid;grid-template-rows:1fr;transition:grid-template-rows var(--motion-pane)}
+.group[data-open="false"] .gbody{grid-template-rows:0fr}
+.gbody>.rows{overflow:hidden;min-height:0}
+.gcount{min-width:18px;padding:3px 6px;border-radius:999px;background:#e5eae4;color:var(--ink-2);text-align:center;font-size:11px}
+.rrow{position:relative;width:100%;min-height:34px;display:flex;align-items:center;gap:8px;padding:6px 7px 6px 9px;border:0;border-radius:7px;background:transparent;color:var(--ink);font-size:12.5px;text-align:left;cursor:pointer;transition:background var(--motion)}
+.rrow:hover{background:var(--surface-2)}
+.rrow.active{background:var(--accent-softer)}
+.rrow.active::before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:3px;border-radius:2px;background:var(--accent)}
+.kind{font-size:11px;font-weight:700;border-radius:5px;padding:2px 6px;letter-spacing:.02em}
+.kind.table{background:var(--accent-soft);color:#1f6a4c}
+.kind.record{background:#E4ECF5;color:#3a5f86}
+.kind.enum{background:#F3E9D4;color:#7d5c0a}
+.rrow .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rrow .meta{margin-left:auto;font-size:11px;color:var(--ink-3)}
+.pfoot{min-height:32px;padding:7px 12px;border-top:1px solid var(--border);color:var(--ink-3);font-size:11.5px}
+
+.editor{min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);background:var(--surface)}
+.ec{min-width:0;border-bottom:1px solid var(--border);background:var(--surface)}
+.rhead{min-height:61px;display:flex;align-items:center;gap:12px;padding:8px 18px;border-bottom:1px solid var(--border)}
+.rhead .ibtn{flex-shrink:0}
+/* IDE 式激活态：资源面板展开时图标高亮 */
+.wb[data-open-res="true"] #res-toggle{background:var(--accent-softer);color:var(--accent);border-color:var(--border-strong)}
+.rtitle{display:flex;align-items:baseline;gap:8px;min-width:0;flex:1}
+.eyebrow{flex:0 0 auto;color:var(--ink-3);font:700 11px/1.2 var(--font-ui);letter-spacing:.13em;text-transform:uppercase}
+.rtitle h1{margin:0;overflow:hidden;font:720 18px/1.2 var(--font-mono);text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.02em}
+.rtitle .sub{margin:0 0 0 auto;overflow:hidden;color:var(--ink-2);font:11.5px/1.4 var(--font-mono);text-overflow:ellipsis;white-space:nowrap}
+.rtabs{min-height:42px;display:flex;align-items:end;gap:4px;padding:0 14px}
+.rtab{position:relative;min-height:42px;padding:0 10px;border:0;background:transparent;color:var(--ink-2);font:650 12px/1 var(--font-ui)}
+.rtab:hover{color:var(--ink)}
+.rtab.active{color:var(--accent)}
+.rtab.active::after{content:"";position:absolute;left:8px;right:8px;bottom:-1px;height:2px;border-radius:2px;background:var(--accent)}
+.rtab .n{margin-left:4px;color:var(--ink-3);font:11px var(--font-mono)}
+.eBody{min-width:0;min-height:0;overflow:auto;padding:16px 18px 30px}
+.tabpane{display:none}
+.tabpane.active{display:block;animation:tabIn var(--motion)}
+@keyframes tabIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.fieldtable{min-width:0;position:relative;overflow:auto;border:1px solid var(--border);border-radius:9px;background:var(--surface);box-shadow:var(--shadow-sm)}
+/* 可横向滚动右缘光晕：position:relative 包裹层（不滚动），光晕绝对定位贴右缘，不随内容滚动 */
+.scroll-holder{position:relative;min-width:0}
+.scroll-glow{position:absolute;top:0;bottom:0;right:0;width:26px;pointer-events:none;background:linear-gradient(to right,rgba(255,255,255,0),rgba(255,255,255,.9));z-index:5;opacity:0;transition:opacity var(--motion)}
+.scroll-holder.has-overflow .scroll-glow{opacity:1}
+/* 悬停表格时隐藏光晕，避免把 hover 高亮的右缘洗白 */
+.scroll-holder:hover .scroll-glow{opacity:0}
+table.fgrid{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+table.fgrid th{position:sticky;top:0;z-index:2;text-align:left;font-size:12px;font-weight:650;color:var(--ink-2);background:var(--surface-2);padding:11px 14px;border-bottom:1px solid var(--border);white-space:nowrap;letter-spacing:.01em}
+table.fgrid td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.fgrid tbody tr:last-child td{border-bottom:0}
+table.fgrid tbody tr:hover{background:var(--accent-softer)}
+/* 固定布局：数据列平分剩余空间，操作列固定 96px；窄屏整表 800 横向滚动 */
+@media (min-width:900px){
+  table.fgrid{min-width:800px}
+  table.fgrid th:nth-child(5),table.fgrid td:nth-child(5){width:96px;white-space:nowrap}
+  table.fgrid td:nth-child(5) .rops{width:100%;justify-content:flex-end} /* 操作图标贴列右缘，避免列内留白 */
+}
+.fname{font:600 12.5px var(--font-mono)}
+.type{display:inline-flex;align-items:center;gap:5px;font:600 12px var(--font-mono);color:var(--ink)}
+.tlink{padding:1px 2px;border:0;border-bottom:1px solid color-mix(in srgb,var(--accent) 45%,transparent);background:transparent;color:var(--accent);font:600 12px var(--font-mono)}
+.tlink:hover{border-bottom-color:var(--accent);background:var(--accent-soft)}
+.tmeta{color:var(--ink-3);font:11.5px var(--font-mono)}
+.roles{display:flex;gap:5px;flex-wrap:wrap}
+.rops{white-space:nowrap;text-align:left;opacity:.7;transition:opacity var(--motion);display:inline-flex;align-items:center;gap:3px}
+table.fgrid tbody tr:hover .rops,table.data tbody tr:hover .rops{opacity:1}
+/* 触屏设备无 hover，操作列常显 */
+@media (hover:none){.rops{opacity:1}}
+.rops .ibtn{width:28px;height:28px;border-radius:7px}
+.addrow{width:100%;min-height:38px;display:flex;align-items:center;justify-content:center;gap:6px;border:0;border-top:1px solid var(--border);background:#fbfcfa;color:var(--accent);font-weight:650}
+.addrow:hover{background:var(--accent-softer)}
+/* 窄屏：字段表改卡片，避免宽列被裁剪 */
+@media (max-width:899px){
+  .fieldtable{overflow:visible;border:0;border-radius:0;box-shadow:none;background:transparent}
+  table.fgrid thead{display:none}
+  table.fgrid tbody{display:flex;flex-direction:column;gap:10px}
+  table.fgrid tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name ops" "type ops" "excel roles";gap:5px 12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:#fff;box-shadow:var(--shadow-sm)}
+  table.fgrid tbody tr:hover{background:#fff}
+  table.fgrid td{width:auto!important;padding:0;border:0;background:transparent}
+  table.fgrid td:first-child{grid-area:name;font-weight:650}
+  table.fgrid td:nth-child(2){grid-area:type}
+  table.fgrid td:nth-child(3){grid-area:excel;color:var(--ink-3)}
+  table.fgrid td:nth-child(4){grid-area:roles}
+  table.fgrid td:nth-child(5){grid-area:ops;justify-self:end}
+  table.fgrid td:nth-child(5) .rops{opacity:1}
+  .addrow{margin-top:8px;border:1px dashed var(--border-strong);border-radius:9px}
+}
+
+.inbody{min-height:0;overflow:auto;padding:14px}
+.field{margin-bottom:13px}
+.field .fl{display:block;font-size:11.5px;font-weight:700;color:var(--ink-2);margin-bottom:5px;letter-spacing:.01em}
+.field .val{min-height:34px;padding:7px 9px;border:1px solid var(--border);border-radius:6px;background:#fafbf9;color:var(--ink);font:12px var(--font-mono)}
+
+.act{min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 5px;border-left:1px solid var(--border);background:#EEF1EC}
+.side-tab{position:relative;width:32px;min-height:72px;display:grid;place-items:center;padding:8px 0;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink-2);font:700 10.5px/1.2 var(--font-ui);letter-spacing:.12em;writing-mode:vertical-rl}
+.side-tab:hover{border-color:var(--border-strong);background:#fff;color:var(--ink)}
+.side-tab[aria-pressed="true"]{border-color:var(--border);background:#fff;color:var(--accent)}
+
+.backdrop{position:fixed;inset:0;z-index:40;background:rgba(16,28,22,.4);backdrop-filter:blur(1px);opacity:0;pointer-events:none;transition:opacity var(--motion-pane)}
+.backdrop.show{opacity:1;pointer-events:auto}
+.res-pane,.insp-pane{position:relative}
+
+/* ---- 断点①：< 900 —— 内容层面板改抽屉 ---- */
+@media (max-width:899px){
+  /* 窄屏工具条换行后，孤立竖分隔线无意义，隐藏 */
+  .toolbar .div{display:none}
+  .wb{display:block}
+  .wb .editor{width:100%;height:100%}
+  .wb .res-pane,.wb .insp-pane{position:fixed;top:var(--topbar-h);bottom:0;z-index:50;width:min(86vw,340px);height:auto;background:var(--surface);box-shadow:var(--shadow-drawer);transition:transform var(--motion-pane);will-change:transform}
+  .wb .res-pane{left:0;transform:translateX(-104%);border-radius:0 var(--r-drawer) var(--r-drawer) 0}
+  .wb .insp-pane{right:0;transform:translateX(104%);border-radius:var(--r-drawer) 0 0 var(--r-drawer)}
+  .wb[data-open-res="true"] .res-pane{transform:translateX(0)}
+  .wb[data-open-insp="true"] .insp-pane{transform:translateX(0)}
+  .wb .pane>.inner{width:100%;margin-left:0}
+  .wb .act{display:none}
+  .mhead .m-only{display:inline-flex}
+  .d-only{display:none}
+}
+/* ---- 断点②：>= 900 ---- */
+@media (min-width:900px){
+  .mhead .m-only{display:none}
+  .d-only{display:inline-flex}
+  .fieldtable .addrow{min-width:800px} /* 与滚动表格同宽（table.fgrid min-width），右端对齐 */
+}
+/* ---- 断点③：< 740 —— 侧栏改汉堡抽屉（不做底部 tab） ---- */
+@media (max-width:739px){
+  .app{grid-template-rows:var(--topbar-h) minmax(0,1fr)}
+  .hamb{display:grid}
+  .topbar{display:grid;grid-template-columns:auto minmax(0,1fr) auto}
+  .brand .nm{display:none}
+  .ws .path,.ws .sep{display:none}
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .sidebar{position:fixed;top:0;bottom:0;left:0;z-index:70;width:min(84vw,300px);transform:translateX(-104%);transition:transform var(--motion-pane);box-shadow:var(--shadow-drawer);border-radius:0 var(--r-drawer) var(--r-drawer) 0}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar .side-head .back{display:grid}
+  .wb .res-pane,.wb .insp-pane{bottom:0}
+}
+/* ---- 断点④：740–899 —— 无顶栏，抽屉贴顶（否则上方露出 52px 内容条） ---- */
+@media (min-width:740px) and (max-width:899px){
+  .wb .res-pane,.wb .insp-pane{top:0}
+}
+
+/* ================= i18n 宽表 ================= */
+/* 统一工具条：groups + 细分隔线 + 左侧操作/标签 + 右侧操作 */
+.toolbar{display:flex;align-items:center;gap:8px;min-width:0;min-height:60px;flex-wrap:wrap;padding:15px 22px;border-bottom:1px solid var(--border);background:var(--surface)}
+.toolbar .grp{display:flex;align-items:center;gap:6px}
+.toolbar .div{width:1px;height:20px;background:var(--border);margin:0 6px;flex:0 0 auto}
+.toolbar .lbl{font-size:12px;font-weight:650;color:var(--ink-3);letter-spacing:.02em}
+.toolbar .val{font-weight:650;font-size:13px;color:var(--ink)}
+.toolbar .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.toolbar .hint{font-size:12px;color:var(--ink-3)}
+.toolbar .search{width:min(220px,30vw);padding:6px 10px;font-size:12px}
+.toolbar .btn-sm,.toolbar .pill,.toolbar .search{height:30px;box-sizing:border-box}
+.toolbar .btn-sm,.toolbar .pill{display:inline-flex;align-items:center}
+.tablewrap{position:relative;overflow:auto;border:1px solid var(--border);border-radius:9px;margin:16px 18px;max-height:calc(100vh - 250px);max-height:calc(100dvh - 250px);background:var(--surface);box-shadow:var(--shadow-sm);-webkit-overflow-scrolling:touch}
+.tablewrap:focus-visible{outline:3px solid var(--accent-soft);outline-offset:-1px}
+table.data{width:100%;border-collapse:collapse;font-size:13px}
+table.data th{position:sticky;top:0;z-index:2;text-align:left;font-size:12px;font-weight:650;color:var(--ink-2);background:var(--surface-2);padding:11px 14px;border-bottom:1px solid var(--border);white-space:nowrap;letter-spacing:.01em}
+table.data td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.data tbody tr:last-child td{border-bottom:0}
+table.data tbody tr:hover{background:var(--accent-softer)}
+.col-id,.col-field{position:sticky;background:var(--surface)}
+table.data th.col-id,table.data th.col-field{background:var(--surface-2);z-index:3}
+td.col-id,th.col-id{left:0;width:70px;box-shadow:1px 0 0 var(--border)}
+td.col-field,th.col-field{left:70px;width:96px}
+/* sticky 数据列显式分层：冻结列须盖住滚动内容（src-wrap 等定位元素按 DOM 序会压上来），且低于表头 z3 */
+td.col-id,td.col-field{z-index:1}
+table.data tbody tr:hover .col-id,table.data tbody tr:hover .col-field{background:var(--accent-softer)}
+td.id{font:600 12px var(--font-mono)}
+td.fld{font:600 12px var(--font-mono);color:var(--ink-2)}
+.src-cell{min-width:220px}
+.trans-cell{min-width:240px}
+.src-txt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;color:var(--ink-2);line-height:1.5;transition:max-height var(--motion-pane),opacity var(--motion-pane)}
+.src-txt.rows{-webkit-line-clamp:unset;overflow:visible}
+/* 原文展开尾标：被截断的单元格在右下角显示「展开/收起」按钮（显式可发现，不靠点击整块） */
+.src-wrap{position:relative;display:block;min-width:0}
+.src-wrap.expandable .src-txt{padding-right:52px} /* 给尾标留位 */
+.src-more{position:absolute;right:0;bottom:2px;display:inline-flex;align-items:center;gap:3px;padding:1px 5px 1px 14px;border:0;border-radius:4px;background:linear-gradient(to right,rgba(255,255,255,0),var(--surface) 45%);color:var(--accent);font:600 11px/1 var(--font-ui);cursor:pointer;white-space:nowrap}
+.src-more:hover{color:var(--accent-hover)}
+.src-more .caret{font-size:9px;display:inline-block;transition:transform var(--motion)}
+.src-wrap.expandable .src-txt.rows ~ .src-more .caret{transform:rotate(180deg)}
+.trans-prev{min-height:34px;padding:6px 9px;cursor:pointer;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);transition:border-color var(--motion),background var(--motion)}
+.trans-prev:hover{background:var(--surface-2);border-color:var(--accent)}
+.trans-prev .ln{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;font:12px var(--font-mono);line-height:1.5;color:var(--ink-3);padding-right:24px} /* 给右下角展开角标留位 */
+.trans-prev.has .ln{color:var(--ink)}
+/* 全屏编辑角标：嵌在译文框右下角，hover 显现，视觉与文本域融为一体 */
+.trans-box{position:relative;min-width:0}
+.trans-expand{position:absolute;right:3px;bottom:3px;width:22px;height:22px;display:grid;place-items:center;border:0;border-radius:5px;background:transparent;color:var(--ink-3);opacity:.5;cursor:pointer;transition:opacity var(--motion),background var(--motion),color var(--motion)}
+.trans-box:hover .trans-expand,.trans-expand:focus-visible{opacity:1;background:var(--surface-2);color:var(--accent)}
+.trans-expand svg{width:13px;height:13px}
+.trans-box .trans-in{padding-right:30px} /* 编辑态也给右下角角标留位 */
+/* 编辑态：纯图标无背景——聚焦浮现、hover 变 accent，不叠加任何色块 */
+.trans-box:has(.trans-in) .trans-expand{right:4px;bottom:4px;width:24px;height:24px;border-radius:6px;background:transparent;opacity:0;transition:opacity var(--motion),color var(--motion)}
+.trans-box:has(.trans-in):focus-within .trans-expand{opacity:.85}
+.trans-box:has(.trans-in) .trans-expand:hover{opacity:1;color:var(--accent)}
+/* 全屏编辑对话框 */
+.dialog.dlg-wide{width:min(880px,calc(100vw - 40px))}
+.dlg-field{margin-bottom:14px}
+.dlg-field .fl{display:block;font-size:11.5px;font-weight:700;color:var(--ink-2);margin-bottom:5px;letter-spacing:.01em}
+.dlg-src{padding:10px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface-2);color:var(--ink-2);font:12.5px/1.7 var(--font-ui);white-space:pre-wrap;word-break:break-word;max-height:26vh;overflow:auto}
+.dlg-trans{width:100%;min-height:180px;font:13px/1.7 var(--font-ui);padding:10px 12px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);resize:vertical;box-shadow:0 0 0 3px var(--accent-soft)}
+.dlg-trans:focus{outline:none;border-color:var(--accent)}
+.trans-in{width:100%;min-height:52px;font:12px var(--font-mono);padding:6px 9px;border:1px solid var(--accent);border-radius:6px;background:var(--surface);resize:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.colvis{position:relative}
+.col-menu{position:absolute;right:0;top:112%;min-width:190px;padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:var(--shadow-panel);z-index:30;opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity var(--motion),transform var(--motion)}
+.colvis.open .col-menu{opacity:1;pointer-events:auto;transform:none}
+.col-menu label{display:flex;align-items:center;gap:7px;padding:6px 7px;font-size:12.5px;border-radius:6px;cursor:pointer}
+.col-menu label:hover{background:var(--surface-2)}
+.col-menu input{accent-color:var(--accent)}
+table.matrix{min-width:680px}
+table.matrix th,table.matrix td{white-space:nowrap}
+table.matrix th:first-child,table.matrix td:first-child{position:sticky;left:0;background:var(--surface);z-index:1;box-shadow:1px 0 0 var(--border)}
+table.matrix thead th:first-child{background:var(--surface-2);z-index:3}
+table.matrix th:not(:first-child){text-align:center}
+table.matrix th:last-child,table.matrix td:last-child{min-width:80px}
+table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}table.matrix tbody tr:hover td:first-child{background:var(--accent-softer)}
+
+.mask{position:fixed;inset:0;z-index:80;background:rgba(16,28,22,.42);backdrop-filter:blur(2px);display:grid;place-items:center;opacity:0;transition:opacity var(--motion-pane)}
+.dialog{width:min(560px,calc(100vw - 40px));background:var(--surface);border-radius:12px;box-shadow:0 24px 64px rgba(16,28,22,.28);overflow:hidden;transform:scale(.97) translateY(8px);transition:transform var(--motion-pane),opacity var(--motion-pane);opacity:0}
+.mask.open{opacity:1}
+.mask.open .dialog{transform:none;opacity:1}
+.mask.closing{opacity:0}
+.dhead{display:flex;align-items:center;gap:10px;padding:16px 24px;border-bottom:1px solid var(--border);font-weight:680;font-size:14px}
+.dhead .sp{flex:1}
+.dbody{padding:18px 24px;max-height:72vh;overflow:auto}
+.dfoot{display:flex;justify-content:flex-end;gap:9px;padding:14px 24px;border-top:1px solid var(--border)}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100% - 142px);padding:24px;text-align:center;color:var(--ink-3);gap:4px}
+.empty .ic{width:54px;height:54px;border-radius:14px;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-3);margin-bottom:6px}
+.empty .ic svg{width:24px;height:24px}
+.empty .t{font-size:14px;font-weight:650;color:var(--ink-2)}
+.empty .s{font-size:12.5px;line-height:1.55;max-width:340px}
+.empty .cta{margin-top:12px}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-grid" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 5h16M4 12h16M4 19h16"/></symbol>
+<symbol id="i-lang" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 5h9M8.5 3v2M6 9c1 2 3 4 5 5M12 9c-1 2-3 4-5 5M12 4l4 9M14.5 9h5M3 17c3 1 6 1 9 0"/></symbol>
+<symbol id="i-export" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M7 10l5 5 5-5M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></symbol>
+<symbol id="i-log" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 6h16M4 12h16M4 18h10"/></symbol>
+<symbol id="i-hist" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2"/></symbol>
+<symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></symbol>
+<symbol id="i-left" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 6l-6 6 6 6"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-cols" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 5h16M4 12h16M4 19h16M9 5v14M15 5v14"/></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M5 12l7-7 7 7"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12l7 7 7-7"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></symbol>
+<symbol id="i-doc" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6 4h9l4 4v12H6zM14 4v4h4"/></symbol>
+<symbol id="i-help" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9a3 3 0 1 1 4 3c-.8.5-1 1-1 2M12 18h.01"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 11v6M12 7h.01"/></symbol>
+<symbol id="i-expand" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 3H3v6M15 3h6v6M9 21H3v-6M15 21h6v-6"/></symbol>
+</defs></svg>
+
+<div class="app">
+  <header class="topbar">
+    <button class="hamb" id="hamb" aria-label="打开导航" aria-expanded="false" aria-controls="sidebar"><svg><use href="#i-menu"/></svg></button>
+    <div class="brand"><span class="logo">ct</span><span class="nm">配表工具</span></div>
+    <div class="ws"><span class="name">gd</span><span class="sep">/</span><span class="path">/Users/tobeychao/…/ct-tool/gd</span></div>
+  </header>
+
+  <div class="shell">
+    <!-- 侧栏（DeepSeek 式）：常驻；窄屏 = 汉堡抽屉 -->    <nav class="sidebar" id="sidebar" aria-label="模块">
+      <div class="side-head">
+        <button class="ibtn back" id="side-back" aria-label="收起导航"><svg><use href="#i-left"/></svg></button>
+        <span class="logo">ct</span><span class="t">配表工具</span>
+      </div>
+      <div class="snav">
+        <div class="sec">模块</div>
+        <button class="sitem active" data-page="export"><svg><use href="#i-export"/></svg>导出</button>
+        <button class="sitem" data-page="i18n"><svg><use href="#i-lang"/></svg>翻译 i18n</button>
+        <button class="sitem" data-page="schema"><svg><use href="#i-grid"/></svg>Schema</button>
+        <button class="sitem" data-page="logs"><svg><use href="#i-log"/></svg>日志</button>
+        <button class="sitem" data-page="history"><svg><use href="#i-hist"/></svg>历史</button>
+      </div>
+      <div class="sfoot">
+        <button class="ssec"><svg><use href="#i-doc"/></svg>导出文档</button>
+        <button class="ssec"><svg><use href="#i-help"/></svg>帮助与反馈</button>
+        <button class="ssec"><svg><use href="#i-info"/></svg>关于</button>
+      </div>
+    </nav>
+
+    <main class="main">
+      <!-- ========== Schema ========== -->
+      <section class="page" id="page-schema">
+        <div class="mhead">
+          <div class="ttl"><h1>Schema</h1><p>编辑资源结构，变更以草稿方式校验后原子应用。</p></div>
+          <div class="acts">
+            <button class="btn btn-ghost btn-sm m-only" id="insp-tr">属性 <svg width="12" height="12" style="vertical-align:-1px"><use href="#i-chev"/></svg></button>
+            <button class="btn btn-danger-ghost btn-sm d-only">删除资源</button>
+          </div>
+        </div>
+        <div class="wb" id="wb" data-open-res="false" data-open-insp="false">
+          <aside class="pane res res-pane" aria-label="资源">
+            <div class="inner">
+              <header class="phead"><div><strong>Schema 资源</strong><span>Tables · Records · Enums</span></div><button class="ibtn d-only" id="res-close" aria-label="收起资源" title="收起资源"><svg><use href="#i-left"/></svg></button></header>
+              <div class="res-top"><input class="search" placeholder="搜索资源…"><div class="tree" id="tree"></div></div>
+              <footer class="pfoot">9 匹配 · 9 总计 · 状态已保存</footer>
+            </div>
+          </aside>
+          <section class="editor">
+            <div class="ec">
+              <header class="rhead">
+                <button class="ibtn" id="res-toggle" title="资源面板" aria-label="资源面板" aria-expanded="false" aria-controls="wb"><svg width="16" height="16"><use href="#i-cols"/></svg></button>
+                <div class="rtitle"><span class="eyebrow">Table</span><h1>Item</h1><span class="sub">item.xlsx · 8 个字段 · 主键 Id</span></div>
+              </header>
+              <nav class="rtabs" id="tabs" role="tablist" aria-label="资源视图页签"><button class="rtab active" role="tab" id="tab-btn-fields" data-tab="fields" aria-selected="true" aria-controls="tab-fields">字段 <span class="n">8</span></button><button class="rtab" role="tab" id="tab-btn-indexes" data-tab="indexes" aria-selected="false" aria-controls="tab-indexes">查询索引</button><button class="rtab" role="tab" id="tab-btn-deps" data-tab="deps" aria-selected="false" aria-controls="tab-deps">依赖</button></nav>
+            </div>
+            <div class="eBody">
+              <div class="tabpane active" id="tab-fields" role="tabpanel" aria-labelledby="tab-btn-fields" tabindex="0">
+                <div class="fieldtable" role="region" tabindex="0" aria-label="字段表">
+                  <table class="fgrid"><thead><tr><th>字段</th><th>类型表达式</th><th>Excel</th><th>角色与约束</th><th aria-label="操作"></th></tr></thead><tbody>
+                    <tr><td><span class="fname">Id</span></td><td><span class="type">int32</span></td><td><span class="tmeta">1 column</span></td><td><span class="roles"><span class="badge badge-gold"><span class="b-dot"></span>PRIMARY</span></span></td><td><span class="rops"><button class="ibtn" aria-label="上移" title="上移"><svg><use href="#i-up"/></svg></button><button class="ibtn" aria-label="下移" title="下移"><svg><use href="#i-down"/></svg></button><button class="ibtn danger" aria-label="删除字段" title="删除字段"><svg><use href="#i-x"/></svg></button></span></td></tr>
+                    <tr><td><span class="fname">Name</span></td><td><span class="type">string</span></td><td><span class="tmeta">1 column</span></td><td><span class="roles"><span class="badge badge-ok"><span class="b-dot"></span>I18N</span></span></td><td><span class="rops"><button class="ibtn" aria-label="上移" title="上移"><svg><use href="#i-up"/></svg></button><button class="ibtn" aria-label="下移" title="下移"><svg><use href="#i-down"/></svg></button><button class="ibtn danger" aria-label="删除字段" title="删除字段"><svg><use href="#i-x"/></svg></button></span></td></tr>
+                    <tr><td><span class="fname">Price</span></td><td><span class="type">float</span></td><td><span class="tmeta">1 column</span></td><td><span class="roles"><span class="badge badge-mute">SERVER</span></span></td><td><span class="rops"><button class="ibtn" aria-label="上移" title="上移"><svg><use href="#i-up"/></svg></button><button class="ibtn" aria-label="下移" title="下移"><svg><use href="#i-down"/></svg></button><button class="ibtn danger" aria-label="删除字段" title="删除字段"><svg><use href="#i-x"/></svg></button></span></td></tr>
+                    <tr><td><span class="fname">Rarity</span></td><td><button class="tlink">ItemRarity</button></td><td><span class="tmeta">expanded × 2</span></td><td><span class="roles"><span class="badge badge-mute">REF</span></span></td><td><span class="rops"><button class="ibtn" aria-label="上移" title="上移"><svg><use href="#i-up"/></svg></button><button class="ibtn" aria-label="下移" title="下移"><svg><use href="#i-down"/></svg></button><button class="ibtn danger" aria-label="删除字段" title="删除字段"><svg><use href="#i-x"/></svg></button></span></td></tr>
+                    <tr><td><span class="fname">ItemTypeId</span></td><td><button class="tlink">ItemType.Id</button></td><td><span class="tmeta">1 column</span></td><td><span class="roles"><span class="badge badge-mute">REF</span></span></td><td><span class="rops"><button class="ibtn" aria-label="上移" title="上移"><svg><use href="#i-up"/></svg></button><button class="ibtn" aria-label="下移" title="下移"><svg><use href="#i-down"/></svg></button><button class="ibtn danger" aria-label="删除字段" title="删除字段"><svg><use href="#i-x"/></svg></button></span></td></tr>
+                    <tr><td><span class="fname">DropRange</span></td><td><button class="tlink">ItemDropRange</button></td><td><span class="tmeta">expanded × 2</span></td><td><span class="roles"></span></td><td><span class="rops"><button class="ibtn" aria-label="上移" title="上移"><svg><use href="#i-up"/></svg></button><button class="ibtn" aria-label="下移" title="下移"><svg><use href="#i-down"/></svg></button><button class="ibtn danger" aria-label="删除字段" title="删除字段"><svg><use href="#i-x"/></svg></button></span></td></tr>
+                    <tr><td><span class="fname">Tags</span></td><td><span class="type">vector&lt;int32&gt;</span></td><td><span class="tmeta">1 column</span></td><td><span class="roles"></span></td><td><span class="rops"><button class="ibtn" aria-label="上移" title="上移"><svg><use href="#i-up"/></svg></button><button class="ibtn" aria-label="下移" title="下移"><svg><use href="#i-down"/></svg></button><button class="ibtn danger" aria-label="删除字段" title="删除字段"><svg><use href="#i-x"/></svg></button></span></td></tr>
+                    <tr><td><span class="fname">IsActive</span></td><td><span class="type">bool</span></td><td><span class="tmeta">1 column</span></td><td><span class="roles"><span class="badge badge-mute">SERVER</span></span></td><td><span class="rops"><button class="ibtn" aria-label="上移" title="上移"><svg><use href="#i-up"/></svg></button><button class="ibtn" aria-label="下移" title="下移"><svg><use href="#i-down"/></svg></button><button class="ibtn danger" aria-label="删除字段" title="删除字段"><svg><use href="#i-x"/></svg></button></span></td></tr>
+                  </tbody></table>
+                  <button class="addrow"><svg width="14" height="14"><use href="#i-plus"/></svg>添加字段</button>
+                </div>
+              </div>
+              <div class="tabpane" id="tab-indexes" role="tabpanel" aria-labelledby="tab-btn-indexes" tabindex="0"><span class="badge badge-mute">Code / Group 查询索引</span></div>
+              <div class="tabpane" id="tab-deps" role="tabpanel" aria-labelledby="tab-btn-deps" tabindex="0"><span class="badge badge-mute">ItemType.Id 引用自 Item</span></div>
+            </div>
+          </section>
+          <aside class="pane insp insp-pane" aria-label="字段属性">
+            <div class="inner">
+              <header class="phead"><div><strong>字段属性</strong><span>Id · int32</span></div></header>
+              <div class="inbody">
+                <div class="field"><label class="fl">字段名</label><div class="val">Id</div></div>
+                <div class="field"><label class="fl">类型</label><div class="val">int32</div></div>
+                <div class="field"><label class="fl">角色</label><div class="val">Primary Key</div></div>
+                <div class="field"><label class="fl">Excel 表达</label><div class="val">1 column</div></div>
+              </div>
+              <footer class="pfoot">修改只进入 Workspace Draft</footer>
+            </div>
+          </aside>
+          <nav class="act"><button class="side-tab" id="insp-tab" aria-pressed="false">属性</button></nav>
+        </div>
+        <div class="backdrop" id="backdrop"></div>
+      </section>
+
+      <!-- ========== 翻译 ========== -->
+      <section class="page" id="page-i18n">
+        <div class="mhead"><div class="ttl"><h1>翻译 i18n</h1><p>选择表与语言，逐条维护译文；同步后自动合并。</p></div><div class="acts"><button class="btn btn-primary btn-sm" id="i18n-progress">全部表进度</button></div></div>
+        <div class="toolbar">
+          <div class="grp"><button class="btn btn-ghost btn-sm">选择表</button><span class="val">Item</span></div>
+          <span class="div" aria-hidden="true"></span>
+          <div class="grp"><span class="lbl">语言</span><button class="pill active">en</button><button class="pill">ja</button></div>
+          <span class="div" aria-hidden="true"></span>
+          <div class="grp"><span class="lbl">状态</span><button class="pill active">全部</button><button class="pill">待审</button><button class="pill">缺失</button></div>
+          <div class="right"><div class="colvis" id="colvis"><button class="btn btn-ghost btn-sm" id="colvis-btn">列 <svg width="12" height="12" style="vertical-align:-1px"><use href="#i-cols"/></svg></button><div class="col-menu"><label><input type="checkbox" data-col="src" checked>原文</label><label><input type="checkbox" data-col="trans" checked>译文</label><label><input type="checkbox" data-col="status" checked>状态</label><label><input type="checkbox" data-col="ops" checked>操作</label></div></div></div>
+        </div>
+        <div class="tablewrap" role="region" tabindex="0" aria-label="翻译条目"><table class="data"><thead><tr><th class="col-id">主键</th><th class="col-field">字段</th><th class="src-cell">原文</th><th class="trans-cell">译文</th><th>状态</th><th>操作</th></tr></thead><tbody id="tbody"></tbody></table></div>
+      </section>
+
+      <!-- ========== 导出（默认落地页） ========== -->
+      <section class="page active" id="page-export">
+        <div class="mhead">
+          <div class="ttl"><h1>导出</h1><p>全量重建：校验通过后生成 JSON、FBS、Binary 与 Accessor。</p></div>
+          <div class="acts"><span class="badge badge-warn"><span class="b-dot"></span>2 张表待导出</span></div>
+        </div>
+        <div class="ev">
+          <div class="ohero">
+            <div class="oh-main">
+              <span class="oh-lab">待导出</span>
+              <div class="oh-num">2 <span class="unit">张表</span></div>
+              <div class="oh-sub"><b>Item、Quest</b> 与模板状态不一致 · <b>重新导出</b> 将重建全部产物</div>
+            </div>
+            <button class="btn btn-primary">重新导出</button>
+          </div>
+          <div class="ev-progress">
+            <div class="bar"><div><h3>执行进度</h3><p>尚未开始 · 等待执行</p></div></div>
+            <div class="prog-cells"><span class="prog-cell"><span class="n">1</span>校验</span><span class="prog-cell"><span class="n">2</span>JSON</span><span class="prog-cell"><span class="n">3</span>FBS</span><span class="prog-cell"><span class="n">4</span>Binary</span><span class="prog-cell"><span class="n">5</span>Accessor</span></div>
+            <div class="ev-sum"><div class="rows">
+              <div><dt>待处理</dt><dd class="num">2 张表</dd></div>
+              <div><dt>执行结果</dt><dd>尚未执行</dd></div>
+              <div><dt>产物目录</dt><dd class="code">output/json · fbs · binary · generated</dd></div>
+            </div></div>
+          </div>
+          <div class="ometa">
+            <span class="om"><span class="k">最近导出</span><span class="v">12s · 8 张表 · 成功</span></span>
+            <span class="om"><span class="k">工作区</span><span class="v">gd · 主 zh · 次 en/ja</span></span>
+          </div>
+          <div class="odir">
+            <span class="k">输出目录</span>
+            <span class="v mono num">gd/output</span>
+          </div>
+        </div>
+      </section>
+      <section class="page" id="page-logs">
+        <div class="mhead"><div class="ttl"><h1>日志</h1><p>运行日志与任务状态。</p></div></div>
+        <div class="toolbar">
+          <div class="grp"><span class="lbl">模块</span><button class="pill active">全部</button><button class="pill">导出</button><button class="pill">翻译</button></div>
+          <span class="div" aria-hidden="true"></span>
+          <div class="grp"><span class="lbl">级别</span><button class="pill active">全部</button><button class="pill">INFO</button><button class="pill">DEBUG</button></div>
+          <div class="right"><input class="search" placeholder="搜索日志…"></div>
+        </div>
+        <div class="empty"><span class="ic"><svg><use href="#i-log"/></svg></span><div class="t">还没有运行日志</div><div class="s">运行一次导出后，执行过程会实时显示在这里。</div><button class="btn btn-ghost btn-sm cta">前往导出</button></div>
+      </section>
+      <section class="page" id="page-history">
+        <div class="mhead"><div class="ttl"><h1>历史</h1><p>最近导出记录与结果。</p></div></div>
+        <div class="toolbar">
+          <div class="grp"><span class="lbl">范围</span><button class="pill active">全部</button><button class="pill">今日</button><button class="pill">本周</button></div>
+          <div class="right"><span class="hint">最近 10 条记录</span></div>
+        </div>
+        <div class="empty"><span class="ic"><svg><use href="#i-hist"/></svg></span><div class="t">暂无导出历史</div><div class="s">完成一次导出后，这里会记录最近的结果与耗时。</div><button class="btn btn-ghost btn-sm cta">前往导出</button></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+function openMask(html){const m=document.createElement('div');m.className='mask';m._opener=document.activeElement&&document.activeElement.focus?document.activeElement:null;m.innerHTML=`<div class="dialog" role="dialog" aria-modal="true">${html}</div>`;m.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeMask(m)));const dlg=m.querySelector('.dialog');const dtitle=dlg.querySelector('.dhead span');if(dtitle){dtitle.id='dlg-title';dlg.setAttribute('aria-labelledby','dlg-title');}document.body.appendChild(m);requestAnimationFrame(()=>requestAnimationFrame(()=>m.classList.add('open')));m.addEventListener('click',e=>{if(e.target===m)closeMask(m);});const appEl=document.querySelector('.app');appEl.setAttribute('inert','');document.body.style.overflow='hidden';const f=m.querySelector('button,input,textarea,select,[tabindex]');if(f)f.focus();/* 焦点陷阱：Tab/Shift+Tab 在对话框内循环，避免逃逸到背景 */m.addEventListener('keydown',e=>{if(e.key!=='Tab')return;const fs=[...m.querySelectorAll('button,input,textarea,select,[tabindex]:not([tabindex="-1"])')];if(!fs.length)return;if(e.shiftKey&&document.activeElement===fs[0]){e.preventDefault();fs[fs.length-1].focus();}else if(!e.shiftKey&&document.activeElement===fs[fs.length-1]){e.preventDefault();fs[0].focus();}});return m;}
+function closeMask(m){m.classList.remove('open');m.classList.add('closing');document.querySelector('.app').removeAttribute('inert');document.body.style.overflow='';if(m._opener){try{m._opener.focus();}catch(e){}}setTimeout(()=>{m.remove();},300);}
+
+/* ---- 资源树 ---- */
+const GROUPS=[{k:'table',t:'Tables',rows:[['Item','Table',8],['ItemType','Table',3],['Quest','Table',5],['UIConfig','Table',5],['Monster','Table',9]]},{k:'record',t:'Records',rows:[['ItemDropRange','Record',2],['Buff','Record',4]]},{k:'enum',t:'Enums',rows:[['ItemRarity','Enum',3],['UIConfigLayer','Enum',4]]}];
+const tree=document.getElementById('tree');
+tree.innerHTML=GROUPS.map(g=>`<div class="group" data-open="true"><button class="group-toggle"><span class="lab"><span class="gchev"><svg width="12" height="12"><use href="#i-chev"/></svg></span>${g.t}</span><span class="gcount">${g.rows.length}</span></button><div class="gbody"><div class="rows">${g.rows.map((r,i)=>`<button class="rrow ${g.k==='table'&&i===0?'active':''}" data-name="${r[0]}"><span class="kind ${g.k}">${r[1]}</span><span class="nm">${r[0]}</span><span class="meta">${r[2]} ${g.k==='enum'?'值':'字段'}</span></button>`).join('')}</div></div></div>`).join('');
+tree.addEventListener('click',e=>{const btn=e.target.closest('.group-toggle');if(btn){const g=btn.closest('.group');g.dataset.open=g.dataset.open==='true'?'false':'true';return;}const row=e.target.closest('.rrow');if(!row)return;tree.querySelectorAll('.rrow').forEach(r=>r.classList.toggle('active',r===row));if(innerWidth<900)setPane('res',false);});
+
+/* ---- 内容层面板开合 ---- */
+/* 找范围内第一个可见可聚焦元素（过滤 display:none/不可见），供抽屉移焦使用 */
+function firstFocusable(scope){const all=scope.querySelectorAll('button,input,textarea,select,[tabindex]:not([tabindex="-1"])');for(const el of all){const cs=getComputedStyle(el);if(el.hidden||cs.display==='none'||cs.visibility==='hidden')continue;const r=el.getBoundingClientRect();if(r.width>0&&r.height>0)return el;}return null;}
+const PANE_ANIM_MS=360;/* 与 --motion-pane:300ms 对应：等展开/收起过渡完成 + 60ms 余量 */
+const wb=document.getElementById('wb'),backdropContent=document.getElementById('backdrop');
+function setPane(which,open){const key=which==='res'?'data-open-res':'data-open-insp';wb.setAttribute(key,String(open));if(which==='insp')document.getElementById('insp-tab').setAttribute('aria-pressed',String(open));if(which==='res')document.getElementById('res-toggle').setAttribute('aria-expanded',String(open));const pane=document.querySelector(which==='res'?'.res-pane':'.insp-pane');/* 焦点管理：打开时记录触发器，关闭时还焦；<900 抽屉打开时移焦入面板 */if(open){pane._opener=document.activeElement&&!pane.contains(document.activeElement)?document.activeElement:null;}else{const op=pane._opener;if(op&&op.focus&&document.contains(op)&&!pane.contains(op))op.focus();}const any=wb.getAttribute('data-open-res')==='true'||wb.getAttribute('data-open-insp')==='true';backdropContent.classList.toggle('show',any&&innerWidth<900);setSideDrawer(false);syncInert();if(open&&innerWidth<900){const f=firstFocusable(pane);if(f)f.focus();}setTimeout(refreshLayout,PANE_ANIM_MS);/* 等展开/收起过渡后重算光晕与 sticky */}
+document.getElementById('res-close').addEventListener('click',()=>setPane('res',false));
+document.getElementById('res-toggle').addEventListener('click',()=>setPane('res',wb.getAttribute('data-open-res')!=='true'));
+document.getElementById('insp-tab').addEventListener('click',()=>setPane('insp',wb.getAttribute('data-open-insp')!=='true'));
+document.getElementById('insp-tr').addEventListener('click',()=>setPane('insp',true));
+backdropContent.addEventListener('click',()=>{setPane('res',false);setPane('insp',false);});
+
+/* 侧栏汉堡抽屉 */
+const sidebar=document.getElementById('sidebar'),hamb=document.getElementById('hamb');
+const dBackdrop=document.createElement('div');dBackdrop.className='backdrop';dBackdrop.id='dBackdrop';dBackdrop.style.zIndex='65';document.body.appendChild(dBackdrop);
+/* 关闭态的抽屉/侧栏移出焦点序与辅助树：侧栏仅在 <740（汉堡抽屉态）时 inert，桌面常驻不禁用；面板折叠为 0 宽/离屏时 inert */
+function syncInert(){sidebar.toggleAttribute('inert',innerWidth<740&&!sidebar.classList.contains('open'));document.querySelector('.res-pane').toggleAttribute('inert',wb.getAttribute('data-open-res')!=='true');document.querySelector('.insp-pane').toggleAttribute('inert',wb.getAttribute('data-open-insp')!=='true');}
+function setSideDrawer(open){const wasOpen=sidebar.classList.contains('open');sidebar.classList.toggle('open',open);dBackdrop.classList.toggle('show',open&&innerWidth<740);hamb.setAttribute('aria-expanded',String(open));syncInert();/* 焦点管理须在 syncInert 移除 inert 之后（否则 focus 被 inert 阻断）：<740 打开移焦入侧栏、关闭还焦汉堡 */if(innerWidth<740){if(open&&!wasOpen){const f=firstFocusable(sidebar);if(f)f.focus();}else if(!open&&wasOpen){hamb.focus();}}}
+dBackdrop.addEventListener('click',()=>setSideDrawer(false));
+hamb.addEventListener('click',()=>setSideDrawer(true));
+document.getElementById('side-back').addEventListener('click',()=>setSideDrawer(false));
+
+/* ---- tab 切换（真 tab 语义：role/aria-selected + 键盘左右切换） ---- */
+const tabsEl=document.getElementById('tabs');
+function activateTab(t){document.querySelectorAll('.rtab').forEach(x=>{const on=x===t;x.classList.toggle('active',on);x.setAttribute('aria-selected',String(on));});document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+t.dataset.tab));}
+tabsEl.addEventListener('click',e=>{const t=e.target.closest('.rtab');if(t)activateTab(t);});
+tabsEl.addEventListener('keydown',e=>{if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;const tabs=[...tabsEl.querySelectorAll('.rtab')];const i=tabs.indexOf(document.activeElement);if(i<0)return;const n=(e.key==='ArrowRight'?i+1:i-1+tabs.length)%tabs.length;tabs[n].focus();activateTab(tabs[n]);e.preventDefault();});
+
+/* ---- i18n 表 ---- */
+const rows=[['1001','Name','“A Sword of Valor”','','translated'],['1002','Name','“Shield of the First Knight”','','missing'],['1003','Desc','“A legendary blade forged in the great war, said to cut through darkness itself.”','','stale'],['1004','Name','“Crystal of Swiftness”','','translated']];
+document.getElementById('tbody').innerHTML=rows.map((r,i)=>`<tr><td class="col-id id num">${r[0]}</td><td class="col-field fld">${r[1]}</td><td class="src-cell"><span class="src-wrap"><span class="src-txt">${r[2]}</span></span></td><td class="trans-cell"><div class="trans-box"><div class="trans-prev ${r[3]?'has':''}"><span class="ln">${r[3]||'点击填写译文…'}</span></div><button class="trans-expand" type="button" data-i="${i}" title="全屏编辑译文" aria-label="全屏编辑译文"><svg width="13" height="13"><use href="#i-expand"/></svg></button></div></td><td><span class="badge ${r[4]==='translated'?'badge-ok':r[4]==='stale'?'badge-warn':'badge-mute'}"><span class="b-dot"></span>${r[4]}</span></td><td><span class="rops"><button class="btn btn-accent btn-sm">保存</button></span></td></tr>`).join('');
+/* 原文超行检测：需在 i18n 页激活、元素可测尺寸时执行（display:none 时 client/scrollHeight 为 0 会误判）；被截断的原文单元格加「展开/收起」尾标 */
+function initSrcMore(){
+  if(!document.getElementById('page-i18n').classList.contains('active'))return;
+  document.querySelectorAll('#tbody .src-txt').forEach(el=>{
+    if(el.dataset.moreReady)return;
+    if(el.scrollHeight>el.clientHeight+1){
+      const wrap=el.parentElement; wrap.classList.add('expandable');
+      const btn=document.createElement('button'); btn.type='button'; btn.className='src-more';
+      btn.innerHTML='<span class="lab">展开</span><span class="caret">▾</span>';
+      btn.setAttribute('aria-expanded','false'); wrap.appendChild(btn);
+    }
+    el.dataset.moreReady='1';
+  });
+}
+/* 提交某行译文并恢复预览态（行内失焦保存 / 全屏保存共用） */
+function commitInlineEdit(i,val){rows[i][3]=val;const tr=document.getElementById('tbody').children[i];tr.querySelector('.trans-cell').innerHTML=`<div class="trans-box"><div class="trans-prev ${val?'has':''}"><span class="ln">${val||'点击填写译文…'}</span></div><button class="trans-expand" type="button" data-i="${i}" title="全屏编辑译文" aria-label="全屏编辑译文"><svg width="13" height="13"><use href="#i-expand"/></svg></button></div>`;}
+/* 全屏编辑长译文：译文框右下角展开角标 → 大对话框（原文只读对照 + 大 textarea），保存写回该行 */
+function openFullEditor(i){
+  const tr=document.getElementById('tbody').children[i];
+  const inline=tr.querySelector('.trans-in');
+  if(inline)commitInlineEdit(i,inline.value); /* 进入全屏前先提交行内编辑并退出编辑态：关闭弹窗(保存/取消)后直接回预览态，不再悬挂编辑框 */
+  const r=rows[i];
+  const current=r[3]||'';
+  const m=openMask(`<div class="dhead"><span>${r[0]} · ${r[1]} · en</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><div class="dlg-field"><label class="fl">原文（en）</label><div class="dlg-src">${r[2]}</div></div><div class="dlg-field"><label class="fl">译文</label><textarea class="dlg-trans" rows="8">${current}</textarea></div></div><div class="dfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" data-save>保存</button></div>`);
+  m.querySelector('.dialog').classList.add('dlg-wide');
+  const ta=m.querySelector('.dlg-trans'); if(ta)ta.focus();
+  m.querySelector('[data-save]').addEventListener('click',()=>{commitInlineEdit(i,ta.value);closeMask(m);});
+}
+const colvis=document.getElementById('colvis');
+document.getElementById('colvis-btn').addEventListener('click',e=>{e.stopPropagation();colvis.classList.toggle('open');});
+document.addEventListener('click',e=>{if(!colvis.contains(e.target))colvis.classList.remove('open');});
+const CI={src:2,trans:3,status:4,ops:5};
+colvis.querySelectorAll('input').forEach(cb=>cb.addEventListener('change',()=>{const i=CI[cb.dataset.col];document.querySelectorAll('#page-i18n thead th')[i].style.display=cb.checked?'':'none';document.querySelectorAll('#tbody tr').forEach(tr=>tr.children[i].style.display=cb.checked?'':'none');}));
+document.querySelector('.tablewrap').addEventListener('click',e=>{const ex=e.target.closest('.trans-expand');if(ex){openFullEditor(Number(ex.dataset.i));return;}const tv=e.target.closest('.trans-prev');if(tv){const box=tv.parentElement;if(!box.querySelector('textarea')){const i=box.querySelector('.trans-expand').dataset.i;box.innerHTML=`<textarea class="trans-in" rows="2"></textarea><button class="trans-expand" type="button" data-i="${i}" title="全屏编辑译文" aria-label="全屏编辑译文"><svg width="13" height="13"><use href="#i-expand"/></svg></button>`;const ta=box.querySelector('textarea');ta.focus();/* 失焦即保存：焦点落入 expand 角标(点全屏)时不退出，否则提交并恢复预览 */ta.addEventListener('blur',()=>setTimeout(()=>{if(document.querySelector('.mask'))return;if(document.activeElement&&document.activeElement.closest('.trans-box')&&document.activeElement.classList.contains('trans-expand'))return;commitInlineEdit(Number(i),ta.value);},0));}return;}const more=e.target.closest('.src-more');if(more){const wrap=more.closest('.src-wrap');const txt=wrap.querySelector('.src-txt');const exp=txt.classList.toggle('rows');more.setAttribute('aria-expanded',String(exp));more.querySelector('.lab').textContent=exp?'收起':'展开';}});
+document.getElementById('i18n-progress').addEventListener('click',()=>{const m=openMask(`<div class="dhead"><span>翻译进度</span><span class="sp"></span><button class="pill active">语言</button><button class="pill">按表</button><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><div class="tablewrap" style="margin:0;max-height:52vh"><table class="data matrix"><thead><tr><th>表</th><th>en</th><th>ja</th><th>汇总</th></tr></thead><tbody><tr><td style="font-weight:650">Item</td><td style="text-align:center"><span class="badge badge-ok"><span class="b-dot"></span>8/8</span></td><td style="text-align:center"><span class="badge badge-mute">2/8</span></td><td style="text-align:center">10/16</td></tr><tr><td style="font-weight:650">Quest</td><td style="text-align:center"><span class="badge badge-ok">5/5</span></td><td style="text-align:center"><span class="badge badge-mute">0/5</span></td><td style="text-align:center">5/10</td></tr></tbody></table></div></div><div class="dfoot"><button class="btn btn-ghost" data-close>关闭</button></div>`);const dtw=m.querySelector('.tablewrap');prepareGlow(dtw);markOverflow(dtw);m.querySelectorAll('.pill').forEach(p=>p.addEventListener('click',()=>m.querySelectorAll('.pill').forEach(x=>x.classList.toggle('active',x===p))));});
+
+/* ---- 模块切换（侧栏 nav）---- 与真实 app 一致：再点当前 Schema 时切换资源面板开合 */
+document.querySelectorAll('.sitem').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.page==='schema'&&document.querySelector('.sitem.active')===b){setPane('res',wb.getAttribute('data-open-res')!=='true');return;}document.querySelectorAll('.sitem').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+b.dataset.page));setSideDrawer(false);requestAnimationFrame(refreshLayout);}));
+
+/* ---- 初始状态 ---- */
+/* 宽表右缘滚动渐变提示：包一层定位容器 + 绝对定位光晕 */
+function prepareGlow(el){
+  if(el.dataset.glowReady) return; el.dataset.glowReady='1';
+  const cs=getComputedStyle(el);
+  const holder=document.createElement('div'); holder.className='scroll-holder';
+  holder.style.margin=cs.margin; el.style.margin='0';
+  el.replaceWith(holder); holder.appendChild(el);
+  const glow=document.createElement('span'); glow.className='scroll-glow'; holder.appendChild(glow);
+  el._holder=holder;
+  el.addEventListener('scroll',()=>{if(el._holder)el._holder.classList.toggle('has-overflow',el.scrollLeft+el.clientWidth<el.scrollWidth-1);});
+}
+function prepScrollGlow(){document.querySelectorAll('.tablewrap,.fieldtable').forEach(prepareGlow);}
+function markOverflow(el){if(!el._holder)return;const has=el.scrollWidth>el.clientWidth+1;el._holder.classList.toggle('has-overflow',has);}
+/* 实测首列宽，校正 sticky 次列偏移（auto 布局下列宽≠CSS 建议值，会留缝导致重叠） */
+function fitSticky(){document.querySelectorAll('table.data:not(.matrix)').forEach(table=>{const ths=table.querySelectorAll('thead th');if(ths.length<2)return;const idW=ths[0].getBoundingClientRect().width;table.querySelectorAll('th.col-field,td.col-field').forEach(el=>{el.style.left=idW+'px';});});}
+function refreshLayout(){prepScrollGlow();document.querySelectorAll('.page.active .tablewrap,.page.active .fieldtable').forEach(markOverflow);fitSticky();initSrcMore();}
+/* resize：跨断点只收不展（面板默认折叠，仅手动打开），避免残留遮罩/面板叠开/编辑器被挤压；rAF 节流合并高频事件 */
+let lastW=innerWidth,resizeRaf=0;
+addEventListener('resize',()=>{if(resizeRaf)return;resizeRaf=requestAnimationFrame(()=>{resizeRaf=0;
+  const w=innerWidth;
+  if(w<900){ if(lastW>=900){ setPane('res',false); setPane('insp',false); } }
+  else if(w<1200){ if(lastW>=1200) setPane('insp',false); }
+  if(w>=740&&lastW<740) setSideDrawer(false);
+  syncInert();
+  document.querySelectorAll('.tablewrap,.fieldtable').forEach(markOverflow);
+  fitSticky();
+  lastW=w;
+});});
+
+/* HTML 默认 data-open-res/insp 已为 false，仅需收拢侧栏并首刷布局 */
+function init(){setSideDrawer(false);refreshLayout();}
+init();
+/* Escape 统一：按浮层栈关闭最上层（dialog > 侧栏抽屉 > 面板抽屉 > 列菜单），逐层退 */
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const mk=document.querySelector('.mask');if(mk){closeMask(mk);return;}if(innerWidth<740&&sidebar.classList.contains('open')){setSideDrawer(false);return;}if(innerWidth<900&&(wb.getAttribute('data-open-res')==='true'||wb.getAttribute('data-open-insp')==='true')){setPane('res',false);setPane('insp',false);return;}if(colvis.classList.contains('open'))colvis.classList.remove('open');});
+</script>
+</body>
+</html>
