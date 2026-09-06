@@ -259,7 +259,7 @@ function renderTable(rows) {
   if (!rows.length) {
     return '<div class="ct-empty"><div class="ct-empty-title">该状态下暂无译文条目</div></div>';
   }
-  return `<div class="ct-table-wrap ct-i18n-table"><table class="ct-data ct-col-rules"><thead><tr><th>主键</th><th>字段</th><th>${escapeHtml(state.primaryLang)} 原文</th><th>${escapeHtml(state.lang)} 译文</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows.map(rowHtml).join("")}</tbody></table></div>`;
+  return `<div class="ct-table-wrap ct-i18n-table" role="region" tabindex="0" aria-label="翻译条目表"><table class="ct-data ct-col-rules"><thead><tr><th>主键</th><th>字段</th><th>${escapeHtml(state.primaryLang)} 原文</th><th>${escapeHtml(state.lang)} 译文</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows.map(rowHtml).join("")}</tbody></table></div>`;
 }
 
 function rowHtml(e) {
@@ -350,7 +350,7 @@ function renderProgressModal() {
   const statusCell = (v) => v > 0 ? `<span class="ct-badge ct-badge-warn">${v}</span>` : `<span class="ct-mono ct-ink-3">0</span>`;
   const orphanCell = (v) => v > 0 ? `<span class="ct-badge ct-badge-mute">${v}</span>` : `<span class="ct-mono ct-ink-3">0</span>`;
   const body = state.progressView === "lang"
-    ? `<div class="ct-table-wrap"><table class="ct-data ct-progress-matrix">
+    ? `<div class="ct-table-wrap" role="region" tabindex="0" aria-label="翻译进度（按语言）"><table class="ct-data ct-progress-matrix">
         <thead><tr><th>语言</th><th>进度</th><th>translated / total</th><th>missing</th><th>stale</th><th>orphan</th></tr></thead>
         <tbody>${langs.map((lang) => {
           const lc = state.progress[lang];
@@ -391,7 +391,7 @@ function renderProgressModal() {
           const aggDetail = `${aggTr}/${aggT} translated · ${aggM} missing · ${aggS} stale · ${aggO} orphan`;
           return `<tr><td class="ct-mono ct-matrix-table">${escapeHtml(table)}</td>${cells}<td class="ct-matrix-cell"><span class="ct-badge ${aggCls}" title="${escapeHtml(aggDetail)}">${aggTr}/${aggT}</span></td></tr>`;
         }).join("");
-        return `<div class="ct-table-wrap"><table class="ct-data ct-progress-matrix"><thead><tr><th>表</th>${langs.map((l) => `<th>${escapeHtml(l)}</th>`).join("")}<th>汇总</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        return `<div class="ct-table-wrap" role="region" tabindex="0" aria-label="翻译进度（按表）"><table class="ct-data ct-progress-matrix"><thead><tr><th>表</th>${langs.map((l) => `<th>${escapeHtml(l)}</th>`).join("")}<th>汇总</th></tr></thead><tbody>${rows}</tbody></table></div>`;
       })();
   return `<div class="ct-dialog-mask">
     <div class="ct-dialog ct-progress-dialog" role="dialog">

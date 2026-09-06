@@ -106,15 +106,22 @@ mark { background: var(--ct-gold-soft); color: var(--ct-gold); border-radius: 3p
 .ct-pill.active { background: var(--ct-primary); color: #fff; border-color: var(--ct-primary); }
 .ct-log-toolbar { margin-bottom: 10px; }
 
-/* 9.6 compact field rows on small screens */
-@media (max-width: 959px) {
-  table.ct-data thead { display: none; }
-  table.ct-data, table.ct-data tbody, table.ct-data tr, table.ct-data td { display: block; width: 100%; }
-  table.ct-data tr { border: 1px solid var(--ct-border); border-radius: var(--ct-r); margin-bottom: 8px; padding: 6px 8px; }
-  table.ct-data td { border: 0; padding: 4px 2px; }
-  table.ct-data tr td:first-child { font-weight: 650; }
-  .ct-row-ops { text-align: left; }
+/* ---- responsive tables ----
+   Keep data as real <table> elements and let the wrapping .ct-table-wrap
+   scroll horizontally on narrow widths (the CSS-Tricks / Adrian Roselli
+   under-engineered pattern). This preserves table semantics and works for
+   any column width — including the wide cross-reference tables (i18n progress
+   matrix, i18n entry table, logs). We deliberately do NOT blanket-stack rows:
+   hiding <thead> stripped column context from every cell without a data-label
+   and destroyed the cross-ref tables. Rows are reflowed into cards only where
+   explicit: the schema field editor and the log card view below. */
+.ct-table-wrap {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
+.ct-table-wrap:focus-visible { outline: 3px solid var(--ct-accent-soft); outline-offset: -1px; }
+/* pin the header row while a height-capped wrap (logs / i18n) scrolls */
+table.ct-data thead th { position: sticky; top: 0; z-index: 2; }
 
 .ct-index-cards { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
 .ct-index-cards-title { font-size: 12px; font-weight: 700; color: var(--ct-ink-2); }
@@ -252,6 +259,7 @@ table.ct-field-grid th:nth-child(5), table.ct-field-grid td:nth-child(5) { width
   .ct-section-heading p { display: none; }
   .ct-field-table { overflow: visible; border: 0; background: transparent; }
   table.ct-field-grid { min-width: 0; }
+  table.ct-field-grid thead { display: none; }
   table.ct-field-grid tbody { display: flex; flex-direction: column; gap: 8px; }
   table.ct-field-grid tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name ops" "type ops" "excel roles"; gap: 3px 10px; padding: 9px 10px; border: 1px solid var(--ct-border); background: white; }
   table.ct-field-grid td { width: auto !important; padding: 0; }
@@ -346,6 +354,7 @@ table.ct-field-grid th:nth-child(5), table.ct-field-grid td:nth-child(5) { width
   .ct-filter-group { width: 100%; flex-wrap: wrap; }
   .ct-filter-divider { display: none; }
   .ct-log-table-wrap { max-height: none; overflow: visible; border: 0; }
+  table.ct-log-table thead { display: none; }
   table.ct-log-table, table.ct-log-table tbody { display: block; }
   table.ct-log-table tr { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 4px 8px; margin-bottom: 8px; padding: 9px 10px; border: 1px solid var(--ct-border); border-radius: var(--ct-r); }
   table.ct-log-table td { display: grid; grid-template-columns: 58px minmax(0, 1fr); grid-column: 1 / -1; width: auto !important; padding: 2px 0; border: 0; }
@@ -413,6 +422,12 @@ table.ct-field-grid th:nth-child(5), table.ct-field-grid td:nth-child(5) { width
 /* visible column boundaries + center alignment for the i18n entry table */
 table.ct-col-rules th, table.ct-col-rules td { border-left: 1px solid var(--ct-border); text-align: center; }
 table.ct-col-rules th:first-child, table.ct-col-rules td:first-child { border-left: 0; }
+/* pin the primary-key column while the wide 原文/译文 scroll horizontally on
+   narrow screens; the top-left corner cell stays pinned in both axes */
+table.ct-col-rules th:first-child, table.ct-col-rules td:first-child {
+  position: sticky; left: 0; z-index: 2; background: var(--ct-surface);
+}
+table.ct-col-rules thead th:first-child { z-index: 3; background: var(--ct-surface-2); }
 /* 原文/译文长文本左对齐，其余列居中 */
 table.ct-col-rules th:nth-child(3), table.ct-col-rules td:nth-child(3),
 table.ct-col-rules th:nth-child(4), table.ct-col-rules td:nth-child(4) { text-align: left; }

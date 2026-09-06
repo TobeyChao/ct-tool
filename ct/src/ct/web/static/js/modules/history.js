@@ -16,7 +16,7 @@ export async function mount(container) {
         </div>
         <div class="ct-panel-body">
           ${state.error ? '<div class="ct-error-inline">' + escapeHtml(state.error) + "</div>" : ""}
-          ${history.length ? `<div class="ct-table-wrap"><table class="ct-data"><thead><tr><th>时间</th><th>范围</th><th>结果</th><th>表数</th><th>耗时</th></tr></thead>
+          ${history.length ? `<div class="ct-table-wrap" role="region" tabindex="0" aria-label="导出历史"><table class="ct-data"><thead><tr><th>时间</th><th>范围</th><th>结果</th><th>表数</th><th>耗时</th></tr></thead>
           <tbody>${history.map((h) => `<tr><td class="ct-mono">${escapeHtml(h.time)}</td><td>${escapeHtml(h.scope)}</td>
             <td><span class="ct-badge ${h.result === "success" ? "ct-badge-ok" : "ct-badge-err"}">${escapeHtml(h.result)}</span></td>
             <td>${h.tables ?? ""}</td><td>${h.elapsed ?? ""}s</td></tr>`).join("")}</tbody></table></div>`

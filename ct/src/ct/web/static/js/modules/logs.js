@@ -136,7 +136,7 @@ export async function mount(container) {
       return;
     }
 
-    host.innerHTML = `<div class="ct-table-wrap ct-log-table-wrap"><table class="ct-data ct-log-table">
+    host.innerHTML = `<div class="ct-table-wrap ct-log-table-wrap" role="region" tabindex="0" aria-label="运行日志"><table class="ct-data ct-log-table">
       <thead><tr><th>时间</th><th>模块</th><th>级别</th><th>信息</th></tr></thead>
       <tbody>${rows.map((row) => `<tr>
         <td data-label="时间"><span class="ct-mono">${escapeHtml(row.time)}</span></td>

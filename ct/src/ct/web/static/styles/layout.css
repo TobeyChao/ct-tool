@@ -187,8 +187,14 @@
 }
 .ct-side { border-left: 1px solid var(--ct-border); }
 .ct-side-inner { width: var(--ct-inspector-w); margin-left: auto; }
-.ct-workspace-layout[data-resource-open="false"] .ct-resource-pane-inner,
-.ct-workspace-layout[data-inspector-open="false"] .ct-side-inner { opacity: 0; transition-delay: 0ms; }
+/* Fade-out applies only in the 960–1359px range, where the resource pane is an
+   absolute overlay toggled by data-resource-open. Below 960px the workbench is
+   a single-pane stack driven by data-view, so the pane must stay visible — the
+   opacity rule previously leaked here and blanked the whole pane. */
+@media (min-width: 960px) and (max-width: 1359px) {
+  .ct-workspace-layout[data-resource-open="false"] .ct-resource-pane-inner,
+  .ct-workspace-layout[data-inspector-open="false"] .ct-side-inner { opacity: 0; transition-delay: 0ms; }
+}
 .ct-editor { display: grid; grid-template-rows: auto minmax(0, 1fr); }
 .ct-right-activity {
   min-width: 0;
