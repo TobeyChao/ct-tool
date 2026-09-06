@@ -130,3 +130,30 @@
 - reader：`ConfigTable.RowAt` 加**无条件**边界检查（`(uint)index >= Count → IntPtr.Zero`），Release 亦生效。
 - 生成器 `canonical_accessor.py`：C# `ByIndex` 改为返回 `{table}Row?`（越界 → null），与 `ByID` 对称；`gd/output/generated/csharp/*` 与 `test-proj/*.g.cs` 同步重生成/更新；测试断言同步。
 - Lua 侧不动：`GD.ByIndex` 的越界行为属游戏侧运行时契约。
+
+### 第四轮（commit `a6e34ee` 之后）—— enum 向量宽度 + 缓存版本倒退 + 同步缺口
+
+**新实锤 P0 —— `vector<enum>` 元素宽度错位（依赖 enum 底层类型）**
+- 位置：`canonical_accessor_model.py:51-52`（`container_text` 对 enum 向量生成 `NArray<{enum名}>`）+ `Runtime.cs:71`（`((T*)_base)[index]` 按 `sizeof(T)` 步进）。
+- 问题：ct 导出 enum 向量是 **1 字节/元素**（`canonical_binary.py:171-173` `PrependByte` + `StartVector(1,...)`）；但 `NArray<ItemRarity>` 的指针步长 = `sizeof(ItemRarity)`。C# enum **默认底层 `int`（4 字节）**，只有声明 `: byte` 才 1 字节。`test-proj/Enums.cs` 恰好写了 `: byte`（所以当前 gd 数据没炸），但生成器**不保证也不检查** enum 底层类型 —— Unity 工程手写 `enum ItemRarity { ... }`（默认 int）时，第二个元素起全部错读（探针实证 `int-backed: b[0]=131328 b[1]=Common`）。
+- 与第三轮"非对齐直读已关闭"**不同维度**：那是**对齐**（8 字节元素 8 对齐），这是**元素宽度**（1 字节数据 vs 4 字节步进），契约未覆盖。
+- 修复方向（二选一）：(a) 生成器对 enum 向量改用 `NArray<byte>`（wire 就是 byte），枚举语义由调用方强转；(b) 生成器输出 `enum {name} : byte` 声明保证（当前 enum 由外部/手写提供，生成器无法控制）。
+
+**新实锤 P1 —— `NStringCache` 版本倒退竞态（stale reader 写回旧版本）**
+- 位置：`Runtime.cs:149-162`。`Get(ptr, pVersion)` 里 `_lastVersion != pVersion` 时 `Clear()` + `Write(_lastVersion, pVersion)` —— **无条件写回**。
+- 问题（探针实证，3 次 clear）：Release 下版本检查被编译掉，stale reader 用**旧 pVersion** 调 `Get` → 触发 Clear 并把 `_lastVersion` **倒退写回旧值** → 后续合法的新版本 reader 再次 `!=` → 缓存被反复清空重建（每出现一次 stale 访问就抖动一次）。若 stale 指针地址恰好与新 buffer 地址相同（GC 地址复用，正是第二轮要防的）→ 命中旧缓存返回**陈旧字符串**，第二轮修复被这个窗口复活。
+- 修复方向：版本只能**前进**——`if (pVersion > _lastVersion)` 才 Clear+Write；`pVersion < _lastVersion`（stale）直接走查表/解码不写版本（或 key 带版本 `(version, addr)`）。
+
+**新 P1 —— `Runtime.ByCode` / `GroupKey` 是 stub（未接线）**
+- 位置：`Runtime.cs:195-196`（恒返回 `-1` / `Array.Empty<int>()`）。
+- 问题：生成器 `ByCode`/`ByGroupKey`（`canonical_accessor.py`）调用 `Runtime.ByCode`/`Runtime.GroupKey`；schema 一旦配 code/group 索引，生成的方法**永远返回 null / 空列表**，静默失效。当前 gd schema 未配索引所以未暴露，但属"生成器信任运行时能力"的契约缺口，应记录或实现。
+
+**新 P2 —— test-proj `.g.cs` 与生成器不同步**
+- 位置：`test-proj/ConfigAccessorBench/*.g.cs` 仍是旧格式（头部 `()` 残留、单行构造函数、三元 `ByID`），而 `gd/output/generated/csharp/*` 已是 `a6e34ee` 新格式。
+- 原因：上一轮只重生成 gd/output，漏了 test-proj。功能等价（旧格式也能编译运行），但违反"格式契约由 golden 测试验证"的一致性，应重生成对齐。
+
+**新 P2 —— `NArray<T>` / `NStructArray<T>` 的 `GetEnumerator` 用 `yield`**
+- 位置：`Runtime.cs:81-82, 119-120`。每次 `foreach (var x in row.Tags)` **分配枚举器状态机**（堆分配）→ 热路径 GC 压力。
+- 修复方向：手写 struct enumerator（零分配），或文档提示用 `for` 下标直读（benchmark 的 `SumAfter` 正是 `for`，已验证零分配路径）。
+
+**复核未发现新问题（与前三轮结论一致）**：`ByID` 二分与 ct `index` 排序一致（`canonical_binary.py:217-225` 按主键升序 + 原始行下标）；`vector<Record>` 的 `NStructArray` uoffset 语义正确；`NString` 隐式转 string + 驻留正确；Lua 侧 enum 向量走 `GD.VecI8`（1 字节）无宽度问题；版本只在整套边界推进的语义已由第二轮确立并保持。
