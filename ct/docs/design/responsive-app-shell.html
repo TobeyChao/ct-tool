@@ -393,12 +393,13 @@ td.fld{font:600 12px var(--font-mono);color:var(--ink-2)}
 .col-menu label{display:flex;align-items:center;gap:7px;padding:6px 7px;font-size:12.5px;border-radius:6px;cursor:pointer}
 .col-menu label:hover{background:var(--surface-2)}
 .col-menu input{accent-color:var(--accent)}
-table.matrix{min-width:680px}
+table.matrix{width:100%;min-width:0} /* 填满弹窗；非首列 width:1% 让 en/ja/汇总 贴合内容，富余由「表」列吸收（小表不撑宽、大表自然宽触发横滚） */
+table.matrix th:nth-child(n+2),table.matrix td:nth-child(n+2){width:1%}
 table.matrix th,table.matrix td{white-space:nowrap}
 table.matrix th:first-child,table.matrix td:first-child{position:sticky;left:0;background:var(--surface);z-index:1;box-shadow:1px 0 0 var(--border)}
 table.matrix thead th:first-child{background:var(--surface-2);z-index:3}
 table.matrix th:not(:first-child){text-align:center}
-table.matrix th:last-child,table.matrix td:last-child{min-width:80px}
+table.matrix th:last-child,table.matrix td:last-child{min-width:64px}
 table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}table.matrix tbody tr:hover td:first-child{background:var(--accent-softer)}
 
 .mask{position:fixed;inset:0;z-index:80;background:rgba(16,28,22,.42);backdrop-filter:blur(2px);display:grid;place-items:center;opacity:0;transition:opacity var(--motion-pane)}
@@ -417,6 +418,77 @@ table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}t
 .empty .t{font-size:14px;font-weight:650;color:var(--ink-2)}
 .empty .s{font-size:12.5px;line-height:1.55;max-width:340px}
 .empty .cta{margin-top:12px}
+
+/* ===== responsive-shell-dialogs 新增：弹窗变体/草稿栏/表单/选择器 ===== */
+/* 危险实心按钮（D1/D2/P6） */
+.btn-danger{background:var(--danger);color:#fff;box-shadow:0 1px 2px rgba(20,30,25,.2)}
+.btn-danger:hover{background:#933232}
+.btn-danger:disabled{background:#c9a0a0;color:#fff;cursor:not-allowed;box-shadow:none}
+/* 弹窗宽度变体（DEC4）：沿用现有 .dlg-wide 前缀 */
+.dialog.dlg-sm{width:min(420px,calc(100vw - 32px))}
+.dialog.dlg-plan{width:min(640px,calc(100vw - 40px))}
+.dialog.dlg-palette{width:min(480px,calc(100vw - 40px))}
+/* 低宽度/矮视口适配（DEC8）：dialog flex 列 + svh 封顶，body 内滚，mask 溢出可滚 */
+.mask{overflow-y:auto}
+.dialog{max-height:calc(100svh - 32px);display:flex;flex-direction:column;margin:auto}
+.dbody{flex:1 1 auto;min-height:0;max-height:none}
+.dfoot{flex-wrap:wrap}
+/* 草稿状态条（DEC6） */
+.draftbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0;padding:8px 16px;border-top:1px solid var(--border);background:var(--accent-softer);flex:0 0 auto}
+.draftbar .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:0 0 auto}
+.draftbar .txt{font-size:12.5px;font-weight:650;color:var(--ink);min-width:0}
+.draftbar.warn{background:var(--warn-soft)}
+.draftbar.warn .dot{background:#9a6a1a}
+.draftbar.success{background:var(--accent-soft)}
+.draftbar.success .dot{background:var(--accent)}
+.draftbar .acts{margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.draftbar .acts .btn-sm{height:28px}
+/* 弹窗表单（F1） */
+.dlg-field{margin-bottom:13px}
+.dlg-field .fl{display:block;font-size:11.5px;font-weight:700;color:var(--ink-2);margin-bottom:5px;letter-spacing:.01em}
+.dlg-in{width:100%;padding:7px 11px;border:1px solid var(--border-strong);border-radius:6px;font-size:12.5px;background:var(--surface);color:var(--ink)}
+.dlg-in:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.dlg-in.invalid{border-color:var(--danger);box-shadow:0 0 0 3px var(--danger-soft)}
+.dlg-err{display:none;margin-top:5px;font-size:11.5px;color:var(--danger)}
+.dlg-in.invalid~.dlg-err{display:block}
+.type-trigger{display:flex;align-items:center;gap:8px;width:100%;min-height:34px;padding:0 11px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);font:600 12px var(--font-mono);color:var(--ink);text-align:left;cursor:pointer}
+.type-trigger:hover{border-color:var(--accent);background:var(--accent-softer)}
+.type-trigger .caret{margin-left:auto;color:var(--ink-3)}
+.role-opts{display:flex;gap:6px;flex-wrap:wrap}
+.role-opts label{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--border-strong);border-radius:999px;font-size:12px;cursor:pointer;color:var(--ink-2)}
+.role-opts label:has(input:checked){background:var(--accent-softer);border-color:var(--accent);color:var(--accent)}
+.role-opts input{accent-color:var(--accent)}
+.sep-row{display:none}
+.sep-row.show{display:block}
+/* 选择器列表（F2/P1/Q1） */
+.dlg-list{display:flex;flex-direction:column;gap:2px;max-height:44vh;overflow:auto}
+.dlg-list .sec{font-size:11px;font-weight:700;color:var(--ink-3);letter-spacing:.08em;text-transform:uppercase;padding:8px 4px 3px}
+.dlg-row{display:flex;align-items:center;gap:8px;width:100%;min-height:34px;padding:6px 10px;border:0;border-radius:7px;background:transparent;font-size:12.5px;text-align:left;cursor:pointer;color:var(--ink)}
+.dlg-row:hover{background:var(--surface-2)}
+.dlg-row.active{background:var(--accent-softer);color:var(--accent)}
+.dlg-row .mono{font:600 12px var(--font-mono);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dlg-row .meta{margin-left:auto;font-size:11px;color:var(--ink-3);white-space:nowrap}
+.dlg-count{padding:2px 4px 6px;font-size:11.5px;color:var(--ink-3)}
+.dlg-empty{padding:16px;text-align:center;color:var(--ink-3);font-size:12.5px}
+.pick-filters{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px}
+/* 变更计划（P5） */
+.risk-line{display:flex;align-items:center;gap:8px;margin:0 0 8px}
+.impacts{display:flex;flex-direction:column;gap:5px;margin:6px 0 10px}
+.impact{display:flex;align-items:baseline;gap:8px;font-size:12.5px;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface-2);color:var(--ink)}
+.impact .art{font-weight:700;color:var(--ink-2);flex:0 0 auto}
+.impact .act{color:var(--ink-3);font:11.5px var(--font-mono)}
+.blocker-list{display:flex;flex-direction:column;gap:5px;margin:6px 0 10px}
+.blocker{display:flex;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid #E4C3C3;border-radius:7px;background:var(--danger-soft);color:var(--danger);font-size:12.5px}
+.blocker .loc{font:11.5px var(--font-mono)}
+.dlg-hint{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+/* 快速打开调色板（Q1） */
+.qo-hint{display:flex;gap:14px;padding:8px 2px 0;font-size:11px;color:var(--ink-3)}
+.qo-hint kbd{font:600 11px var(--font-mono);color:var(--ink-2);border:1px solid var(--border);border-radius:4px;padding:0 4px}
+/* 关于/帮助键帽 */
+.keys{display:flex;flex-direction:column;gap:7px;margin:4px 0 12px}
+.keys div{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.keys kbd{font:600 12px var(--font-mono);border:1px solid var(--border);border-radius:5px;padding:2px 7px;background:var(--surface-2);color:var(--ink-2)}
+.keys div span{margin-left:auto;color:var(--ink-3);font-size:11.5px}
 
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
@@ -440,6 +512,7 @@ table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}t
 <symbol id="i-help" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9a3 3 0 1 1 4 3c-.8.5-1 1-1 2M12 18h.01"/></symbol>
 <symbol id="i-info" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 11v6M12 7h.01"/></symbol>
 <symbol id="i-expand" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 3H3v6M15 3h6v6M9 21H3v-6M15 21h6v-6"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4.3-4.3"/></symbol>
 </defs></svg>
 
 <div class="app">
@@ -464,9 +537,9 @@ table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}t
         <button class="sitem" data-page="history"><svg><use href="#i-hist"/></svg>历史</button>
       </div>
       <div class="sfoot">
-        <button class="ssec"><svg><use href="#i-doc"/></svg>导出文档</button>
-        <button class="ssec"><svg><use href="#i-help"/></svg>帮助与反馈</button>
-        <button class="ssec"><svg><use href="#i-info"/></svg>关于</button>
+        <button class="ssec" id="doc" title="外部文档"><svg><use href="#i-doc"/></svg>导出文档</button>
+        <button class="ssec" id="help"><svg><use href="#i-help"/></svg>帮助与反馈</button>
+        <button class="ssec" id="about"><svg><use href="#i-info"/></svg>关于</button>
       </div>
     </nav>
 
@@ -477,20 +550,21 @@ table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}t
           <div class="ttl"><h1>Schema</h1><p>编辑资源结构，变更以草稿方式校验后原子应用。</p></div>
           <div class="acts">
             <button class="btn btn-ghost btn-sm m-only" id="insp-tr">属性 <svg width="12" height="12" style="vertical-align:-1px"><use href="#i-chev"/></svg></button>
-            <button class="btn btn-danger-ghost btn-sm d-only">删除资源</button>
+            <button class="btn btn-danger-ghost btn-sm d-only" id="del-res">删除资源</button>
           </div>
         </div>
         <div class="wb" id="wb" data-open-res="false" data-open-insp="false">
           <aside class="pane res res-pane" aria-label="资源">
             <div class="inner">
               <header class="phead"><div><strong>Schema 资源</strong><span>Tables · Records · Enums</span></div><button class="ibtn d-only" id="res-close" aria-label="收起资源" title="收起资源"><svg><use href="#i-left"/></svg></button></header>
-              <div class="res-top"><input class="search" placeholder="搜索资源…"><div class="tree" id="tree"></div></div>
-              <footer class="pfoot">9 匹配 · 9 总计 · 状态已保存</footer>
+              <div class="res-top"><input class="search" id="res-search" placeholder="搜索资源…"><div class="tree" id="tree"></div></div>
+              <footer class="pfoot" id="res-pfoot">9 匹配 · 9 总计 · 状态已保存</footer>
             </div>
           </aside>
           <section class="editor">
             <div class="ec">
               <header class="rhead">
+                <button class="ibtn" id="quick-open" title="快速打开 · Cmd/Ctrl+P" aria-label="快速打开"><svg width="16" height="16"><use href="#i-search"/></svg></button>
                 <button class="ibtn" id="res-toggle" title="资源面板" aria-label="资源面板" aria-expanded="false" aria-controls="wb"><svg width="16" height="16"><use href="#i-cols"/></svg></button>
                 <div class="rtitle"><span class="eyebrow">Table</span><h1>Item</h1><span class="sub">item.xlsx · 8 个字段 · 主键 Id</span></div>
               </header>
@@ -509,7 +583,7 @@ table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}t
                     <tr><td><span class="fname">Tags</span></td><td><span class="type">vector&lt;int32&gt;</span></td><td><span class="tmeta">1 column</span></td><td><span class="roles"></span></td><td><span class="rops"><button class="ibtn" aria-label="上移" title="上移"><svg><use href="#i-up"/></svg></button><button class="ibtn" aria-label="下移" title="下移"><svg><use href="#i-down"/></svg></button><button class="ibtn danger" aria-label="删除字段" title="删除字段"><svg><use href="#i-x"/></svg></button></span></td></tr>
                     <tr><td><span class="fname">IsActive</span></td><td><span class="type">bool</span></td><td><span class="tmeta">1 column</span></td><td><span class="roles"><span class="badge badge-mute">SERVER</span></span></td><td><span class="rops"><button class="ibtn" aria-label="上移" title="上移"><svg><use href="#i-up"/></svg></button><button class="ibtn" aria-label="下移" title="下移"><svg><use href="#i-down"/></svg></button><button class="ibtn danger" aria-label="删除字段" title="删除字段"><svg><use href="#i-x"/></svg></button></span></td></tr>
                   </tbody></table>
-                  <button class="addrow"><svg width="14" height="14"><use href="#i-plus"/></svg>添加字段</button>
+                  <button class="addrow" id="add-field"><svg width="14" height="14"><use href="#i-plus"/></svg>添加字段</button>
                 </div>
               </div>
               <div class="tabpane" id="tab-indexes" role="tabpanel" aria-labelledby="tab-btn-indexes" tabindex="0"><span class="badge badge-mute">Code / Group 查询索引</span></div>
@@ -531,17 +605,26 @@ table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}t
           <nav class="act"><button class="side-tab" id="insp-tab" aria-pressed="false">属性</button></nav>
         </div>
         <div class="backdrop" id="backdrop"></div>
+        <div class="draftbar" id="draftbar" hidden>
+          <span class="dot"></span>
+          <span class="txt" id="draftbar-txt">0 条未应用变更</span>
+          <span class="acts">
+            <button class="btn btn-ghost btn-sm" id="draft-undo" disabled>撤销</button>
+            <button class="btn btn-ghost btn-sm" id="draft-redo" disabled>重做</button>
+            <button class="btn btn-primary btn-sm" id="draft-review">审查并应用</button>
+          </span>
+        </div>
       </section>
 
       <!-- ========== 翻译 ========== -->
       <section class="page" id="page-i18n">
         <div class="mhead"><div class="ttl"><h1>翻译 i18n</h1><p>选择表与语言，逐条维护译文；同步后自动合并。</p></div><div class="acts"><button class="btn btn-primary btn-sm" id="i18n-progress">全部表进度</button></div></div>
         <div class="toolbar">
-          <div class="grp"><button class="btn btn-ghost btn-sm">选择表</button><span class="val">Item</span></div>
+          <div class="grp"><button class="btn btn-ghost btn-sm" id="pick-table">选择表 <svg width="12" height="12" style="vertical-align:-1px"><use href="#i-chev"/></svg></button><span class="val" id="pick-table-val">Item</span></div>
           <span class="div" aria-hidden="true"></span>
-          <div class="grp"><span class="lbl">语言</span><button class="pill active">en</button><button class="pill">ja</button></div>
+          <div class="grp"><span class="lbl">语言</span><button class="pill active" data-lang="en">en</button><button class="pill" data-lang="ja">ja</button></div>
           <span class="div" aria-hidden="true"></span>
-          <div class="grp"><span class="lbl">状态</span><button class="pill active">全部</button><button class="pill">待审</button><button class="pill">缺失</button></div>
+          <div class="grp"><span class="lbl">状态</span><button class="pill active" data-status="all">全部</button><button class="pill" data-status="stale">待审</button><button class="pill" data-status="missing">缺失</button></div>
           <div class="right"><div class="colvis" id="colvis"><button class="btn btn-ghost btn-sm" id="colvis-btn">列 <svg width="12" height="12" style="vertical-align:-1px"><use href="#i-cols"/></svg></button><div class="col-menu"><label><input type="checkbox" data-col="src" checked>原文</label><label><input type="checkbox" data-col="trans" checked>译文</label><label><input type="checkbox" data-col="status" checked>状态</label><label><input type="checkbox" data-col="ops" checked>操作</label></div></div></div>
         </div>
         <div class="tablewrap" role="region" tabindex="0" aria-label="翻译条目"><table class="data"><thead><tr><th class="col-id">主键</th><th class="col-field">字段</th><th class="src-cell">原文</th><th class="trans-cell">译文</th><th>状态</th><th>操作</th></tr></thead><tbody id="tbody"></tbody></table></div>
@@ -560,7 +643,7 @@ table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}t
               <div class="oh-num">2 <span class="unit">张表</span></div>
               <div class="oh-sub"><b>Item、Quest</b> 与模板状态不一致 · <b>重新导出</b> 将重建全部产物</div>
             </div>
-            <button class="btn btn-primary">重新导出</button>
+            <button class="btn btn-primary" id="re-export">重新导出</button>
           </div>
           <div class="ev-progress">
             <div class="bar"><div><h3>执行进度</h3><p>尚未开始 · 等待执行</p></div></div>
@@ -584,17 +667,17 @@ table.matrix td:last-child{font-weight:650;border-left:1px solid var(--border)}t
       <section class="page" id="page-logs">
         <div class="mhead"><div class="ttl"><h1>日志</h1><p>运行日志与任务状态。</p></div></div>
         <div class="toolbar">
-          <div class="grp"><span class="lbl">模块</span><button class="pill active">全部</button><button class="pill">导出</button><button class="pill">翻译</button></div>
+          <div class="grp"><span class="lbl">模块</span><button class="pill active" data-module="all">全部</button><button class="pill" data-module="export">导出</button><button class="pill" data-module="trans">翻译</button></div>
           <span class="div" aria-hidden="true"></span>
-          <div class="grp"><span class="lbl">级别</span><button class="pill active">全部</button><button class="pill">INFO</button><button class="pill">DEBUG</button></div>
-          <div class="right"><input class="search" placeholder="搜索日志…"></div>
+          <div class="grp"><span class="lbl">级别</span><button class="pill active" data-level="all">全部</button><button class="pill" data-level="INFO">INFO</button><button class="pill" data-level="DEBUG">DEBUG</button></div>
+          <div class="right"><input class="search" id="log-search" placeholder="搜索日志…"></div>
         </div>
         <div class="empty"><span class="ic"><svg><use href="#i-log"/></svg></span><div class="t">还没有运行日志</div><div class="s">运行一次导出后，执行过程会实时显示在这里。</div><button class="btn btn-ghost btn-sm cta">前往导出</button></div>
       </section>
       <section class="page" id="page-history">
         <div class="mhead"><div class="ttl"><h1>历史</h1><p>最近导出记录与结果。</p></div></div>
         <div class="toolbar">
-          <div class="grp"><span class="lbl">范围</span><button class="pill active">全部</button><button class="pill">今日</button><button class="pill">本周</button></div>
+          <div class="grp"><span class="lbl">范围</span><button class="pill active" data-scope="all">全部</button><button class="pill" data-scope="today">今日</button><button class="pill" data-scope="week">本周</button></div>
           <div class="right"><span class="hint">最近 10 条记录</span></div>
         </div>
         <div class="empty"><span class="ic"><svg><use href="#i-hist"/></svg></span><div class="t">暂无导出历史</div><div class="s">完成一次导出后，这里会记录最近的结果与耗时。</div><button class="btn btn-ghost btn-sm cta">前往导出</button></div>
@@ -683,6 +766,183 @@ document.getElementById('i18n-progress').addEventListener('click',()=>{const m=o
 /* ---- 模块切换（侧栏 nav）---- 与真实 app 一致：再点当前 Schema 时切换资源面板开合 */
 document.querySelectorAll('.sitem').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.page==='schema'&&document.querySelector('.sitem.active')===b){setPane('res',wb.getAttribute('data-open-res')!=='true');return;}document.querySelectorAll('.sitem').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+b.dataset.page));setSideDrawer(false);requestAnimationFrame(refreshLayout);}));
 
+/* ================= responsive-shell-dialogs：草稿栏 + 弹窗 + 接线 ================= */
+/* 资源元信息 / 反向引用 mock */
+const META={Item:['Table','item.xlsx · 8 个字段 · 主键 Id'],ItemType:['Table','itemtype.xlsx · 3 个字段 · 主键 Id'],Quest:['Table','quest.xlsx · 5 个字段 · 主键 Id'],UIConfig:['Table','ui.xlsx · 5 个字段 · 主键 Id'],Monster:['Table','monster.xlsx · 9 个字段 · 主键 Id'],ItemDropRange:['Record','Min · Max'],Buff:['Record','Duration · Value'],ItemRarity:['Enum','Common · Rare · Epic'],UIConfigLayer:['Enum','Base · HUD · Popup']};
+const REVERSE={Item:['ItemType.Id','ItemDropRange']};
+function currentResource(){const ar=document.querySelector('#tree .rrow.active');return ar?ar.dataset.name:'Item';}
+/* 打开资源（Q1 调色板 / 类型链接共用）：更新 rhead + 资源树高亮 */
+function openResource(name){
+  const meta=META[name]||['Table',name+' · 未知'];
+  const h1=document.querySelector('.rtitle h1');if(h1)h1.textContent=name;
+  const eb=document.querySelector('.eyebrow');if(eb)eb.textContent=meta[0];
+  const sub=document.querySelector('.rtitle .sub');if(sub)sub.textContent=meta[1];
+  const row=document.querySelector('#tree .rrow[data-name="'+name+'"]');
+  if(row){const g=row.closest('.group');if(g)g.dataset.open='true';document.querySelectorAll('#tree .rrow').forEach(r=>r.classList.toggle('active',r===row));row.scrollIntoView({block:'nearest'});}
+}
+/* ---- 草稿状态（隐式草稿模型 DEC2）---- */
+const draft={cmds:[],cursor:0,persistFail:false};
+const draftbar=document.getElementById('draftbar');
+function updateDraftBar(){
+  const pending=draft.cmds.length;
+  if(!pending){draftbar.hidden=true;return;}
+  draftbar.hidden=false;draftbar.classList.remove('success');draftbar.classList.toggle('warn',!!draft.persistFail);
+  document.getElementById('draftbar-txt').textContent=draft.cmds.length+' 条未应用变更'+(draft.persistFail?' · 草稿未持久化（IndexedDB）':'');
+  document.getElementById('draft-undo').disabled=draft.cursor===0;
+  document.getElementById('draft-redo').disabled=draft.cursor>=draft.cmds.length;
+}
+function pushDraft(cmd){draft.cmds=draft.cmds.slice(0,draft.cursor);draft.cmds.push(cmd);draft.cursor=draft.cmds.length;updateDraftBar();}
+function undoDraft(){if(draft.cursor>0){draft.cursor--;updateDraftBar();}}
+function redoDraft(){if(draft.cursor<draft.cmds.length){draft.cursor++;updateDraftBar();}}
+function clearDraft(){draft.cmds=[];draft.cursor=0;updateDraftBar();}
+function showApplied(){draftbar.hidden=false;draftbar.classList.remove('warn');draftbar.classList.add('success');document.getElementById('draftbar-txt').textContent='已应用：Item · Quest';setTimeout(()=>{if(!draft.cmds.length){draftbar.hidden=true;draftbar.classList.remove('success');}},3000);}
+/* mock 开关（spec 场景「持久化失败警告」演示入口）：控制台 window.__dlgPersistFail(true) 触发 draftbar warn 态 */
+window.__dlgPersistFail=function(on){draft.persistFail=!!on;updateDraftBar();};
+/* 嵌套弹窗（P5→P6）inert 保持：关掉上层后若仍有未在关闭中的下层 mask，恢复 app inert（外部 closeMask 每次都会移除；忽略 .closing 态避免单弹窗关闭后被误加 inert） */
+const _closeMask=closeMask;
+closeMask=function(m){_closeMask(m);const live=[...document.querySelectorAll('.mask')].filter(x=>!x.classList.contains('closing'));if(live.length)document.querySelector('.app').setAttribute('inert','');};
+/* 初始焦点：danger 弹窗按 spec 落「取消」——openMask 已聚焦首个可聚焦元素，这里按 data-focus 校正 */
+function focusInit(m){const f=m.querySelector('[data-focus]');if(f)f.focus();}
+/* ---- D1 删除资源 ---- */
+function openDeleteResource(){
+  const name=currentResource(),meta=META[name]||['Table',''];
+  const refs=REVERSE[name]||[];const blocked=refs.length>0;
+  const m=openMask(`<div class="dhead"><span>删除资源</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><p style="margin:0 0 10px;display:flex;align-items:center;gap:8px"><span class="kind ${meta[0].toLowerCase()}">${meta[0]}</span><b class="num" style="font:680 14px var(--font-mono)">${name}</b></p>${blocked?`<div class="blocker-list"><div class="blocker">⛔ 无法删除：仍被引用 ${refs.map(r=>`<span class="loc">${r}</span>`).join('、')}（不提供级联删除）</div></div>`:''}<p style="margin:0;color:var(--ink-2);font-size:12.5px;line-height:1.7">将移除：8 个字段 · 12 行数据<br>变更先进入草稿，可在底部撤销，审查并应用后才真正落盘。</p></div><div class="dfoot"><button class="btn btn-ghost" id="dl-seeplan">查看影响</button><button class="btn btn-ghost" data-focus data-close>取消</button><button class="btn btn-danger" id="dl-confirm" ${blocked?'disabled':''}>删除</button></div>`);
+  focusInit(m);
+  m.querySelector('#dl-seeplan').addEventListener('click',()=>openChangePlan());
+  m.querySelector('#dl-confirm').addEventListener('click',()=>{if(blocked)return;pushDraft({type:'delete_resource',name});closeMask(m);});
+}
+/* ---- D2 删除字段 ---- */
+function openDeleteField(tr){
+  const name=tr.querySelector('.fname').textContent;
+  const t=tr.querySelector('.type')?tr.querySelector('.type').textContent:(tr.querySelector('.tlink')?tr.querySelector('.tlink').textContent:'');
+  const m=openMask(`<div class="dhead"><span>删除字段</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><p style="margin:0 0 8px"><b class="num" style="font:600 13px var(--font-mono)">${name}</b> <span class="tmeta">· ${t}</span></p><p style="margin:0;color:var(--ink-2);font-size:12.5px">将移出字段表与 Excel 列。作为草稿变更，可撤销。</p></div><div class="dfoot"><button class="btn btn-ghost" data-focus data-close>取消</button><button class="btn btn-danger" id="df-confirm">删除</button></div>`);
+  m.querySelector('.dialog').classList.add('dlg-sm');focusInit(m);
+  m.querySelector('#df-confirm').addEventListener('click',()=>{pushDraft({type:'delete_field',owner:currentResource(),field:name});closeMask(m);});
+}
+/* ---- F1 添加字段 ---- */
+let typePickerSel='int32';
+function openAddField(){
+  const m=openMask(`<div class="dhead"><span>添加字段</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><div class="dlg-field"><label class="fl">字段名</label><input class="dlg-in" id="af-name" data-focus placeholder="如 DisplayName" autocomplete="off"><div class="dlg-err">字段名须以大写字母开头，且不以 _ 结尾</div></div><div class="dlg-field"><label class="fl">类型</label><button class="type-trigger" id="af-type" type="button"><span class="mono" id="af-type-txt">int32</span><span class="caret">▾</span></button></div><div class="dlg-field"><label class="fl">角色</label><div class="role-opts"><label><input type="radio" name="af-role" value="" checked>无</label><label><input type="radio" name="af-role" value="i18n">I18N</label><label><input type="radio" name="af-role" value="server">Server-only</label></div></div><div class="dlg-field"><label class="fl">约束</label><div style="display:flex;gap:16px;flex-wrap:wrap"><label style="font-size:12px;display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="af-pk" style="accent-color:var(--accent)"> 主键</label><label style="font-size:12px;display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="af-req" style="accent-color:var(--accent)"> 必填</label></div></div><div class="dlg-field sep-row" id="af-sep-row"><label class="fl">分隔符（vector）</label><input class="dlg-in" id="af-sep" value="," style="max-width:120px;text-align:center;font-family:var(--font-mono)"></div></div><div class="dfoot"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="af-add">添加字段</button></div>`);
+  const nameEl=m.querySelector('#af-name');
+  focusInit(m); /* 表单初始焦点=字段名（dhead ✕ 是首个可聚焦元素，需校正） */
+  nameEl.addEventListener('input',()=>nameEl.classList.remove('invalid'));
+  m.querySelector('#af-type').addEventListener('click',()=>openTypePicker(v=>{typePickerSel=v;m.querySelector('#af-type-txt').textContent=v;m.querySelector('#af-sep-row').classList.toggle('show',/^vector</.test(v));}));
+  m.querySelector('#af-add').addEventListener('click',()=>{
+    const v=nameEl.value.trim();
+    if(!/^[A-Z][A-Za-z0-9_]*$/.test(v)||/_$/.test(v)){nameEl.classList.add('invalid');nameEl.focus();return;}
+    const role=m.querySelector('input[name="af-role"]:checked').value;
+    pushDraft({type:'add_field',owner:currentResource(),field:v,type:typePickerSel,role});
+    closeMask(m);
+  });
+}
+/* ---- F2 类型选择器 ---- */
+function openTypePicker(cb){
+  const SCALARS=[['int32',''],['int64',''],['float',''],['double',''],['bool',''],['string','']];
+  const NAMED=[['ItemRarity','enum'],['ItemDropRange','record'],['ItemType.Id','ref'],['Buff','record']];
+  const m=openMask(`<div class="dhead"><span>选择类型</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><input class="search" data-focus placeholder="搜索类型…" autocomplete="off"><div class="dlg-list"></div></div><div class="dfoot"><button class="btn btn-ghost" data-close>取消</button></div>`);
+  m.querySelector('.dialog').classList.add('dlg-sm');focusInit(m);
+  const search=m.querySelector('.search'),list=m.querySelector('.dlg-list');
+  function render(q){q=(q||'').toLowerCase();
+    const scal=SCALARS.filter(x=>!q||x[0].includes(q));
+    const nam=NAMED.filter(x=>!q||x[0].toLowerCase().includes(q));
+    list.innerHTML=(scal.length?`<div class="sec">标量</div>`+scal.map(s=>`<button class="dlg-row" data-v="${s[0]}"><span class="mono">${s[0]}</span></button>`).join(''):'')+(nam.length?`<div class="sec">具名</div>`+nam.map(n=>`<button class="dlg-row" data-v="${n[0]}"><span class="mono">${n[0]}</span><span class="kind ${n[1]==='enum'?'enum':n[1]==='ref'?'table':'record'}">${n[1]}</span></button>`).join(''):'')+`<div class="sec">容器</div><button class="dlg-row" data-v="vector&lt;T&gt;"><span class="mono">vector&lt;T&gt;</span><span class="tmeta">元素类型</span></button>`+(!scal.length&&!nam.length?'<div class="dlg-empty">无匹配</div>':'');
+  }
+  render('');
+  search.addEventListener('input',()=>render(search.value));
+  list.addEventListener('click',e=>{const b=e.target.closest('.dlg-row');if(b){cb(b.dataset.v==='vector&lt;T&gt;'?'vector<int32>':b.dataset.v);closeMask(m);}});
+}
+/* ---- P5 变更计划 ---- */
+function planBlocked(){return draft.cmds.slice(0,draft.cursor).some(c=>c.type==='delete_resource'&&(REVERSE[c.name]||[]).length>0);}
+function impactRows(){const rows=[];draft.cmds.slice(0,draft.cursor).forEach(c=>{if(c.type==='delete_resource'){rows.push(['Schema',c.name,'删除资源'],['Excel',c.name,'移除列'],['FBS/Binary',c.name,'rebuild'],['Accessor',c.name,'rebuild']);}else if(c.type==='delete_field'){rows.push(['Schema',c.owner,'删除字段 '+c.field],['Excel',c.owner,'移除列']);}else if(c.type==='add_field'){rows.push(['Schema',c.owner,'添加字段 '+c.field],['Excel',c.owner,'新增列']);}});return rows;}
+function openChangePlan(){
+  const blocked=planBlocked();const imps=impactRows();
+  const m=openMask(`<div class="dhead"><span>审查并应用</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><div class="risk-line"><span class="badge ${blocked?'badge-warn':'badge-ok'}"><span class="b-dot"></span>风险：${blocked?'数据破坏':'安全'}</span></div>${imps.length?`<div class="impacts">${imps.map(i=>`<div class="impact"><span class="art">${i[0]}</span><span class="mono" style="font:600 12px var(--font-mono);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i[1]}</span><span class="act">${i[2]}</span></div>`).join('')}</div>`:''}${blocked?`<div class="blocker-list"><div class="blocker">⛔ 无法删除：仍被引用 <span class="loc">ItemType.Id · ItemDropRange</span>（不提供级联删除）</div></div>`:''}<div class="dlg-hint">计划有效期 2 小时，过期需重新生成</div></div><div class="dfoot"><button class="btn btn-danger-ghost" id="cp-discard" ${draft.cmds.length?'':'disabled'}>放弃草稿</button><button class="btn btn-ghost" data-focus data-close>取消</button><button class="btn btn-primary" id="cp-apply" ${blocked?'disabled':''}>应用变更</button></div>`);
+  m.querySelector('.dialog').classList.add('dlg-plan');focusInit(m);
+  m.querySelector('#cp-discard').addEventListener('click',()=>openDiscardDraft());
+  m.querySelector('#cp-apply').addEventListener('click',()=>{clearDraft();closeMask(m);showApplied();});
+}
+/* ---- P6 放弃草稿 ---- */
+function openDiscardDraft(){
+  const n=draft.cmds.length;
+  const m=openMask(`<div class="dhead"><span>放弃草稿</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><p style="margin:0;color:var(--ink)">放弃 ${n} 条未应用变更？此操作不可撤销。</p></div><div class="dfoot"><button class="btn btn-ghost" data-focus data-close>取消</button><button class="btn btn-danger" id="dd-yes">放弃</button></div>`);
+  m.querySelector('.dialog').classList.add('dlg-sm');focusInit(m);
+  m.querySelector('#dd-yes').addEventListener('click',()=>{clearDraft();closeMask(m);const p5=document.querySelector('.mask');if(p5)closeMask(p5);});
+}
+/* ---- P1 选择表 ---- */
+const TABLE_DATA={Item:[['1001','Name','“A Sword of Valor”','','translated'],['1002','Name','“Shield of the First Knight”','','missing'],['1003','Desc','“A legendary blade forged in the great war, said to cut through darkness itself.”','','stale'],['1004','Name','“Crystal of Swiftness”','','translated']],Quest:[['2001','Title','“The First Step”','','missing'],['2002','Desc','“A journey begins.”','','translated']],UIConfig:[['3001','Label','“Back”','','stale'],['3002','Label','“Confirm”','','missing']]};
+function renderRows(){document.getElementById('tbody').innerHTML=rows.map((r,i)=>`<tr><td class="col-id id num">${r[0]}</td><td class="col-field fld">${r[1]}</td><td class="src-cell"><span class="src-wrap"><span class="src-txt">${r[2]}</span></span></td><td class="trans-cell"><div class="trans-box"><div class="trans-prev ${r[3]?'has':''}"><span class="ln">${r[3]||'点击填写译文…'}</span></div><button class="trans-expand" type="button" data-i="${i}" title="全屏编辑译文" aria-label="全屏编辑译文"><svg width="13" height="13"><use href="#i-expand"/></svg></button></div></td><td><span class="badge ${r[4]==='translated'?'badge-ok':r[4]==='stale'?'badge-warn':'badge-mute'}"><span class="b-dot"></span>${r[4]}</span></td><td><span class="rops"><button class="btn btn-accent btn-sm">保存</button></span></td></tr>`).join('');document.querySelectorAll('#tbody .src-txt').forEach(el=>el.dataset.moreReady='');initSrcMore();}
+function switchTable(name){document.getElementById('pick-table-val').textContent=name;rows.splice(0,rows.length,...(TABLE_DATA[name]||[]));renderRows();refreshLayout();}
+function openPickTable(){
+  const TABLES=[['Item','8','2','translated'],['Quest','5','1','stale'],['UIConfig','5','1','missing']];
+  const m=openMask(`<div class="dhead"><span>选择翻译表</span><span class="sp"></span><span class="dlg-hint">含 i18n 字段</span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><input class="search" data-focus placeholder="搜索表名…" autocomplete="off"><div class="pick-filters">${[['all','全部'],['missing','有缺失'],['stale','有待审'],['translated','已译完']].map(([v,l])=>`<button class="pill active" data-f="${v}">${l}</button>`).join('')}</div><div class="dlg-count" id="pt-count"></div><div class="dlg-list"></div></div><div class="dfoot"><button class="btn btn-ghost" data-close>关闭</button></div>`);
+  const search=m.querySelector('.search'),filters=m.querySelector('.pick-filters'),list=m.querySelector('.dlg-list'),count=m.querySelector('#pt-count');
+  focusInit(m);
+  let f='all';
+  function render(){
+    const q=search.value.trim().toLowerCase();
+    const flt=TABLES.filter(t=>(!q||t[0].toLowerCase().includes(q))&&(f==='all'||t[3]===f));
+    count.textContent=flt.length+' / '+TABLES.length+' 张含 i18n 的表';
+    list.innerHTML=flt.length?flt.map(t=>`<button class="dlg-row" data-t="${t[0]}"><span class="mono">${t[0]}</span><span class="meta">${t[1]} 字段 · i18n ${t[2]}</span><span class="badge ${t[3]==='translated'?'badge-ok':t[3]==='stale'?'badge-warn':'badge-mute'}">${t[3]==='translated'?'已译完':t[3]==='stale'?'待审':'有缺失'}</span></button>`).join(''):'<div class="dlg-empty">没有匹配的表<br>试试其他关键词或筛选条件</div>';
+  }
+  render();
+  search.addEventListener('input',render);
+  filters.addEventListener('click',e=>{const p=e.target.closest('.pill');if(p){f=p.dataset.f;filters.querySelectorAll('.pill').forEach(x=>x.classList.toggle('active',x===p));render();}});
+  list.addEventListener('click',e=>{const b=e.target.closest('.dlg-row');if(b){switchTable(b.dataset.t);closeMask(m);}});
+}
+/* ---- I1/I2 ---- */
+function openAbout(){const m=openMask(`<div class="dhead"><span>关于</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><span class="logo" style="width:38px;height:38px;display:grid;place-items:center;border-radius:9px;background:var(--brand);color:#fff;font:800 14px/1 var(--font-mono)">ct</span><div><div style="font-weight:680;font-size:14px">配表工具</div><div class="tmeta" style="margin-top:2px">版本 0.6.x · 工作区 gd · Schema 9 资源</div></div></div><p style="margin:0 0 12px;color:var(--ink-2);font-size:12.5px;line-height:1.7">将 Excel + YAML Schema 导出为 JSON · FBS · Binary · C#/Lua Accessor。</p><p style="margin:0;font-size:12.5px">· 导出文档　· 项目仓库</p></div><div class="dfoot"><button class="btn btn-ghost" data-focus data-close>关闭</button></div>`);focusInit(m);}
+function openHelp(){const m=openMask(`<div class="dhead"><span>帮助与反馈</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><div class="fl" style="font-size:11.5px;font-weight:700;color:var(--ink-2);margin-bottom:5px">快捷操作</div><div class="keys"><div><kbd>⌘P</kbd>快速打开资源<span>全局</span></div><div><kbd>⌘Z</kbd><kbd>⇧⌘Z</kbd>撤销 / 重做<span>草稿</span></div><div><kbd>Esc</kbd>关闭浮层（逐层退）<span>全局</span></div></div><div class="fl" style="font-size:11.5px;font-weight:700;color:var(--ink-2);margin-bottom:5px">遇到问题？</div><p style="margin:0 0 4px;font-size:12.5px">· 查看导出文档</p><p style="margin:0;font-size:12.5px">· 提交反馈（GitHub Issues）</p></div><div class="dfoot"><button class="btn btn-ghost" data-focus data-close>关闭</button></div>`);focusInit(m);}
+/* ---- Q1 快速打开 ---- */
+function openQuickOpen(){
+  const flat=[];GROUPS.forEach(g=>g.rows.forEach(r=>flat.push([r[0],g.k,r[2]])));
+  const m=openMask(`<div class="dhead"><span>快速打开</span><span class="sp"></span><button class="ibtn" data-close aria-label="关闭"><svg><use href="#i-x"/></svg></button></div><div class="dbody"><input class="search" id="qo-search" data-focus placeholder="搜索所有 Table / Record / Enum…" autocomplete="off"><div class="dlg-list"></div><div class="qo-hint"><span><kbd>↑</kbd><kbd>↓</kbd> 选择</span><span><kbd>Enter</kbd> 打开</span><span><kbd>Esc</kbd> 关闭</span></div></div>`);
+  m.querySelector('.dialog').classList.add('dlg-palette');focusInit(m);
+  const search=m.querySelector('#qo-search'),list=m.querySelector('.dlg-list');
+  let active=0,cands=[];
+  function render(){const q=search.value.trim().toLowerCase();cands=flat.filter(r=>!q||r[0].toLowerCase().includes(q));if(active>=cands.length)active=0;list.innerHTML=cands.length?cands.map((r,i)=>`<button class="dlg-row ${i===active?'active':''}" data-i="${i}"><span class="kind ${r[1]}">${r[1]==='table'?'Table':r[1]==='enum'?'Enum':'Record'}</span><span class="mono">${r[0]}</span><span class="meta">${r[2]} ${r[1]==='enum'?'值':'字段'}</span></button>`).join(''):'<div class="dlg-empty">无匹配</div>';}
+  render();
+  search.addEventListener('input',()=>{active=0;render();});
+  search.addEventListener('keydown',e=>{if(!cands.length)return;if(e.key==='ArrowDown'){e.preventDefault();active=Math.min(active+1,cands.length-1);render();}else if(e.key==='ArrowUp'){e.preventDefault();active=Math.max(active-1,0);render();}else if(e.key==='Enter'){e.preventDefault();openResource(cands[active][0]);closeMask(m);}});
+  list.addEventListener('click',e=>{const b=e.target.closest('.dlg-row');if(b){openResource(cands[Number(b.dataset.i)][0]);closeMask(m);}});
+}
+document.getElementById('quick-open').addEventListener('click',openQuickOpen);
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&String(e.key).toLowerCase()==='p'){e.preventDefault();openQuickOpen();}});
+/* ---- 接线：字段上移/下移/删除 + 类型链接 ---- */
+function syncRowArrows(){document.querySelectorAll('.fgrid tbody tr').forEach((tr,i)=>{const bs=tr.querySelectorAll('.rops .ibtn');if(bs.length>1){bs[0].disabled=i===0;bs[1].disabled=i===document.querySelectorAll('.fgrid tbody tr').length-1;}});}
+document.querySelector('.fgrid tbody').addEventListener('click',e=>{
+  const l=e.target.closest('.tlink');if(l){openResource(l.textContent.trim());return;}
+  const btn=e.target.closest('.rops .ibtn');if(!btn)return;
+  const tr=btn.closest('tr'),act=btn.getAttribute('aria-label');
+  if(act==='上移'){const p=tr.previousElementSibling;if(p){tr.parentNode.insertBefore(tr,p);syncRowArrows();}}
+  else if(act==='下移'){const n=tr.nextElementSibling;if(n){tr.parentNode.insertBefore(n,tr);syncRowArrows();}}
+  else if(act==='删除字段'){openDeleteField(tr);}
+});
+document.getElementById('add-field').addEventListener('click',openAddField);
+document.getElementById('del-res').addEventListener('click',openDeleteResource);
+/* ---- 接线：草稿栏 ---- */
+document.getElementById('draft-undo').addEventListener('click',undoDraft);
+document.getElementById('draft-redo').addEventListener('click',redoDraft);
+document.getElementById('draft-review').addEventListener('click',openChangePlan);
+/* ---- 接线：P1 / I1 / I2 / I3 ---- */
+document.getElementById('pick-table').addEventListener('click',openPickTable);
+document.getElementById('about').addEventListener('click',openAbout);
+document.getElementById('help').addEventListener('click',openHelp);
+/* I3 导出文档：外部跳转（静态原型无 URL，仅标记外部链接） */
+document.getElementById('doc').addEventListener('click',()=>{});
+/* ---- 接线：i18n 状态过滤 + 语言/日志/历史 pills ---- */
+document.querySelectorAll('#page-i18n .toolbar .pill').forEach(p=>p.addEventListener('click',()=>{const grp=p.parentElement;grp.querySelectorAll('.pill').forEach(x=>x.classList.toggle('active',x===p));if(p.hasAttribute('data-status')){const st=p.dataset.status;document.querySelectorAll('#tbody tr').forEach(tr=>{tr.hidden=st!=='all'&&tr.querySelector('.badge').textContent!==st;});}}));
+document.querySelectorAll('#page-logs .toolbar .pill,#page-history .toolbar .pill').forEach(p=>p.addEventListener('click',()=>{p.parentElement.querySelectorAll('.pill').forEach(x=>x.classList.toggle('active',x===p));}));
+/* ---- 接线：i18n 行保存 / 资源搜索 / 日志搜索 / 前往导出 ---- */
+document.getElementById('tbody').addEventListener('click',e=>{const save=e.target.closest('.rops .btn-accent');if(!save)return;const tr=save.closest('tr');const inline=tr.querySelector('.trans-in');if(inline){const ex=tr.querySelector('.trans-expand');if(ex)commitInlineEdit(Number(ex.dataset.i),inline.value);}const orig=save.textContent;save.textContent='已保存';save.disabled=true;setTimeout(()=>{save.textContent=orig;save.disabled=false;},900);});
+document.getElementById('res-search').addEventListener('input',e=>{const q=e.target.value.trim().toLowerCase();let visible=0;document.querySelectorAll('#tree .rrow').forEach(r=>{const hit=!q||r.dataset.name.toLowerCase().includes(q);r.hidden=!hit;if(hit)visible++;});document.querySelectorAll('#tree .group').forEach(g=>{const any=[...g.querySelectorAll('.rrow')].some(r=>!r.hidden);g.hidden=!any;});const pf=document.getElementById('res-pfoot');if(pf)pf.textContent=visible+' 匹配 · 9 总计 · 状态已保存';});
+document.getElementById('log-search').addEventListener('input',()=>{/* 日志页为空态，无数据可过滤；输入不报错即可 */});
+document.querySelectorAll('.cta').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.sitem').forEach(x=>x.classList.toggle('active',x.dataset.page==='export'));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-export'));}));
+/* ---- 接线：重新导出 mock 进度 ---- */
+let reRunning=false;
+document.getElementById('re-export').addEventListener('click',()=>{if(reRunning)return;reRunning=true;const cells=[...document.querySelectorAll('#page-export .prog-cell')];const bar=document.querySelector('#page-export .bar p');cells.forEach(c=>c.classList.remove('done','active'));let i=0;const timer=setInterval(()=>{if(i<cells.length){cells[i].classList.add('active');if(i>0)cells[i-1].classList.remove('active');bar.textContent='执行中… 阶段 '+(i+1)+'/'+cells.length;}i++;if(i>cells.length){clearInterval(timer);cells.forEach(c=>{c.classList.remove('active');c.classList.add('done');});bar.textContent='已完成 · 12s · 成功';const dd=document.querySelector('#page-export .ev-sum .rows div:nth-child(2) dd');if(dd)dd.textContent='成功 · 8 张表 · 12s';reRunning=false;}},420);});
+syncRowArrows();
+
 /* ---- 初始状态 ---- */
 /* 宽表右缘滚动渐变提示：包一层定位容器 + 绝对定位光晕 */
 function prepareGlow(el){
@@ -716,8 +976,8 @@ addEventListener('resize',()=>{if(resizeRaf)return;resizeRaf=requestAnimationFra
 /* HTML 默认 data-open-res/insp 已为 false，仅需收拢侧栏并首刷布局 */
 function init(){setSideDrawer(false);refreshLayout();}
 init();
-/* Escape 统一：按浮层栈关闭最上层（dialog > 侧栏抽屉 > 面板抽屉 > 列菜单），逐层退 */
-document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const mk=document.querySelector('.mask');if(mk){closeMask(mk);return;}if(innerWidth<740&&sidebar.classList.contains('open')){setSideDrawer(false);return;}if(innerWidth<900&&(wb.getAttribute('data-open-res')==='true'||wb.getAttribute('data-open-insp')==='true')){setPane('res',false);setPane('insp',false);return;}if(colvis.classList.contains('open'))colvis.classList.remove('open');});
+/* Escape 统一：按浮层栈关闭最上层（dialog > 侧栏抽屉 > 面板抽屉 > 列菜单），逐层退；嵌套弹窗先关最上层（文档序最后一个 mask） */
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const mks=document.querySelectorAll('.mask');if(mks.length){const top=mks[mks.length-1];const qo=top.querySelector('#qo-search');if(qo&&qo.value){qo.value='';qo.dispatchEvent(new Event('input'));return;}closeMask(top);return;}if(innerWidth<740&&sidebar.classList.contains('open')){setSideDrawer(false);return;}if(innerWidth<900&&(wb.getAttribute('data-open-res')==='true'||wb.getAttribute('data-open-insp')==='true')){setPane('res',false);setPane('insp',false);return;}if(colvis.classList.contains('open'))colvis.classList.remove('open');});
 </script>
 </body>
 </html>
