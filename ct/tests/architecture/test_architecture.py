@@ -213,7 +213,7 @@ def test_no_orphan_css_and_single_source_colors() -> None:
     assert css_files  # at least the layers exist
     for css in css_files:
         assert css.name in index, f"CSS 未被 index.html 加载: {css.name}"
-    brand_colors = {"#1B4332", "#2F7A56", "#C9A227", "#B23B3B", "#B7791F"}
+    brand_colors = {"#1E4635", "#2F7A56", "#C9A227", "#A83B3B", "#A8731F"}
     tokens = (static / "styles" / "tokens.css").read_text(encoding="utf-8")
     for color in brand_colors:
         assert color in tokens, f"tokens.css 缺少品牌/状态色 {color}"

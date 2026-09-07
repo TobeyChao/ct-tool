@@ -66,7 +66,7 @@ function bindOnce(container) {
     }
     const corner = e.target.closest(".ct-trans-expand");
     if (corner && corner.dataset.key) {
-      openFullEditor(container, corner.dataset.key);
+      void openFullEditor(container, corner.dataset.key);
       return;
     }
     const more = e.target.closest(".ct-src-more");
@@ -97,11 +97,23 @@ function bindOnce(container) {
     if ("confirmCompact" in btn.dataset) return confirmCompact(container);
   });
 
-  // blur collapses the long-text editor back to preview (draft is kept)
+  // Blur persists a changed inline draft, then collapses to preview. Merely opening an
+  // editor never confirms an unchanged translation. The fullscreen path performs the
+  // same save itself so it can wait for persistence before opening the dialog.
+  // If focus moves to a row save button ([data-key] in .ct-row-ops), let that handler commit.
+  // Otherwise (blur to elsewhere), save the inline edit and collapse to preview.
   container.addEventListener("blur", (e) => {
-    if (e.target && e.target.classList && e.target.classList.contains("is-area")) {
+    const t = e.target;
+    if (t && t.classList && t.classList.contains("is-area")) {
+      const next = e.relatedTarget;
+      // Fullscreen corner: keep the editing state; its click saves, then opens the editor.
+      if (next && next.classList && next.classList.contains("ct-trans-expand")) return;
+      const key = t.dataset && t.dataset.key;
       state.editingKey = null;
-      render(container);
+      const selfSaving = !!next && (next.matches(".ct-row-ops [data-key]") || next.closest(".ct-row-ops [data-key]"));
+      if (selfSaving) return; // keep the focused button in DOM so its click can commit
+      if (key && state.drafts[key]) void saveEntry(container, key);
+      else render(container);
     }
   }, true);
 
@@ -118,7 +130,13 @@ function bindOnce(container) {
     resizeRaf = requestAnimationFrame(() => {
       resizeRaf = 0;
       initSrcMore(container);
+      fitSticky(container);
     });
+  });
+
+  // re-evaluate truncation tails when the i18n page is re-activated
+  window.addEventListener("ct:module", (e) => {
+    if (e.detail === "i18n") { initSrcMore(container); fitSticky(container); }
   });
 }
 
@@ -153,21 +171,41 @@ async function refresh(container) {
   try { await loadEntries(); await loadProgress(); } finally { render(container); }
 }
 
-async function saveEntry(container, key) {
+async function saveEntry(container, key, { render: renderAfter = true } = {}) {
   const state = getState();
+  const table = state.currentTable;
+  const lang = state.lang;
   const existing = state.entries.find((en) => en.key === key);
   const draft = state.drafts[key] || {};
   const text = draft.text !== undefined ? draft.text : (existing ? existing.text : "");
-  try {
-    await api("/api/i18n/entry", {
-      method: "POST",
-      body: JSON.stringify({ table: state.currentTable, lang: state.lang, key, text, confirmed: true }),
-    });
-    await loadEntries();
-    await loadProgress();
-    state.error = "";
-  } catch (e) { state.error = e.message; }
-  render(container);
+  const sameScope = () => state.currentTable === table && state.lang === lang;
+
+  // Saving rewrites one language file, so serialize requests from this page. Capture
+  // table/lang/text before queueing: later navigation or typing cannot retarget a save.
+  const previous = state.saveQueue || Promise.resolve();
+  const request = previous.catch(() => {}).then(async () => {
+    try {
+      const saved = await api("/api/i18n/entry", {
+        method: "POST",
+        body: JSON.stringify({ table, lang, key, text, confirmed: true }),
+      });
+      if (sameScope()) {
+        const index = state.entries.findIndex((entry) => entry.key === key);
+        if (index >= 0) state.entries[index] = { ...state.entries[index], ...saved };
+        if (state.drafts[key] && state.drafts[key].text === text) delete state.drafts[key];
+        await loadProgress();
+        state.error = "";
+      }
+      return true;
+    } catch (e) {
+      if (sameScope()) state.error = e.message;
+      return false;
+    } finally {
+      if (sameScope() && renderAfter) render(container);
+    }
+  });
+  state.saveQueue = request;
+  return request;
 }
 
 async function syncAll(container) {
@@ -347,15 +385,23 @@ async function openCompact(container) {
 }
 
 /* fullscreen long-text editor: 原文只读对照 + 大 textarea（进入前先提交行内编辑） */
-function openFullEditor(container, key) {
+async function openFullEditor(container, key) {
   const state = getState();
-  const entry = state.entries.find((en) => en.key === key);
+  let entry = state.entries.find((en) => en.key === key);
   if (!entry) return;
-  // 进入全屏前先提交行内编辑（原型行为），关闭后直接回预览态
-  if (state.editingKey) {
-    state.editingKey = null;
-    render(container);
+  const table = state.currentTable;
+  const lang = state.lang;
+  // 进入全屏前先提交已修改的行内编辑（原型行为）。
+  if (state.editingKey === key && state.drafts[key]) {
+    const saved = await saveEntry(container, key, { render: false });
+    if (!saved || state.currentTable !== table || state.lang !== lang) {
+      render(container);
+      return;
+    }
+    entry = state.entries.find((en) => en.key === key) || entry;
   }
+  state.editingKey = null;
+  render(container);
   const draft = state.drafts[key] || { text: entry.text };
   const handle = openDialog({
     title: `${entry.id} · ${entry.field} · ${state.lang}`,
@@ -480,10 +526,12 @@ function render(container) {
             </div>
             <div class="ct-filter-divider" aria-hidden="true"></div>
             <div class="ct-filter-group" aria-label="语言">
+              <span class="ct-filter-label">语言</span>
               ${state.langs.map((l) => `<button class="ct-pill${l === state.lang ? " active" : ""}" data-lang="${escapeHtml(l)}" aria-pressed="${l === state.lang}">${escapeHtml(l)}</button>`).join("")}
             </div>
             <div class="ct-filter-divider" aria-hidden="true"></div>
             <div class="ct-filter-group" aria-label="状态">
+              <span class="ct-filter-label">状态</span>
               ${[["all", "全部"], ["missing", "缺失"], ["stale", "待审"], ["translated", "已译完"]]
                 .map(([v, label]) => `<button class="ct-pill${state.statusFilter === v ? " active" : ""}" data-filter="${v}" aria-pressed="${state.statusFilter === v}">${label}</button>`).join("")}
             </div>
@@ -505,6 +553,7 @@ function render(container) {
     </div>`;
   applyColVisibility(container);
   initSrcMore(container);
+  fitSticky(container);
 }
 
 function renderTable(rows) {
@@ -515,7 +564,19 @@ function renderTable(rows) {
   if (!rows.length) {
     return '<div class="ct-empty"><div class="ct-empty-title">该状态下暂无译文条目</div></div>';
   }
-  return `<div class="ct-table-wrap ct-i18n-table" role="region" tabindex="0" aria-label="翻译条目表"><table class="ct-data ct-col-rules"><thead><tr><th>主键</th><th>字段</th><th>${escapeHtml(state.primaryLang)} 原文</th><th>${escapeHtml(state.lang)} 译文</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows.map(rowHtml).join("")}</tbody></table></div>`;
+  return `<div class="ct-table-wrap ct-i18n-table" role="region" tabindex="0" aria-label="翻译条目表"><table class="ct-data ct-col-rules"><thead><tr><th class="col-id">主键</th><th class="col-field">字段</th><th>${escapeHtml(state.primaryLang)} 原文</th><th>${escapeHtml(state.lang)} 译文</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows.map(rowHtml).join("")}</tbody></table></div>`;
+}
+
+// 对齐原型 fitSticky：主键(sticky)列的实际渲染宽度未必等于 CSS 的 70px（表头文字+padding 会撑宽），
+// 字段(sticky)列的 left 必须动态跟随主键列右缘，否则两列间出现缝隙或重叠。
+function fitSticky(container) {
+  if (!container.classList.contains("active")) return;
+  const table = container.querySelector(".ct-i18n-table table");
+  if (!table) return;
+  const idTh = table.querySelector("thead th.col-id");
+  if (!idTh) return;
+  const idW = idTh.getBoundingClientRect().width;
+  if (idW > 0) table.style.setProperty("--ct-i18n-id-w", idW + "px");
 }
 
 function rowHtml(e) {
@@ -528,13 +589,14 @@ function rowHtml(e) {
   const preview = `<div class="trans-preview${draft.text ? "" : " placeholder"}" data-expand-key="${escapeHtml(e.key)}" title="点击编辑"><span class="clamp">${escapeHtml(draft.text || "点击填写译文…")}</span></div>`;
   let editor;
   if (editing) {
-    editor = `<textarea class="ct-input trans-input is-area" data-key="${escapeHtml(e.key)}" rows="2">${escapeHtml(draft.text)}</textarea>`;
+    // 编辑态也保留全屏展开角标：对齐原型 `.trans-box:has(.trans-in) .trans-expand`
+    editor = `<div class="ct-trans-box"><textarea class="ct-input trans-input is-area" data-key="${escapeHtml(e.key)}" rows="2">${escapeHtml(draft.text)}</textarea><button class="ct-trans-expand" type="button" data-key="${escapeHtml(e.key)}" title="全屏编辑译文" aria-label="全屏编辑译文">⤢</button></div>`;
   } else {
     editor = `<div class="ct-trans-box">${preview}<button class="ct-trans-expand" type="button" data-key="${escapeHtml(e.key)}" title="全屏编辑译文" aria-label="全屏编辑译文">⤢</button></div>`;
   }
   return `<tr>
-    <td class="ct-mono">${escapeHtml(e.id)}</td>
-    <td class="ct-mono">${escapeHtml(e.field)}</td>
+    <td class="col-id ct-mono">${escapeHtml(e.id)}</td>
+    <td class="col-field ct-mono">${escapeHtml(e.field)}</td>
     <td class="src-cell"><span class="ct-src-wrap"><span class="ct-src-text">${escapeHtml(e.source)}</span></span></td>
     <td class="trans-cell">${editor}</td>
     <td><span class="ct-badge ${badge.cls}">${badge.text}</span></td>

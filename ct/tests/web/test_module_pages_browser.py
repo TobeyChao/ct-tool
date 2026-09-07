@@ -246,10 +246,13 @@ def test_i18n_fullscreen_editor_saves_and_cancels(module_url: str, chromium_brow
     page.locator('.ct-sitem[data-module="i18n"]').click()
     page.wait_for_selector("#page-i18n .ct-data tbody tr")
 
-    # corner button opens the fullscreen editor with source comparison
+    # Entering fullscreen from an active inline edit persists that draft first.
+    page.locator("#page-i18n .trans-preview").first.click()
+    page.locator("#page-i18n textarea.is-area").fill("行内待提交译文")
     page.locator("#page-i18n .ct-trans-expand").first.click()
     page.wait_for_selector("body > .ct-dialog-mask.open .ct-dlg-trans")
     assert page.locator(".ct-dlg-src").count() == 1
+    assert page.locator(".ct-dlg-trans").input_value() == "行内待提交译文"
     page.fill(".ct-dlg-trans", "全新译文")
     page.locator("[data-full-save]").click()
     page.wait_for_timeout(600)
@@ -324,4 +327,51 @@ def test_i18n_source_expand_tail(module_url: str, chromium_browser: Any) -> None
     first.click()
     page.wait_for_timeout(120)
     assert "展开" in first.text_content()
+    page.close()
+
+
+def test_i18n_inline_blur_saves_only_changed_drafts(module_url: str, chromium_browser: Any) -> None:
+    page = chromium_browser.new_page(viewport={"width": 1600, "height": 900})
+    saves: list[str] = []
+    page.on(
+        "request",
+        lambda request: saves.append(request.post_data or "")
+        if request.url.endswith("/api/i18n/entry") and request.method == "POST"
+        else None,
+    )
+    page.goto(module_url, wait_until="load")
+    page.locator('.ct-sitem[data-module="i18n"]').click()
+    page.wait_for_selector("#page-i18n .trans-preview")
+
+    # Entering and leaving an unchanged row must not confirm it accidentally.
+    page.locator("#page-i18n .trans-preview").first.click()
+    page.locator('#page-i18n [data-filter="all"]').click()
+    page.wait_for_timeout(120)
+    assert saves == []
+
+    # A changed draft still follows the active change contract: blur persists it.
+    page.locator("#page-i18n .trans-preview").first.click()
+    page.locator("#page-i18n textarea.is-area").fill("失焦保存译文")
+    page.locator('#page-i18n [data-filter="all"]').click()
+    page.wait_for_timeout(500)
+    assert len(saves) == 1
+    assert "失焦保存译文" in page.locator("#page-i18n").text_content()
+    page.close()
+
+
+def test_i18n_reactivation_recomputes_sticky_offset(module_url: str, chromium_browser: Any) -> None:
+    page = chromium_browser.new_page(viewport={"width": 1600, "height": 900})
+    page.goto(module_url, wait_until="load")
+    page.locator('.ct-sitem[data-module="i18n"]').click()
+    table = page.locator("#page-i18n table.ct-col-rules")
+    page.wait_for_selector("#page-i18n table.ct-col-rules tbody tr")
+
+    page.locator('.ct-sitem[data-module="logs"]').click()
+    table.evaluate("el => el.style.removeProperty('--ct-i18n-id-w')")
+    page.set_viewport_size({"width": 1200, "height": 760})
+    page.locator('.ct-sitem[data-module="i18n"]').click()
+    page.wait_for_timeout(80)
+
+    offset = table.evaluate("el => el.style.getPropertyValue('--ct-i18n-id-w')")
+    assert offset and float(offset.removesuffix("px")) > 0
     page.close()

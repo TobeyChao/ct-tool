@@ -158,6 +158,7 @@ a.ct-ssec { text-decoration: none; }
   border-radius: 2px;
   background: #57a878;
 }
+.ct-activity-spacer { flex: 1; min-height: 0; }
 .ct-side-body { min-height: 0; overflow: auto; padding: 14px; }
 /* virtual-list rows are modeled at a fixed 34px height — keep them exactly that tall */
 .ct-resource-row {

@@ -198,6 +198,27 @@ def test_panes_become_drawers_below_900(_panel_url: str, chromium_browser: Any) 
     context.close()
 
 
+def test_open_drawer_closes_cleanly_when_widening(_panel_url: str, chromium_browser: Any) -> None:
+    context = chromium_browser.new_context(viewport={"width": 800, "height": 700})
+    page = context.new_page()
+    page.goto(_panel_url, wait_until="networkidle")
+    _open_schema(page)
+
+    toggle = page.locator("#page-schema #resource-toggle")
+    editor = page.locator("#page-schema .ct-editor")
+    toggle.click()
+    assert editor.get_attribute("inert") is not None
+
+    page.set_viewport_size({"width": 1000, "height": 700})
+    page.wait_for_timeout(240)
+    assert toggle.get_attribute("aria-expanded") == "false"
+    assert editor.get_attribute("inert") is None
+    assert page.locator("#page-schema .ct-resource-pane").evaluate(
+        "el => el.getBoundingClientRect().width"
+    ) <= 1
+    context.close()
+
+
 def test_hidden_pages_are_inert(_panel_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()

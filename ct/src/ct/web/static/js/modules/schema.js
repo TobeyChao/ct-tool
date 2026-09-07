@@ -19,9 +19,9 @@ import {
   openAddField,
   openChangePlan,
   openDiscardDraft,
+  KIND_LABEL,
+  resourceKind,
 } from "./schema-dialogs.js";
-
-const KIND_LABEL = { table: "Table", record: "Record", enum: "Enum" };
 
 function readJsonPreference(key, fallback) {
   try {
@@ -181,6 +181,7 @@ export async function mount(container) {
   const sidePane = container.querySelector(".ct-side");
   const workspaceLayout = container.querySelector(".ct-workspace-layout");
   const paneBackdrop = container.querySelector("#pane-backdrop");
+  const editorMain = container.querySelector(".ct-editor");
   const savedResourceW = localStorage.getItem("ct-resource-w-wide");
   const savedSideW = localStorage.getItem("ct-side-w-wide");
   if (savedResourceW) workspaceLayout.style.setProperty("--ct-resource-w", savedResourceW + "px");
@@ -218,7 +219,7 @@ export async function mount(container) {
     const grouped = { table: [], record: [], enum: [] };
     state.resources.forEach((resource) => {
       const name = resource.name || resource.table || resource.resourceId || "";
-      const kind = resource.kind || (resource.fields ? "table" : "enum");
+      const kind = resourceKind(resource);
       const score = fuzzyScore(name, q);
       if (score === Infinity || !grouped[kind]) return;
       grouped[kind].push({ type: "resource", resource, name, kind, score });
@@ -337,6 +338,9 @@ export async function mount(container) {
   function syncPaneBackdrop() {
     const anyOpen = state.resourceOpen || state.activeTool === "inspector";
     paneBackdrop.classList.toggle("show", anyOpen && window.innerWidth < 900);
+    // Drawer overlay must inert the main editor (<900 while a pane drawer is open);
+    // docked mode never inert the editor.
+    editorMain.toggleAttribute("inert", Boolean(anyOpen && window.innerWidth < 900));
   }
 
   let paneEscLayer = null;
@@ -504,7 +508,7 @@ export async function mount(container) {
       editorBody.innerHTML = '<div class="ct-empty"><div class="ct-empty-sub">在左侧选择资源开始编辑</div></div>';
       return;
     }
-    const kind = resource.kind || (resource.fields ? "table" : "enum");
+    const kind = resourceKind(resource);
     const resourceName = resource.name || resource.table;
     editorKind.textContent = KIND_LABEL[kind];
     editorTitle.textContent = resourceName;
@@ -813,7 +817,7 @@ export async function mount(container) {
       windowed.rows.map(({ resource, name }, localIndex) => {
         const index = windowed.start + localIndex;
         return `<button class="ct-resource-row${index === state.quickOpenActive ? " active" : ""}" role="option" aria-selected="${index === state.quickOpenActive}" aria-posinset="${index + 1}" aria-setsize="${candidates.length}" data-qo-index="${index}" data-qo="${escapeHtml(name)}" tabindex="-1">` +
-      `<span class="ct-resource-kind">${KIND_LABEL[resource.kind || (resource.fields ? "table" : "enum")]}</span>` +
+      `<span class="ct-resource-kind">${KIND_LABEL[resourceKind(resource)]}</span>` +
       `${highlight(name, query)}</button>`;
       }).join("") + `</div><div class="ct-vlist-spacer" style="height:${windowed.after}px"></div>`;
     if (!candidates.length) resultList.innerHTML = '<div class="ct-empty"><div class="ct-empty-sub">无匹配</div></div>';
@@ -894,6 +898,7 @@ export async function mount(container) {
       resizeRaf = 0;
       const w = window.innerWidth;
       if (w < 900 && lastW >= 900) { setResourceOpen(false); setInspectorOpen(false); }
+      else if (w >= 900 && lastW < 900) { setResourceOpen(false); setInspectorOpen(false); }
       else if (w < 1200 && lastW >= 1200) { setInspectorOpen(false); }
       lastW = w;
       renderList();

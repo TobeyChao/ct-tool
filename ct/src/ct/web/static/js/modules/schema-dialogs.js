@@ -16,7 +16,12 @@ import { api } from "../core/api.js";
 import { escapeHtml } from "../core/dom.js";
 
 const NAME_RE = /^[A-Z][A-Za-z0-9_]*$/;
-const KIND_LABEL = { table: "Table", record: "Record", enum: "Enum" };
+export const KIND_LABEL = { table: "Table", record: "Record", enum: "Enum" };
+// shared kind inference: named resources carry an explicit kind, otherwise
+// tables/records have a `fields` list and enums do not.
+export function resourceKind(resource) {
+  return resource.kind || (resource.fields ? "table" : "enum");
+}
 const SCALARS = ["int32", "int64", "float", "double", "bool", "string"];
 const RISK_LABEL = {
   safe: "安全",
@@ -52,7 +57,7 @@ export function confirmDeleteField(ctx, resource, fieldName, typeLabel) {
 export function confirmDeleteResource(ctx, resource) {
   const refs = ctx.state.reverseRefs[resource.resourceId] || [];
   const blocked = refs.length > 0;
-  const kind = resource.kind || (resource.fields ? "table" : "enum");
+  const kind = resourceKind(resource);
   const name = resource.name || resource.table || resource.resourceId;
   const fieldCount = (resource.fields || []).length;
   const handle = openDialog({
@@ -354,14 +359,22 @@ export async function openChangePlan(ctx, extraCommand = null) {
     });
     return null;
   }
-  const blocked = Boolean(data.blocked);
-  const riskLabel = RISK_LABEL[data.risk] || data.risk;
+  // blocked when plan generation failed: backend returns {plan:null, issues:[...]}
+  // (key present, value null). Successful responses omit `plan`, so use strict ===,
+  // never == null (which would treat an absent key as null and always block).
+  const blocked = data.plan === null || Boolean(data.blocked);
+  const riskLabel = RISK_LABEL[data.risk] || data.risk || (blocked ? "校验失败" : "");
   const impacts = (data.impacts || []).map((i) =>
     `<div class="ct-impact"><span class="ct-art">${escapeHtml(i.artifact)}</span><span class="ct-mono" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(i.table)}</span><span class="ct-act">${escapeHtml(i.action)}</span></div>`
   ).join("");
   const blockers = (data.issues || [])
     .filter((i) => i.kind === "blocker" || i.kind === "untracked")
-    .map((i) => `<div class="ct-blocker">⛔ ${escapeHtml(i.message)}${i.location ? ` <span class="ct-loc">${escapeHtml(i.location)}</span>` : ""}</div>`)
+    .map((i) => {
+      const samples = i.samples && i.samples.length
+        ? `，样例 ${escapeHtml(Array.isArray(i.samples) ? i.samples.join("、") : i.samples)}`
+        : "";
+      return `<div class="ct-blocker">⛔ ${escapeHtml(i.message)}${samples}${i.location ? ` <span class="ct-loc">${escapeHtml(i.location)}</span>` : ""}</div>`;
+    })
     .join("");
 
   const handle = openDialog({

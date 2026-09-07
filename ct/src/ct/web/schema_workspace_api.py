@@ -152,6 +152,8 @@ def workspace_change_plan():
                         "message": getattr(i, "message", i.render()),
                         "location": getattr(i, "field_path", ""),
                         "kind": getattr(i, "kind", "warning"),
+                        # PlanIssue carries position samples; CandidateIssue does not
+                        "samples": list(getattr(i, "samples", ())),
                     }
                     for i in plan.issues
                 ],
