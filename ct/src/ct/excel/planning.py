@@ -79,8 +79,11 @@ def _read_data_rows(path: Path, header_rows: int) -> list[tuple[int, tuple[Any, 
         wb.close()
 
 
-def _logical_map(columns: tuple[Column, ...]) -> dict[str, Column]:
-    return {column.logical_path: column for column in columns}
+def _logical_map(columns: tuple[Column, ...]) -> dict[str, list[Column]]:
+    grouped: dict[str, list[Column]] = {}
+    for column in columns:
+        grouped.setdefault(column.logical_path, []).append(column)
+    return grouped
 
 
 def _coerce_ok(type_text: str, raw: Any) -> bool:
@@ -103,8 +106,8 @@ def plan_excel_migration(
     untracked = manifest is None
     old_manifest = manifest or LayoutManifest.from_layout(old_layout)
 
-    old_logical = _logical_map(old_layout.columns)
     new_logical = _logical_map(new_layout.columns)
+    new_stable = {column.stable_path: column for column in new_layout.columns}
 
     data_rows = _read_data_rows(excel_path, old_manifest.header_rows)
     issues: list[PlanIssue] = []
@@ -113,7 +116,12 @@ def plan_excel_migration(
     new_used: set[int] = set()
     for old_column in old_layout.columns:
         mapped = rename_map.get(old_column.logical_path, old_column.logical_path)
-        target = new_logical.get(mapped)
+        target = new_stable.get(mapped)
+        if target is None:
+            candidates = new_logical.get(mapped, [])
+            # A logical path is safe only when it identifies one new column.
+            # Expanded vector groups must use their stable [n] path instead.
+            target = candidates[0] if len(candidates) == 1 else None
         if target is None or target.index in new_used:
             # deleted, or collapsed by a previous old column (excel_columns shrink)
             migrations.append(

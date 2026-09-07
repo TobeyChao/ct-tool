@@ -74,9 +74,9 @@ Schema 中每个字段 SHALL 声明合法的类型（`int32`, `int64`, `float`, 
 - **WHEN** 非 vector 字段（scalar / enum / ref / 具名 Record），或 `vector<Record>` 字段（按 `excel_columns` 展开为列组）声明 `separator`
 - **THEN** 工具在 schema 加载阶段报错，指明表名、字段名与当前类型（`separator` 仅对单格 token 式 vector——即 `vector<Scalar>` / `vector<Enum>`——有意义）
 
-#### Scenario: excel_columns only valid on vector<Record>
-- **WHEN** 非 `vector<Record>` 字段（scalar / enum / ref / 具名 Record / `vector<Scalar>` / `vector<Enum>`）声明 `excel_columns`
-- **THEN** 工具在 schema 加载阶段报错，指明表名、字段名与当前类型（`excel_columns` 展开组数仅适用于 `vector<Record>` 的定长列组展开）
+#### Scenario: excel_columns only valid on vector
+- **WHEN** 非 vector 字段（scalar / enum / ref / 具名 Record）声明 `excel_columns`
+- **THEN** 工具在 schema 加载阶段报错，指明表名、字段名与当前类型（`excel_columns` 仅适用于 vector 的定长 Excel 列展开）
 
 ### Requirement: Calculate maximum nesting depth
 工具 SHALL 根据 schema 计算每张表的最大嵌套深度，用于确定 Excel 模板头部行数（`max_nesting_depth + 1`）。

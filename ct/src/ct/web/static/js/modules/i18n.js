@@ -536,7 +536,7 @@ function render(container) {
                 .map(([v, label]) => `<button class="ct-pill${state.statusFilter === v ? " active" : ""}" data-filter="${v}" aria-pressed="${state.statusFilter === v}">${label}</button>`).join("")}
             </div>
             <div class="ct-colvis" style="margin-left:auto">
-              <button class="ct-btn ct-btn-ghost ct-btn-sm" id="i18n-colvis-btn">列 ▾</button>
+              <button class="ct-btn ct-btn-ghost ct-btn-sm ct-colvis-btn" id="i18n-colvis-btn"><svg class="ct-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h16M9 5v14M15 5v14"></path></svg><span>列</span><span aria-hidden="true">⌄</span></button>
               <div class="ct-col-menu" hidden>
                 <label><input type="checkbox" data-col="src" ${hiddenCols().has("src") ? "" : "checked"}>原文</label>
                 <label><input type="checkbox" data-col="trans" ${hiddenCols().has("trans") ? "" : "checked"}>译文</label>

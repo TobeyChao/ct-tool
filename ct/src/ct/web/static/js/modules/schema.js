@@ -16,9 +16,10 @@ import {
   promptRenameField,
   promptEnumValue,
   openTypePicker,
+  openFieldTypeEditor,
+  openFieldCommentEditor,
   openAddField,
   openChangePlan,
-  openDiscardDraft,
   KIND_LABEL,
   resourceKind,
 } from "./schema-dialogs.js";
@@ -87,6 +88,35 @@ export async function mount(container) {
   }
   await restoreDraft(state);
 
+  // Schema stays mounted while switching modules. Refresh the persisted
+  // snapshot when returning so external YAML edits are visible immediately.
+  window.addEventListener("ct:module", (event) => {
+    if (event.detail === "schema") refreshSchemaSnapshot();
+  });
+
+  async function refreshSchemaSnapshot() {
+    try {
+      const snapshot = await api("/api/schema-workspace");
+      if (state.commands.length && state.baseRevision && snapshot.revision !== state.baseRevision) {
+        // The persisted source changed after this draft was created; the old
+        // command log cannot safely be replayed against the new fields.
+        state.baseRevision = snapshot.revision;
+        state.resources = snapshot.resources || [];
+        await clearDraftState();
+        return;
+      }
+      state.baseRevision = snapshot.revision;
+      state.resources = snapshot.resources || [];
+      state.reverseRefs = snapshot.reverseRefs || {};
+      if (!state.commands.length) state.candidate = null;
+      renderList();
+      renderEditor();
+      renderInspector();
+    } catch (error) {
+      state.error = error.message;
+    }
+  }
+
   async function restoreDraft(s) {
     if (!s.baseRevision) return;
     try {
@@ -127,7 +157,7 @@ export async function mount(container) {
         <div class="ct-resource-pane-inner">
           <header class="ct-pane-head">
             <div><strong>Schema 资源</strong><span>Tables · Records · Enums</span></div>
-            <button class="ct-icon-btn" id="resource-close" title="收起资源" aria-label="收起资源">‹</button>
+            <button class="ct-icon-btn" id="resource-close" title="收起资源" aria-label="收起资源"><svg class="ct-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg></button>
           </header>
           <div class="ct-resource-content">
             <input class="ct-input" id="resource-filter" placeholder="搜索资源" value="${escapeHtml(state.query)}">
@@ -140,8 +170,8 @@ export async function mount(container) {
         <div class="ct-editor-chrome">
           <header class="ct-resource-header">
             <div class="ct-rhead-left">
-              <button class="ct-icon-btn" id="quick-open-head" title="快速打开 · Cmd/Ctrl+P" aria-label="快速打开">⌕</button>
-              <button class="ct-icon-btn" id="resource-toggle" title="资源面板" aria-label="资源面板" aria-expanded="${state.resourceOpen}" aria-controls="editor">☰</button>
+              <button class="ct-icon-btn ct-editor-icon-btn" id="quick-open-head" title="快速打开 · Cmd/Ctrl+P" aria-label="快速打开"><svg class="ct-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg></button>
+              <button class="ct-icon-btn ct-editor-icon-btn" id="resource-toggle" title="资源面板" aria-label="资源面板" aria-expanded="${state.resourceOpen}" aria-controls="editor"><svg class="ct-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
               <div class="ct-resource-title">
                 <span class="ct-eyebrow" id="editor-kind">Schema</span>
                 <h1 id="editor-title" tabindex="-1">选择一个资源</h1>
@@ -162,7 +192,7 @@ export async function mount(container) {
       <aside class="ct-side" aria-label="字段属性">
         <div class="ct-side-inner">
           <header class="ct-pane-head">
-            <button class="ct-icon-btn" id="inspector-back" aria-label="收起属性">‹</button>
+            <button class="ct-icon-btn" id="inspector-back" aria-label="收起属性"><svg class="ct-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg></button>
             <div><strong>字段属性</strong><span id="inspector-path">选择字段</span></div>
           </header>
           <div class="ct-side-body" id="side-inspector"></div>
@@ -235,12 +265,19 @@ export async function mount(container) {
   }
 
   function renderList() {
-    const visible = resourceRows();
     const query = state.query.trim();
-    const matchCount = state.resources.filter((resource) => {
-      const name = resource.name || resource.table || resource.resourceId || "";
-      return fuzzyScore(name, query) !== Infinity;
-    }).length;
+    const groups = GROUPS.map((kind) => {
+      const matches = state.resources
+        .filter((resource) => resourceKind(resource) === kind)
+        .map((resource) => ({
+          resource,
+          name: resource.name || resource.table || resource.resourceId || "",
+        }))
+        .filter(({ name }) => fuzzyScore(name, query) !== Infinity)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      return { kind, matches };
+    }).filter(({ matches }) => !query || matches.length);
+    const matchCount = groups.reduce((count, group) => count + group.matches.length, 0);
     const allCount = state.resources.length;
     const summary = container.querySelector("#resource-summary");
     if (summary) summary.textContent = `${matchCount} 匹配 · ${allCount} 总计 · 状态已保存`;
@@ -248,29 +285,34 @@ export async function mount(container) {
       list.innerHTML = '<div class="ct-empty"><div class="ct-empty-title">没有匹配的资源</div><div class="ct-empty-sub">换一个名称或清空搜索。</div></div>';
       return;
     }
+    const resourceTotal = groups.reduce((count, group) => count + group.matches.length, 0);
     const scrollTop = state.listScrollTop || 0;
     const viewportHeight = list.clientHeight || 600;
-    const windowed = fixedRowWindow(visible, { rowHeight: ROW_HEIGHT, overscan: OVERSCAN, scrollTop, viewportHeight });
-    const { start, end } = windowed;
-    const resourceTotal = visible.reduce((count, entry) => count + (entry.type === "resource" ? 1 : 0), 0);
-    let resourcePosition = visible.slice(0, start).reduce((count, entry) => count + (entry.type === "resource" ? 1 : 0), 0);
-    const windowRows = windowed.rows.map((entry) => {
-      if (entry.type === "group") {
-        const expanded = !!state.query.trim() || !state.collapsedGroups[entry.kind];
-        return `<button class="ct-group-toggle" data-group="${entry.kind}" aria-expanded="${expanded}"><span><span class="ct-chevron">${expanded ? "⌄" : "›"}</span>${GROUP_TITLES[entry.kind]}</span><span class="ct-group-count">${entry.count}</span></button>`;
-      }
-      const { resource, name, kind } = entry;
-      const selected = state.selection === name;
-      resourcePosition += 1;
-      return `<button class="ct-resource-row${selected ? " active" : ""}" role="treeitem" aria-selected="${selected}" aria-posinset="${resourcePosition}" aria-setsize="${resourceTotal}" data-name="${escapeHtml(name)}" data-index="${escapeHtml(name)}">` +
-        `<span class="ct-resource-kind">${KIND_LABEL[kind]}</span>` +
-        highlight(name, state.query.trim()) +
-        `<span class="ct-resource-meta">${typeText(resource)}</span></button>`;
+    let resourcePosition = 0;
+    list.innerHTML = groups.map(({ kind, matches }) => {
+      const expanded = Boolean(query) || !state.collapsedGroups[kind];
+      const windowed = fixedRowWindow(matches, {
+        rowHeight: ROW_HEIGHT,
+        overscan: OVERSCAN,
+        scrollTop,
+        viewportHeight,
+      });
+      resourcePosition += windowed.start;
+      const windowRows = windowed.rows.map(({ resource, name }) => {
+        const selected = state.selection === name;
+        resourcePosition += 1;
+        return `<button class="ct-resource-row${selected ? " active" : ""}" role="treeitem" aria-selected="${selected}" aria-posinset="${resourcePosition}" aria-setsize="${resourceTotal}" data-name="${escapeHtml(name)}" data-index="${escapeHtml(name)}">` +
+          `<span class="ct-resource-kind">${KIND_LABEL[kind]}</span>` +
+          highlight(name, query) +
+          `<span class="ct-resource-meta">${typeText(resource)}</span></button>`;
+      }).join("");
+      const rows = `<div class="ct-vlist-spacer" style="height:${windowed.before}px"></div><div class="ct-vlist-window">${windowRows}</div><div class="ct-vlist-spacer" style="height:${windowed.after}px"></div>`;
+      resourcePosition += matches.length - windowed.start - windowed.rows.length;
+      return `<section class="ct-resource-group${expanded ? " is-open" : ""}" data-open="${expanded}">
+        <button class="ct-group-toggle" data-group="${kind}" data-group-toggle="${kind}" aria-expanded="${expanded}"><span><span class="ct-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m9 6 6 6-6 6"></path></svg></span>${GROUP_TITLES[kind]}</span><span class="ct-group-count">${matches.length}</span></button>
+        <div class="ct-resource-group-body"><div class="ct-resource-group-rows">${rows}</div></div>
+      </section>`;
     }).join("");
-    // spacer preserves total scroll height; window rows share one rendering path
-    list.innerHTML = `<div class="ct-vlist-spacer" style="height:${windowed.before}px"></div>` +
-      `<div class="ct-vlist-window">${windowRows}</div>` +
-      `<div class="ct-vlist-spacer" style="height:${windowed.after}px"></div>`;
     list.querySelectorAll(".ct-resource-row").forEach((row) => {
       row.addEventListener("click", () => {
         openResource(row.dataset.name);
@@ -278,7 +320,7 @@ export async function mount(container) {
     });
     list.querySelectorAll(".ct-group-toggle").forEach((toggle) => {
       toggle.addEventListener("click", () => {
-        const kind = toggle.dataset.group;
+        const kind = toggle.dataset.groupToggle;
         state.collapsedGroups[kind] = !state.collapsedGroups[kind];
         writeJsonPreference("ct-resource-groups", state.collapsedGroups);
         renderList();
@@ -330,7 +372,7 @@ export async function mount(container) {
     renderList();
     renderEditor();
     renderInspector();
-    if (window.innerWidth < 900) setResourceOpen(false); // 抽屉内点选即收起
+    setResourceOpen(false); // 选择资源后统一收起资源面板，编辑区保留当前资源
     updateHeadButtons();
     requestAnimationFrame(() => editorTitle.focus({ preventScroll: true }));
   }
@@ -533,10 +575,8 @@ export async function mount(container) {
       return;
     }
     if (state.tab === "indexes" && kind === "table") {
-      editorBody.innerHTML = `${warning}<section class="ct-editor-section"><div class="ct-section-heading"><div><h2>查询索引</h2><p>查询契约生成稳定的 C# / Lua 访问 API。</p></div></div>${renderIndexCards(resource)}
-        <div class="ct-editor-actions"><button class="ct-btn ct-btn-primary" id="review-plan">审查并应用</button></div></section>`;
+      editorBody.innerHTML = `${warning}<section class="ct-editor-section"><div class="ct-section-heading"><div><h2>查询索引</h2><p>查询契约生成稳定的 C# / Lua 访问 API。</p></div></div>${renderIndexCards(resource)}</section>`;
       wireIndexCards(resource);
-      editorBody.querySelector("#review-plan").addEventListener("click", () => openChangePlan(ctx));
       return;
     }
     if (resource.kind === "enum" || !resource.fields) {
@@ -551,8 +591,7 @@ export async function mount(container) {
           ).join("") || '<div class="ct-empty-sub">（空）</div>'}</div>
           <button class="ct-btn ct-btn-ghost" id="enum-add-value">新增值</button></div>
         <div class="ct-field"><label class="ct-field-label">反向引用（${refs.length}）</label>
-          <div class="ct-ref-list">${refs.map((r) => `<div class="ct-mono">${escapeHtml(r.field)}（${escapeHtml(r.kind)}）</div>`).join("") || '<div class="ct-empty-sub">未被引用</div>'}</div></div>
-        <div class="ct-editor-actions"><button class="ct-btn ct-btn-primary" id="review-plan" ${state.cursor ? "" : "disabled"}>审查并应用</button></div>`;
+          <div class="ct-ref-list">${refs.map((r) => `<div class="ct-mono">${escapeHtml(r.field)}（${escapeHtml(r.kind)}）</div>`).join("") || '<div class="ct-empty-sub">未被引用</div>'}</div></div>`;
       editorBody.querySelector("#enum-add-value").addEventListener("click", () => promptEnumValue(ctx, resource, values));
       editorBody.querySelectorAll("[data-enum-remove]").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -560,18 +599,17 @@ export async function mount(container) {
           pushCommand({ type: "set_enum_values", payload: { name: enumId, values: values.filter((v) => v !== value) } });
         });
       });
-      const reviewBtn = editorBody.querySelector("#review-plan");
-      if (reviewBtn) reviewBtn.addEventListener("click", () => openChangePlan(ctx));
       return;
     }
     const refs = state.reverseRefs[resource.resourceId] || [];
     editorBody.innerHTML = `${warning}<section class="ct-editor-section">
-      <div class="ct-section-heading"><div><h2>字段结构</h2><p>选择字段后在右侧设置类型、Excel 表达和引用约束。</p></div></div>
+      <div class="ct-section-heading"><div><h2>字段结构</h2><p>类型和字段注释可直接在字段操作中编辑。</p></div></div>
       <div class="ct-field-table"><table class="ct-data ct-field-grid"><thead><tr><th>字段</th><th>类型表达式</th><th>Excel</th><th>角色与约束</th><th aria-label="操作"></th></tr></thead>
       <tbody>${resource.fields.map((f, index) => {
         const rawType = f.type || f.type_expr || "?";
         const typeExpr = typeof rawType === "string" ? rawType : JSON.stringify(rawType);
         const selected = state.selectedField === f.name;
+        const isPrimary = f.name === resource.primary;
         return `<tr class="${selected ? "ct-row-selected" : ""}" data-field="${escapeHtml(f.name)}">
           <td><button class="ct-inline-btn" data-act="rename" title="改名">${escapeHtml(f.name)}</button>
               <span class="ct-field-role">${f.i18n ? "🌐" : ""}${f.server_only ? "🖥" : ""}${f.ref ? "🔗" : ""}</span></td>
@@ -579,15 +617,13 @@ export async function mount(container) {
           <td class="ct-mono">${f.excel_columns ? `expanded × ${f.excel_columns}` : f.separator ? "single cell" : "1 column"}</td>
           <td><span class="ct-role-list">${f.name === resource.primary ? '<span class="ct-badge ct-badge-warn">PRIMARY</span>' : ""}${f.i18n ? '<span class="ct-badge ct-badge-mute">I18N</span>' : ""}${f.server_only ? '<span class="ct-badge ct-badge-mute">SERVER</span>' : ""}${f.ref ? `<button class="ct-type-link" data-navigate-type="${escapeHtml(f.ref.split(".")[0])}" title="打开 ${escapeHtml(f.ref.split(".")[0])}">REF ${escapeHtml(f.ref)}</button>` : ""}</span></td>
           <td class="ct-row-ops">
-            <button class="ct-inline-btn" data-act="up" ${index === 0 ? "disabled" : ""} title="上移">↑</button>
-            <button class="ct-inline-btn" data-act="down" ${index === resource.fields.length - 1 ? "disabled" : ""} title="下移">↓</button>
-            <button class="ct-inline-btn ct-danger" data-act="delete" title="删除字段">✕</button>
+            <button class="ct-inline-btn" data-act="up" ${isPrimary || index === 0 ? "disabled" : ""} title="${isPrimary ? "主键字段不可调整顺序" : "上移"}">↑</button>
+            <button class="ct-inline-btn" data-act="down" ${isPrimary || index === resource.fields.length - 1 ? "disabled" : ""} title="${isPrimary ? "主键字段不可调整顺序" : "下移"}">↓</button>
+            <button class="ct-inline-btn" data-act="comment" title="编辑字段注释">注释</button>
+            <button class="ct-inline-btn ct-danger" data-act="delete" ${isPrimary ? "disabled" : ""} title="${isPrimary ? "主键字段不可删除" : "删除字段"}">✕</button>
           </td></tr>`;
       }).join("")}</tbody></table><button class="ct-add-row" id="add-field">＋ 添加字段</button></div>
-      <div class="ct-editor-actions">
-        <button class="ct-btn ct-btn-primary" id="review-plan" ${state.cursor ? "" : "disabled"}>审查并应用</button>
-        <button class="ct-btn ct-btn-danger" id="discard-draft" ${state.commands.length ? "" : "disabled"}>放弃草稿</button>
-      </div></section>`;
+      </section>`;
     editorBody.querySelectorAll("[data-navigate-type]").forEach((button) => {
       button.addEventListener("click", (event) => {
         event.stopPropagation();
@@ -603,12 +639,14 @@ export async function mount(container) {
         if (act === "rename") {
           promptRenameField(ctx, resource, fieldName);
         } else if (act === "type") {
-          openTypePicker(ctx, {
-            role: "",
-            onPick: (typeTextValue) => {
-              pushCommand({ type: "set_type", payload: { owner: resource.resourceId, name: fieldName, type_text: typeTextValue } });
-            },
+          const field = resource.fields.find((item) => item.name === fieldName);
+          openFieldTypeEditor(ctx, field, ({ type_text, excel_columns }) => {
+            pushCommand({ type: "set_type", payload: { owner: resource.resourceId, name: fieldName, type_text } });
+            pushCommand({ type: "set_property", payload: { owner: resource.resourceId, name: fieldName, property: "excel_columns", value: excel_columns } });
           });
+        } else if (act === "comment") {
+          const field = resource.fields.find((item) => item.name === fieldName);
+          openFieldCommentEditor(ctx, resource, field);
         } else if (act === "delete") {
           const field = resource.fields.find((f) => f.name === fieldName);
           const rawType = field ? (field.type || field.type_expr || "") : "";
@@ -629,8 +667,6 @@ export async function mount(container) {
       });
     });
     container.querySelector("#add-field").addEventListener("click", () => openAddField(ctx, resource));
-    editorBody.querySelector("#review-plan").addEventListener("click", () => openChangePlan(ctx));
-    editorBody.querySelector("#discard-draft").addEventListener("click", () => openDiscardDraft(ctx));
   }
 
   function indexOf(fieldName) {
@@ -643,12 +679,22 @@ export async function mount(container) {
     const current = state.indexesByTable[resource.resourceId] || [];
     const card = (kind, label, preview) => {
       const selected = (current.find((i) => i.kind === kind) || {}).field || "";
+      const selectedLabel = selected || "（无）";
       return `<div class="ct-index-card">
         <div class="ct-index-card-head">${label}<span class="ct-mono ct-index-preview">${preview}</span></div>
-        <select class="ct-input" data-index-kind="${kind}">
+        <div class="ct-select" data-index-select="${kind}">
+          <select class="ct-input ct-index-native" data-index-kind="${kind}" aria-hidden="true" tabindex="-1">
           <option value="">（无）</option>
           ${resource.fields.map((f) => `<option value="${escapeHtml(f.name)}" ${f.name === selected ? "selected" : ""}>${escapeHtml(f.name)}</option>`).join("")}
-        </select></div>`;
+          </select>
+          <button type="button" class="ct-select-trigger" data-index-trigger="${kind}" aria-haspopup="listbox" aria-expanded="false">
+            <span class="ct-select-value">${escapeHtml(selectedLabel)}</span><span class="ct-select-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="ct-select-menu" data-index-menu="${kind}" role="listbox" tabindex="-1" hidden>
+            <button type="button" class="ct-select-option${selected === "" ? " selected" : ""}" data-index-option="" role="option" aria-selected="${selected === ""}">（无）</button>
+            ${resource.fields.map((f) => `<button type="button" class="ct-select-option${f.name === selected ? " selected" : ""}" data-index-option="${escapeHtml(f.name)}" role="option" aria-selected="${f.name === selected}">${escapeHtml(f.name)}</button>`).join("")}
+          </div>
+        </div></div>`;
     };
     return `<div class="ct-index-cards">
       <div class="ct-index-cards-title">查询索引</div>
@@ -658,15 +704,66 @@ export async function mount(container) {
   }
 
   function wireIndexCards(resource) {
+    const closeMenus = (except) => {
+      editorBody.querySelectorAll(".ct-select.is-open").forEach((control) => {
+        if (control !== except) {
+          control.classList.remove("is-open");
+          control.querySelector("[data-index-trigger]").setAttribute("aria-expanded", "false");
+          control.querySelector("[data-index-menu]").hidden = true;
+        }
+      });
+    };
+    const updateValue = (select, value) => {
+      select.value = value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    };
     editorBody.querySelectorAll("[data-index-kind]").forEach((select) => {
+      const control = select.closest(".ct-select");
+      const trigger = control.querySelector("[data-index-trigger]");
+      const menu = control.querySelector("[data-index-menu]");
       select.addEventListener("change", () => {
         const kind = select.dataset.indexKind;
         const current = (state.indexesByTable[resource.resourceId] || []).filter((i) => i.kind !== kind);
         if (select.value) current.push({ kind, field: select.value });
         state.indexesByTable[resource.resourceId] = current;
         pushCommand({ type: "set_indexes", payload: { table: resource.resourceId, indexes: current } });
+        const option = [...select.options].find((item) => item.value === select.value);
+        control.querySelector(".ct-select-value").textContent = option ? option.textContent : "（无）";
+        menu.querySelectorAll("[data-index-option]").forEach((item) => {
+          const active = item.dataset.indexOption === select.value;
+          item.classList.toggle("selected", active);
+          item.setAttribute("aria-selected", String(active));
+        });
+      });
+      trigger.addEventListener("click", () => {
+        const open = control.classList.toggle("is-open");
+        closeMenus(open ? control : null);
+        trigger.setAttribute("aria-expanded", String(open));
+        menu.hidden = !open;
+        if (open) menu.focus();
+      });
+      trigger.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          trigger.click();
+        }
+      });
+      menu.addEventListener("click", (event) => {
+        const option = event.target.closest("[data-index-option]");
+        if (!option) return;
+        updateValue(select, option.dataset.indexOption || "");
+        control.classList.remove("is-open");
+        trigger.setAttribute("aria-expanded", "false");
+        menu.hidden = true;
+        trigger.focus();
       });
     });
+    if (editorBody.dataset.indexMenuDismiss !== "true") {
+      editorBody.addEventListener("click", (event) => {
+        if (!event.target.closest(".ct-select")) closeMenus(null);
+      });
+      editorBody.dataset.indexMenuDismiss = "true";
+    }
   }
 
   function renderInspector() {
@@ -690,35 +787,22 @@ export async function mount(container) {
     }
     const rawType = field.type || field.type_expr || "";
     const typeExpr = typeof rawType === "string" ? rawType : JSON.stringify(rawType);
-    const input = (label, prop, current, kind = "text") =>
+    const value = (label, current) =>
       `<div class="ct-field"><label class="ct-field-label">${escapeHtml(label)}</label>
-       <input class="ct-input" type="${kind}" data-prop="${escapeHtml(prop)}" value="${escapeHtml(current == null ? "" : current)}"></div>`;
-    const check = (label, prop, current) =>
-      `<label class="ct-check"><input type="checkbox" data-prop="${escapeHtml(prop)}" ${current ? "checked" : ""}> ${escapeHtml(label)}</label>`;
+       <div class="ct-inspector-value${current == null || current === "" ? " ct-inspector-muted" : ""}">${escapeHtml(current == null || current === "" ? "（无）" : current)}</div></div>`;
+    const flag = (label, current) =>
+      `<div class="ct-inspector-flag"><span class="ct-badge ${current ? "ct-badge-warn" : "ct-badge-mute"}">${current ? "已启用" : "未启用"}</span>${escapeHtml(label)}</div>`;
     inspector.innerHTML =
-      `<section class="ct-inspector-section"><h2>定义</h2>
+      `<section class="ct-inspector-section"><h2>定义（只读）</h2>
          <div class="ct-field"><label class="ct-field-label">字段名</label><div class="ct-inspector-value ct-mono">${escapeHtml(field.name)}</div></div>
          <div class="ct-field"><label class="ct-field-label">类型表达式</label><div class="ct-inspector-value ct-mono">${escapeHtml(typeExpr)}</div></div>
        </section>
-       <section class="ct-inspector-section"><h2>Excel 表达</h2>${input("展开列组数", "excel_columns", field.excel_columns ?? "", "number")}</section>
-       <section class="ct-inspector-section"><h2>角色与约束</h2>
-         <div class="ct-check-group">${check("国际化 i18n", "i18n", !!field.i18n)}${check("仅服务端", "server_only", !!field.server_only)}</div>
-         ${input("跨表引用", "ref", field.ref || "")}
+       <section class="ct-inspector-section"><h2>Excel 表达（只读）</h2>${value("固定列数", field.excel_columns ?? "")}${value("分隔符", field.separator || (field.type || "").startsWith("vector") ? (field.separator || "（内置 ,）") : "")}</section>
+       <section class="ct-inspector-section"><h2>角色与约束（只读）</h2>
+         <div class="ct-check-group">${flag("国际化 i18n", !!field.i18n)}${flag("仅服务端", !!field.server_only)}</div>
+         ${value("跨表引用", field.ref || "")}
        </section>
-       <section class="ct-inspector-section"><h2>说明</h2>${input("字段注释", "comment", field.comment || "")}</section>
-       <button class="ct-btn ct-btn-ghost" id="field-save">应用属性</button>`;
-    inspector.querySelector("#field-save").addEventListener("click", () => {
-      const comment = inspector.querySelector('[data-prop="comment"]').value;
-      const i18n = inspector.querySelector('[data-prop="i18n"]').checked;
-      const serverOnly = inspector.querySelector('[data-prop="server_only"]').checked;
-      const ref = inspector.querySelector('[data-prop="ref"]').value;
-      const excelColumns = inspector.querySelector('[data-prop="excel_columns"]').value;
-      pushCommand({ type: "set_property", payload: { owner: resource.resourceId, name: field.name, property: "comment", value: comment } });
-      pushCommand({ type: "set_property", payload: { owner: resource.resourceId, name: field.name, property: "i18n", value: i18n } });
-      pushCommand({ type: "set_property", payload: { owner: resource.resourceId, name: field.name, property: "server_only", value: serverOnly } });
-      pushCommand({ type: "set_property", payload: { owner: resource.resourceId, name: field.name, property: "ref", value: ref || null } });
-      pushCommand({ type: "set_property", payload: { owner: resource.resourceId, name: field.name, property: "excel_columns", value: excelColumns === "" ? null : parseInt(excelColumns, 10) } });
-    });
+       <section class="ct-inspector-section"><h2>说明（只读）</h2>${value("字段注释", field.comment || "")}</section>`;
   }
 
   /* ---- Quick Open（palette 变体，Esc 先清查询再关闭） ---- */
@@ -803,6 +887,17 @@ export async function mount(container) {
     if (!query && recentOrder.size) {
       candidates = candidates.filter((candidate) => recentOrder.has(candidate.name))
         .sort((a, b) => recentOrder.get(a.name) - recentOrder.get(b.name));
+    }
+    // Recent resources are a cross-workspace preference.  If they all belong
+    // to another workspace, an empty query must still show this workspace's
+    // resources instead of producing a blank palette.
+    if (!query && recentOrder.size && !candidates.length) {
+      candidates = state.resources
+        .map((r) => {
+          const name = r.name || r.table || r.resourceId || "";
+          return { resource: r, name, score: 0 };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
     }
     state.quickOpenCandidates = candidates;
     state.quickOpenQuery = query;

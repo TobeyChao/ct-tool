@@ -4,6 +4,7 @@ import { escapeHtml } from "../core/dom.js";
 
 const MODULES = ["all", "导出", "校验", "i18n", "模板", "系统"];
 const LEVELS = ["all", "INFO", "WARN", "ERROR"];
+const LOG_BOTTOM_THRESHOLD = 8;
 const _state = {};
 
 function badgeClass(level) {
@@ -44,7 +45,7 @@ export async function mount(container) {
                 <span class="ct-sr-only">搜索日志</span>
                 <input class="ct-input ct-log-search" id="log-search" type="search" placeholder="搜索日志…" autocomplete="off">
               </label>
-              <button class="ct-btn ct-btn-ghost ct-btn-sm" id="logs-refresh">刷新</button>
+              <button class="ct-icon-btn" id="logs-refresh" title="刷新日志" aria-label="刷新日志"><svg class="ct-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0 1 4"></path><path d="M20 5v6h-6"></path></svg></button>
             </div>
             <div class="ct-log-summary" id="log-summary" aria-live="polite"></div>
             <div id="log-content"></div>
@@ -68,7 +69,7 @@ export async function mount(container) {
       if (moduleButton) {
         state.module = moduleButton.dataset.module;
         renderFilters();
-        refreshLogs();
+        refreshLogs({ preserveScroll: false });
       } else if (levelButton) {
         state.level = levelButton.dataset.level;
         renderFilters();
@@ -79,18 +80,26 @@ export async function mount(container) {
         state.search = "";
         container.querySelector("#log-search").value = "";
         renderFilters();
-        refreshLogs();
+        refreshLogs({ preserveScroll: false });
       } else if (event.target.closest("#logs-go-export")) {
         location.hash = "#/export";
       } else if (event.target.closest("#logs-retry")) {
-        refreshLogs();
+        refreshLogs({ preserveScroll: true });
       } else if (event.target.closest("#logs-refresh")) {
-        refreshLogs();
+        refreshLogs({ preserveScroll: true });
+      } else if (event.target.closest("#logs-jump-bottom")) {
+        const viewport = container.querySelector(".ct-log-table-wrap");
+        if (viewport) {
+          viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+        }
       }
     });
+    container.addEventListener("scroll", (event) => {
+      if (event.target.matches?.(".ct-log-table-wrap")) updateLogJumpButton(event.target);
+    }, true);
     container.querySelector("#log-search").addEventListener("input", (event) => {
       state.search = event.target.value;
-      renderLogs();
+      renderLogs({ preserveScroll: false });
     });
   }
 
@@ -103,17 +112,34 @@ export async function mount(container) {
     });
   }
 
-  async function refreshLogs() {
+  async function refreshLogs({ preserveScroll = true } = {}) {
     try {
       state.logs = await api(`/api/logs?module=${encodeURIComponent(state.module)}`);
       state.error = "";
     } catch (error) {
       state.error = error.message;
     }
-    renderLogs();
+    renderLogs({ preserveScroll });
   }
 
-  function renderLogs() {
+  function captureLogScroll() {
+    const viewport = container.querySelector(".ct-log-table-wrap");
+    if (!viewport) return null;
+    return {
+      scrollTop: viewport.scrollTop,
+      wasAtBottom: viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop <= LOG_BOTTOM_THRESHOLD,
+    };
+  }
+
+  function updateLogJumpButton(viewport = container.querySelector(".ct-log-table-wrap")) {
+    const button = container.querySelector("#logs-jump-bottom");
+    if (!button) return;
+    const atBottom = !viewport || viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop <= LOG_BOTTOM_THRESHOLD;
+    button.hidden = atBottom;
+  }
+
+  function renderLogs({ preserveScroll = true } = {}) {
+    const previousScroll = preserveScroll ? captureLogScroll() : null;
     const host = container.querySelector("#log-content");
     const summary = container.querySelector("#log-summary");
     if (!host || !summary) return;
@@ -136,14 +162,22 @@ export async function mount(container) {
       return;
     }
 
-    host.innerHTML = `<div class="ct-table-wrap ct-log-table-wrap" role="region" tabindex="0" aria-label="运行日志"><table class="ct-data ct-log-table">
+    host.innerHTML = `<div class="ct-log-stream"><div class="ct-table-wrap ct-log-table-wrap" role="region" tabindex="0" aria-label="运行日志"><table class="ct-data ct-log-table">
       <thead><tr><th>时间</th><th>模块</th><th>级别</th><th>信息</th></tr></thead>
       <tbody>${rows.map((row) => `<tr>
         <td data-label="时间"><span class="ct-mono">${escapeHtml(row.time)}</span></td>
         <td data-label="模块">${escapeHtml(row.module)}</td>
         <td data-label="级别"><span class="ct-badge ${badgeClass((row.level || "INFO").toUpperCase())}">${escapeHtml(row.level)}</span></td>
         <td data-label="信息" class="ct-log-message">${escapeHtml(row.message)}</td>
-      </tr>`).join("")}</tbody></table></div>`;
+      </tr>`).join("")}</tbody></table></div><button class="ct-btn ct-log-jump" id="logs-jump-bottom" type="button" hidden>回到底部</button></div>`;
+
+    const viewport = container.querySelector(".ct-log-table-wrap");
+    if (viewport) {
+      viewport.scrollTop = !previousScroll || previousScroll.wasAtBottom
+        ? viewport.scrollHeight
+        : Math.min(previousScroll.scrollTop, viewport.scrollHeight - viewport.clientHeight);
+    }
+    updateLogJumpButton(viewport);
   }
 
   function startPolling() {

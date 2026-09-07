@@ -3,7 +3,7 @@
 A ``Layout`` is the single source of truth for how a Table's fields map to
 Excel columns: each leaf column carries a stable canonical path, the leaf
 Type Expression text, a header annotation and (for expanded
-``vector<Record>``) a group ordinal. Workbook generation, reading, data
+``vector``) a group ordinal. Workbook generation, reading, data
 migration and the layout manifest all consume this one model.
 """
 
@@ -28,7 +28,7 @@ class Column:
     type_text: str  # leaf Type Expression text, e.g. "int32"
     annotation: str  # header annotation, e.g. "vector<DropReward>", "ItemRarity"
     leaf: str  # leaf display name (last segment)
-    group_index: int | None = None  # 1-based group ordinal for expanded vector<Record>
+    group_index: int | None = None  # 1-based group ordinal for an expanded vector
     depth: int = 1  # 1-based header depth of this leaf (comment row excluded)
     comment: str = ""  # leaf field comment (header comment row)
     field_annotation: str = ""  # annotation shown on the top-level field row
@@ -177,6 +177,22 @@ class LayoutBuilder:
                         group=g,
                         field_annotation=field_annotation,
                     )
+            return col
+        if groups > 0:
+            # Fixed Excel input for scalar/Enum/string vectors. The runtime
+            # value remains a normal variable-length FlatBuffers vector.
+            element_text = serialize_type_expression(element)
+            for g in range(1, groups + 1):
+                col = self._emit_leaf(
+                    col,
+                    f"{path}[{g}]",
+                    element_text,
+                    annotation,
+                    depth,
+                    g,
+                    field.comment,
+                    field_annotation,
+                )
             return col
         element_text = serialize_type_expression(element)
         return self._emit_leaf(col, path, element_text, annotation, depth, group, field.comment, field_annotation)

@@ -13,6 +13,7 @@ from ct.schema.resource_graph import (
 )
 from ct.schema.resources import (
     EnumResource,
+    FieldDef,
     RecordResource,
     SchemaResource,
     TableResource,
@@ -101,6 +102,41 @@ def validate_candidate(
     for resource in resolved_resources:
         owner = resource.resource_id
         if isinstance(resource, (TableResource, RecordResource)):
+            # Validate fields individually first. Pydantic skips a parent
+            # model's ``after`` validator when a nested field fails, so doing
+            # this separately prevents one bad field from hiding other role
+            # and shape errors in the same draft.
+            for field in resource.fields:
+                try:
+                    FieldDef.model_validate(
+                        field.model_dump(mode="python", by_alias=True)
+                    )
+                except (TypeError, ValueError) as exc:
+                    issues.append(
+                        CandidateIssue(str(exc), location=f"{owner}/{field.name}")
+                    )
+            if isinstance(resource, TableResource):
+                primary = next(
+                    (field for field in resource.fields if field.name == resource.primary),
+                    None,
+                )
+                if primary is not None and primary.server_only:
+                    issues.append(
+                        CandidateIssue(
+                            f"表 {resource.table}: 主键字段 '{resource.primary}' 不能标记 server_only",
+                            location=f"{owner}/{resource.primary}",
+                        )
+                    )
+            # Draft mutations use frozen-model_copy for responsiveness, which
+            # intentionally does not rerun Pydantic model validators. Rebuild
+            # each resource here so set_property/set_type cannot bypass the
+            # same field/table invariants enforced when YAML is loaded.
+            try:
+                type(resource).model_validate(
+                    resource.model_dump(mode="python", by_alias=True)
+                )
+            except (TypeError, ValueError) as exc:
+                issues.append(CandidateIssue(str(exc), location=owner))
             for field in resource.fields:
                 for reference in named_references(field.type_expr):
                     target = by_name.get(reference.name)
@@ -128,18 +164,6 @@ def validate_candidate(
                                     location=f"{owner}/{field.name}",
                                 )
                             )
-        # role boundaries enforced even when commands bypass model validators
-        if isinstance(resource, RecordResource):
-            for field in resource.fields:
-                if field.i18n:
-                    issues.append(
-                        CandidateIssue("首版 i18n 仅允许 Table 顶层 string 字段", location=f"{owner}/{field.name}")
-                    )
-                if field.server_only:
-                    issues.append(
-                        CandidateIssue("首版 server_only 仅允许 Table 顶层字段", location=f"{owner}/{field.name}")
-                    )
-
     # dependency cycles (over the resolved resource graph)
     if resolved_resources:
         try:

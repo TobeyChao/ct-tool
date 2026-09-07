@@ -197,14 +197,38 @@ def _write_header_rows(
             for column in range(start_index, end_index + 1):
                 ws.cell(row=row, column=column).border = _THIN
 
-    # comment row: leaf comments
+    # comment row: merge fixed scalar/vector expansions that represent one
+    # logical field. Record-vector leaves keep separate comments because each
+    # nested field has its own meaning.
+    comment_groups: list[tuple[int, int, str]] = []
     for column in layout.columns:
-        cell = ws.cell(row=comment_row, column=column.index)
-        cell.value = column.comment or ""
-        cell.font = _COMMENT_FONT
-        cell.alignment = _CENTER
-        cell.fill = _COMMENT_FILL
-        cell.border = _THIN
+        comment = column.comment or ""
+        if (
+            comment_groups
+            and comment_groups[-1][1] + 1 == column.index
+            and comment_groups[-1][2] == comment
+            and layout.columns[column.index - 1].logical_path == column.logical_path
+        ):
+            start, _end, value = comment_groups[-1]
+            comment_groups[-1] = (start, column.index, value)
+        else:
+            comment_groups.append((column.index, column.index, comment))
+    for start, end, comment in comment_groups:
+        if start < end:
+            ws.merge_cells(
+                start_row=comment_row,
+                start_column=start,
+                end_row=comment_row,
+                end_column=end,
+            )
+        for index in range(start, end + 1):
+            cell = ws.cell(row=comment_row, column=index)
+            if index == start:
+                cell.value = comment
+            cell.font = _COMMENT_FONT
+            cell.alignment = _CENTER
+            cell.fill = _COMMENT_FILL
+            cell.border = _THIN
 
 
 def _add_data_validations(ws, layout: Layout, enums: dict[str, EnumResource], data_start: int) -> None:

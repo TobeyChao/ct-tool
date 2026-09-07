@@ -11,6 +11,7 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, request
 
+from ct.app.canonical_commands import canonical_gen_template
 from ct.app.canonical_workspace import CanonicalWorkspace
 from ct.app.schema_workspace.apply import (
     ApplyError,
@@ -57,6 +58,14 @@ def _draft_from_payload(payload):
     return ws, log
 
 
+def _stale_draft_issue(exc: Exception) -> dict:
+    return {
+        "message": f"未应用草稿已过期，无法应用当前变更：{exc}。请放弃草稿后重新编辑。",
+        "location": "",
+        "kind": "blocker",
+    }
+
+
 @schema_workspace_api.get("/api/schema-workspace")
 def workspace_snapshot():
     ws = _workspace()
@@ -95,8 +104,12 @@ def _resource_payload(resource):
 @schema_workspace_api.post("/api/schema-workspace/validate")
 def workspace_validate():
     payload = request.get_json(silent=True) or {}
-    _ws, log = _draft_from_payload(payload)
-    resources, indexes = log.current()
+    try:
+        _ws, log = _draft_from_payload(payload)
+        resources, indexes = log.current()
+    except (KeyError, ValueError) as exc:
+        issue = _stale_draft_issue(exc)
+        return jsonify({"ok": True, "data": {"valid": False, "issues": [issue]}})
     issues = validate_candidate(resources, indexes)
     return jsonify(
         {
@@ -112,11 +125,41 @@ def workspace_validate():
     )
 
 
+@schema_workspace_api.post("/api/schema-workspace/gen-template")
+def workspace_gen_template():
+    """Regenerate the Excel template for one persisted table schema."""
+    payload = request.get_json(silent=True) or {}
+    table = str(payload.get("table", "")).strip()
+    if not table:
+        return jsonify({"ok": False, "error": "缺少 table"}), 400
+    try:
+        messages = canonical_gen_template(_root(), table_filter=table)
+    except (ValueError, OSError) as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+    if not messages:
+        return jsonify({"ok": False, "error": f"未找到表: {table}"}), 404
+    return jsonify({"ok": True, "data": {"messages": messages}})
+
+
 @schema_workspace_api.post("/api/schema-workspace/change-plan")
 def workspace_change_plan():
     payload = request.get_json(silent=True) or {}
-    ws, log = _draft_from_payload(payload)
-    resources, indexes = log.current()
+    try:
+        ws, log = _draft_from_payload(payload)
+        resources, indexes = log.current()
+    except (KeyError, ValueError) as exc:
+        return jsonify(
+            {
+                "ok": True,
+                "data": {
+                    "plan": None,
+                    "risk": "blocker",
+                    "blocked": True,
+                    "impacts": [],
+                    "issues": [_stale_draft_issue(exc)],
+                },
+            }
+        )
     issues = validate_candidate(resources, indexes)
     if issues:
         return jsonify(
@@ -165,8 +208,11 @@ def workspace_change_plan():
 @schema_workspace_api.post("/api/schema-workspace/candidate")
 def workspace_candidate():
     """Return the candidate resource payloads for the draft commands."""
-    _ws, log = _draft_from_payload(request.get_json(silent=True) or {})
-    resources, _ = log.current()
+    try:
+        _ws, log = _draft_from_payload(request.get_json(silent=True) or {})
+        resources, _ = log.current()
+    except (KeyError, ValueError) as exc:
+        return jsonify({"ok": False, "error": _stale_draft_issue(exc)["message"]}), 400
     return jsonify(
         {"ok": True, "data": {"resources": [_resource_payload(r) for r in resources]}}
     )
@@ -179,8 +225,11 @@ def workspace_prepare_apply():
     from ct.schema.resources import TableResource
 
     payload = request.get_json(silent=True) or {}
-    ws, log = _draft_from_payload(payload)
-    resources, indexes = log.current()
+    try:
+        ws, log = _draft_from_payload(payload)
+        resources, indexes = log.current()
+    except (KeyError, ValueError) as exc:
+        return jsonify({"ok": False, "error": _stale_draft_issue(exc)["message"]}), 400
     issues = validate_candidate(resources, indexes)
     if issues:
         return jsonify(

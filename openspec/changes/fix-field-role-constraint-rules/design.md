@@ -60,9 +60,9 @@
 - 现状核对：`ct/schema/commands.py` 仅 rename 命令，无 add_field，本约定为前瞻定义，与现有命令模型无冲突
 
 **D9 vector 定长/变长形态**
-- 形态由基础类型 T 决定：`vector<Record>` = 定长（固定展开列组，配 `excel_columns`）；`vector<Scalar>` / `vector<Enum>` = 变长（单格 token，分隔符内置）
-- UI：勾选 vector 后显示「定长 / 变长」pill；T=Record 时变长禁用（强制定长 + 展开组数输入）；T=标量/Enum 时变长 + 内置分隔符提示；T=ref 不支持 vector
-- 模型：`excel_columns` 仅允许配 `vector<Record>`（`_resolve_fields` 加载期校验，与 reader 的组展开分支 L142-152 / token 分支 L153-160 一致）；`vector<Record>` 缺 `excel_columns` 在 canonical 模型仍合法（Excel 读取层才需要），UI 层强制补齐
+- 形态是 Excel 录入布局，不是 FlatBuffers wire 类型：标量/Enum/string vector 可选择单格 token 变长录入，或配置 `excel_columns` 做固定列数录入；Record vector 使用展开列组。所有情况运行时仍是普通变长 vector。
+- UI：勾选 vector 后显示「定长 / 变长」pill；Record 强制定长；标量/Enum/string 两种形态均可选；定长需要展开组数，变长使用内置分隔符；T=ref 仍按产品规则禁用 vector。
+- 模型：`excel_columns` 允许配任意 `vector<T>`，非 vector 仍报错；reader/layout 对标量、Enum、string vector 的定长列和 Record 展开列分别处理。
 
 ## Risks / Trade-offs
 

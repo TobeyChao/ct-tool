@@ -128,7 +128,7 @@ def test_record_vector_without_excel_columns_is_valid(tmp_path: Path) -> None:
     assert len(workspace.tables) == 1
 
 
-def test_scalar_vector_rejects_excel_columns(tmp_path: Path) -> None:
+def test_scalar_vector_accepts_excel_columns(tmp_path: Path) -> None:
     schemas = tmp_path / "config/schemas"
     types = tmp_path / "config/types"
     schemas.mkdir(parents=True)
@@ -140,5 +140,20 @@ def test_scalar_vector_rejects_excel_columns(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     repository = YamlResourceRepository(schemas, types)
-    with pytest.raises(ValueError, match=r"Item/Tags.*excel_columns"):
-        repository.load()
+    workspace = repository.load()
+    assert workspace.tables[0].fields[1].excel_columns == 3
+
+
+def test_scalar_vector_excel_columns_loads_in_quest_shape(tmp_path: Path) -> None:
+    schemas = tmp_path / "config/schemas"
+    types = tmp_path / "config/types"
+    schemas.mkdir(parents=True)
+    types.mkdir(parents=True)
+    (schemas / "Quest.yaml").write_text(
+        "table: Quest\nprimary: Id\nfields:\n"
+        "  - name: Id\n    type: int32\n"
+        "  - name: Test\n    type: vector<int32>\n    excel_columns: 2\n",
+        encoding="utf-8",
+    )
+    workspace = YamlResourceRepository(schemas, types).load()
+    assert workspace.tables[0].fields[1].type_text == "vector<int32>"

@@ -116,13 +116,13 @@ def test_collapsed_group_is_temporarily_expanded_by_search_and_restored(
     tables = page.locator('#page-schema [data-group="table"]')
     tables.click()
     assert tables.get_attribute("aria-expanded") == "false"
-    assert page.locator('#page-schema [data-name="Item"]').count() == 0
+    assert page.locator('#page-schema [data-name="Item"]').count() == 1
 
     page.fill("#page-schema #resource-filter", "Item")
     page.wait_for_timeout(60)
     assert page.locator('#page-schema [data-name="Item"]').count() == 1
     page.fill("#page-schema #resource-filter", "")
-    assert page.locator('#page-schema [data-name="Item"]').count() == 0
+    assert tables.get_attribute("aria-expanded") == "false"
 
     page.reload(wait_until="load")
     page.locator('.ct-sitem[data-module="schema"]').click()
@@ -215,7 +215,9 @@ def test_review_plan_and_apply(editor_url: str, chromium_browser: Any) -> None:
     page.wait_for_timeout(200)
     assert "1 条未应用变更" in _draftbar_text(page)
 
-    page.locator("#page-schema #review-plan").click()
+    # review lives only in the global draft bar (no duplicate in editor body)
+    assert page.locator("#page-schema #review-plan").count() == 0
+    page.locator("#ct-draft-review").click()
     page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-plan")
     assert "风险" in page.locator(".ct-dlg-plan").text_content()
     assert page.locator(".ct-dlg-plan [data-apply]").is_enabled() is False or True
@@ -230,7 +232,7 @@ def test_review_plan_and_apply(editor_url: str, chromium_browser: Any) -> None:
     context.close()
 
 
-def test_discard_draft_requires_confirmation(editor_url: str, chromium_browser: Any) -> None:
+def test_discard_draft_is_grouped_with_review(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
     _open_schema_module(page, editor_url)
@@ -241,19 +243,10 @@ def test_discard_draft_requires_confirmation(editor_url: str, chromium_browser: 
     page.locator("[data-af-add]").click()
     page.wait_for_timeout(200)
 
-    page.locator("#page-schema #discard-draft").click()
-    page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-sm")
-    assert "不可撤销" in page.locator(".ct-dlg-sm").text_content()
-    # cancel keeps the draft
-    page.locator(".ct-dlg-sm [data-cancel]").click()
-    page.wait_for_timeout(150)
-    assert "1 条未应用变更" in _draftbar_text(page)
-
-    page.locator("#page-schema #discard-draft").click()
-    page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-sm")
-    page.locator(".ct-dlg-sm [data-confirm]").click()
-    page.wait_for_timeout(300)
-    assert page.locator("#ct-draftbar").is_hidden()
+    page.locator("#ct-draft-review").click()
+    page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-plan")
+    assert page.locator(".ct-dlg-plan [data-discard]").is_visible()
+    assert page.locator("#page-schema #discard-draft").count() == 0
     context.close()
 
 
@@ -286,6 +279,22 @@ def test_quick_open_empty_query_prioritizes_recent_resources(
     rows = page.locator(".ct-dlg-palette [data-qo-list] .ct-resource-row")
     assert rows.count() == 1
     assert "Quest" in rows.first.text_content()
+    context.close()
+
+
+def test_quick_open_falls_back_when_recent_resources_are_from_another_workspace(
+    editor_url: str, chromium_browser: Any
+) -> None:
+    context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
+    page = context.new_page()
+    page.goto(editor_url, wait_until="load")
+    page.evaluate("localStorage.setItem('ct-recent-resources', JSON.stringify(['RemovedTable']))")
+    page.reload(wait_until="load")
+    page.locator('.ct-sitem[data-module="schema"]').click()
+    page.wait_for_selector("#page-schema .ct-resource-row")
+    page.keyboard.press("Control+p")
+    page.wait_for_selector(".ct-dlg-palette [data-qo-list] .ct-resource-row")
+    assert "Item" in page.locator(".ct-dlg-palette [data-qo-list]").text_content()
     context.close()
 
 
@@ -348,43 +357,43 @@ def test_field_rename_delete_move_set_type_emit_commands(editor_url: str, chromi
     assert "1 条未应用变更" in _draftbar_text(page)
     page.wait_for_timeout(400)  # candidate 重渲染稳定后再点行内操作
 
-    # move the renamed field down
-    page.locator('#page-schema [data-act="down"]').first.click()
+    # move the renamed non-primary field up
+    page.locator('#page-schema tr[data-field="DisplayName"] [data-act="up"]').click()
     page.wait_for_timeout(200)
     assert "2 条未应用变更" in _draftbar_text(page)
 
     # set_type on Id via the type picker (✎ edit button)
     page.locator('#page-schema tr[data-field="Id"] [data-act="type"]').click()
+    page.locator("[data-fe-type]").click()
     page.wait_for_selector("[data-type-search]:focus")
     page.locator("[data-type='int64']").click()
+    page.locator("[data-fe-apply]").click()
     page.wait_for_timeout(200)
-    assert "3 条未应用变更" in _draftbar_text(page)
+    assert "4 条未应用变更" in _draftbar_text(page)
 
-    # delete a field via the danger confirm
-    page.locator('#page-schema [data-act="delete"]').first.click()
+    # delete the non-primary field via the danger confirm
+    page.locator('#page-schema tr[data-field="DisplayName"] [data-act="delete"]').click()
     page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-sm")
     page.locator(".ct-dlg-sm [data-confirm]").click()
     page.wait_for_timeout(200)
-    assert "4 条未应用变更" in _draftbar_text(page)
+    assert "5 条未应用变更" in _draftbar_text(page)
     context.close()
 
 
-def test_inspector_field_properties_emit_commands(editor_url: str, chromium_browser: Any) -> None:
+def test_inspector_field_properties_are_read_only(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
     _open_schema_module(page, editor_url)
     _select_item(page)
 
-    # inspector is a tool: open it from the side tab, pick the field, edit props
+    # inspector is a read-only summary; type/layout changes have one editor entry point
     page.locator("#page-schema .ct-side-tab").click()
     page.wait_for_selector("#page-schema #side-inspector")
     page.locator('#page-schema tr[data-field="Name"]').click()
-    page.wait_for_selector("#page-schema #field-save")
-    page.fill('#page-schema #side-inspector [data-prop="comment"]', "备注")
-    page.fill('#page-schema #side-inspector [data-prop="excel_columns"]', "3")
-    page.locator("#page-schema #field-save").click()
-    page.wait_for_timeout(200)
-    assert "5 条未应用变更" in _draftbar_text(page)
+    assert page.locator("#page-schema #field-save").count() == 0
+    assert page.locator('#page-schema #side-inspector [data-prop]').count() == 0
+    assert "只读" in page.locator("#page-schema #side-inspector").text_content()
+    assert "0 条未应用变更" in _draftbar_text(page) or page.locator("#ct-draftbar").is_hidden()
     context.close()
 
 
@@ -442,6 +451,20 @@ def test_compact_field_rows_at_390(editor_url: str, chromium_browser: Any) -> No
     context.close()
 
 
+def test_primary_field_actions_are_locked(editor_url: str, chromium_browser: Any) -> None:
+    context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
+    page = context.new_page()
+    _open_schema_module(page, editor_url)
+    _select_item(page)
+    page.wait_for_selector("#page-schema tr[data-field='Id']")
+    primary_ops = page.locator("#page-schema tr[data-field='Id'] .ct-row-ops button")
+    assert primary_ops.count() == 3
+    assert all(primary_ops.nth(index).is_disabled() for index in range(3))
+    assert "主键字段不可删除" in (primary_ops.nth(2).get_attribute("title") or "")
+    assert "主键字段不可调整顺序" in (primary_ops.nth(0).get_attribute("title") or "")
+    context.close()
+
+
 def test_query_index_cards_emit_set_indexes(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
@@ -460,7 +483,7 @@ def test_query_index_cards_emit_set_indexes(editor_url: str, chromium_browser: A
     assert page.locator("#page-schema .ct-index-preview", has_text="ByGroupKey").count() == 1
 
     # review plan surfaces Accessor impact for the index change
-    page.locator("#page-schema #review-plan").click()
+    page.locator("#ct-draft-review").click()
     page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-plan")
     assert "Accessor" in page.locator(".ct-dlg-plan").text_content()
     context.close()

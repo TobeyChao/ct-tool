@@ -53,4 +53,5 @@ public unsafe readonly struct QuestRow
     public int RewardItemId => WireReader.I32(_row, 10);
     public ItemRow? Item => ItemAccessor.ByID(RewardItemId);
     public int RequiredLevel => WireReader.I32(_row, 12);
+    public NArray<double> Test => new NArray<double>(_row, 14, _version);
 }

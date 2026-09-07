@@ -75,12 +75,16 @@ class FieldDef(BaseModel):
                     f"字段 {self.name}: separator 仅允许配 vector<Scalar>/vector<Enum>"
                     f"（当前类型 {self.type_text}）"
                 )
+            if isinstance(self.type_expr.element, NamedType) and self.type_expr.element.expected_kind == "record":
+                raise ValueError(
+                    f"字段 {self.name}: vector<Record> 按展开列组读取，不能声明 separator"
+                )
         if self.excel_columns is not None and not isinstance(
             self.type_expr, VectorType
         ):
             raise ValueError(
                 f"字段 {self.name}: excel_columns（展开组数）仅适用于 "
-                f"vector<Record>（定长展开列组），当前类型 {self.type_text}"
+                f"vector<T>（定长展开列），当前类型 {self.type_text}"
             )
         return self
 

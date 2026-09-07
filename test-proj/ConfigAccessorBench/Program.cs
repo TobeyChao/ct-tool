@@ -15,9 +15,10 @@ public static unsafe class Program
 
     public static void Main(string[] args)
     {
-        string arg0 = args.Length > 0 ? args[0] : "Item";
-        int iters = args.Length > 1 ? int.Parse(args[1]) : 200_000;
-        string bundlePath = FindBundle();
+        bool fixedVector = args.Length > 0 && args[0] == "--fixed-vector";
+        string arg0 = fixedVector ? "Item" : (args.Length > 0 ? args[0] : "Item");
+        int iters = fixedVector ? (args.Length > 1 ? int.Parse(args[1]) : 1) : (args.Length > 1 ? int.Parse(args[1]) : 200_000);
+        string bundlePath = fixedVector ? FindFixedVectorBundle() : FindBundle();
         byte[] bundle = File.ReadAllBytes(bundlePath);
 
         // 注册所有表到 Runtime，供生成的 accessor（*Accessor.g.cs）查询
@@ -33,7 +34,7 @@ public static unsafe class Program
 
         RunCorrectness(table);
         Console.WriteLine();
-        RunGeneratedAccessorSmoke(table);
+        RunGeneratedAccessorSmoke(table, fixedVector);
         Console.WriteLine();
         RunBenchmark(table, iters);
         Console.WriteLine();
@@ -45,12 +46,23 @@ public static unsafe class Program
     static List<ConfigTable> LoadAllTables(byte[] bundle) => ConfigReader.LoadBundle(bundle);
 
     // 生成 accessor（*Accessor.g.cs）冒烟：通过 Runtime 走 ItemAccessor.ByID 等
-    static void RunGeneratedAccessorSmoke(ConfigTable t)
+    static void RunGeneratedAccessorSmoke(ConfigTable t, bool fixedVector)
     {
         var item = ItemAccessor.ByID(1);
         if (!item.HasValue) { Console.WriteLine("[gen-accessor] ByID(1) miss"); return; }
         var row = item.Value;
-        Console.WriteLine($"[gen-accessor] ByID(1): Id={row.Id} Name={row.Name} Price={row.Price} Rarity={row.Rarity} Tags0={row.Tags[0]} DropRange.Min={row.DropRange.Min} ItemType.Id={row.ItemType.Value.Id}");
+        if (fixedVector)
+        {
+            if (row.FixedTags.Length != 2 || row.FixedTags[0] != 10 || row.FixedTags[1] != 20)
+                throw new InvalidDataException("FixedTags vector 读取结果不符合预期");
+            if (row.FixedNames.Length != 2 || row.FixedNames[0].ToString() != "alpha" || row.FixedNames[1].ToString() != "beta")
+                throw new InvalidDataException("FixedNames vector 读取结果不符合预期");
+            Console.WriteLine($"[gen-accessor] FixedTags={row.FixedTags.Length}:[{row.FixedTags[0]},{row.FixedTags[1]}] FixedNames={row.FixedNames.Length}:[{row.FixedNames[0]},{row.FixedNames[1]}]");
+        }
+        else
+        {
+            Console.WriteLine($"[gen-accessor] ByID(1): Id={row.Id} Name={row.Name} Price={row.Price} Rarity={row.Rarity} Tags0={row.Tags[0]} DropRange.Min={row.DropRange.Min} ItemType.Id={row.ItemType.Value.Id}");
+        }
     }
 
     // ---- 正确性演示：Count / ByID / ByIndex / 指针式字段 / 向量 / 字符串驻留 / 版本守卫 ----
@@ -164,6 +176,13 @@ public static unsafe class Program
             dir = dir.Parent;
         }
         throw new FileNotFoundException("找不到 data_zh.bin，请先 ct export 生成产物");
+    }
+
+    static string FindFixedVectorBundle()
+    {
+        string path = Path.Combine(AppContext.BaseDirectory, "fixtures", "fixed-vector", "data_zh.bin");
+        if (File.Exists(path)) return path;
+        throw new FileNotFoundException("找不到 fixed-vector fixture，请先生成测试 fixture");
     }
 
     static string R0(IntPtr p) => ((long)p).ToString("x");

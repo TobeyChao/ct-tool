@@ -25,6 +25,7 @@ export function resourceKind(resource) {
 const SCALARS = ["int32", "int64", "float", "double", "bool", "string"];
 const RISK_LABEL = {
   safe: "安全",
+  blocker: "阻塞",
   "data-dependent": "数据依赖",
   destructive: "破坏",
   incompatible: "不兼容",
@@ -117,6 +118,30 @@ function formDialog({ title, label, placeholder, initial = "", submitLabel, vali
   return handle;
 }
 
+export function openFieldCommentEditor(ctx, resource, field) {
+  const handle = openDialog({
+    title: `编辑字段注释 · ${field.name}`,
+    variant: "sm",
+    initialFocusSelector: "[data-comment-input]",
+    body: `<div class="ct-dlg-field">
+        <label class="ct-dlg-label" for="field-comment-input">Excel 表头注释</label>
+        <textarea class="ct-dlg-input ct-comment-input" id="field-comment-input" data-comment-input rows="4" placeholder="填写策划录入提示">${escapeHtml(field.comment || "")}</textarea>
+      </div>`,
+    footer: `<button class="ct-btn ct-btn-ghost" data-cancel>取消</button><button class="ct-btn ct-btn-primary" data-submit>保存注释</button>`,
+  });
+  const input = handle.el.querySelector("[data-comment-input]");
+  const submit = () => {
+    ctx.pushCommand({ type: "set_property", payload: { owner: resource.resourceId, name: field.name, property: "comment", value: input.value.trim() } });
+    handle.close();
+  };
+  handle.el.querySelector("[data-cancel]").addEventListener("click", () => handle.close());
+  handle.el.querySelector("[data-submit]").addEventListener("click", submit);
+  input.addEventListener("keydown", (event) => {
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") submit();
+  });
+  return handle;
+}
+
 export function promptRenameField(ctx, resource, oldName) {
   formDialog({
     title: "重命名字段",
@@ -185,9 +210,101 @@ export function openTypePicker(ctx, { role = "", onPick }) {
   });
 }
 
+/* Edit an existing field's base type, vector shape and Excel input layout. */
+export function openFieldTypeEditor(ctx, field, onApply) {
+  const raw = field.type || field.type_expr || "int32";
+  const match = String(raw).match(/^vector\s*<\s*(.+)\s*>$/);
+  let typeSel = match ? match[1] : String(raw);
+  let vector = Boolean(match);
+  let fixed = field.excel_columns != null;
+  const isRecord = (name) => {
+    const resource = (ctx.state.resources || []).find((item) => item.name === name);
+    return Boolean(resource && resource.kind === "record");
+  };
+  const handle = openDialog({
+    title: "编辑字段类型",
+    variant: "std",
+    initialFocusSelector: "[data-fe-type]",
+    body: `<div class="ct-field-type-editor"><section class="ct-field-type-panel ct-type-panel"><div class="ct-field-type-heading"><span class="ct-field-type-kicker">字段类型</span><span class="ct-field-type-help">选择基础类型，再决定是否使用 vector</span></div><div class="ct-dlg-field"><label class="ct-dlg-label">基础类型</label>
+        <button class="ct-type-trigger" type="button" data-fe-type><span class="ct-mono" data-fe-type-txt>${escapeHtml(typeSel)}</span><span class="ct-caret">▾</span></button></div>
+      </section><section class="ct-field-type-panel ct-input-panel"><div class="ct-field-type-heading"><span class="ct-field-type-kicker">Excel 输入形态</span><span class="ct-field-type-help">仅影响表格录入方式，不改变运行时类型</span></div><div class="ct-opt-row"><span class="ct-opt-label">vector</span><label class="ct-chip"><input type="checkbox" data-fe-vector ${vector ? "checked" : ""}><span>数组</span></label></div>
+      <div class="ct-opt-row ct-shape-row" data-fe-shape hidden><span class="ct-opt-label">长度</span><div class="ct-seg">
+        <label><input type="radio" name="fe-flavor" data-fe-var><span>变长</span></label>
+        <label><input type="radio" name="fe-flavor" data-fe-fix><span>定长</span></label></div><span class="ct-opt-sub ct-shape-detail" data-fe-cols hidden>固定列数 <button class="ct-stepper-btn" type="button" data-fe-cols-dec aria-label="减少列数">−</button><input class="ct-dlg-input ct-stepper-input" data-fe-cols-input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="${escapeHtml(field.excel_columns ?? 3)}"><button class="ct-stepper-btn" type="button" data-fe-cols-inc aria-label="增加列数">＋</button> 列</span><span class="ct-opt-sub ct-shape-detail" data-fe-note>变长 · 分隔符内置（,）</span></div>
+      <div class="ct-dlg-msg" data-fe-msg hidden></div></section></div>`,
+    footer: `<button class="ct-btn ct-btn-ghost" data-cancel>取消</button><button class="ct-btn ct-btn-primary" data-fe-apply>应用</button>`,
+  });
+  const root = handle.el;
+  const typeBtn = root.querySelector("[data-fe-type]");
+  const typeTxt = root.querySelector("[data-fe-type-txt]");
+  const vectorEl = root.querySelector("[data-fe-vector]");
+  const shape = root.querySelector("[data-fe-shape]");
+  const varEl = root.querySelector("[data-fe-var]");
+  const fixEl = root.querySelector("[data-fe-fix]");
+  const cols = root.querySelector("[data-fe-cols]");
+  const colsInput = root.querySelector("[data-fe-cols-input]");
+  const colsDec = root.querySelector("[data-fe-cols-dec]");
+  const colsInc = root.querySelector("[data-fe-cols-inc]");
+  const note = root.querySelector("[data-fe-note]");
+  const msg = root.querySelector("[data-fe-msg]");
+  const showMsg = (text) => { msg.hidden = !text; msg.textContent = text || ""; };
+  const stepColumns = (delta) => {
+    const current = Number.parseInt(colsInput.value, 10);
+    colsInput.value = String(Math.max(1, (Number.isInteger(current) ? current : 1) + delta));
+    showMsg("");
+  };
+  const sync = () => {
+    vector = vectorEl.checked;
+    shape.hidden = !vector;
+    if (!vector) {
+      cols.hidden = true;
+      note.hidden = true;
+      return;
+    }
+    if (isRecord(typeSel)) {
+      fixed = true;
+      varEl.disabled = true;
+      fixEl.disabled = false;
+    } else {
+      varEl.disabled = false;
+      fixEl.disabled = false;
+    }
+    varEl.checked = !fixed;
+    fixEl.checked = fixed;
+    cols.hidden = !fixed;
+    note.hidden = fixed;
+  };
+  typeBtn.addEventListener("click", () => openTypePicker(ctx, {
+    onPick: (value) => { typeSel = value; typeTxt.textContent = value; sync(); },
+  }));
+  vectorEl.addEventListener("change", sync);
+  varEl.addEventListener("change", () => { fixed = false; sync(); });
+  fixEl.addEventListener("change", () => { fixed = true; sync(); });
+  colsDec.addEventListener("click", () => stepColumns(-1));
+  colsInc.addEventListener("click", () => stepColumns(1));
+  colsInput.addEventListener("input", () => {
+    colsInput.value = colsInput.value.replace(/\D/g, "");
+    if (colsInput.value === "0") colsInput.value = "1";
+    showMsg("");
+  });
+  root.querySelector("[data-cancel]").addEventListener("click", () => handle.close());
+  root.querySelector("[data-fe-apply]").addEventListener("click", () => {
+    if (vector && fixed) {
+      const count = Number.parseInt(colsInput.value, 10);
+      if (!Number.isInteger(count) || count < 1) { showMsg("固定列数不能小于 1"); return; }
+      onApply({ type_text: `vector<${typeSel}>`, excel_columns: count });
+    } else {
+      onApply({ type_text: vector ? `vector<${typeSel}>` : typeSel, excel_columns: null });
+    }
+    handle.close();
+  });
+  sync();
+}
+
 /* ---- F1 添加字段（角色×约束互斥 + Code 固定名 + vector 修饰符） ---- */
 export function openAddField(ctx, resource) {
   let typeSel = "int32";
+  let fixedVector = false;
   const hasCode = (resource.fields || []).some((f) => f.name === "Code");
   const isRefText = (t) => Boolean(t) && t.includes(".") && !t.startsWith("vector");
   const isRecordText = (t) => {
@@ -266,13 +383,20 @@ export function openAddField(ctx, resource) {
     const vecOn = vecEl.checked;
     vecRow.hidden = !vecOn;
     if (!vecOn) { colsRow.hidden = true; sepNote.hidden = true; return; }
-    if (isRecordText(typeSel)) { flavorVar.disabled = true; flavorFix.disabled = false; setFlavor(true); }
-    else { flavorVar.disabled = false; flavorFix.disabled = true; flavorVar.checked = true; setFlavor(false); }
+    if (isRecordText(typeSel)) {
+      flavorVar.disabled = true;
+      flavorFix.disabled = false;
+      fixedVector = true;
+    } else {
+      flavorVar.disabled = false;
+      flavorFix.disabled = false;
+    }
+    setFlavor(fixedVector);
   }
   function updateMsg() {
     if (codeEl.checked) { showMsg("Code 索引要求：非空 · 表内唯一 · 非 i18n string（程序引用键）"); return; }
     if (vecEl.checked && isRefText(typeSel)) { showMsg("ref 字段不支持 vector"); return; }
-    if (vecEl.checked && isRecordText(typeSel)) { showMsg("vector<Record> 为定长（固定展开列组），需配置展开组数"); return; }
+    if (vecEl.checked && fixedVector) { showMsg("定长 vector 使用固定展开列数，需配置展开组数"); return; }
     if (isRefText(typeSel)) { showMsg("ref 外键值必须存在于引用表主键集（空值会被校验拦截）"); return; }
     showMsg("");
   }
@@ -289,8 +413,8 @@ export function openAddField(ctx, resource) {
     syncControls(); syncVec(); updateMsg();
   });
   vecEl.addEventListener("change", () => { syncControls(); syncVec(); updateMsg(); });
-  flavorVar.addEventListener("change", () => { if (!flavorVar.disabled) { setFlavor(false); updateMsg(); } });
-  flavorFix.addEventListener("change", () => { if (!flavorFix.disabled) { setFlavor(true); updateMsg(); } });
+  flavorVar.addEventListener("change", () => { if (!flavorVar.disabled) { fixedVector = false; setFlavor(false); updateMsg(); } });
+  flavorFix.addEventListener("change", () => { if (!flavorFix.disabled) { fixedVector = true; setFlavor(true); updateMsg(); } });
   roleEls.forEach((r) => r.addEventListener("change", () => { syncControls(); syncVec(); updateMsg(); }));
   nameEl.addEventListener("input", () => nameEl.classList.remove("invalid"));
   typeEl.addEventListener("click", () => {
@@ -320,17 +444,22 @@ export function openAddField(ctx, resource) {
     const field = { name: value, type: fieldType };
     if (currentRole === "i18n") field.i18n = true;
     if (currentRole === "server") field.server_only = true;
-    if (vecOn && isRecordText(typeSel)) {
+    if (vecOn && fixedVector) {
       const cols = parseInt(colsEl.value, 10);
       if (!Number.isFinite(cols) || cols < 1) { showMsg("展开组数须为正整数"); return; }
       field.excel_columns = cols;
     }
     // 提交前后端校验兜底（类型/角色边界），失败保持弹窗打开
     try {
-      await api("/api/schema-workspace/validate", {
+      const validation = await api("/api/schema-workspace/validate", {
         method: "POST",
         body: JSON.stringify({ commands: [{ type: "add_field", payload: { owner: resource.resourceId, field } }] }),
       });
+      if (!validation.valid) {
+        const first = validation.issues && validation.issues[0];
+        showMsg(first ? `${first.message}${first.location ? `（${first.location}）` : ""}` : "字段约束校验失败");
+        return;
+      }
     } catch (e) {
       showMsg(e.message || "校验失败");
       return;

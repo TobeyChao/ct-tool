@@ -132,6 +132,36 @@ def test_logs_refresh_while_visible(module_url: str, chromium_browser: Any) -> N
     page.close()
 
 
+def test_logs_keep_reading_position_and_offer_jump_to_bottom(module_url: str, chromium_browser: Any) -> None:
+    from ct.web.logs import log_buffer
+
+    for index in range(80):
+        log_buffer.add("系统", "INFO", f"scroll-position-marker-{index}")
+    page = chromium_browser.new_page(viewport={"width": 1280, "height": 720})
+    page.goto(module_url, wait_until="load")
+    page.locator('.ct-sitem[data-module="logs"]').click()
+    viewport = page.locator("#page-logs .ct-log-table-wrap")
+    viewport.wait_for()
+    viewport.evaluate("node => node.scrollTop = Math.floor(node.scrollHeight / 2)")
+    before = viewport.evaluate("node => node.scrollTop")
+
+    log_buffer.add("系统", "INFO", "scroll-position-new-entry")
+    page.wait_for_timeout(1_500)
+
+    after = viewport.evaluate("node => node.scrollTop")
+    assert abs(after - before) <= 2
+    jump = page.locator("#page-logs #logs-jump-bottom")
+    assert jump.is_visible()
+    jump.click()
+    page.wait_for_function(
+        "() => { const node = document.querySelector('#page-logs .ct-log-table-wrap'); return node && node.scrollHeight - node.clientHeight - node.scrollTop <= 8; }",
+        timeout=2_000,
+    )
+    assert viewport.evaluate("node => node.scrollHeight - node.clientHeight - node.scrollTop") <= 8
+    assert jump.is_hidden()
+    page.close()
+
+
 def test_logs_compact_rows_keep_field_labels(module_url: str, chromium_browser: Any) -> None:
     from ct.web.logs import log_buffer
 
@@ -237,6 +267,58 @@ def test_i18n_entry_table_alignment(module_url: str, chromium_browser: Any) -> N
     assert abs(m["thLeft"] - m["tdLeft"]) <= 1  # 操作 header + buttons both left-aligned
     assert abs(m["srcW"] - m["transW"]) <= 2   # 原文/译文等宽
     assert m["btnW"] >= 90                     # 保存按钮等宽
+    page.close()
+
+
+def test_i18n_entry_table_preserves_text_columns_on_narrow_view(
+    module_url: str, chromium_browser: Any
+) -> None:
+    page = chromium_browser.new_page(viewport={"width": 390, "height": 844})
+    page.goto(module_url, wait_until="load")
+    page.locator("#ct-hamb").click()
+    page.locator('.ct-sitem[data-module="i18n"]').click()
+    page.wait_for_selector("#page-i18n .ct-i18n-table table")
+    metrics = page.evaluate("""() => {
+      const wrap = document.querySelector('#page-i18n .ct-i18n-table');
+      const table = wrap.querySelector('table');
+      const th = table.querySelectorAll('thead th');
+      return {
+        wrapWidth: Math.round(wrap.getBoundingClientRect().width),
+        tableWidth: Math.round(table.getBoundingClientRect().width),
+        sourceWidth: Math.round(th[2].getBoundingClientRect().width),
+        translationWidth: Math.round(th[3].getBoundingClientRect().width),
+        hasHorizontalOverflow: wrap.scrollWidth > wrap.clientWidth,
+      };
+    }""")
+    assert metrics["tableWidth"] >= 916
+    assert metrics["sourceWidth"] >= 240
+    assert metrics["translationWidth"] >= 240
+    assert metrics["hasHorizontalOverflow"]
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
+    page.close()
+
+
+def test_i18n_narrow_header_keeps_title_and_actions_centered(
+    module_url: str, chromium_browser: Any
+) -> None:
+    page = chromium_browser.new_page(viewport={"width": 520, "height": 460})
+    page.goto(module_url + "#/i18n", wait_until="load")
+    page.wait_for_selector("#page-i18n .ct-module-head")
+    metrics = page.evaluate("""() => {
+      const head = document.querySelector('#page-i18n .ct-module-head');
+      const actionGroup = head.querySelector('.ct-module-actions');
+      actionGroup.style.width = '180px';
+      const title = head.querySelector('.ct-panel-title').getBoundingClientRect();
+      const actions = actionGroup.getBoundingClientRect();
+      const buttons = [...actionGroup.querySelectorAll(':scope > .ct-btn')];
+      return {
+        titleCenter: Math.round(title.top + title.height / 2),
+        actionsCenter: Math.round(actions.top + actions.height / 2),
+        actionRows: new Set(buttons.map((button) => Math.round(button.getBoundingClientRect().top))).size,
+      };
+    }""")
+    assert abs(metrics["titleCenter"] - metrics["actionsCenter"]) <= 2
+    assert metrics["actionRows"] >= 2
     page.close()
 
 

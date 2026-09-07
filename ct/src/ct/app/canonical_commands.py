@@ -7,7 +7,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import tempfile
 from pathlib import Path
+
+from openpyxl import load_workbook
 
 from ct.app.canonical_workspace import CanonicalWorkspace
 from ct.cache.canonical_state import (
@@ -19,8 +23,9 @@ from ct.cache.canonical_state import (
 from ct.diagnostics.errors import Issue, IssueCode, ValidationIssue, WorkspaceIssue
 from ct.excel.canonical_reader import read_canonical_excel
 from ct.excel.canonical_template import generate_canonical_template
-from ct.excel.layout import build_layout
+from ct.excel.layout import Column, Layout, build_layout
 from ct.excel.layout_manifest import LayoutManifest, save_manifest
+from ct.excel.planning import plan_excel_migration
 from ct.schema.hashing import compute_schema_hash
 from ct.schema.resources import RecordResource
 
@@ -207,7 +212,13 @@ def canonical_status(root: Path) -> dict[str, list[str]]:
         current_hash = _file_sha256(excel_path)
         manifest = _load_manifest(cache_dir, table.table)
         schema_hash = _schema_hash(table, records)
-        if manifest is None or manifest.schema_hash != schema_hash:
+        layout = build_layout(table, schema_hash=schema_hash, records=records)
+        workbook_column_count = _template_column_count(excel_path)
+        if (
+            manifest is None
+            or manifest.schema_hash != schema_hash
+            or workbook_column_count != layout.column_count
+        ):
             drifted.append(table.table)
         cached_hash = state.excel_hashes.get(table.table) if state else None
         if cached_hash is None or cached_hash != current_hash:
@@ -223,6 +234,88 @@ def _load_manifest(cache_dir: Path, table: str) -> LayoutManifest | None:
 
 def _schema_hash(table, records) -> str:
     return compute_schema_hash(table, tuple(records.values()))
+
+
+def _layout_from_manifest(table_id: str, manifest: LayoutManifest) -> Layout:
+    """Rebuild the previous layout needed to migrate an existing workbook."""
+    columns = tuple(
+        Column(
+            index=int(item["index"]),
+            stable_path=str(item["stablePath"]),
+            type_text=str(item.get("typeExpr", "")),
+            annotation=str(item.get("annotation", "")),
+            leaf=str(item.get("leaf", "")),
+            group_index=(
+                int(item["groupIndex"]) if item.get("groupIndex") is not None else None
+            ),
+            depth=int(item.get("depth", 1)),
+        )
+        for item in manifest.columns
+    )
+    return Layout(
+        table_id=table_id,
+        schema_hash=manifest.schema_hash,
+        header_rows=manifest.header_rows,
+        columns=columns,
+    )
+
+
+def _migrate_excel_rows(
+    old_path: Path,
+    new_path: Path,
+    old_layout: Layout,
+    new_layout: Layout,
+    manifest: LayoutManifest,
+) -> None:
+    """Copy old data rows into a newly generated workbook by stable column path."""
+    plan = plan_excel_migration(
+        old_layout,
+        new_layout,
+        old_path,
+        manifest=manifest,
+    )
+    if plan.blocked:
+        details = "；".join(issue.render() for issue in plan.issues)
+        raise ValueError(f"Excel 数据无法安全迁移：{details}")
+
+    targets = {
+        migration.old_index: migration.new_index
+        for migration in plan.migrations
+        if migration.new_index is not None
+    }
+    old_wb = load_workbook(str(old_path), read_only=True, data_only=False)
+    new_wb = load_workbook(str(new_path), read_only=False, data_only=False)
+    try:
+        old_ws = old_wb.active
+        new_ws = new_wb.active
+        new_row = new_layout.header_rows + 1
+        for row_index in range(old_layout.header_rows + 1, old_ws.max_row + 1):
+            values = {
+                old_index: old_ws.cell(row=row_index, column=old_index).value
+                for old_index in targets
+            }
+            if not any(value is not None and (not isinstance(value, str) or value.strip()) for value in values.values()):
+                continue
+            for old_index, new_index in targets.items():
+                new_ws.cell(row=new_row, column=new_index).value = values[old_index]
+            new_row += 1
+        new_wb.save(str(new_path))
+    finally:
+        old_wb.close()
+        new_wb.close()
+
+
+def _template_column_count(path: Path) -> int | None:
+    """Read the actual number of columns in the Excel template."""
+    if not path.exists():
+        return None
+    try:
+        from openpyxl import load_workbook
+
+        workbook = load_workbook(str(path), read_only=True, data_only=False)
+        return int(workbook.active.max_column)
+    except (OSError, KeyError, TypeError, ValueError):
+        return None
 
 
 def canonical_gen_template(
@@ -248,10 +341,42 @@ def canonical_gen_template(
             records=records,
         )
         out_path = excel_dir / (table.excel_file or f"{table.table}.xlsx")
-        generate_canonical_template(
-            layout, out_path, enums={e.name: e for e in ws.enums}, primary=table.primary
-        )
-        save_manifest(cache_dir, table.table, LayoutManifest.from_layout(layout))
+        old_manifest = _load_manifest(cache_dir, table.table)
+        if out_path.exists() and old_manifest is not None:
+            old_layout = _layout_from_manifest(table.resource_id, old_manifest)
+            with tempfile.TemporaryDirectory(dir=str(excel_dir)) as temp_dir:
+                staged_path = Path(temp_dir) / out_path.name
+                generate_canonical_template(
+                    layout,
+                    staged_path,
+                    enums={e.name: e for e in ws.enums},
+                    primary=table.primary,
+                )
+                _migrate_excel_rows(
+                    out_path,
+                    staged_path,
+                    old_layout,
+                    layout,
+                    old_manifest,
+                )
+                os.replace(staged_path, out_path)
+            save_manifest(
+                cache_dir,
+                table.table,
+                LayoutManifest.from_layout(
+                    layout, previous_revision=old_manifest.layout_revision
+                ),
+            )
+        else:
+            if out_path.exists() and old_manifest is None:
+                raise ValueError(
+                    f"{table.table} 的 Excel 缺少布局 manifest，无法安全迁移；"
+                    "请先备份后删除旧文件，再重新生成空模板"
+                )
+            generate_canonical_template(
+                layout, out_path, enums={e.name: e for e in ws.enums}, primary=table.primary
+            )
+            save_manifest(cache_dir, table.table, LayoutManifest.from_layout(layout))
         messages.append(f"模板已生成: {table.table}")
     if targets:
         state = load_state(cache_dir) or CanonicalCacheState()

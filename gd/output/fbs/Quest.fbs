@@ -7,6 +7,7 @@ table Quest {
   Description: string;
   RewardItemId: int32;
   RequiredLevel: int32;
+  Test: [float64];
 }
 
 struct IndexEntry {

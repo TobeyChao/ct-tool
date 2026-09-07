@@ -76,7 +76,7 @@ function renderPages(active) {
       <button class="ct-btn ct-btn-ghost ct-btn-sm" id="ct-draft-redo" disabled>重做</button>
       <button class="ct-btn ct-btn-primary ct-btn-sm" id="ct-draft-review" disabled>审查并应用</button>
     </span>
-  </div></main>`;
+  </div><div class="ct-toast" id="ct-toast" role="status" aria-live="polite" hidden></div></main>`;
 }
 
 function renderTaskbar(tasks) {
@@ -149,20 +149,28 @@ function setSidebarDrawer(open) {
 
 /* ---- shell draft bar: schema module publishes state via ct:draft ---- */
 let draftSuccessTimer = null;
+let toastTimer = null;
+function showSuccessToast(text) {
+  const toast = document.getElementById("ct-toast");
+  if (!toast) return;
+  clearTimeout(toastTimer);
+  toast.textContent = text;
+  toast.hidden = false;
+  toast.classList.add("show");
+  toastTimer = setTimeout(() => {
+    toast.classList.remove("show");
+    toast.hidden = true;
+  }, 1800);
+}
 function renderDraftBar(detail) {
   const bar = document.getElementById("ct-draftbar");
   if (!bar) return;
   const { pending = 0, canRedo = false, warn = false, successText = "" } = detail || {};
   if (successText) {
-    bar.hidden = false;
-    bar.classList.remove("warn");
-    bar.classList.add("success");
-    document.getElementById("ct-draft-txt").textContent = successText;
     clearTimeout(draftSuccessTimer);
-    draftSuccessTimer = setTimeout(() => {
-      bar.hidden = true;
-      bar.classList.remove("success");
-    }, 3000);
+    bar.hidden = true;
+    bar.classList.remove("warn", "success");
+    showSuccessToast(successText);
     return;
   }
   clearTimeout(draftSuccessTimer);

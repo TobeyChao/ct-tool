@@ -19,3 +19,7 @@ fields:
   - name: RequiredLevel
     type: int32
     comment: 接取等级要求
+  - name: Test
+    type: vector<double>
+    comment: 测试测试
+    excel_columns: 3

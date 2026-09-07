@@ -93,6 +93,21 @@ def test_expanded_vector_record_groups() -> None:
     assert layout.header_rows == 4
 
 
+def test_expanded_scalar_vector_groups() -> None:
+    table = _table([
+        FieldDef(name="Id", type="int32"),
+        FieldDef(name="Tags", type="vector<int32>", excel_columns=3),
+    ])
+    layout = build_layout(table, schema_hash="abc", records={})
+    assert [column.stable_path for column in layout.columns] == [
+        "table:Item/Id",
+        "table:Item/Tags[1]",
+        "table:Item/Tags[2]",
+        "table:Item/Tags[3]",
+    ]
+    assert [column.group_index for column in layout.columns[1:]] == [1, 2, 3]
+
+
 def test_single_cell_vector_record_has_no_groups() -> None:
     table = _table(
         [

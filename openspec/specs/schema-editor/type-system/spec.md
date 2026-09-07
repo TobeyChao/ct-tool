@@ -32,7 +32,7 @@
 - **THEN** 工作台只读显示 `byte` wire type，Candidate API 不接受其他 wire type
 
 ### Requirement: End-to-end vector of record
-系统 SHALL 支持 `vector<record>` 从 Schema 加载、Excel 读取与模板、校验、JSON、FBS、Binary 到 C#/Lua Accessor 的完整链路；`excel_columns` SHALL 只限制展开录入组数，不改变运行时 vector 的变长语义。
+系统 SHALL 支持 `vector<record>` 以及标量/Enum/string vector 从 Schema 加载、Excel 读取与模板、校验、JSON、FBS、Binary 到 C#/Lua Accessor 的完整链路；`excel_columns` SHALL 只限制 Excel 展开录入组数，不改变运行时 vector 的变长语义。
 
 #### Scenario: Read expanded record groups
 - **WHEN** `Rewards: vector<DropReward>` 配置 `excel_columns: 3` 且 Excel 仅填写前两组

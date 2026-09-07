@@ -64,6 +64,27 @@ def test_validate_reports_role_violation(tmp_path: Path) -> None:
     assert any("i18n" in issue["message"] for issue in resp.get_json()["data"]["issues"])
 
 
+def test_generate_template_endpoint_for_table(tmp_path: Path) -> None:
+    client, _ = _client(tmp_path)
+    excel = tmp_path / "gd" / "excel" / "Item.xlsx"
+    assert not excel.exists()
+
+    resp = client.post("/api/schema-workspace/gen-template", json={"table": "Item"})
+
+    assert resp.status_code == 200, resp.get_json()
+    assert "模板已生成: Item" in resp.get_json()["data"]["messages"]
+    assert excel.exists()
+
+
+def test_generate_template_endpoint_rejects_unknown_table(tmp_path: Path) -> None:
+    client, _ = _client(tmp_path)
+
+    resp = client.post("/api/schema-workspace/gen-template", json={"table": "Missing"})
+
+    assert resp.status_code == 404
+    assert "未找到表" in resp.get_json()["error"]
+
+
 def test_change_plan_returns_impacts(tmp_path: Path) -> None:
     client, _ = _client(tmp_path)
     resp = client.post(

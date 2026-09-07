@@ -93,6 +93,15 @@ def test_draft_undo_redo_cursor_semantics() -> None:
     assert resources[0].fields[3].comment == "价格"
 
 
+def test_primary_field_cannot_be_deleted_or_reordered() -> None:
+    for command in (
+        Command("delete_field", {"owner": "table:Item", "name": "Id"}),
+        Command("move_field", {"owner": "table:Item", "name": "Id", "to": 1}),
+    ):
+        with pytest.raises(ValueError, match="主键字段 'Id'"):
+            apply_commands((_base(), {}), [command])
+
+
 def test_rename_command_updates_references() -> None:
     log = DraftLog(_base(), base_indexes={})
     log.execute(Command("rename_resource", {"old": "Item", "new": "Goods"}))
@@ -111,6 +120,29 @@ def test_candidate_validation_reports_role_violation() -> None:
     current, _ = log.current()
     issues = validate_candidate(current, {})
     assert any("i18n" in issue.message for issue in issues)
+
+
+def test_candidate_validation_rechecks_mutated_field_and_table_invariants() -> None:
+    # model_copy() in the reducer does not run Pydantic validators. Candidate
+    # validation must still reject illegal states reached through set_property.
+    log = DraftLog(_base())
+    log.execute(Command("set_property", {
+        "owner": "table:Item",
+        "name": "Id",
+        "property": "server_only",
+        "value": True,
+    }))
+    log.execute(Command("set_property", {
+        "owner": "table:Item",
+        "name": "Name",
+        "property": "separator",
+        "value": ",",
+    }))
+    resources, _ = log.current()
+    issues = validate_candidate(resources, {})
+    messages = [issue.message for issue in issues]
+    assert any("主键" in message and "server_only" in message for message in messages)
+    assert any("separator" in message and "vector" in message for message in messages)
 
 
 def test_change_plan_dependency_breaking_risk() -> None:

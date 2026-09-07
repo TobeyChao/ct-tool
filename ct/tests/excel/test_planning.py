@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 
+from ct.app.canonical_commands import _migrate_excel_rows
+from ct.excel.canonical_template import generate_canonical_template
 from ct.excel.layout import build_layout
 from ct.excel.layout_manifest import LayoutManifest
 from ct.excel.planning import plan_excel_migration
@@ -37,6 +39,80 @@ def _records() -> dict[str, RecordResource]:
             fields=[FieldDef(name="ItemId", type="int32"), FieldDef(name="Count", type="int32")],
         ),
     }
+
+
+def test_migrate_rows_preserves_values_when_columns_move(tmp_path: Path) -> None:
+    old_table = TableResource(
+        table="Item", primary="Id",
+        fields=[FieldDef(name="Id", type="int32"), FieldDef(name="Name", type="string")],
+    )
+    new_table = TableResource(
+        table="Item", primary="Id",
+        fields=[FieldDef(name="Name", type="string"), FieldDef(name="Id", type="int32"), FieldDef(name="Price", type="int32")],
+    )
+    old_layout = _layout(old_table, {})
+    new_layout = _layout(new_table, {})
+    old_path = tmp_path / "old.xlsx"
+    new_path = tmp_path / "new.xlsx"
+    generate_canonical_template(old_layout, old_path, enums={}, primary="Id")
+    workbook = load_workbook(old_path)
+    worksheet = workbook.active
+    worksheet.cell(old_layout.header_rows + 1, 1).value = 7
+    worksheet.cell(old_layout.header_rows + 1, 2).value = "剑"
+    workbook.save(old_path)
+    workbook.close()
+    generate_canonical_template(new_layout, new_path, enums={}, primary="Id")
+
+    _migrate_excel_rows(
+        old_path, new_path, old_layout, new_layout, _tracked_manifest(old_layout)
+    )
+
+    workbook = load_workbook(new_path, data_only=True)
+    values = tuple(next(workbook.active.iter_rows(
+        min_row=new_layout.header_rows + 1,
+        max_row=new_layout.header_rows + 1,
+        values_only=True,
+    )))
+    workbook.close()
+    assert values == ("剑", 7, None)
+
+
+def test_migrate_rows_uses_new_header_row_count(tmp_path: Path) -> None:
+    old_table = TableResource(
+        table="Item", primary="Id", fields=[FieldDef(name="Id", type="int32")]
+    )
+    new_table = TableResource(
+        table="Item", primary="Id",
+        fields=[FieldDef(name="Id", type="int32"), FieldDef(name="Drop", type="DropRange")],
+    )
+    records = {
+        "DropRange": RecordResource(
+            name="DropRange",
+            fields=[FieldDef(name="Min", type="int32")],
+        )
+    }
+    old_layout = _layout(old_table, {})
+    new_layout = _layout(new_table, records)
+    assert old_layout.header_rows == 2
+    assert new_layout.header_rows == 3
+    old_path = tmp_path / "old.xlsx"
+    new_path = tmp_path / "new.xlsx"
+    generate_canonical_template(old_layout, old_path, enums={}, primary="Id")
+    workbook = load_workbook(old_path)
+    workbook.active.cell(old_layout.header_rows + 1, 1).value = 7
+    workbook.save(old_path)
+    workbook.close()
+    generate_canonical_template(new_layout, new_path, enums={}, primary="Id")
+
+    _migrate_excel_rows(
+        old_path, new_path, old_layout, new_layout, _tracked_manifest(old_layout)
+    )
+
+    workbook = load_workbook(new_path, data_only=True)
+    worksheet = workbook.active
+    assert worksheet.cell(new_layout.header_rows + 1, 1).value == 7
+    assert worksheet.cell(new_layout.header_rows, 1).value != 7
+    workbook.close()
 
 
 def test_reorder_maps_by_stable_path_not_position(tmp_path: Path) -> None:

@@ -73,6 +73,28 @@ def test_record_and_expanded_vector_record_reassembled(tmp_path: Path) -> None:
     assert parsed.issues == []
 
 
+def test_expanded_scalar_vector_reassembled(tmp_path: Path) -> None:
+    table = TableResource(
+        table="Item",
+        primary="Id",
+        fields=[
+            FieldDef(name="Id", type="int32"),
+            FieldDef(name="Tags", type="vector<int32>", excel_columns=3),
+            FieldDef(name="Names", type="vector<string>", excel_columns=2),
+        ],
+    )
+    layout = build_layout(table, schema_hash="s", records={})
+    template = generate_canonical_template(
+        layout, tmp_path / "scalar-vector.xlsx", enums={}, primary=table.primary
+    )
+    _append_row(template, [1, 10, 20, None, "one", "two"])
+    parsed = read_canonical_excel(template, layout, table, records={})
+    assert parsed.rows == [{"Id": 1, "Tags": [10, 20], "Names": ["one", "two"]}]
+    assert parsed.issues == []
+
+
+
+
 def test_empty_trailing_groups_are_dropped(tmp_path: Path) -> None:
     template, table = _make_template(tmp_path)
     _append_row(template, [2, None, None, "", 30, 1, None, None, None, None])

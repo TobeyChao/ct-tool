@@ -103,6 +103,21 @@ def test_status_detects_schema_drift(tmp_path: Path) -> None:
     assert "Item" not in report["changed"]
 
 
+def test_status_detects_stale_excel_template_layout(tmp_path: Path) -> None:
+    root = tmp_path / "gd"
+    _build_project(root)
+    result = runner.invoke(app, ["export", "--all", "--root", str(root)])
+    assert result.exit_code == 0, result.output
+
+    workbook_path = root / "excel" / "Item.xlsx"
+    workbook = load_workbook(workbook_path)
+    workbook.active.delete_cols(3, 1)
+    workbook.save(workbook_path)
+
+    report = canonical_status(root)
+    assert "Item" in report["drifted"]
+
+
 def test_status_reports_untouched_before_any_export(tmp_path: Path) -> None:
     root = tmp_path / "gd"
     _build_project(root)

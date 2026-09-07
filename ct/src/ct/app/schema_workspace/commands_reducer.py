@@ -85,6 +85,8 @@ def apply_command(state: DraftState, command: Command) -> DraftState:
         name = command.payload["name"]
         owner_index = _resource_index(resources, owner_id)
         owner = resources[owner_index]
+        if isinstance(owner, TableResource) and owner.primary == name:
+            raise ValueError(f"主键字段 '{name}' 不可删除")
         fields = [f for f in owner.fields if f.name != name]
         updated = owner.model_copy(update={"fields": fields})
         return (_replace_resource(resources, owner_index, updated), indexes)
@@ -94,6 +96,8 @@ def apply_command(state: DraftState, command: Command) -> DraftState:
         to_index = int(command.payload["to"])
         owner_index = _resource_index(resources, owner_id)
         owner = resources[owner_index]
+        if isinstance(owner, TableResource) and owner.primary == name:
+            raise ValueError(f"主键字段 '{name}' 不可调整顺序")
         fields = list(owner.fields)
         from_index = _field_index(fields, name)
         field = fields.pop(from_index)

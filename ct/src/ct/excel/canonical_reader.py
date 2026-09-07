@@ -150,6 +150,19 @@ class _RowReader:
                     break  # groups are contiguous; first empty group ends the list
                 groups.append(element)
             return groups
+        if isinstance(type_expr, VectorType) and (field.excel_columns or 0) > 0:
+            values: list[Any] = []
+            for group in range(1, field.excel_columns + 1):
+                path = f"{top}[{group}]"
+                column = next(
+                    column for column in self.layout.columns
+                    if column.stable_path == path
+                )
+                raw = self.value_by_path.get(path)
+                if raw is None or (isinstance(raw, str) and not raw.strip()):
+                    break  # fixed groups are contiguous, like vector<Record>
+                values.append(self._coerce(column, raw))
+            return values
         if isinstance(type_expr, VectorType):
             column = next(
                 column
@@ -169,6 +182,7 @@ class _RowReader:
             column for column in self.layout.columns if column.stable_path == top
         )
         return self._coerce(column, self.value_by_path.get(top))
+
 
     def _record_leaf_columns(self, top: str, group: int | None) -> list[Column]:
         return [

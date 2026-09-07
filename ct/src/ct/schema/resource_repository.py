@@ -155,10 +155,10 @@ def _resolve_fields(
                 f"excel_columns 展开为列组，不能声明 separator"
             )
         if field.excel_columns is not None:
-            if not is_record_vector:
+            if not isinstance(resolved_type, VectorType):
                 raise ValueError(
                     f"{owner_id}/{field.name}: excel_columns（展开组数）仅适用于"
-                    f" vector<Record>（定长展开列组），当前类型 {field.type_text}"
+                    f" vector<T>（定长展开列），当前类型 {field.type_text}"
                 )
         resolved.append(replace_field_type(field, resolved_type))
     return resolved

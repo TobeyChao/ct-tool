@@ -1,6 +1,6 @@
 # ConfigAccessorBench — 独立 reader runtime + accessor 接口/性能基准
 
-仓库内**独立于游戏/Unity** 运行的 .NET 工程：实现并验证“为 ct 导出物设计的指针式 reader runtime”（对齐 harmony 读取模型），并基准对比 accessor 读取方式。它只依赖 `gd/output/binary/data_zh.bin` 与 .NET 8，可在本工程直接 `dotnet run`。
+仓库内**独立于游戏/Unity** 运行的 .NET 10 工程：实现并验证“为 ct 导出物设计的指针式 reader runtime”（对齐 harmony 读取模型），并基准对比 accessor 读取方式。它只依赖 `gd/output/binary/data_zh.bin`，可在本工程直接 `dotnet run`。
 
 > 本工程是 reader 运行时的**首版落点**（按 change `align-config-accessor-api`），后续 ct 生成器按此契约输出、游戏工程再集成。
 
@@ -21,6 +21,9 @@ dotnet run -c Release -- Item 200000
 
 # 直接读单表 .bin（根为 ItemTable）
 dotnet run -c Release -- item_large.bin 1000
+
+# 读取固定 Excel 列 vector fixture，并断言 int32/string vector
+dotnet run -c Release -- --fixed-vector
 ```
 
 ## 实测（本机，Release）

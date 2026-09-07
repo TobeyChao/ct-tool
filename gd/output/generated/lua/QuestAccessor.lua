@@ -9,6 +9,7 @@ local RowMeta = {
   RewardItemId = function(s) return GD.I32(_tbl, 3, s) end,
   Item = function(s) local rid = GD.I32(_tbl, 3, s) return ItemAccessor.ByID(rid) end,
   RequiredLevel = function(s) return GD.I32(_tbl, 4, s) end,
+  Test = function(s) local n = GD.VecLen(_tbl, 5, s) local out = {} for i = 1, n do out[i] = GD.VecF64(_tbl, 5, s, i - 1) end return out end,
 }
 
 local M = {}

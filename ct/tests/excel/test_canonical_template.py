@@ -95,3 +95,23 @@ def test_template_golden_stable_across_runs(tmp_path: Path) -> None:
     generate_canonical_template(layout, first, enums=enums, primary=table.primary)
     generate_canonical_template(layout, second, enums=enums, primary=table.primary)
     assert first.read_bytes() == second.read_bytes()
+
+
+def test_fixed_scalar_vector_comment_is_merged(tmp_path: Path) -> None:
+    table = TableResource(
+        table="Quest",
+        primary="Id",
+        fields=[
+            FieldDef(name="Id", type="int32"),
+            FieldDef(name="Test", type="vector<int32>", excel_columns=2, comment="测试字段"),
+        ],
+    )
+    layout = build_layout(table, schema_hash="sha3", records={})
+    out = generate_canonical_template(layout, tmp_path / "quest.xlsx", enums={}, primary="Id")
+
+    wb = load_workbook(str(out))
+    ws = wb.active
+    assert "B2:C2" in {str(item) for item in ws.merged_cells.ranges}
+    assert ws.cell(row=layout.header_rows, column=2).value == "测试字段"
+    assert ws.cell(row=layout.header_rows, column=3).value is None
+    wb.close()

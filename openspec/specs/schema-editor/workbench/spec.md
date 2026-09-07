@@ -102,8 +102,8 @@ Schema 工作台 SHALL 在同一工作区中提供 Tables、Records、Enums 三�
 - **THEN** 基础类型字段保持所选 T（标量 / Enum / Record），提交类型为 `vector<${T}>`；形态可选择「定长」或「变长」
 - **AND WHEN** 基础类型 T 为 Record
 - **THEN** 形态仅允许「定长」（变长禁用），并需配置展开组数 `excel_columns`
-- **AND WHEN** 基础类型 T 为标量 / Enum
-- **THEN** 形态为「变长」，分隔符由工具内置（不提供输入控件）
+- **AND WHEN** 基础类型 T 为标量 / Enum / string
+- **THEN** 可选择单元格变长录入（分隔符由工具内置）或固定列数录入（配置 `excel_columns`）；两种录入方式最终都生成普通运行时 vector
 - **AND WHEN** 基础类型 T 为 ref 外键
 - **THEN** 不支持勾选 vector
 
