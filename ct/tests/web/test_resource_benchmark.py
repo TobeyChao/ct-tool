@@ -80,10 +80,13 @@ def test_resources_render_within_budget(bench_url: str, chromium_browser: Any, c
     )
     page.goto(bench_url, wait_until="load")
     started = page.evaluate("() => performance.now()")
-    page.get_by_role("tab", name="Schema").click()
+    page.locator('.ct-sitem[data-module="schema"]').click()
     page.wait_for_timeout(100)
     assert page_errors == []
     page.wait_for_selector("#page-schema .ct-vlist-window", timeout=5_000)
+    # 面板默认折叠：先展开再测渲染窗口
+    page.locator("#page-schema #resource-toggle").click()
+    page.wait_for_timeout(250)
     page.wait_for_function(
         "() => document.querySelectorAll('#page-schema .ct-resource-row').length > 0",
         timeout=20000,
@@ -121,9 +124,9 @@ def test_resources_render_within_budget(bench_url: str, chromium_browser: Any, c
 
     # Quick Open uses the same fixed-row window and searches the full resource set.
     page.keyboard.press("Control+p")
-    page.fill("#page-schema #quick-open-input", target)
-    page.wait_for_selector(f'#page-schema [data-qo="{target}"]')
-    assert page.locator("#page-schema #quick-open-list .ct-resource-row").count() < 100
+    page.fill(".ct-dialog-mask.open .ct-dlg-palette [data-qo-input]", target)
+    page.wait_for_selector(f'.ct-dialog-mask.open [data-qo="{target}"]')
+    assert page.locator(".ct-dialog-mask.open [data-qo-list] .ct-resource-row").count() < 100
 
     heap = page.evaluate("() => performance.memory ? performance.memory.usedJSHeapSize : null")
     print(

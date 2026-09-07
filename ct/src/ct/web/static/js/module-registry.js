@@ -48,4 +48,20 @@ function onModuleActivated(event) {
 
 window.addEventListener("hashchange", mountActive);
 window.addEventListener("ct:module", onModuleActivated);
+
+/* ⌘P from any module: land on Schema, mount it lazily, then let it open the
+   palette (schema.js listens for the follow-up event). Activation is done
+   synchronously here — hashchange would race the palette opening. */
+window.addEventListener("ct:schema-quick-open", async () => {
+  await started;
+  if (!location.hash.startsWith("#/schema")) location.hash = "/schema";
+  window.__ct.activateModule("schema");
+  const container = document.getElementById("page-schema");
+  if (container && !container.dataset.mounted) {
+    container.dataset.mounted = "1";
+    await mountSchema(container);
+  }
+  window.dispatchEvent(new CustomEvent("ct:schema-quick-open-open"));
+});
+
 mountActive();

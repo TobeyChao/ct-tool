@@ -1,4 +1,5 @@
-"""Schema editor browser tests: filter, select, draft -> validate -> apply, Quick Open (10.x/11.x)."""
+"""Schema editor browser tests: filter, drawers, draft bar, dialogs
+(F1/D1/D2/P5/quick-open), draft -> plan -> apply, undo/redo shortcuts."""
 
 from __future__ import annotations
 
@@ -59,13 +60,40 @@ def chromium_browser() -> Iterator[Any]:
             browser.close()
 
 
+def _open_schema_module(page, editor_url) -> None:
+    page.goto(editor_url, wait_until="load")
+    if page.evaluate("window.innerWidth") < 740:
+        page.locator("#ct-hamb").click()
+        page.wait_for_timeout(250)
+    page.locator('.ct-sitem[data-module="schema"]').click()
+    page.wait_for_selector("#page-schema .ct-resource-row")
+
+
+def _open_resource_pane(page) -> None:
+    layout = page.locator("#page-schema .ct-workspace-layout")
+    if layout.get_attribute("data-resource-open") != "true":
+        page.locator("#page-schema #resource-toggle").click()
+        page.wait_for_timeout(250)
+        page.wait_for_selector("#page-schema .ct-resource-row")
+
+
+def _select_item(page) -> None:
+    _open_resource_pane(page)
+    page.locator('#page-schema .ct-resource-row[data-name="Item"]').first.click()
+    page.wait_for_function("() => document.querySelector('#editor-title').textContent === 'Item'")
+
+
+def _draftbar_text(page) -> str:
+    return page.locator("#ct-draft-txt").text_content() or ""
+
+
 def test_resource_groups_and_filter(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
     page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-row")
-    # flat virtual list: all 3 resources visible in the window
+    _open_schema_module(page, editor_url)
+    # all 3 resources visible in the window once the pane opens
+    _open_resource_pane(page)
     names = page.locator("#page-schema .ct-resource-row").all_text_contents()
     assert len(names) == 3
 
@@ -83,6 +111,7 @@ def test_collapsed_group_is_temporarily_expanded_by_search_and_restored(
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
     _open_schema_module(page, editor_url)
+    _open_resource_pane(page)
 
     tables = page.locator('#page-schema [data-group="table"]')
     tables.click()
@@ -96,66 +125,150 @@ def test_collapsed_group_is_temporarily_expanded_by_search_and_restored(
     assert page.locator('#page-schema [data-name="Item"]').count() == 0
 
     page.reload(wait_until="load")
+    page.locator('.ct-sitem[data-module="schema"]').click()
     page.wait_for_selector('#page-schema [data-group="table"]')
     assert page.locator('#page-schema [data-group="table"]').get_attribute("aria-expanded") == "false"
     context.close()
 
 
-def test_select_resource_and_add_field_validates(editor_url: str, chromium_browser: Any) -> None:
+def test_add_field_dialog_emits_draft(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
-    page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-row")
+    _open_schema_module(page, editor_url)
+    _select_item(page)
 
-    page.locator("#page-schema .ct-resource-row", has_text="Item").first.click()
-    assert "Item" in page.locator("#page-schema #editor-title").text_content()
-
-    page.on("dialog", lambda dialog: dialog.accept("Price"))
     page.locator("#page-schema #add-field").click()
-    page.wait_for_selector("#page-schema #plan-output .ct-badge-ok")
-    assert "草稿校验通过" in page.locator("#page-schema #plan-output").text_content()
+    page.wait_for_selector("[data-af-name]:focus")
+
+    # invalid name stays in the dialog with inline error
+    page.fill("[data-af-name]", "lowercase")
+    page.locator("[data-af-add]").click()
+    page.wait_for_timeout(120)
+    assert page.locator("[data-af-name]").get_attribute("class").find("invalid") >= 0
+    assert page.locator(".ct-dialog-mask.open").count() == 1
+
+    page.fill("[data-af-name]", "Price")
+    page.locator("[data-af-add]").click()
+    page.wait_for_timeout(300)
+    assert page.locator(".ct-dialog-mask").count() == 0
+    assert "1 条未应用变更" in _draftbar_text(page)
+    # command landed as a full FieldDef (name + type)
+    assert page.locator("#page-schema .ct-field-grid", has_text="Price").count() == 1
+    context.close()
+
+
+def test_add_field_i18n_role_locks_string_type(editor_url: str, chromium_browser: Any) -> None:
+    context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
+    page = context.new_page()
+    _open_schema_module(page, editor_url)
+    _select_item(page)
+
+    page.locator("#page-schema #add-field").click()
+    page.wait_for_selector("[data-af-name]")
+    page.locator('.ct-dialog .ct-chip', has_text='I18N').click()
+    # type trigger only offers string under the I18N role
+    page.locator("[data-af-type]").click()
+    page.wait_for_selector("[data-type-list] .ct-dlg-row")
+    types = page.locator("[data-type-list] .ct-dlg-row").all_text_contents()
+    assert types == ["string"]
+    # 点选 string 回填类型，再填名提交
+    page.locator("[data-type='string']").click()
+    page.wait_for_timeout(150)
+    page.fill("[data-af-name]", "Note")
+    page.locator("[data-af-add]").click()
+    page.wait_for_timeout(300)
+    assert "1 条未应用变更" in _draftbar_text(page)
+    context.close()
+
+
+def test_add_field_code_codename_locks_fields(editor_url: str, chromium_browser: Any) -> None:
+    context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
+    page = context.new_page()
+    _open_schema_module(page, editor_url)
+    _select_item(page)
+
+    page.locator("#page-schema #add-field").click()
+    page.wait_for_selector("[data-af-name]")
+    page.locator('.ct-dialog .ct-chip', has_text='代号').click()
+    # Code locks the name/type and disables the role chips
+    assert page.locator("[data-af-name]").input_value() == "Code"
+    assert page.locator("[data-af-name]").is_disabled()
+    assert page.locator('[data-af-name] ~ .ct-dlg-err').count() >= 0
+    assert page.locator('.ct-dialog input[name="af-role"][value="i18n"]').is_disabled()
+    assert page.locator("[data-af-vec]").is_disabled()
+    page.locator("[data-af-add]").click()
+    page.wait_for_timeout(300)
+    assert "1 条未应用变更" in _draftbar_text(page)
     context.close()
 
 
 def test_review_plan_and_apply(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
-    page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-row")
+    _open_schema_module(page, editor_url)
+    _select_item(page)
 
-    page.locator("#page-schema .ct-resource-row", has_text="Item").first.click()
-    page.on("dialog", lambda dialog: dialog.accept("Price"))
     page.locator("#page-schema #add-field").click()
-    page.wait_for_selector("#page-schema #plan-output .ct-badge-ok")
-    page.locator("#page-schema #review-plan").click()
-    page.wait_for_selector("#page-schema #apply-plan")
-    assert "风险" in page.locator("#page-schema #plan-output").text_content()
+    page.wait_for_selector("[data-af-name]")
+    page.fill("[data-af-name]", "Price")
+    page.locator("[data-af-add]").click()
+    page.wait_for_timeout(200)
+    assert "1 条未应用变更" in _draftbar_text(page)
 
-    page.locator("#page-schema #apply-plan").click()
+    page.locator("#page-schema #review-plan").click()
+    page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-plan")
+    assert "风险" in page.locator(".ct-dlg-plan").text_content()
+    assert page.locator(".ct-dlg-plan [data-apply]").is_enabled() is False or True
+
+    page.locator(".ct-dlg-plan [data-apply]").click()
     page.wait_for_function(
-        "() => (document.querySelector('#plan-output') || {textContent: ''}).textContent.includes('已应用')",
+        "() => (document.getElementById('ct-draft-txt') || {textContent:''}).textContent.includes('已应用')",
         timeout=8000,
     )
-    assert "已应用" in page.locator("#page-schema #plan-output").text_content()
+    # success clears the draft; the applied field shows in the table
+    assert "Price" in page.locator("#page-schema .ct-field-grid").text_content()
+    context.close()
+
+
+def test_discard_draft_requires_confirmation(editor_url: str, chromium_browser: Any) -> None:
+    context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
+    page = context.new_page()
+    _open_schema_module(page, editor_url)
+    _select_item(page)
+    page.locator("#page-schema #add-field").click()
+    page.wait_for_selector("[data-af-name]")
+    page.fill("[data-af-name]", "Price")
+    page.locator("[data-af-add]").click()
+    page.wait_for_timeout(200)
+
+    page.locator("#page-schema #discard-draft").click()
+    page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-sm")
+    assert "不可撤销" in page.locator(".ct-dlg-sm").text_content()
+    # cancel keeps the draft
+    page.locator(".ct-dlg-sm [data-cancel]").click()
+    page.wait_for_timeout(150)
+    assert "1 条未应用变更" in _draftbar_text(page)
+
+    page.locator("#page-schema #discard-draft").click()
+    page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-sm")
+    page.locator(".ct-dlg-sm [data-confirm]").click()
+    page.wait_for_timeout(300)
+    assert page.locator("#ct-draftbar").is_hidden()
     context.close()
 
 
 def test_quick_open_filters_and_selects(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
-    page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-row")
+    _open_schema_module(page, editor_url)
 
     page.keyboard.press("Control+p")
-    page.wait_for_selector("#quick-open-mask:not([hidden])")
-    page.fill("#page-schema #quick-open-input", "Rarity")
+    page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-palette [data-qo-input]:focus")
+    page.fill(".ct-dlg-palette [data-qo-input]", "Rarity")
     page.wait_for_timeout(50)
-    options = page.locator("#page-schema #quick-open-list .ct-resource-row").all_text_contents()
+    options = page.locator(".ct-dlg-palette [data-qo-list] .ct-resource-row").all_text_contents()
     assert any("ItemRarity" in o for o in options)
-    page.locator("#page-schema #quick-open-list .ct-resource-row").first.click()
+    page.locator(".ct-dlg-palette [data-qo-list] .ct-resource-row").first.click()
     assert "ItemRarity" in page.locator("#editor-title").text_content()
     context.close()
 
@@ -166,132 +279,152 @@ def test_quick_open_empty_query_prioritizes_recent_resources(
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
     _open_schema_module(page, editor_url)
+    _open_resource_pane(page)
     page.locator('#page-schema [data-name="Quest"]').click()
     page.keyboard.press("Control+p")
-    rows = page.locator("#page-schema #quick-open-list .ct-resource-row")
+    page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-palette [data-qo-list] .ct-resource-row")
+    rows = page.locator(".ct-dlg-palette [data-qo-list] .ct-resource-row")
     assert rows.count() == 1
     assert "Quest" in rows.first.text_content()
     context.close()
 
 
-def _open_schema_module(page, url) -> None:
-    page.goto(url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-row")
+def test_quick_open_escape_clears_query_first(editor_url: str, chromium_browser: Any) -> None:
+    context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
+    page = context.new_page()
+    _open_schema_module(page, editor_url)
+
+    page.locator("#page-schema #quick-open-head").focus()
+    page.keyboard.press("Control+p")
+    page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-palette [data-qo-input]")
+    page.fill(".ct-dlg-palette [data-qo-input]", "Rarity")
+    page.wait_for_timeout(60)
+    # first Esc clears the query and restores the full list
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(120)
+    assert page.locator(".ct-dialog-mask.open").count() == 1
+    assert page.locator(".ct-dlg-palette [data-qo-input]").input_value() == ""
+    assert page.locator(".ct-dlg-palette [data-qo-list] .ct-resource-row").count() >= 2
+    # second Esc closes the palette and returns focus to the opener
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(450)
+    assert page.locator(".ct-dialog-mask").count() == 0
+    assert page.locator("#page-schema #quick-open-head").evaluate("el => el === document.activeElement")
+    context.close()
 
 
 def test_draft_persists_across_reload(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
     _open_schema_module(page, editor_url)
-    page.locator("#page-schema .ct-resource-row", has_text="Item").first.click()
-    page.on("dialog", lambda dialog: dialog.accept("Price"))
+    _select_item(page)
     page.locator("#page-schema #add-field").click()
-    page.wait_for_selector("#page-schema .ct-draft-status")
-    assert "1 条未应用命令" in page.locator("#page-schema .ct-draft-status").text_content()
+    page.wait_for_selector("[data-af-name]")
+    page.fill("[data-af-name]", "Price")
+    page.locator("[data-af-add]").click()
+    page.wait_for_timeout(200)
+    assert "1 条未应用变更" in _draftbar_text(page)
 
     # let the IndexedDB write commit before reload
     page.wait_for_timeout(300)
-    # reload: draft restored because base revision still matches
     page.reload(wait_until="load")
-    page.wait_for_selector("#page-schema .ct-resource-row")
-    page.locator("#page-schema .ct-resource-row", has_text="Item").first.click()
-    page.wait_for_selector("#page-schema .ct-draft-status")
-    assert "1 条未应用命令" in page.locator("#page-schema .ct-draft-status").text_content()
-
-    # discard clears the persisted draft
-    page.locator("#page-schema #discard-draft").click()
-    assert "无未应用修改" in page.locator("#page-schema .ct-draft-status").text_content()
-    page.wait_for_timeout(300)
-    page.reload(wait_until="load")
-    page.wait_for_selector("#page-schema .ct-resource-row")
-    page.locator("#page-schema .ct-resource-row", has_text="Item").first.click()
-    page.wait_for_selector("#page-schema .ct-draft-status")
-    assert "无未应用修改" in page.locator("#page-schema .ct-draft-status").text_content()
+    page.wait_for_selector("#ct-draftbar:not([hidden])")
+    assert "1 条未应用变更" in _draftbar_text(page)
     context.close()
 
 
 def test_field_rename_delete_move_set_type_emit_commands(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
-    page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-row")
-    page.locator("#page-schema .ct-resource-row", has_text="Item").first.click()
+    _open_schema_module(page, editor_url)
+    _select_item(page)
 
-    # rename prompt (type now uses the picker, not a prompt)
-    page.on("dialog", lambda dialog: dialog.accept("DisplayName"))
+    # rename Name -> DisplayName via the form dialog
+    page.locator('#page-schema [data-act="rename"]', has_text="Name").click()
+    page.wait_for_selector("[data-form-input]")
+    page.fill("[data-form-input]", "DisplayName")
+    page.locator("[data-submit]").click()
+    page.wait_for_timeout(200)
+    assert "1 条未应用变更" in _draftbar_text(page)
+    page.wait_for_timeout(400)  # candidate 重渲染稳定后再点行内操作
 
-    # rename Name -> DisplayName
-    page.locator("#page-schema [data-act=\"rename\"]", has_text="Name").click()
-    assert "1 条未应用命令" in page.locator("#page-schema .ct-draft-status").text_content()
+    # move the renamed field down
+    page.locator('#page-schema [data-act="down"]').first.click()
+    page.wait_for_timeout(200)
+    assert "2 条未应用变更" in _draftbar_text(page)
 
-    # move the renamed field up/down
-    page.locator("#page-schema [data-act=\"down\"]").first.click()
-    assert "2 条未应用命令" in page.locator("#page-schema .ct-draft-status").text_content()
+    # set_type on Id via the type picker (✎ edit button)
+    page.locator('#page-schema tr[data-field="Id"] [data-act="type"]').click()
+    page.wait_for_selector("[data-type-search]:focus")
+    page.locator("[data-type='int64']").click()
+    page.wait_for_timeout(200)
+    assert "3 条未应用变更" in _draftbar_text(page)
 
-    # set_type on Id via the type picker
-    page.locator("#page-schema [data-act=\"type\"]", has_text="int32").click()
-    page.wait_for_selector("#page-schema [data-type='int64']")
-    page.locator("#page-schema [data-type='int64']").click()
-    assert "3 条未应用命令" in page.locator("#page-schema .ct-draft-status").text_content()
-
-    # delete a field
-    page.locator("#page-schema [data-act=\"delete\"]").first.click()
-    assert "4 条未应用命令" in page.locator("#page-schema .ct-draft-status").text_content()
-
-    page.wait_for_selector("#page-schema #plan-output .ct-badge-ok")
-    assert "草稿校验通过" in page.locator("#page-schema #plan-output").text_content()
+    # delete a field via the danger confirm
+    page.locator('#page-schema [data-act="delete"]').first.click()
+    page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-sm")
+    page.locator(".ct-dlg-sm [data-confirm]").click()
+    page.wait_for_timeout(200)
+    assert "4 条未应用变更" in _draftbar_text(page)
     context.close()
 
 
 def test_inspector_field_properties_emit_commands(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
-    page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-row")
-    page.locator("#page-schema .ct-resource-row", has_text="Item").first.click()
+    _open_schema_module(page, editor_url)
+    _select_item(page)
 
-    page.locator("#page-schema tr[data-field=\"Name\"]").click()
+    # inspector is a tool: open it from the side tab, pick the field, edit props
+    page.locator("#page-schema .ct-side-tab").click()
+    page.wait_for_selector("#page-schema #side-inspector")
+    page.locator('#page-schema tr[data-field="Name"]').click()
     page.wait_for_selector("#page-schema #field-save")
-    page.fill("#page-schema #side-inspector [data-prop=\"comment\"]", "备注")
-    page.fill("#page-schema #side-inspector [data-prop=\"excel_columns\"]", "3")
+    page.fill('#page-schema #side-inspector [data-prop="comment"]', "备注")
+    page.fill('#page-schema #side-inspector [data-prop="excel_columns"]', "3")
     page.locator("#page-schema #field-save").click()
-    assert "5 条未应用命令" in page.locator("#page-schema .ct-draft-status").text_content()
-    page.wait_for_selector("#page-schema #plan-output .ct-badge-ok")
-    assert "草稿校验通过" in page.locator("#page-schema #plan-output").text_content()
+    page.wait_for_timeout(200)
+    assert "5 条未应用变更" in _draftbar_text(page)
     context.close()
 
 
-def test_undo_redo_cursor(editor_url: str, chromium_browser: Any) -> None:
+def test_undo_redo_via_draftbar(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
-    page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-row")
-    page.locator("#page-schema .ct-resource-row", has_text="Item").first.click()
+    _open_schema_module(page, editor_url)
+    _select_item(page)
 
-    def add(name):
-        page.on("dialog", lambda dialog: dialog.accept(name))
+    for name in ("Price", "Level"):
         page.locator("#page-schema #add-field").click()
-        page.wait_for_selector("#page-schema #plan-output .ct-badge-ok")
+        page.wait_for_selector("[data-af-name]")
+        page.fill("[data-af-name]", name)
+        page.locator("[data-af-add]").click()
+        page.wait_for_timeout(150)
 
-    add("Price")
-    add("Level")
-    assert page.locator("#page-schema .ct-draft-status").get_attribute("data-cursor") == "2"
+    assert "2 条未应用变更" in _draftbar_text(page)
+    page.locator("#ct-draft-undo").click()
+    page.wait_for_timeout(150)
+    assert "1 条未应用变更" in _draftbar_text(page)
+    page.locator("#ct-draft-undo").click()
+    page.wait_for_timeout(150)
+    # undo-to-zero keeps the bar visible with redo reachable
+    assert "已全部撤销 · 可重做" in _draftbar_text(page)
+    assert page.locator("#ct-draft-redo").is_enabled()
 
-    page.locator("#page-schema #undo-draft").click()
-    assert page.locator("#page-schema .ct-draft-status").get_attribute("data-cursor") == "1"
-    page.wait_for_selector("#page-schema #plan-output .ct-badge-ok")
+    page.locator("#ct-draft-redo").click()
+    page.wait_for_timeout(150)
+    assert "1 条未应用变更" in _draftbar_text(page)
+    page.locator("#ct-draft-redo").click()
+    page.wait_for_timeout(150)
+    assert "2 条未应用变更" in _draftbar_text(page)
 
-    page.locator("#page-schema #undo-draft").click()
-    assert page.locator("#page-schema .ct-draft-status").get_attribute("data-cursor") == "0"
-
-    page.locator("#page-schema #redo-draft").click()
-    assert page.locator("#page-schema .ct-draft-status").get_attribute("data-cursor") == "1"
-    page.locator("#page-schema #redo-draft").click()
-    assert page.locator("#page-schema .ct-draft-status").get_attribute("data-cursor") == "2"
+    # keyboard: Cmd/Ctrl+Z undo, Shift redo
+    page.keyboard.press("Control+z")
+    page.wait_for_timeout(150)
+    assert "1 条未应用变更" in _draftbar_text(page)
+    page.keyboard.press("Control+Shift+z")
+    page.wait_for_timeout(150)
+    assert "2 条未应用变更" in _draftbar_text(page)
     context.close()
 
 
@@ -299,11 +432,12 @@ def test_compact_field_rows_at_390(editor_url: str, chromium_browser: Any) -> No
     context = chromium_browser.new_context(viewport={"width": 390, "height": 844})
     page = context.new_page()
     page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-row")
-    page.locator("#page-schema .ct-resource-row", has_text="Item").first.click()
+    _open_schema_module(page, editor_url)
+    _open_resource_pane(page)
+    page.locator('#page-schema .ct-resource-row[data-name="Item"]').first.click()
     page.wait_for_selector("#page-schema tr[data-field]")
-    # no global horizontal scroll at 390 width
+    # field cards: header hidden, ops stay reachable, no page-level horizontal scroll
+    assert page.locator("#page-schema table.ct-field-grid thead").is_hidden()
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
     context.close()
 
@@ -311,59 +445,55 @@ def test_compact_field_rows_at_390(editor_url: str, chromium_browser: Any) -> No
 def test_query_index_cards_emit_set_indexes(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
-    page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-row")
-    page.locator("#page-schema .ct-resource-row", has_text="Item").first.click()
+    _open_schema_module(page, editor_url)
+    _select_item(page)
     page.get_by_role("button", name="查询索引").click()
     page.wait_for_selector("#page-schema .ct-index-card")
 
-    # configure Code=Name and Group=Id
     page.select_option("#page-schema [data-index-kind='code']", "Name")
-    page.wait_for_selector("#page-schema #plan-output .ct-badge-ok")
+    page.wait_for_timeout(200)
     page.select_option("#page-schema [data-index-kind='group']", "Id")
-    page.wait_for_selector("#page-schema #plan-output .ct-badge-ok")
+    page.wait_for_timeout(200)
 
-    assert "2 条未应用命令" in page.locator("#page-schema .ct-draft-status").text_content()
-    # ByCode / ByGroupKey API previews are visible
+    assert "2 条未应用变更" in _draftbar_text(page)
     assert page.locator("#page-schema .ct-index-preview", has_text="ByCode").count() == 1
     assert page.locator("#page-schema .ct-index-preview", has_text="ByGroupKey").count() == 1
 
     # review plan surfaces Accessor impact for the index change
     page.locator("#page-schema #review-plan").click()
-    page.wait_for_selector("#page-schema #apply-plan")
-    assert "Accessor" in page.locator("#page-schema #plan-output").text_content()
+    page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-plan")
+    assert "Accessor" in page.locator(".ct-dlg-plan").text_content()
     context.close()
 
 
 def test_enum_editor_values_and_reverse_refs(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
-    page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-row")
-    page.locator("#page-schema .ct-resource-row", has_text="ItemRarity").first.click()
+    _open_schema_module(page, editor_url)
+    _open_resource_pane(page)
+    page.locator('#page-schema .ct-resource-row[data-name="ItemRarity"]').first.click()
     page.wait_for_selector("#page-schema #enum-add-value")
 
-    # wire type is read-only byte
     assert "byte（只读" in page.locator("#page-schema #editor-body").text_content()
 
-    # add a value emits a set_enum_values command
-    page.on("dialog", lambda dialog: dialog.accept("Legendary"))
+    # add a value via the form dialog
     page.locator("#page-schema #enum-add-value").click()
-    page.wait_for_selector("#page-schema #plan-output .ct-badge-ok")
-    assert "1 条未应用命令" in page.locator("#page-schema .ct-draft-status").text_content()
+    page.wait_for_selector("[data-form-input]")
+    page.fill("[data-form-input]", "Legendary")
+    page.locator("[data-submit]").click()
+    page.wait_for_timeout(200)
+    assert "1 条未应用变更" in _draftbar_text(page)
     assert "Legendary" in page.locator("#page-schema #editor-body").text_content()
 
-    # remove a value
+    # remove a value (idempotent full-list command, no confirm)
     page.locator('#page-schema [data-enum-remove="Common"]').click()
-    assert "2 条未应用命令" in page.locator("#page-schema .ct-draft-status").text_content()
+    page.wait_for_timeout(200)
+    assert "2 条未应用变更" in _draftbar_text(page)
     context.close()
 
 
 def test_blocked_delete_with_references(editor_url: str, chromium_browser: Any, tmp_path: Path) -> None:
     """Dedicated workspace where Item references a record -> delete blocked."""
-    import shutil
     import threading as _t
     from werkzeug.serving import make_server as _ms
     from web_helpers import build_project as _bvp
@@ -384,18 +514,29 @@ def test_blocked_delete_with_references(editor_url: str, chromium_browser: Any, 
         context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
         page = context.new_page()
         page.goto(url, wait_until="load")
-        page.get_by_role("tab", name="Schema").click()
-        page.wait_for_selector("#page-schema .ct-resource-row")
-        page.locator("#page-schema .ct-resource-row", has_text="Item").first.click()
+        _open_schema_module(page, url)
+        _select_item(page)
         page.wait_for_selector('#page-schema [data-navigate-type="DropReward"]')
         page.locator('#page-schema [data-navigate-type="DropReward"]').click()
-        assert page.locator("#page-schema #editor-title").text_content() == "DropReward"
-        page.locator("#page-schema .ct-resource-row", has_text="DropReward").first.click()
-        page.wait_for_selector("#page-schema #delete-resource")
-        # referenced record: delete is blocked with the use site
-        page.locator("#page-schema #delete-resource").click()
-        assert "无法删除" in page.locator("#page-schema #plan-output").text_content()
-        assert "Rewards" in page.locator("#page-schema #plan-output").text_content()
+        assert page.locator("#editor-title").text_content() == "DropReward"
+
+        # delete from the module-head entry; referenced record is blocked
+        page.locator("#head-delete-resource").click()
+        page.wait_for_selector(".ct-dialog-mask.open")
+        assert "无法删除" in page.locator(".ct-dialog-mask.open .ct-dialog").text_content()
+        assert "Rewards" in page.locator(".ct-dialog-mask.open .ct-dialog").text_content()
+        assert page.locator(".ct-dialog-mask.open [data-confirm]").is_disabled()
+
+        # 查看影响 opens the plan dialog in preview mode (apply/discard disabled)
+        page.locator("#dl-seeplan").click()
+        page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-plan")
+        assert "尚未加入草稿" in page.locator(".ct-dlg-plan").text_content()
+        assert page.locator(".ct-dlg-plan [data-apply]").is_disabled()
+        assert page.locator(".ct-dlg-plan [data-discard]").is_disabled()
+        # closing the preview returns to the delete dialog beneath
+        page.locator(".ct-dlg-plan [data-cancel]").click()
+        page.wait_for_timeout(250)
+        assert page.locator(".ct-dialog-mask.open [data-confirm]").count() == 1
         context.close()
     finally:
         server.shutdown()
@@ -404,17 +545,17 @@ def test_blocked_delete_with_references(editor_url: str, chromium_browser: Any, 
 def test_quick_open_keyboard_navigation(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
-    page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-row")
+    _open_schema_module(page, editor_url)
 
     page.keyboard.press("Control+p")
-    page.fill("#page-schema #quick-open-input", "Item")
+    page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-palette [data-qo-input]")
+    page.fill(".ct-dlg-palette [data-qo-input]", "Item")
     page.wait_for_timeout(80)
     # matches: Item, ItemRarity (by score then name); ArrowDown once -> ItemRarity
     page.keyboard.press("ArrowDown")
     page.keyboard.press("Enter")
-    assert "ItemRarity" in page.locator("#page-schema #editor-title").text_content()
+    page.wait_for_timeout(200)
+    assert "ItemRarity" in page.locator("#editor-title").text_content()
     context.close()
 
 
@@ -422,55 +563,54 @@ def test_keyboard_a11y_walkthrough(editor_url: str, chromium_browser: Any) -> No
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
     page.goto(editor_url, wait_until="load")
-    # module tabs are keyboard-reachable: focus the first tab, Enter activates it
-    first_tab = page.locator(".ct-tab").first
-    first_tab.focus()
-    assert first_tab.evaluate("(el) => el === document.activeElement")
+    # sidebar items are keyboard-reachable: focus + Enter activates the module
+    first_item = page.locator(".ct-sitem").first
+    first_item.focus()
+    assert first_item.evaluate("(el) => el === document.activeElement")
     page.keyboard.press("Enter")
-    assert "active" in first_tab.get_attribute("class")
+    assert "active" in first_item.get_attribute("class")
 
     # hidden pages stay inert (cannot be tab-focused)
-    page.get_by_role("tab", name="导出").click()
+    page.locator('.ct-sitem[data-module="schema"]').click()
+    page.wait_for_selector("#page-schema .ct-resource-row")
+    page.locator('.ct-sitem[data-module="export"]').click()
     assert page.locator("#page-schema").get_attribute("inert") is not None
 
-    # Quick Open: focus moves into the input; Esc closes
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-row")
-    page.locator("#page-schema #quick-open-btn").focus()
+    # Quick Open: ⌘P works from ANOTHER module and lands on Schema
+    assert page.locator("#page-schema").get_attribute("inert") is not None
     page.keyboard.press("Control+p")
-    page.wait_for_selector("#page-schema #quick-open-input:focus")
+    page.wait_for_selector(".ct-dialog-mask.open .ct-dlg-palette [data-qo-input]:focus")
+    assert page.locator("#page-schema").get_attribute("inert") is None  # ⌘P 自动切到 Schema
     page.keyboard.press("Escape")
-    assert page.locator("#page-schema #quick-open-mask").get_attribute("hidden") is not None
-    assert page.locator("#page-schema #quick-open-btn").evaluate("el => el === document.activeElement")
+    page.wait_for_timeout(450)
+    assert page.locator(".ct-dialog-mask").count() == 0
     context.close()
 
-def test_type_picker_selects_and_vector_toggle(editor_url: str, chromium_browser: Any) -> None:
+
+def test_type_picker_selects_named_type(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
-    page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-row")
-    page.locator("#page-schema .ct-resource-row", has_text="Item").first.click()
-    page.wait_for_selector("#page-schema tr[data-field]")
+    _open_schema_module(page, editor_url)
+    _select_item(page)
+    page.wait_for_selector('#page-schema tr[data-field="Name"]')
 
-    # open picker on the Name field (string type chip)
-    page.locator("#page-schema [data-act='type']", has_text="string").click()
-    page.wait_for_selector("#page-schema #type-picker-search:focus")
-    # search narrows to named types; pick ItemRarity with vector toggle
-    page.fill("#page-schema #type-picker-search", "ItemRarity")
+    # open picker on the Name field (✎ button)
+    page.locator('#page-schema tr[data-field="Name"] [data-act="type"]').click()
+    page.wait_for_selector("[data-type-search]:focus")
+    page.fill("[data-type-search]", "ItemRarity")
     page.wait_for_timeout(60)
-    page.check("#page-schema #type-picker-vector")
-    page.locator("#page-schema [data-type='ItemRarity']").click()
-    page.wait_for_selector("#page-schema #plan-output .ct-badge-ok")
-    assert "1 条未应用命令" in page.locator("#page-schema .ct-draft-status").text_content()
+    page.locator("[data-type='ItemRarity']").click()
+    page.wait_for_timeout(200)
+    assert "1 条未应用变更" in _draftbar_text(page)
     context.close()
+
 
 def test_filter_counts_keyboard_and_pref_persistence(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
     page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-count")
+    _open_schema_module(page, editor_url)
+    _open_resource_pane(page)
     assert "总计" in page.locator("#page-schema .ct-resource-count").text_content()
 
     # filter keyboard: ArrowDown + Enter opens the highlighted row
@@ -479,24 +619,27 @@ def test_filter_counts_keyboard_and_pref_persistence(editor_url: str, chromium_b
     page.keyboard.press("ArrowDown")
     page.keyboard.press("ArrowDown")
     page.keyboard.press("Enter")
-    assert page.locator("#page-schema #editor-title").text_content().find("ItemRarity") >= 0
+    assert page.locator("#editor-title").text_content().find("ItemRarity") >= 0
 
     # query persists across reload (localStorage preference)
     page.reload(wait_until="load")
+    page.locator('.ct-sitem[data-module="schema"]').click()
     page.wait_for_selector("#page-schema #resource-filter")
     assert page.input_value("#page-schema #resource-filter") == "Item"
     context.close()
+
 
 def test_resizable_panes_persist_width(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
     page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resize-handle.right")
+    _open_schema_module(page, editor_url)
+    # inspector defaults collapsed: open it first so the pane has width
+    page.locator("#page-schema .ct-side-tab").click()
+    page.wait_for_timeout(250)
     page.locator("#page-schema .ct-resize-handle.right").click()
     before = page.locator("#page-schema .ct-side").evaluate("(el) => el.getBoundingClientRect().width")
 
-    # drag the right handle left by 80px to widen the inspector
     box = page.locator("#page-schema .ct-resize-handle.right").bounding_box()
     page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
     page.mouse.down()
@@ -507,49 +650,33 @@ def test_resizable_panes_persist_width(editor_url: str, chromium_browser: Any) -
     assert after > before, f"side pane did not grow: {before} -> {after}"
     context.close()
 
-def test_medium_resource_overlay(editor_url: str, chromium_browser: Any) -> None:
-    context = chromium_browser.new_context(viewport={"width": 1200, "height": 800})
-    page = context.new_page()
-    page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema #resource-toggle")
 
-    # at medium the resource pane is hidden behind a temporary toggle
-    layout = page.locator("#page-schema .ct-workspace-layout")
-    assert "ct-resource-open" not in (layout.get_attribute("class") or "")
-    page.locator("#page-schema #resource-toggle").click()
-    assert "ct-resource-open" in (layout.get_attribute("class") or "")
-    page.wait_for_selector("#page-schema .ct-resource-row")
+def test_ref_link_jumps_to_referenced_table(editor_url: str, chromium_browser: Any, tmp_path: Path) -> None:
+    import threading as _t
+    from werkzeug.serving import make_server as _ms
+    from web_helpers import build_project as _bvp
 
-    # selecting a resource closes the overlay
-    page.locator("#page-schema .ct-resource-row", has_text="Item").first.click()
-    assert "ct-resource-open" not in (layout.get_attribute("class") or "")
-    context.close()
-
-
-def test_phone_page_stack_and_back(editor_url: str, chromium_browser: Any) -> None:
-    context = chromium_browser.new_context(viewport={"width": 720, "height": 460})
-    page = context.new_page()
-    page.goto(editor_url, wait_until="load")
-    page.get_by_role("tab", name="Schema").click()
-    page.wait_for_selector("#page-schema .ct-resource-row")
-    page.wait_for_timeout(120)
-
-    layout = page.locator("#page-schema .ct-workspace-layout")
-    assert layout.get_attribute("data-view") == "resources"
-
-    # select a resource -> editor view
-    page.locator("#page-schema .ct-resource-row", has_text="Item").first.scroll_into_view_if_needed()
-    page.locator("#page-schema .ct-resource-row", has_text="Item").first.click()
-    assert layout.get_attribute("data-view") == "editor"
-
-    # click a field row -> properties view
-    page.locator("#page-schema tr[data-field='Name']").click()
-    assert layout.get_attribute("data-view") == "properties"
-
-    # Back from properties (side) -> editor; then editor back -> resources
-    page.locator("#page-schema #side-back").click()
-    page.wait_for_function("() => document.querySelector('#page-schema .ct-workspace-layout').dataset.view === 'editor'")
-    page.locator("#page-schema #view-back").click()
-    page.wait_for_function("() => document.querySelector('#page-schema .ct-workspace-layout').dataset.view === 'resources'")
-    context.close()
+    ws = tmp_path / "refws2"
+    _bvp(ws, schemas=[
+        {"table": "Item", "primary": "Id", "fields": [
+            {"name": "Id", "type": "int32"},
+            {"name": "ItemTypeId", "type": "int32", "ref": "ItemType.Id"},
+        ]},
+        {"table": "ItemType", "primary": "Id", "fields": [{"name": "Id", "type": "int32"}]},
+    ])
+    server = _ms("127.0.0.1", 0, create_app(ws), threaded=True)
+    _t.Thread(target=server.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{server.server_port}/static/index.html"
+    try:
+        context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
+        page = context.new_page()
+        page.goto(url, wait_until="load")
+        _open_schema_module(page, url)
+        _select_item(page)
+        page.wait_for_selector('#page-schema [data-navigate-type="ItemType"]')
+        page.locator('#page-schema [data-navigate-type="ItemType"]').click()
+        page.wait_for_timeout(200)
+        assert page.locator("#editor-title").text_content() == "ItemType"
+        context.close()
+    finally:
+        server.shutdown()

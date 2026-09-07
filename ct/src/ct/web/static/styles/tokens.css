@@ -35,4 +35,5 @@
   --ct-mobile-nav-h: 54px;
   --ct-motion: 180ms cubic-bezier(0.16, 1, 0.3, 1);
   --ct-pane-motion: 190ms cubic-bezier(.2, .82, .2, 1);
+  --ct-sidebar-w: 236px;
 }

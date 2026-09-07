@@ -26,13 +26,11 @@ MATRIX = CT_ROOT / "tests/fixtures/web/schema_workbench_matrix.json"
 
 
 def _projection_for_width(width):
-    if width >= 1360:
-        return "wide"
-    if width >= 960:
-        return "medium"
-    if width >= 600:
-        return "compact"
-    return "phone"
+    if width >= 900:
+        return "docked"
+    if width >= 740:
+        return "pane-drawer"
+    return "shell-drawer"
 
 
 def _cases():
@@ -102,15 +100,17 @@ def test_shell_matrix(
     assert page.evaluate(
         "document.documentElement.scrollWidth <= window.innerWidth + 1"
     ), f"{w}x{h} z{zoom}: 全局横向滚动"
-    page.get_by_role("tab", name="Schema").click()
+    if css["width"] < 740:
+        page.locator("#ct-hamb").click()
+        page.wait_for_timeout(200)
+    page.locator('.ct-sitem[data-module="schema"]').click()
     page.wait_for_selector("#page-schema .ct-workspace-layout")
-    if expected == "medium":
-        page.locator("#page-schema #resource-toggle").click()
+    page.locator("#page-schema #resource-toggle").click()
     page.wait_for_selector("#page-schema .ct-resource-row")
     page.locator("#page-schema .ct-resource-row").first.click()
-    if expected == "wide":
-        rail_width = page.locator(".ct-activity-bar").evaluate("el => el.getBoundingClientRect().width")
-        assert 54 <= rail_width <= 58
+    if expected == "docked":
+        sidebar_width = page.locator(".ct-sidebar").evaluate("el => el.getBoundingClientRect().width")
+        assert 200 <= sidebar_width <= 300
         assert page.locator("#page-schema .ct-right-activity").is_visible()
     assert page.evaluate(
         "document.documentElement.scrollWidth <= window.innerWidth + 1"

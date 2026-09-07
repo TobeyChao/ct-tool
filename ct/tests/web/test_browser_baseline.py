@@ -21,8 +21,8 @@ CUTOVER_WORKSPACE = CT_ROOT / "tests/fixtures/repository_cutover/workspace"
 
 
 def _matrix_cases() -> list[tuple[int, int, int, str]]:
-    # baseline is a quick smoke (full 18-combo matrix lives in 13.3)
-    return [(1600, 900, 100, "wide"), (720, 460, 100, "compact"), (390, 844, 100, "phone")]
+    # baseline is a quick smoke (full combo matrix lives in test_matrix_browser)
+    return [(1600, 900, 100, "docked"), (720, 460, 100, "shell-drawer"), (390, 844, 100, "shell-drawer")]
 @pytest.fixture(scope="module")
 def panel_url(tmp_path_factory: pytest.TempPathFactory) -> Iterator[str]:
     workspace = tmp_path_factory.mktemp("browser-workspace") / "workspace"
@@ -94,12 +94,18 @@ def test_local_panel_screenshot_matrix(
         )
         page.goto(panel_url + "/#/export", wait_until="domcontentloaded")
         page.wait_for_selector(".ct-app")
-        page.wait_for_selector(".ct-topbar")
+        page.wait_for_selector(".ct-sidebar")
 
-        #  AppShell renders for every workspace (legacy monolithic entry retired)
-        assert page.locator(".ct-brand-mark", has_text="ct").count() == 1
-        assert page.get_by_text("Workspace", exact=True).count() == 1
-        assert page.locator(".ct-tab").count() == 5
+        # AppShell: resident sidebar with module nav + footer entries
+        assert page.locator(".ct-brand-mark", has_text="ct").count() >= 1
+        assert page.locator(".ct-sitem").count() == 5
+        assert page.locator("#app").get_attribute("data-projection") == projection
+        if css_viewport["width"] >= 740:
+            # desktop has no global topbar chrome
+            assert page.locator(".ct-topbar").is_hidden()
+        else:
+            assert page.locator(".ct-topbar").is_visible()
+            assert page.locator(".ct-topbar .ct-ws-name").is_visible()
         assert page.get_by_text("新增表", exact=True).count() == 0
         page.screenshot(path=str(screenshot_path), animations="disabled")
 
