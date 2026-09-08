@@ -1,8 +1,36 @@
+enum CoordinateSpace : byte { World = 0, Local = 1, Screen = 2 }
+
 enum ItemRarity : byte { common = 0, rare = 1, epic = 2 }
+
+enum RewardKind : byte { Item = 0, Currency = 1, Bundle = 2, Choice = 3 }
+
+enum ShowcaseRarity : byte { Common = 0, Rare = 1, Epic = 2, Legendary = 3 }
 
 enum UIConfigLayer : byte { Page = 0, Modal = 1, Panel = 2, Overlay = 3 }
 
 table ItemDropRange {
   Min: int32;
   Max: int32;
+}
+
+table RewardBounds {
+  Min: int32;
+  Max: int32;
+  Guaranteed: bool;
+}
+
+table RewardDefinition {
+  Kind: RewardKind;
+  ItemIds: [int32];
+  Amounts: [int32];
+  Chance: float32;
+  Bounds: RewardBounds;
+}
+
+table WorldPosition {
+  X: float64;
+  Y: float64;
+  Z: float64;
+  Space: CoordinateSpace;
+  IsPrecise: bool;
 }

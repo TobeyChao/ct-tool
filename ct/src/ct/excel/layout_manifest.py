@@ -14,7 +14,7 @@ from typing import Any
 
 from ct.excel.layout import Column, Layout
 
-MANIFEST_FORMAT = "template-layout/1"
+MANIFEST_FORMAT = "template-layout/2"
 
 
 @dataclass(frozen=True)
@@ -24,6 +24,7 @@ class LayoutManifest:
     schema_hash: str = ""
     header_rows: int = 2
     columns: tuple[dict[str, Any], ...] = ()
+    nodes: tuple[dict[str, Any], ...] = ()
 
     @classmethod
     def from_layout(
@@ -48,6 +49,21 @@ class LayoutManifest:
                 | ({"groupIndex": column.group_index} if column.group_index is not None else {})
                 for column in layout.columns
             ),
+            nodes=tuple(
+                {
+                    "stablePath": node.stable_path,
+                    "displayName": node.display_name,
+                    "annotation": node.annotation,
+                    "comment": node.comment,
+                    "kind": node.kind,
+                    "depth": node.depth,
+                    "children": list(node.children),
+                    "slotIndex": node.slot_index,
+                    "leafStart": node.leaf_start,
+                    "leafEnd": node.leaf_end,
+                }
+                for node in layout.nodes
+            ),
         )
 
     @classmethod
@@ -60,6 +76,7 @@ class LayoutManifest:
             columns=tuple(
                 dict(column) for column in data.get("columns", [])
             ),
+            nodes=tuple(dict(node) for node in data.get("nodes", [])),
         )
 
 
@@ -95,6 +112,7 @@ def save_manifest(cache_dir: Path, table: str, manifest: LayoutManifest) -> Path
                 "schema_hash": manifest.schema_hash,
                 "header_rows": manifest.header_rows,
                 "columns": list(manifest.columns),
+                "nodes": list(manifest.nodes),
             },
             ensure_ascii=False,
             sort_keys=True,

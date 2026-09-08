@@ -1,0 +1,13 @@
+kind: record
+name: RewardBounds
+comment: 奖励数量范围
+fields:
+  - name: Min
+    type: int32
+    comment: 最小数量，包含该值
+  - name: Max
+    type: int32
+    comment: 最大数量，包含该值
+  - name: Guaranteed
+    type: bool
+    comment: 是否保证至少发放一次

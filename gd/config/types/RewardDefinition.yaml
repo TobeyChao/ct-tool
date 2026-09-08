@@ -1,0 +1,19 @@
+kind: record
+name: RewardDefinition
+comment: 奖励定义，演示 Record 内的 Enum、向量和嵌套 Record
+fields:
+  - name: Kind
+    type: RewardKind
+    comment: 奖励类别
+  - name: ItemIds
+    type: vector<int32>
+    comment: 奖励道具 ID 列表
+  - name: Amounts
+    type: vector<int32>
+    comment: 与 ItemIds 一一对应的数量列表
+  - name: Chance
+    type: float
+    comment: 单次抽取概率
+  - name: Bounds
+    type: RewardBounds
+    comment: 奖励数量上下限

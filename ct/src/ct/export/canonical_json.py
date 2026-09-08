@@ -22,11 +22,13 @@ def table_json_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def serialize_table_json(rows: list[dict[str, Any]], table: TableResource) -> str:
     root_key = table.json_key or f"{table.table}s"
-    return json.dumps(
-        {root_key: rows},
-        ensure_ascii=False,
-        indent=2,
-    )
+    if not rows:
+        return json.dumps({root_key: []}, ensure_ascii=False, separators=(",", ":")) + "\n"
+    encoded = [
+        json.dumps(row, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+        for row in rows
+    ]
+    return '{\n  ' + f'"{root_key}": [\n    ' + ",\n    ".join(encoded) + "\n  ]\n}\n"
 
 
 def write_canonical_json(

@@ -132,17 +132,10 @@ def test_candidate_validation_rechecks_mutated_field_and_table_invariants() -> N
         "property": "server_only",
         "value": True,
     }))
-    log.execute(Command("set_property", {
-        "owner": "table:Item",
-        "name": "Name",
-        "property": "separator",
-        "value": ",",
-    }))
     resources, _ = log.current()
     issues = validate_candidate(resources, {})
     messages = [issue.message for issue in issues]
     assert any("主键" in message and "server_only" in message for message in messages)
-    assert any("separator" in message and "vector" in message for message in messages)
 
 
 def test_change_plan_dependency_breaking_risk() -> None:

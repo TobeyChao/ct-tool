@@ -21,7 +21,7 @@ def test_load_mixed_workspace_exposes_one_graph(load) -> None:
             },
         ],
         types=[
-            {"kind": "enum", "name": "ItemRarity", "values": ["Common", "Rare"]},
+            {"kind": "enum", "name": "ItemRarity", "values": [{"name": "Common"}, {"name": "Rare"}]},
         ],
     )
 
@@ -56,7 +56,7 @@ def test_reverse_refs_exposed_on_workspace(load) -> None:
                 "primary": "Id",
                 "fields": [
                     {"name": "Id", "type": "int32"},
-                    {"name": "Rewards", "type": "vector<DropReward>"},
+                    {"name": "Rewards", "type": "vector<DropReward>", "excel_columns": 2},
                 ],
             },
         ],

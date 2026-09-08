@@ -96,7 +96,8 @@ class _Builder:
 
     def _enum_index(self, named: NamedType, value: Any) -> int:
         enum = self.enums[named.name]
-        return enum.values.index(value) if value in enum.values else 0
+        names = [item.name for item in enum.values]
+        return names.index(value) if value in names else 0
 
     def _is_offset_type(self, type_expr: TypeExpression) -> bool:
         if isinstance(type_expr, ScalarType):
@@ -170,7 +171,8 @@ class _Builder:
             enum = self.enums[named.name]
             builder.StartVector(1, len(values), 1)
             for v in reversed(values):
-                builder.PrependByte(enum.values.index(v) if v in enum.values else 0)
+                names = [item.name for item in enum.values]
+                builder.PrependByte(names.index(v) if v in names else 0)
             return builder.EndVector()
         raise ValueError(f"不支持的 vector 元素: {element}")
 

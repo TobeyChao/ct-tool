@@ -1,0 +1,12 @@
+kind: enum
+name: RewardKind
+comment: 奖励类别
+values:
+  - name: Item
+    comment: 直接发放道具
+  - name: Currency
+    comment: 发放货币
+  - name: Bundle
+    comment: 发放一个奖励包
+  - name: Choice
+    comment: 从候选项中选择奖励

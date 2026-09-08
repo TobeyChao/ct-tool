@@ -32,7 +32,7 @@ def _table() -> TableResource:
         fields=[
             FieldDef(name="Id", type="int32"),
             FieldDef(name="DropRange", type="DropRange"),
-            FieldDef(name="Tags", type="vector<int32>", separator=","),
+        FieldDef(name="Tags", type="vector<int32>"),
             FieldDef(name="Rewards", type="vector<DropReward>", excel_columns=3),
         ],
     )
@@ -61,7 +61,7 @@ def _append_row(path: Path, row: list) -> None:
 def test_record_and_expanded_vector_record_reassembled(tmp_path: Path) -> None:
     template, table = _make_template(tmp_path)
     # Id(1) Min(2) Max(3) Tags(4) then 3 Reward groups (2 cols each)
-    _append_row(template, [1, 10, 20, "1,2,5", 10, 2, 20, 3, None, None])
+    _append_row(template, [1, 10, 20, "[1,2,5]", 10, 2, 20, 3, None, None])
 
     parsed = _read(template, table)
     assert len(parsed.rows) == 1
@@ -101,12 +101,12 @@ def test_empty_trailing_groups_are_dropped(tmp_path: Path) -> None:
 
     parsed = _read(template, table)
     assert parsed.rows[0]["Rewards"] == [{"ItemId": 30, "Count": 1}]
-    assert parsed.rows[0]["DropRange"] == {"Min": None, "Max": None}
+    assert parsed.rows[0]["DropRange"] == {"Min": 0, "Max": 0}
 
 
 def test_vector_element_error_is_located(tmp_path: Path) -> None:
     template, table = _make_template(tmp_path)
-    _append_row(template, [3, 1, 2, "1,abc", None, None, None, None, None, None])
+    _append_row(template, [3, 1, 2, "[1,abc]", None, None, None, None, None, None])
 
     parsed = _read(template, table)
     assert len(parsed.issues) == 1

@@ -15,11 +15,14 @@ so headers always match the Web type expressions.
 from __future__ import annotations
 
 from pathlib import Path
+import warnings
+from copy import copy
 
 from openpyxl import Workbook
+from openpyxl.cell.cell import MergedCell
 from openpyxl.cell.rich_text import CellRichText, TextBlock
 from openpyxl.cell.text import InlineFont
-from openpyxl.formatting.rule import FormulaRule
+from openpyxl.comments import Comment
 from openpyxl.packaging.custom import DateTimeProperty, IntProperty, StringProperty
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
@@ -28,21 +31,22 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from ct.excel.layout import Column, Layout
 from ct.schema.resources import EnumResource
 
-_NAME_RUN_FONT = InlineFont(rFont="Segoe UI", b=True, sz=12, color="FFFFFF")
-_TYPE_RUN_FONT = InlineFont(rFont="Consolas", i=True, sz=9, color="D8F3DC")
+_NAME_RUN_FONT = InlineFont(rFont="Aptos", b=True, sz=11, color="FF172033")
 _CENTER = Alignment(horizontal="center", vertical="center", wrap_text=True)
+_COMMENT_ALIGN = Alignment(horizontal="center", vertical="center", wrap_text=True, indent=0)
 _THIN = Border(
     left=Side(style="thin"),
     right=Side(style="thin"),
     top=Side(style="thin"),
     bottom=Side(style="thin"),
 )
-_NORMAL_FILL = PatternFill(start_color="1B4332", end_color="1B4332", fill_type="solid")
-_GROUP_FILL = PatternFill(start_color="40916C", end_color="40916C", fill_type="solid")
-_PRIMARY_FILL = PatternFill(start_color="C9A227", end_color="C9A227", fill_type="solid")
-_COMMENT_FILL = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
-_COMMENT_FONT = Font(name="微软雅黑", italic=True, size=9, color="888888")
-_ZEBRA_FILL = PatternFill(start_color="EDF7EE", end_color="EDF7EE", fill_type="solid")
+_NORMAL_FILL = PatternFill(start_color="E2E8F0", end_color="E2E8F0", fill_type="solid")
+_GROUP_FILL = PatternFill(start_color="CFE8D8", end_color="CFE8D8", fill_type="solid")
+_ARRAY_FILL = PatternFill(start_color="D7E6FA", end_color="D7E6FA", fill_type="solid")
+_SLOT_FILL = PatternFill(start_color="E7D9F7", end_color="E7D9F7", fill_type="solid")
+_PRIMARY_FILL = PatternFill(start_color="FBE6A5", end_color="FBE6A5", fill_type="solid")
+_COMMENT_FILL = PatternFill(start_color="DCE3EC", end_color="DCE3EC", fill_type="solid")
+_COMMENT_FONT = Font(name="Aptos", size=9, color="475569")
 _WHITE_FILL = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
 _COL_BORDER = Border(
     left=Side(style="thin", color="CCCCCC"),
@@ -57,11 +61,12 @@ _META_SCHEMA_HASH = "ct_schema_hash"
 _META_GENERATED_AT = "ct_generated_at"
 
 
-def _richtext(name: str, annotation: str) -> CellRichText:
+def _richtext(name: str, annotation: str, type_color: str = "64748B") -> CellRichText:
+    type_font = InlineFont(rFont="Consolas", i=True, sz=9, color=f"FF{type_color}")
     return CellRichText(
         [
             TextBlock(_NAME_RUN_FONT, f"{name}\n"),
-            TextBlock(_TYPE_RUN_FONT, annotation),
+            TextBlock(type_font, annotation),
         ]
     )
 
@@ -82,7 +87,7 @@ def _segments(table_id: str, stable_path: str) -> list[str]:
             name, _, rest = chunk.partition("[")
             group = rest.split("]", 1)[0]
             segments.append(name)
-            segments.append(group)
+            segments.append(f"#{group}")
         else:
             segments.append(chunk)
     return segments
@@ -100,20 +105,21 @@ def generate_canonical_template(
     ws = wb.active
     ws.title = layout.table_id.partition(":")[2]
     table_name = layout.table_id.partition(":")[2]
-    group_rows = layout.header_rows - 1
-    comment_row = layout.header_rows
-
-    _write_header_rows(ws, layout, table_name, group_rows, comment_row, primary=primary)
+    _write_header_rows(ws, layout, table_name, primary=primary)
+    _apply_header_borders(ws, layout)
+    _add_enum_notes(ws, layout, enums)
 
     total_cols = layout.column_count
     for column in range(1, total_cols + 1):
         ws.column_dimensions[get_column_letter(column)].width = 16
-    for row in range(1, group_rows + 1):
-        ws.row_dimensions[row].height = _NAME_ROW_HEIGHT
+    for row in range(1, layout.header_rows + 1):
+        if ws.row_dimensions[row].height is None:
+            ws.row_dimensions[row].height = 30 if row % 2 else 38
     ws.freeze_panes = ws.cell(row=layout.header_rows + 1, column=1)
 
     _add_data_validations(ws, layout, enums, data_start=layout.header_rows + 1)
-    _add_zebra(ws, layout, data_start=layout.header_rows + 1)
+    # Ordinary data cells intentionally retain the neutral workbook white
+    # background; validation and Notes provide the non-visual assistance.
 
     _write_metadata(wb, layout, table_name)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -139,128 +145,172 @@ def _write_header_rows(
     ws,
     layout: Layout,
     table_name: str,
-    group_rows: int,
-    comment_row: int,
     primary: str = "",
 ) -> None:
-    top_ranges = _column_ranges(layout, table_name)
-
-    # row 1: top-level fields merged across their column range
-    top_annotations: dict[str, str] = {}
-    for column in layout.columns:
-        top = _top_segment(layout.table_id, column.stable_path)
-        top_annotations.setdefault(top, column.field_annotation or column.annotation)
-    for top, (start, end) in sorted(top_ranges.items()):
-        if start < end:
-            ws.merge_cells(start_row=1, start_column=start, end_row=1, end_column=end)
-        cell = ws.cell(row=1, column=start)
-        cell.value = _richtext(top, top_annotations[top])
-        cell.alignment = _CENTER
-        cell.fill = _PRIMARY_FILL if top == primary else _NORMAL_FILL
-        cell.border = _THIN
-        for column in range(start, end + 1):
-            ws.cell(row=1, column=column).border = _THIN
-
-    # rows 2..group_rows: intermediate segments merged across siblings
-    for row in range(2, group_rows + 1):
-        depth = row
-        grouped: dict[tuple[str, ...], list[int]] = {}
-        first_by_key: dict[tuple[str, ...], str] = {}
+    max_depth = layout.header_rows // 2
+    for depth in range(1, max_depth + 1):
+        grouped: dict[tuple[str, ...], list[Column]] = {}
         for column in layout.columns:
-            segments = _segments(layout.table_id, column.stable_path)
-            if len(segments) < depth:
-                continue  # column has already ended above this row
-            key = tuple(segments[: depth - 1])
-            grouped.setdefault(key, []).append(column.index)
-            first_by_key.setdefault(key, segments[depth - 1])
-        for key, indexes in sorted(grouped.items()):
-            segment = first_by_key[key]
-            start_index, end_index = min(indexes), max(indexes)
-            if start_index < end_index:
-                ws.merge_cells(
-                    start_row=row, start_column=start_index,
-                    end_row=row, end_column=end_index,
-                )
-            cell = ws.cell(row=row, column=start_index)
-            leaf_annotation = next(
-                (
-                    column.annotation
-                    for column in layout.columns
-                    if column.depth == depth and column.index == start_index
-                ),
-                "",
-            )
-            cell.value = _richtext(segment, leaf_annotation)
-            cell.alignment = _CENTER
-            cell.fill = _GROUP_FILL
-            cell.border = _THIN
-            for column in range(start_index, end_index + 1):
-                ws.cell(row=row, column=column).border = _THIN
+            parts = _segments(layout.table_id, column.stable_path)
+            if len(parts) < depth:
+                continue
+            grouped.setdefault(tuple(parts[:depth]), []).append(column)
+        comment_row, field_row = depth * 2 - 1, depth * 2
+        for parts, cols in grouped.items():
+            start, end = cols[0].index, cols[-1].index
+            if start < end:
+                ws.merge_cells(start_row=comment_row, start_column=start, end_row=comment_row, end_column=end)
+                ws.merge_cells(start_row=field_row, start_column=start, end_row=field_row, end_column=end)
+            segment = parts[-1]
+            anchor = ws.cell(row=field_row, column=start)
+            annotation = cols[0].field_annotation or cols[0].annotation
+            if depth > 1 and segment.startswith("#"):
+                annotation = cols[0].type_text
+            leaf_depth = len(_segments(layout.table_id, cols[0].stable_path))
+            is_leaf = depth >= leaf_depth
+            top_type = cols[0].field_annotation or cols[0].annotation
+            if depth == 1 and top_type.startswith("vector<"):
+                node_fill, type_color = _ARRAY_FILL, "315B9A"
+            elif segment.startswith("#"):
+                node_fill, type_color = _SLOT_FILL, "6B4AA1"
+            elif not is_leaf:
+                node_fill, type_color = _GROUP_FILL, "2F6B4A"
+            else:
+                node_fill, type_color = _NORMAL_FILL, "64748B"
+            if depth == 1 and segment == primary:
+                type_color = "8A5A00"
+            anchor.value = _richtext(segment, annotation, type_color)
+            anchor.alignment = _CENTER
+            anchor.fill = _PRIMARY_FILL if depth == 1 and segment == primary else node_fill
+            comment = ((cols[0].field_comment or cols[0].comment) if depth == 1 else cols[0].comment) or ""
+            c = ws.cell(row=comment_row, column=start)
+            c.value = comment
+            c.font = _COMMENT_FONT
+            c.alignment = _COMMENT_ALIGN
+            c.fill = _COMMENT_FILL
+            for index in range(start, end + 1):
+                ws.cell(row=comment_row, column=index).border = _THIN
+                ws.cell(row=field_row, column=index).border = _THIN
+            if comment:
+                width = max(1, end - start + 1) * 16
+                chars_per_line = max(10, int(width / 1.2))
+                lines = sum(max(1, (len(line) + chars_per_line - 1) // chars_per_line) for line in str(comment).splitlines())
+                ws.row_dimensions[comment_row].height = min(60, max(30, 18 * lines))
 
-    # comment row: merge fixed scalar/vector expansions that represent one
-    # logical field. Record-vector leaves keep separate comments because each
-    # nested field has its own meaning.
-    comment_groups: list[tuple[int, int, str]] = []
+    # A leaf that terminates before the deepest structural level owns one
+    # field cell spanning the remaining field rows. This keeps scalar table
+    # fields visually aligned with nested records and fixed-vector slots.
     for column in layout.columns:
-        comment = column.comment or ""
-        if (
-            comment_groups
-            and comment_groups[-1][1] + 1 == column.index
-            and comment_groups[-1][2] == comment
-            and layout.columns[column.index - 1].logical_path == column.logical_path
-        ):
-            start, _end, value = comment_groups[-1]
-            comment_groups[-1] = (start, column.index, value)
-        else:
-            comment_groups.append((column.index, column.index, comment))
-    for start, end, comment in comment_groups:
-        if start < end:
-            ws.merge_cells(
-                start_row=comment_row,
-                start_column=start,
-                end_row=comment_row,
-                end_column=end,
-            )
-        for index in range(start, end + 1):
-            cell = ws.cell(row=comment_row, column=index)
-            if index == start:
-                cell.value = comment
-            cell.font = _COMMENT_FONT
-            cell.alignment = _CENTER
-            cell.fill = _COMMENT_FILL
-            cell.border = _THIN
+        leaf_depth = len(_segments(layout.table_id, column.stable_path))
+        if leaf_depth >= max_depth:
+            continue
+        start_row = leaf_depth * 2
+        end_row = layout.header_rows
+        if start_row == end_row:
+            continue
+        ws.merge_cells(
+            start_row=start_row,
+            start_column=column.index,
+            end_row=end_row,
+            end_column=column.index,
+        )
+        cell = ws.cell(row=start_row, column=column.index)
+        cell.alignment = _CENTER
 
 
 def _add_data_validations(ws, layout: Layout, enums: dict[str, EnumResource], data_start: int) -> None:
     for column in layout.columns:
+        letter = get_column_letter(column.index)
+        if column.type_text == "bool":
+            dv = DataValidation(type="list", formula1='"TRUE,FALSE"', allow_blank=True)
+            dv.sqref = f"{letter}{data_start}:{letter}1048576"
+            ws.add_data_validation(dv)
+            continue
+        if column.ref and column.type_text not in enums:
+            dv = DataValidation(type="custom", formula1="TRUE", allow_blank=True, showInputMessage=True, promptTitle="引用", prompt=f"目标：{column.ref}；最终以 canonical 校验为准")
+            dv.sqref = f"{letter}{data_start}:{letter}1048576"
+            ws.add_data_validation(dv)
+            continue
+        if column.type_text == "int64":
+            dv = DataValidation(type="custom", formula1="TRUE", allow_blank=True, showInputMessage=True, promptTitle="int64", prompt="超过 15 位的整数请按文本输入，最终以 canonical 校验为准")
+            dv.sqref = f"{letter}{data_start}:{letter}1048576"
+            ws.add_data_validation(dv)
+            continue
+        if column.type_text == "int32":
+            dv = DataValidation(type="whole", operator="between", formula1="-2147483648", formula2="2147483647", allow_blank=True)
+            dv.sqref = f"{letter}{data_start}:{letter}1048576"
+            ws.add_data_validation(dv)
+            continue
+        if column.type_text in {"float", "double"}:
+            # Excel's data-validation parser rejects the theoretical IEEE-754
+            # 1E+308 bounds even though they are valid Python floats. Keep a
+            # conservative finite range; canonical validation remains the
+            # authoritative check for values outside it.
+            dv = DataValidation(type="decimal", operator="between", formula1="-1E+307", formula2="1E+307", allow_blank=True)
+            dv.sqref = f"{letter}{data_start}:{letter}1048576"
+            ws.add_data_validation(dv)
+            continue
         enum = enums.get(column.type_text)
         if enum is None:
             continue
-        formula = '"' + ",".join(enum.values) + '"'
+        formula = '"' + ",".join(item.name for item in enum.values) + '"'
         if len(formula) > 255:
+            warnings.warn(f"Enum {enum.name} 候选超过 Excel 255 字符限制，已降级为输入提示", UserWarning)
+            dv = DataValidation(type="custom", formula1="TRUE", allow_blank=True, showInputMessage=True, promptTitle=enum.name, prompt="候选列表过长，请按表头 Note 中的枚举项填写")
+            dv.sqref = f"{letter}{data_start}:" + f"{letter}1048576"
+            ws.add_data_validation(dv)
             continue
-        letter = get_column_letter(column.index)
         dv = DataValidation(
             type="list",
             formula1=formula,
             showDropDown=False,
             allow_blank=True,
         )
-        dv.sqref = f"{letter}{data_start}:{letter}1000"
+        dv.sqref = f"{letter}{data_start}:{letter}1048576"
         ws.add_data_validation(dv)
 
 
-def _add_zebra(ws, layout: Layout, data_start: int) -> None:
-    last = get_column_letter(layout.column_count)
-    data_range = f"A{data_start}:{last}1000"
-    ws.conditional_formatting.add(
-        data_range,
-        FormulaRule(formula=["MOD(ROW(),2)=0"], fill=_ZEBRA_FILL, border=_COL_BORDER),
-    )
-    ws.conditional_formatting.add(
-        data_range,
-        FormulaRule(formula=["MOD(ROW(),2)=1"], fill=_WHITE_FILL, border=_COL_BORDER),
-    )
+def _add_enum_notes(ws, layout: Layout, enums: dict[str, EnumResource]) -> None:
+    for column in layout.columns:
+        enum = enums.get(column.type_text)
+        if enum is None:
+            continue
+        lines = [f"类型：{enum.name}" + (f"；{enum.comment}" if enum.comment else "")]
+        lines.extend(f"{item.name}: {item.comment}" if item.comment else item.name for item in enum.values)
+        target = ws.cell(row=max(2, column.depth * 2), column=column.index)
+        if isinstance(target, MergedCell):
+            for merged in ws.merged_cells.ranges:
+                if target.coordinate in merged:
+                    target = ws.cell(row=merged.min_row, column=merged.min_col)
+                    break
+        target.comment = Comment("\n".join(lines), "ct")
+
+
+def _apply_header_borders(ws, layout: Layout) -> None:
+    medium = Side(style="medium", color="0F172A")
+    double = Side(style="double", color="334155")
+    for row in range(1, layout.header_rows + 1):
+        ws.cell(row=row, column=1).border = Border(left=medium, top=ws.cell(row=row, column=1).border.top, bottom=ws.cell(row=row, column=1).border.bottom, right=ws.cell(row=row, column=1).border.right)
+        ws.cell(row=row, column=layout.column_count).border = Border(right=medium, top=ws.cell(row=row, column=layout.column_count).border.top, bottom=ws.cell(row=row, column=layout.column_count).border.bottom, left=ws.cell(row=row, column=layout.column_count).border.left)
+    for col in range(1, layout.column_count + 1):
+        cell = ws.cell(row=layout.header_rows, column=col)
+        # Apply the divider to the actual bottom edge cell.  For a vertically
+        # merged leaf this is a MergedCell rather than the merge anchor, and
+        # Excel otherwise keeps the anchor's thin border on some columns.
+        border = copy(cell.border)
+        border.bottom = double
+        cell.border = border
+    # Re-format vertical merges after changing the divider.  openpyxl builds
+    # MergedCell edge styles from the anchor, so updating only the visible
+    # bottom row leaves some merged columns with the old thin edge.
+    for merged in ws.merged_cells.ranges:
+        if merged.max_row != layout.header_rows:
+            continue
+        anchor = ws.cell(row=merged.min_row, column=merged.min_col)
+        border = copy(anchor.border)
+        border.bottom = double
+        anchor.border = border
+        merged.format()
 
 
 def _write_metadata(wb: Workbook, layout: Layout, table_name: str) -> None:

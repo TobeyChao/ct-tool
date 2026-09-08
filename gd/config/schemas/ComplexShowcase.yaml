@@ -1,0 +1,73 @@
+table: ComplexShowcase
+primary: Id
+excel_file: complex_showcase.xlsx
+json_key: complexShowcases
+fields:
+  - name: Id
+    type: int64
+    comment: 示例主键，覆盖 64 位整数
+  - name: Code
+    type: int32
+    comment: 客户端使用的短整型代码
+  - name: Weight
+    type: float
+    comment: 单精度权重，范围由 canonical 校验最终确认
+  - name: PreciseValue
+    type: double
+    comment: 双精度数值，用于需要更高精度的计算
+  - name: IsEnabled
+    type: bool
+    comment: 是否启用该示例记录
+  - name: DisplayName
+    type: string
+    i18n: true
+    comment: 多语言显示名称
+  - name: Rarity
+    type: ShowcaseRarity
+    comment: 示例稀有度，Enum 下拉项带有 Note 注释
+  - name: ItemTypeId
+    type: int32
+    ref: ItemType.Id
+    comment: 跨表引用 ItemType.Id 的外键
+  - name: SecretSeed
+    type: int64
+    server_only: true
+    comment: 仅服务端使用的随机种子
+  - name: Position
+    type: WorldPosition
+    comment: 三维世界坐标，包含嵌套 Record
+  - name: Reward
+    type: RewardDefinition
+    comment: 奖励定义，包含枚举、向量和更深层 Record
+  - name: IntValues
+    type: vector<int32>
+    comment: 变长 int32 列表，Excel 中使用 [1,2,3] 文法
+  - name: LongValues
+    type: vector<int64>
+    comment: 变长 int64 列表
+  - name: Ratios
+    type: vector<float>
+    excel_columns: 4
+    comment: 最多四个浮点数据项，Excel 展开为四列
+  - name: Precisions
+    type: vector<double>
+    excel_columns: 3
+    comment: 最多三个双精度数据项，末尾空项按默认值处理
+  - name: Flags
+    type: vector<bool>
+    comment: 变长布尔列表
+  - name: Aliases
+    type: vector<string>
+    comment: 变长字符串列表
+  - name: Rarities
+    type: vector<ShowcaseRarity>
+    excel_columns: 3
+    comment: 最多三个 Enum 数据项
+  - name: SpawnPoints
+    type: vector<WorldPosition>
+    excel_columns: 2
+    comment: 最多两个嵌套坐标 Record 数据项
+  - name: RewardTiers
+    type: vector<RewardDefinition>
+    excel_columns: 2
+    comment: 最多两个嵌套奖励 Record 数据项

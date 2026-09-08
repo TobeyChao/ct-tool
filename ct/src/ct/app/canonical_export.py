@@ -165,7 +165,7 @@ def run_canonical_export(
                 records=records,
             )
             excel_path = excel_dir / (table.excel_file or f"{table.table}.xlsx")
-            parsed = read_canonical_excel(excel_path, layout, table, records=records)
+            parsed = read_canonical_excel(excel_path, layout, table, records=records, enums=enums)
             validation_issues.extend(parsed.issues)
             seen: set = set()
             validation_issues.extend(_primary_issues(table, parsed, seen))

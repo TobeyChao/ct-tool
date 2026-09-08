@@ -167,7 +167,7 @@ def canonical_validate(
             schema_hash=compute_schema_hash(table, tuple(records.values())),
             records=records,
         )
-        parsed = read_canonical_excel(excel_path, layout, table, records=records)
+        parsed = read_canonical_excel(excel_path, layout, table, records=records, enums={e.name: e for e in ws.enums})
         issues.extend(parsed.issues)
         seen: set = set()
         issues.extend(_primary_issues(table, parsed, seen))
@@ -470,7 +470,7 @@ def canonical_i18n_sync(root: Path, *, table_filter: str | None = None) -> list[
             schema_hash=compute_schema_hash(table, tuple(records.values())),
             records=records,
         )
-        parsed = read_canonical_excel(excel_path, layout, table, records=records)
+        parsed = read_canonical_excel(excel_path, layout, table, records=records, enums={e.name: e for e in ws.enums})
         source: dict[str, str] = {}
         for row in parsed.rows:
             row_id = row.get(table.primary)

@@ -11,6 +11,8 @@ Untracked workbooks (missing/corrupt manifest) never get a silent writeback.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -57,6 +59,55 @@ class ExcelPlan:
     @property
     def blocked(self) -> bool:
         return any(issue.kind == "blocker" for issue in self.issues) or self.untracked
+
+
+def rewrite_enum_token(value: Any, renames: dict[str, str]) -> Any:
+    """Rewrite exact scalar or bracket-vector Enum names for explicit rename."""
+    if not isinstance(value, str):
+        return value
+    text = value.strip()
+    if text.startswith("[") and text.endswith("]"):
+        body = text[1:-1].strip()
+        if not body:
+            return value
+        return "[" + ",".join(renames.get(token.strip(), token.strip()) for token in body.split(",")) + "]"
+    return renames.get(text, value)
+
+
+def migrate_enum_renames(
+    excel_path: Path,
+    layout: Layout,
+    renames: dict[str, str],
+    enum_names: set[str],
+) -> int:
+    """Atomically rewrite exact Enum cells in scalar/fixed/vector storage."""
+    if not renames or not excel_path.exists():
+        return 0
+    wb = load_workbook(str(excel_path))
+    changed = 0
+    try:
+        ws = wb.active
+        for column in layout.columns:
+            if column.type_text not in enum_names:
+                continue
+            for row in range(layout.header_rows + 1, ws.max_row + 1):
+                cell = ws.cell(row=row, column=column.index)
+                updated = rewrite_enum_token(cell.value, renames)
+                if updated != cell.value:
+                    cell.value = updated
+                    changed += 1
+        if not changed:
+            wb.close()
+            return 0
+        with tempfile.NamedTemporaryFile(prefix="enum-migrate-", suffix=".xlsx", dir=str(excel_path.parent), delete=False) as handle:
+            staged = Path(handle.name)
+        wb.save(str(staged))
+        wb.close()
+        os.replace(staged, excel_path)
+        return changed
+    except Exception:
+        wb.close()
+        raise
 
 
 def _read_data_rows(path: Path, header_rows: int) -> list[tuple[int, tuple[Any, ...]]]:
@@ -233,16 +284,23 @@ def _scan_enum_removal(
         if old_values is None:
             continue
         new_values = new_enums.get(column.type_text, ())
-        removed = [value for value in old_values if value not in new_values]
+        old_names = [item.get("name", item) if isinstance(item, dict) else getattr(item, "name", item) for item in old_values]
+        new_names = [item.get("name", item) if isinstance(item, dict) else getattr(item, "name", item) for item in new_values]
+        removed = [value for value in old_names if value not in new_names]
         if not removed:
             continue
         if column.logical_path not in new_logical:
             continue  # column deleted; already reported
+        def contains_removed(raw: Any) -> bool:
+            if raw in removed:
+                return True
+            if isinstance(raw, str) and raw.strip().startswith("[") and raw.strip().endswith("]"):
+                return any(token.strip() in removed for token in raw.strip()[1:-1].split(","))
+            return False
         populated = [
             (excel_row, row[column.index - 1])
             for excel_row, row in rows
-            if column.index - 1 < len(row)
-            and row[column.index - 1] in removed
+            if column.index - 1 < len(row) and contains_removed(row[column.index - 1])
         ]
         if populated:
             issues.append(

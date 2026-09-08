@@ -23,8 +23,7 @@ fields:
     comment: 掉落范围
   - name: Tags
     type: vector<int32>
-    comment: 标签列表，逗号分隔
-    separator: ','
+    comment: 标签列表，使用 [1,2,3] 文法
   - name: IsActive
     type: bool
     server_only: true

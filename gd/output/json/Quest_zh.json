@@ -1,28 +1,7 @@
 {
   "Quests": [
-    {
-      "Id": 1,
-      "Title": "新手冒险",
-      "Description": "完成你的第一次冒险",
-      "RewardItemId": 1,
-      "RequiredLevel": 1,
-      "Test": []
-    },
-    {
-      "Id": 2,
-      "Title": "屠龙勇士",
-      "Description": "击败邪恶的巨龙",
-      "RewardItemId": 2,
-      "RequiredLevel": 10,
-      "Test": []
-    },
-    {
-      "Id": 3,
-      "Title": "一个非常非常非常非常非常非常非常非常非常非常非常非常非常长的任务标题用来验证长文本预览",
-      "Description": "这段任务描述特别特别长：它用来验证翻译编辑器里长文本的两行截断预览、点击展开成完整 textarea、失焦收起回到预览，同时原文列也会随之展开便于对照翻译，请确认这一整套交互都正常工作、保存按钮始终垂直居中且与操作列表头对齐。",
-      "RewardItemId": 1,
-      "RequiredLevel": 10,
-      "Test": []
-    }
+    {"Id":1,"Title":"新手冒险","Description":"完成你的第一次冒险","RewardItemId":1,"RequiredLevel":1,"Test":[]},
+    {"Id":2,"Title":"屠龙勇士","Description":"击败邪恶的巨龙","RewardItemId":2,"RequiredLevel":10,"Test":[]},
+    {"Id":3,"Title":"长标题","Description":"长描述","RewardItemId":1,"RequiredLevel":10,"Test":[]}
   ]
 }

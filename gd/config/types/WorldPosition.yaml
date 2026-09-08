@@ -1,0 +1,19 @@
+kind: record
+name: WorldPosition
+comment: 三维世界坐标及其空间标签
+fields:
+  - name: X
+    type: double
+    comment: 东西方向坐标
+  - name: Y
+    type: double
+    comment: 高度坐标
+  - name: Z
+    type: double
+    comment: 南北方向坐标
+  - name: Space
+    type: CoordinateSpace
+    comment: 坐标所属空间
+  - name: IsPrecise
+    type: bool
+    comment: 是否启用高精度定位

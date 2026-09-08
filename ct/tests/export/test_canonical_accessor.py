@@ -43,7 +43,7 @@ def _item_with_records() -> tuple[TableResource, dict[str, RecordResource]]:
             FieldDef(name="Name", type="string", i18n=True),
             FieldDef(name="Rarity", type="ItemRarity"),
             FieldDef(name="DropRange", type="ItemDropRange"),
-            FieldDef(name="Tags", type="vector<int32>", separator=","),
+        FieldDef(name="Tags", type="vector<int32>"),
         ],
     )
     return table, {"ItemDropRange": drop}

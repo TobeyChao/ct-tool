@@ -21,5 +21,5 @@ fields:
     comment: 接取等级要求
   - name: Test
     type: vector<double>
-    comment: 测试测试
+    comment: 测试测试000123
     excel_columns: 3

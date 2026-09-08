@@ -13,6 +13,7 @@ from typing import Any
 from ct.schema.commands import rename_field, rename_resource
 from ct.schema.indexes import QueryIndex, parse_indexes
 from ct.schema.resources import (
+    EnumItem,
     EnumResource,
     RecordResource,
     SchemaResource,
@@ -24,7 +25,7 @@ from ct.schema.type_expression import parse_type_expression
 DraftState = tuple[tuple[SchemaResource, ...], dict[str, tuple[QueryIndex, ...]]]
 
 _ALLOWED_PROPERTIES = frozenset(
-    {"comment", "i18n", "server_only", "separator", "excel_columns", "ref"}
+    {"comment", "i18n", "server_only", "excel_columns", "ref"}
 )
 
 
@@ -139,11 +140,31 @@ def apply_command(state: DraftState, command: Command) -> DraftState:
         return (_replace_resource(resources, owner_index, updated), indexes)
     if command.type == "set_enum_values":
         name = command.payload["name"]
-        values = list(command.payload["values"])
+        values = [EnumItem.model_validate(value) for value in command.payload["values"]]
         index = _resource_index(resources, name)
         resource = resources[index]
         if not isinstance(resource, EnumResource):
             raise ValueError(f"{name} 不是 Enum")
+        updated = resource.model_copy(update={"values": values})
+        return (_replace_resource(resources, index, updated), indexes)
+    if command.type == "rename_enum_item":
+        name = command.payload["name"]
+        old_name = command.payload["oldName"]
+        new_name = command.payload["newName"]
+        ordinal = int(command.payload["originalOrdinal"])
+        index = _resource_index(resources, name)
+        resource = resources[index]
+        if not isinstance(resource, EnumResource):
+            raise ValueError(f"{name} 不是 Enum")
+        if ordinal < 0 or ordinal >= len(resource.values):
+            raise ValueError(f"Enum {name}: ordinal {ordinal} 不存在")
+        item = resource.values[ordinal]
+        if item.name != old_name:
+            raise ValueError(f"Enum {name}: ordinal {ordinal} 当前为 {item.name}，不是 {old_name}")
+        if any(existing.name == new_name for existing in resource.values):
+            raise ValueError(f"Enum {name}: 值 '{new_name}' 已存在")
+        values = list(resource.values)
+        values[ordinal] = item.model_copy(update={"name": new_name})
         updated = resource.model_copy(update={"values": values})
         return (_replace_resource(resources, index, updated), indexes)
     if command.type == "set_indexes":

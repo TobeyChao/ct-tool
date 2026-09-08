@@ -586,9 +586,10 @@ export async function mount(container) {
       editorBody.innerHTML = `${warning}
         <div class="ct-field"><label class="ct-field-label">Wire 类型</label><div><span class="ct-badge ct-badge-mute">byte（只读，FlatBuffers 固定）</span></div></div>
         <div class="ct-field"><label class="ct-field-label">值</label>
-          <div class="ct-enum-values">${values.map((v) =>
-            `<div class="ct-enum-value"><span class="ct-mono">${escapeHtml(v)}</span><button class="ct-inline-btn ct-danger" data-enum-remove="${escapeHtml(v)}">✕</button></div>`
-          ).join("") || '<div class="ct-empty-sub">（空）</div>'}</div>
+          <div class="ct-enum-values">${values.map((v, ordinal) => {
+            const item = typeof v === "string" ? { name: v, comment: "" } : v;
+            return `<div class="ct-enum-value"><span class="ct-mono">${ordinal}: ${escapeHtml(item.name)}</span><span>${escapeHtml(item.comment || "")}</span><button class="ct-inline-btn" data-enum-rename="${escapeHtml(item.name)}" data-enum-ordinal="${ordinal}">重命名</button><button class="ct-inline-btn ct-danger" data-enum-remove="${escapeHtml(item.name)}">✕</button></div>`;
+          }).join("") || '<div class="ct-empty-sub">（空）</div>'}</div>
           <button class="ct-btn ct-btn-ghost" id="enum-add-value">新增值</button></div>
         <div class="ct-field"><label class="ct-field-label">反向引用（${refs.length}）</label>
           <div class="ct-ref-list">${refs.map((r) => `<div class="ct-mono">${escapeHtml(r.field)}（${escapeHtml(r.kind)}）</div>`).join("") || '<div class="ct-empty-sub">未被引用</div>'}</div></div>`;
@@ -596,7 +597,16 @@ export async function mount(container) {
       editorBody.querySelectorAll("[data-enum-remove]").forEach((btn) => {
         btn.addEventListener("click", () => {
           const value = btn.dataset.enumRemove;
-          pushCommand({ type: "set_enum_values", payload: { name: enumId, values: values.filter((v) => v !== value) } });
+          pushCommand({ type: "set_enum_values", payload: { name: enumId, values: values.filter((v) => (typeof v === "string" ? v : v.name) !== value) } });
+        });
+      });
+      editorBody.querySelectorAll("[data-enum-rename]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const oldName = btn.dataset.enumRename;
+          const newName = window.prompt("新的枚举名称", oldName);
+          if (!newName || newName === oldName) return;
+          const ordinal = Number(btn.dataset.enumOrdinal);
+          pushCommand({ type: "rename_enum_item", payload: { name: enumId, oldName, newName, originalOrdinal: ordinal } });
         });
       });
       return;
@@ -614,7 +624,7 @@ export async function mount(container) {
           <td><button class="ct-inline-btn" data-act="rename" title="改名">${escapeHtml(f.name)}</button>
               <span class="ct-field-role">${f.i18n ? "🌐" : ""}${f.server_only ? "🖥" : ""}${f.ref ? "🔗" : ""}</span></td>
           <td>${renderTypeExpression(typeExpr)}</td>
-          <td class="ct-mono">${f.excel_columns ? `expanded × ${f.excel_columns}` : f.separator ? "single cell" : "1 column"}</td>
+          <td class="ct-mono">${f.excel_columns ? `expanded × ${f.excel_columns}` : "1 column"}</td>
           <td><span class="ct-role-list">${f.name === resource.primary ? '<span class="ct-badge ct-badge-warn">PRIMARY</span>' : ""}${f.i18n ? '<span class="ct-badge ct-badge-mute">I18N</span>' : ""}${f.server_only ? '<span class="ct-badge ct-badge-mute">SERVER</span>' : ""}${f.ref ? `<button class="ct-type-link" data-navigate-type="${escapeHtml(f.ref.split(".")[0])}" title="打开 ${escapeHtml(f.ref.split(".")[0])}">REF ${escapeHtml(f.ref)}</button>` : ""}</span></td>
           <td class="ct-row-ops">
             <button class="ct-inline-btn" data-act="up" ${isPrimary || index === 0 ? "disabled" : ""} title="${isPrimary ? "主键字段不可调整顺序" : "上移"}">↑</button>
@@ -797,7 +807,7 @@ export async function mount(container) {
          <div class="ct-field"><label class="ct-field-label">字段名</label><div class="ct-inspector-value ct-mono">${escapeHtml(field.name)}</div></div>
          <div class="ct-field"><label class="ct-field-label">类型表达式</label><div class="ct-inspector-value ct-mono">${escapeHtml(typeExpr)}</div></div>
        </section>
-       <section class="ct-inspector-section"><h2>Excel 表达（只读）</h2>${value("固定列数", field.excel_columns ?? "")}${value("分隔符", field.separator || (field.type || "").startsWith("vector") ? (field.separator || "（内置 ,）") : "")}</section>
+       <section class="ct-inspector-section"><h2>Excel 表达（只读）</h2>${value("固定最大槽位", field.excel_columns ?? "")}${(field.type || "").startsWith("vector") ? value("变长文法", "[...]，英文逗号") : ""}</section>
        <section class="ct-inspector-section"><h2>角色与约束（只读）</h2>
          <div class="ct-check-group">${flag("国际化 i18n", !!field.i18n)}${flag("仅服务端", !!field.server_only)}</div>
          ${value("跨表引用", field.ref || "")}

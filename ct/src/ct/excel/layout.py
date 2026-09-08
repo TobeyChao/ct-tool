@@ -31,7 +31,10 @@ class Column:
     group_index: int | None = None  # 1-based group ordinal for an expanded vector
     depth: int = 1  # 1-based header depth of this leaf (comment row excluded)
     comment: str = ""  # leaf field comment (header comment row)
+    field_comment: str = ""  # owning schema field comment (for generated slots)
     field_annotation: str = ""  # annotation shown on the top-level field row
+    ref: str | None = None
+    primary: bool = False
 
     @property
     def logical_path(self) -> str:
@@ -43,11 +46,26 @@ class Column:
 
 
 @dataclass(frozen=True)
+class HeaderNode:
+    stable_path: str
+    display_name: str
+    annotation: str
+    comment: str
+    kind: str
+    depth: int
+    children: tuple[str, ...]
+    slot_index: int | None
+    leaf_start: int
+    leaf_end: int
+
+
+@dataclass(frozen=True)
 class Layout:
     table_id: str
     schema_hash: str
-    header_rows: int  # name+type rows + 1 comment row
+    header_rows: int  # paired comment/field rows: 2 * max depth
     columns: tuple[Column, ...]
+    nodes: tuple[HeaderNode, ...] = ()
 
     @property
     def column_count(self) -> int:
@@ -102,11 +120,13 @@ class LayoutBuilder:
         owner = self.table.resource_id
         for field in self.table.fields:
             col = self._emit(field, f"{owner}/{field.name}", col, depth=1, group=None)
+        columns = tuple(self.columns)
         return Layout(
             table_id=self.table.resource_id,
             schema_hash=self.schema_hash,
-            header_rows=self.max_depth + 1,
-            columns=tuple(self.columns),
+            header_rows=self.max_depth * 2,
+            columns=columns,
+            nodes=_derive_header_nodes(self.table.resource_id, columns),
         )
 
     def _field_annotation(self, type_expr: TypeExpression) -> str:
@@ -141,8 +161,8 @@ class LayoutBuilder:
                     type_expr, path, col,
                     depth=depth, group=group, field_annotation=field_annotation,
                 )
-            return self._emit_leaf(col, path, type_expr.name, type_expr.name, depth, group, field.comment, field_annotation)
-        return self._emit_leaf(col, path, type_expr.name, type_expr.name, depth, group, field.comment, field_annotation)
+            return self._emit_leaf(col, path, type_expr.name, type_expr.name, depth, group, field.comment, field_annotation, ref=field.ref, primary=field.name == self.table.primary)
+        return self._emit_leaf(col, path, type_expr.name, type_expr.name, depth, group, field.comment, field_annotation, ref=field.ref, primary=field.name == self.table.primary)
 
     def _emit_vector(
         self,
@@ -158,6 +178,7 @@ class LayoutBuilder:
         annotation = f"vector<{serialize_type_expression(vector.element)}>"
         element = vector.element
         groups = field.excel_columns or 0
+        array_annotation = f"{annotation}[{groups}]" if groups > 0 else annotation
         if (
             isinstance(element, NamedType)
             and _named_kind(element, self.records) == "record"
@@ -175,27 +196,31 @@ class LayoutBuilder:
                         col,
                         depth=depth + 1,
                         group=g,
-                        field_annotation=field_annotation,
+                    field_annotation=array_annotation,
                     )
             return col
         if groups > 0:
             # Fixed Excel input for scalar/Enum/string vectors. The runtime
             # value remains a normal variable-length FlatBuffers vector.
             element_text = serialize_type_expression(element)
+            self.max_depth = max(self.max_depth, depth + 1)
             for g in range(1, groups + 1):
                 col = self._emit_leaf(
                     col,
                     f"{path}[{g}]",
                     element_text,
                     annotation,
-                    depth,
+                    depth + 1,
                     g,
-                    field.comment,
-                    field_annotation,
+                    f"数据项[{g}]",
+                    array_annotation,
+                    field_comment=field.comment,
+                    ref=field.ref,
+                    primary=field.name == self.table.primary,
                 )
             return col
         element_text = serialize_type_expression(element)
-        return self._emit_leaf(col, path, element_text, annotation, depth, group, field.comment, field_annotation)
+        return self._emit_leaf(col, path, element_text, annotation, depth, group, field.comment, field_annotation, ref=field.ref, primary=field.name == self.table.primary)
 
     def _emit_record(
         self,
@@ -230,6 +255,9 @@ class LayoutBuilder:
         group: int | None,
         comment: str = "",
         field_annotation: str = "",
+        field_comment: str = "",
+        ref: str | None = None,
+        primary: bool = False,
     ) -> int:
         self.columns.append(
             Column(
@@ -241,7 +269,10 @@ class LayoutBuilder:
                 group_index=group,
                 depth=depth,
                 comment=comment,
+                field_comment=field_comment,
                 field_annotation=field_annotation,
+                ref=ref,
+                primary=primary,
             )
         )
         return col + 1
@@ -254,3 +285,54 @@ def build_layout(
     records: dict[str, RecordResource],
 ) -> Layout:
     return LayoutBuilder(table, schema_hash=schema_hash, records=records).build()
+
+
+def _derive_header_nodes(table_id: str, columns: tuple[Column, ...]) -> tuple[HeaderNode, ...]:
+    """Derive deterministic structural nodes from the canonical leaf paths."""
+    buckets: dict[tuple[str, ...], list[Column]] = {}
+    for column in columns:
+        tail = column.stable_path[len(table_id) + 1:]
+        parts: list[str] = []
+        for chunk in tail.split("/"):
+            if "[" in chunk:
+                name, _, rest = chunk.partition("[")
+                parts.extend((name, rest.split("]", 1)[0]))
+            else:
+                parts.append(chunk)
+        for depth in range(1, len(parts) + 1):
+            buckets.setdefault(tuple(parts[:depth]), []).append(column)
+    out: list[HeaderNode] = []
+    for parts, cols in sorted(buckets.items(), key=lambda item: (item[1][0].index, len(item[0]))):
+        segment = parts[-1]
+        display_segment = f"#{segment}" if segment.isdigit() else segment
+        leaf = len(parts) == len(_path_parts(table_id, cols[0].stable_path))
+        if segment.isdigit():
+            kind = "slot"
+        elif leaf:
+            kind = "field"
+        elif any(len(p) > len(parts) and p[:len(parts)] == parts and p[len(parts)].isdigit() for p in buckets):
+            kind = "array"
+        else:
+            kind = "record"
+        prefix = parts[0]
+        path = table_id + "/" + prefix
+        for part in parts[1:]:
+            if part.isdigit():
+                path += f"[{part}]"
+            else:
+                path += "/" + part
+        child_keys = tuple("/".join(p) for p in buckets if len(p) == len(parts) + 1 and p[:len(parts)] == parts)
+        out.append(HeaderNode(path, display_segment, cols[0].field_annotation or cols[0].annotation, cols[0].comment, kind, len(parts), child_keys, int(segment) if segment.isdigit() else None, min(c.index for c in cols), max(c.index for c in cols)))
+    return tuple(out)
+
+
+def _path_parts(table_id: str, path: str) -> list[str]:
+    tail = path[len(table_id) + 1:]
+    parts: list[str] = []
+    for chunk in tail.split("/"):
+        if "[" in chunk:
+            name, _, rest = chunk.partition("[")
+            parts.extend((name, rest.split("]", 1)[0]))
+        else:
+            parts.append(chunk)
+    return parts

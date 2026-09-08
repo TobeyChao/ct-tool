@@ -161,12 +161,14 @@ export function promptRenameField(ctx, resource, oldName) {
 export function promptEnumValue(ctx, resource, values) {
   formDialog({
     title: "新增枚举值",
-    label: "枚举值",
+    label: "枚举值名称",
     placeholder: "如 Epic",
     submitLabel: "添加",
     validate: { check: (v) => v.length > 0, hint: "枚举值不能为空" },
     onSubmit: (value) => {
-      ctx.pushCommand({ type: "set_enum_values", payload: { name: resource.resourceId, values: [...values, value] } });
+      const items = values.map((v) => typeof v === "string" ? { name: v, comment: "" } : v);
+      const comment = window.prompt("枚举项注释（可留空）", "") ?? "";
+      ctx.pushCommand({ type: "set_enum_values", payload: { name: resource.resourceId, values: [...items, { name: value, comment }] } });
     },
   });
 }
@@ -230,7 +232,7 @@ export function openFieldTypeEditor(ctx, field, onApply) {
       </section><section class="ct-field-type-panel ct-input-panel"><div class="ct-field-type-heading"><span class="ct-field-type-kicker">Excel 输入形态</span><span class="ct-field-type-help">仅影响表格录入方式，不改变运行时类型</span></div><div class="ct-opt-row"><span class="ct-opt-label">vector</span><label class="ct-chip"><input type="checkbox" data-fe-vector ${vector ? "checked" : ""}><span>数组</span></label></div>
       <div class="ct-opt-row ct-shape-row" data-fe-shape hidden><span class="ct-opt-label">长度</span><div class="ct-seg">
         <label><input type="radio" name="fe-flavor" data-fe-var><span>变长</span></label>
-        <label><input type="radio" name="fe-flavor" data-fe-fix><span>定长</span></label></div><span class="ct-opt-sub ct-shape-detail" data-fe-cols hidden>固定列数 <button class="ct-stepper-btn" type="button" data-fe-cols-dec aria-label="减少列数">−</button><input class="ct-dlg-input ct-stepper-input" data-fe-cols-input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="${escapeHtml(field.excel_columns ?? 3)}"><button class="ct-stepper-btn" type="button" data-fe-cols-inc aria-label="增加列数">＋</button> 列</span><span class="ct-opt-sub ct-shape-detail" data-fe-note>变长 · 分隔符内置（,）</span></div>
+        <label><input type="radio" name="fe-flavor" data-fe-fix><span>定长</span></label></div><span class="ct-opt-sub ct-shape-detail" data-fe-cols hidden>最大槽位数 <button class="ct-stepper-btn" type="button" data-fe-cols-dec aria-label="减少槽位">−</button><input class="ct-dlg-input ct-stepper-input" data-fe-cols-input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="${escapeHtml(field.excel_columns ?? 3)}"><button class="ct-stepper-btn" type="button" data-fe-cols-inc aria-label="增加槽位">＋</button> 个</span><span class="ct-opt-sub ct-shape-detail" data-fe-note>变长 · 使用 [1,2,3] 文法（字符串使用 JSON 双引号）</span></div>
       <div class="ct-dlg-msg" data-fe-msg hidden></div></section></div>`,
     footer: `<button class="ct-btn ct-btn-ghost" data-cancel>取消</button><button class="ct-btn ct-btn-primary" data-fe-apply>应用</button>`,
   });

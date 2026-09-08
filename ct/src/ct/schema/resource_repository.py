@@ -102,6 +102,10 @@ def _reject_old_field_shape(data: dict[str, Any], path: Path) -> None:
                 f"加载 Schema 资源失败 [{path}]: 字段 {name} 使用旧格式；"
                 "请改为具名 Enum/Record 与 vector<T>，产品不会自动迁移或写回"
             )
+    if data.get("kind") == "enum" and any(isinstance(item, str) for item in data.get("values", [])):
+        raise ValueError(
+            f"加载 Schema 资源失败 [{path}]: Enum values 必须是 {{name, comment}} 结构，产品不会自动迁移"
+        )
 
 
 def _resolve_type(
@@ -143,22 +147,22 @@ def _resolve_fields(
             by_name,
             owner_path=f"{owner_id}/{field.name}",
         )
-        is_record_vector = (
-            isinstance(resolved_type, VectorType)
-            and isinstance(resolved_type.element, NamedType)
-            and resolved_type.element.expected_kind == "record"
-        )
-        if field.separator is not None and is_record_vector:
-            raise ValueError(
-                f"{owner_id}/{field.name}: separator 仅对单格 token 式 vector"
-                f"（vector<Scalar>/vector<Enum>）有意义，vector<Record> 按 "
-                f"excel_columns 展开为列组，不能声明 separator"
-            )
         if field.excel_columns is not None:
             if not isinstance(resolved_type, VectorType):
                 raise ValueError(
                     f"{owner_id}/{field.name}: excel_columns（展开组数）仅适用于"
                     f" vector<T>（定长展开列），当前类型 {field.type_text}"
+                )
+        if isinstance(resolved_type, VectorType):
+            if field.ref is not None:
+                raise ValueError(f"{owner_id}/{field.name}: ref 字段不能声明 vector")
+            if (
+                isinstance(resolved_type.element, NamedType)
+                and resolved_type.element.expected_kind == "record"
+                and field.excel_columns is None
+            ):
+                raise ValueError(
+                    f"{owner_id}/{field.name}: vector<Record> 必须配置 excel_columns 展开槽位"
                 )
         resolved.append(replace_field_type(field, resolved_type))
     return resolved

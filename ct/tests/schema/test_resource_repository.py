@@ -52,9 +52,9 @@ ENUM_RARITY = """\
 kind: enum
 name: ItemRarity
 values:
-  - Common
-  - Rare
-  - Epic
+  - name: Common
+  - name: Rare
+  - name: Epic
 """
 
 
@@ -143,7 +143,7 @@ def test_repository_write_and_reload_round_trip(tmp_path: Path) -> None:
         primary="Id",
         fields=[
             FieldDef(name="Id", type="int32"),
-            FieldDef(name="Rewards", type="vector<DropReward>"),
+            FieldDef(name="Rewards", type="vector<DropReward>", excel_columns=2),
         ],
     )
 

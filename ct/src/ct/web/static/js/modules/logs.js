@@ -16,12 +16,18 @@ function badgeClass(level) {
 export async function mount(container) {
   const state = _state;
   let timer = null;
+  let scrollReleaseTimer = null;
   if (state.mounted) return state;
   state.mounted = true;
   state.module = "all";
   state.level = "all";
   state.search = "";
   state.logs = [];
+  state.error = "";
+  state.loaded = false;
+  state.isScrolling = false;
+  state.pendingRender = false;
+  state.dirty = false;
 
   renderShell();
   bindControls();
@@ -69,7 +75,7 @@ export async function mount(container) {
       if (moduleButton) {
         state.module = moduleButton.dataset.module;
         renderFilters();
-        refreshLogs({ preserveScroll: false });
+        refreshLogs({ preserveScroll: false, forceRender: true });
       } else if (levelButton) {
         state.level = levelButton.dataset.level;
         renderFilters();
@@ -80,7 +86,7 @@ export async function mount(container) {
         state.search = "";
         container.querySelector("#log-search").value = "";
         renderFilters();
-        refreshLogs({ preserveScroll: false });
+        refreshLogs({ preserveScroll: false, forceRender: true });
       } else if (event.target.closest("#logs-go-export")) {
         location.hash = "#/export";
       } else if (event.target.closest("#logs-retry")) {
@@ -95,7 +101,21 @@ export async function mount(container) {
       }
     });
     container.addEventListener("scroll", (event) => {
-      if (event.target.matches?.(".ct-log-table-wrap")) updateLogJumpButton(event.target);
+      if (!event.target.matches?.(".ct-log-table-wrap")) return;
+      updateLogJumpButton(event.target);
+      // Polling must not replace the active scroll target while a wheel/touch
+      // gesture is still producing events. The old node would be detached and
+      // the browser then stops the gesture halfway through.
+      state.isScrolling = true;
+      window.clearTimeout(scrollReleaseTimer);
+      scrollReleaseTimer = window.setTimeout(() => {
+        state.isScrolling = false;
+        if (state.pendingRender) {
+          state.pendingRender = false;
+          state.dirty = false;
+          renderLogs();
+        }
+      }, 250);
     }, true);
     container.querySelector("#log-search").addEventListener("input", (event) => {
       state.search = event.target.value;
@@ -112,14 +132,42 @@ export async function mount(container) {
     });
   }
 
-  async function refreshLogs({ preserveScroll = true } = {}) {
+  async function refreshLogs({ preserveScroll = true, forceRender = false } = {}) {
+    const previousLogs = state.logs;
+    const previousError = state.error;
+    const wasLoaded = state.loaded;
     try {
-      state.logs = await api(`/api/logs?module=${encodeURIComponent(state.module)}`);
+      const nextLogs = await api(`/api/logs?module=${encodeURIComponent(state.module)}`);
+      state.logs = nextLogs;
       state.error = "";
     } catch (error) {
       state.error = error.message;
     }
+    state.loaded = true;
+
+    // Mark the data dirty first. The render path below is only entered when
+    // the poll actually changed something (or a filter explicitly requested
+    // a render), so an unchanged poll never touches the scroll container.
+    state.dirty = forceRender || !wasLoaded
+      || !logsEqual(previousLogs, state.logs)
+      || previousError !== state.error;
+    if (!state.dirty) return;
+    if (state.isScrolling) {
+      state.pendingRender = true;
+      return;
+    }
+    state.dirty = false;
     renderLogs({ preserveScroll });
+  }
+
+  function logsEqual(left, right) {
+    if (left === right) return true;
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) return false;
+    return left.every((row, index) => {
+      const other = right[index];
+      return other && row.time === other.time && row.module === other.module
+        && row.level === other.level && row.message === other.message;
+    });
   }
 
   function captureLogScroll() {

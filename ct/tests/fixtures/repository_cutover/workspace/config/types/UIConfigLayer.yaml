@@ -1,4 +1,12 @@
 kind: enum
 name: UIConfigLayer
-values: [Page, Modal, Panel, Overlay]
+values:
+  - name: Page
+    comment: 页面
+  - name: Modal
+    comment: 模态
+  - name: Panel
+    comment: 面板
+  - name: Overlay
+    comment: 覆盖层
 comment: "UI 层级"

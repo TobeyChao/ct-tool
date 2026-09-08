@@ -162,6 +162,27 @@ def test_logs_keep_reading_position_and_offer_jump_to_bottom(module_url: str, ch
     page.close()
 
 
+def test_logs_polling_does_not_replace_scroll_viewport_when_unchanged(module_url: str, chromium_browser: Any) -> None:
+    from ct.web.logs import log_buffer
+
+    for index in range(80):
+        log_buffer.add("系统", "INFO", f"stable-scroll-marker-{index}")
+    page = chromium_browser.new_page(viewport={"width": 1280, "height": 720})
+    page.goto(module_url, wait_until="load")
+    page.locator('.ct-sitem[data-module="logs"]').click()
+    viewport = page.locator("#page-logs .ct-log-table-wrap")
+    viewport.wait_for()
+    viewport.evaluate("node => node.scrollTop = Math.floor(node.scrollHeight / 2)")
+    before = viewport.evaluate("node => node.scrollTop")
+
+    page.wait_for_timeout(1_500)
+
+    after = viewport.evaluate("node => node.scrollTop")
+    assert abs(after - before) <= 2
+    assert viewport.evaluate("node => node.isConnected")
+    page.close()
+
+
 def test_logs_compact_rows_keep_field_labels(module_url: str, chromium_browser: Any) -> None:
     from ct.web.logs import log_buffer
 

@@ -34,7 +34,7 @@ def _panel_url(tmp_path_factory) -> Iterator[str]:
             }
         ],
         types=[
-            {"kind": "enum", "name": "ItemRarity", "values": ["Common", "Rare"]},
+            {"kind": "enum", "name": "ItemRarity", "values": [{"name": "Common"}, {"name": "Rare"}]},
             {
                 "kind": "record",
                 "name": "DropReward",

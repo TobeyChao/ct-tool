@@ -10,7 +10,7 @@ from ct.cache.fingerprints import schema_fingerprint
 from ct.excel.layout import Layout, build_layout
 from ct.excel.planning import PlanIssue, plan_excel_migration
 from ct.schema.indexes import QueryIndex
-from ct.schema.resources import RecordResource, SchemaResource, TableResource
+from ct.schema.resources import EnumResource, RecordResource, SchemaResource, TableResource
 
 
 @dataclass(frozen=True)
@@ -99,6 +99,13 @@ def build_change_plan(
         for resource_id in old_shared
         if new_shared.get(resource_id) != old_shared[resource_id]
     ]
+    for resource_id in sorted(set(old_shared) & set(new_shared)):
+        old_enum, new_enum = old_shared[resource_id], new_shared[resource_id]
+        if isinstance(old_enum, EnumResource) and isinstance(new_enum, EnumResource):
+            old_names = [item.name for item in old_enum.values]
+            new_names = [item.name for item in new_enum.values]
+            if old_names != new_names:
+                issues.append(PlanIssue(kind="warning", message=f"Enum {old_enum.name} ordinal 变化：旧 {old_names} → 新 {new_names}", field_path=resource_id))
 
     all_tables = set(old_tables) | set(new_tables)
     for table in sorted(all_tables):

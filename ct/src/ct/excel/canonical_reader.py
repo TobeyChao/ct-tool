@@ -13,13 +13,15 @@ Parse errors carry the Excel row, column and canonical field path.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import json
+import re
 from pathlib import Path
 from typing import Any
 
 from openpyxl import load_workbook
 
 from ct.excel.layout import Column, Layout
-from ct.schema.resources import TableResource
+from ct.schema.resources import EnumResource, RecordResource, TableResource
 from ct.schema.type_expression import NamedType, ScalarType, VectorType
 from ct.diagnostics.errors import IssueCode, ValidationIssue
 
@@ -56,6 +58,84 @@ def _coerce_scalar(type_text: str, raw: Any) -> tuple[Any, bool]:
     return str(raw), True
 
 
+def parse_vector_cell(text: str, element_text: str) -> tuple[list[Any], str | None]:
+    """Parse the canonical bracketed vector grammar and return a diagnostic."""
+    source = text.strip()
+    if source in {"", "[]", "[ ]"}:
+        return [], None
+    if not (source.startswith("[") and source.endswith("]")):
+        return [], "变长 vector 必须使用 [...] 格式"
+    body = source[1:-1]
+    tokens: list[str] = []
+    i = 0
+    while i < len(body):
+        while i < len(body) and body[i].isspace():
+            i += 1
+        if i >= len(body):
+            break
+        start = i
+        if body[i] == '"':
+            i += 1
+            escaped = False
+            while i < len(body):
+                ch = body[i]
+                i += 1
+                if escaped:
+                    escaped = False
+                elif ch == "\\":
+                    escaped = True
+                elif ch == '"':
+                    break
+            else:
+                return [], f"字符串从位置 {start + 2} 开始未闭合"
+            token = body[start:i]
+            try:
+                json.loads(token)
+            except json.JSONDecodeError:
+                return [], f"位置 {start + 2} 的字符串转义无效"
+        else:
+            while i < len(body) and body[i] != ",":
+                i += 1
+            token = body[start:i].strip()
+        if not token:
+            return [], f"位置 {start + 2} 存在空元素或尾逗号"
+        tokens.append(token)
+        while i < len(body) and body[i].isspace():
+            i += 1
+        if i < len(body):
+            if body[i] != ",":
+                return [], f"位置 {i + 2} 缺少逗号"
+            i += 1
+            if i >= len(body) or not body[i:].strip():
+                return [], f"位置 {i + 2} 存在尾逗号"
+    values: list[Any] = []
+    for index, token in enumerate(tokens, start=1):
+        if element_text == "string":
+            if not (token.startswith('"') and token.endswith('"')):
+                return [], f"第{index}个元素 string 必须使用 JSON 双引号"
+            values.append(json.loads(token))
+            continue
+        if element_text == "bool":
+            if token not in {"true", "false"}:
+                return [], f"第{index}个元素 bool 必须是 true 或 false"
+            values.append(token == "true")
+            continue
+        if element_text in {"int32", "int64"}:
+            if not re.fullmatch(r"[+-]?\d+", token):
+                return [], f"第{index}个元素期望 {element_text} 类型"
+            values.append(int(token))
+            continue
+        if element_text in {"float", "double"}:
+            if not re.fullmatch(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", token):
+                return [], f"第{index}个元素期望 {element_text} 类型"
+            values.append(float(token))
+            continue
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", token):
+            return [], f"第{index}个元素 Enum 标识符无效"
+        values.append(token)
+    return values, None
+
+
 @dataclass(frozen=True)
 class CanonicalParsedRows:
     rows: list[dict[str, Any]]
@@ -84,20 +164,18 @@ class _RowReader:
         table: TableResource,
         *,
         records: dict[str, object],
+        enums: dict[str, EnumResource] | None = None,
         excel_row: int,
         row_index: int,
     ) -> None:
         self.layout = layout
         self.table = table
         self.records = records
+        self.enums = enums or {}
         self.excel_row = excel_row
         self.row_index = row_index
         self.issues: list[ValidationIssue] = []
         self.value_by_path: dict[str, Any] = {}
-        self.separators = {
-            f"{self.table.resource_id}/{field.name}": field.separator or ","
-            for field in self.table.fields
-        }
 
     def read(self, cells: tuple[Any, ...]) -> dict[str, Any] | None:
         if all(
@@ -144,14 +222,17 @@ class _RowReader:
         ) and self._is_record(type_expr.element) and (field.excel_columns or 0) > 0:
             groups: list[dict[str, Any]] = []
             group_count = field.excel_columns or 0
+            last_filled = 0
             for group in range(1, group_count + 1):
                 element = self._read_record_group(type_expr.element, top, group)
-                if element is None:
-                    break  # groups are contiguous; first empty group ends the list
-                groups.append(element)
+                if element is not None:
+                    last_filled = group
+            for group in range(1, last_filled + 1):
+                groups.append(self._read_record_group(type_expr.element, top, group) or self._default(type_expr.element))
             return groups
         if isinstance(type_expr, VectorType) and (field.excel_columns or 0) > 0:
             values: list[Any] = []
+            last_filled = 0
             for group in range(1, field.excel_columns + 1):
                 path = f"{top}[{group}]"
                 column = next(
@@ -159,9 +240,13 @@ class _RowReader:
                     if column.stable_path == path
                 )
                 raw = self.value_by_path.get(path)
-                if raw is None or (isinstance(raw, str) and not raw.strip()):
-                    break  # fixed groups are contiguous, like vector<Record>
-                values.append(self._coerce(column, raw))
+                if raw is not None and not (isinstance(raw, str) and not raw.strip()):
+                    last_filled = group
+            for group in range(1, last_filled + 1):
+                path = f"{top}[{group}]"
+                column = next(column for column in self.layout.columns if column.stable_path == path)
+                raw = self.value_by_path.get(path)
+                values.append(self._default(type_expr.element) if raw is None or (isinstance(raw, str) and not raw.strip()) else self._coerce(column, raw))
             return values
         if isinstance(type_expr, VectorType):
             column = next(
@@ -193,11 +278,27 @@ class _RowReader:
         ]
 
     def _read_record(self, named: NamedType, top: str) -> dict[str, Any]:
+        record = self.records.get(named.name)
+        if not isinstance(record, RecordResource):
+            return {}
+        return self._read_record_fields(record, top, group=None)
+
+    def _read_record_fields(self, record: RecordResource, top: str, group: int | None) -> dict[str, Any]:
         result: dict[str, Any] = {}
-        for column in self._record_leaf_columns(top, group=None):
-            tail = _leaf_path_after_table(self.layout.table_id, column.stable_path)
-            leaf = tail[-1]
-            result[leaf] = self._coerce(column, self.value_by_path.get(column.stable_path))
+        for field in record.fields:
+            path = f"{top}/{field.name}"
+            typ = field.type_expr
+            if isinstance(typ, NamedType) and self._is_record(typ):
+                result[field.name] = self._read_record_fields(self.records[typ.name], path, group)
+                continue
+            if isinstance(typ, VectorType):
+                continue
+            column = next((c for c in self.layout.columns if c.stable_path == path and (group is None or c.group_index == group)), None)
+            if column is not None:
+                raw = self.value_by_path.get(path)
+                result[field.name] = self._default(typ) if raw is None or (isinstance(raw, str) and not raw.strip()) else self._coerce(column, raw)
+            else:
+                result[field.name] = self._default(typ)
         return result
 
     def _read_record_group(self, named: NamedType, top: str, group: int) -> dict[str, Any] | None:
@@ -210,41 +311,51 @@ class _RowReader:
             return None
         if all(
             self.value_by_path.get(column.stable_path) is None
+            or (isinstance(self.value_by_path.get(column.stable_path), str) and not self.value_by_path.get(column.stable_path).strip())
             for column in columns
         ):
             return None  # fully-empty group
-        result: dict[str, Any] = {}
-        for column in columns:
-            tail = _leaf_path_after_table(self.layout.table_id, column.stable_path)
-            leaf = tail[-1]
-            result[leaf] = self._coerce(column, self.value_by_path.get(column.stable_path))
-        return result
+        record = None
+        # Resolve the element type from the top-level field path supplied by the caller.
+        for field in self.table.fields:
+            if f"{self.table.resource_id}/{field.name}" == top:
+                record = self.records.get(field.type_expr.element.name) if isinstance(field.type_expr, VectorType) and isinstance(field.type_expr.element, NamedType) else None
+                break
+        if not isinstance(record, RecordResource):
+            return None
+        return self._read_record_fields(record, f"{top}[{group}]", group)
+
+    def _default(self, typ):
+        if isinstance(typ, ScalarType):
+            return {"int32": 0, "int64": 0, "float": 0.0, "double": 0.0, "bool": False, "string": ""}[typ.name]
+        if isinstance(typ, VectorType):
+            return []
+        if isinstance(typ, NamedType):
+            if typ.expected_kind == "enum":
+                enum = self.enums.get(typ.name)
+                return enum.values[0].name if enum else ""
+            record = self.records.get(typ.name)
+            return self._read_record_fields(record, "", None) if isinstance(record, RecordResource) else {}
+        return None
 
     def _split_vector(self, vector: VectorType, column: Column, raw: Any) -> list[Any]:
         if raw is None or (isinstance(raw, str) and not raw.strip()):
             return []
-        separator = self.separators.get(column.stable_path, ",")
         element_text = self._vector_element_text(vector)
-        elements: list[Any] = []
-        for token in str(raw).split(separator):
-            token = token.strip()
-            if not token:
-                continue
-            value, ok = _coerce_scalar(element_text, token)
-            if not ok:
-                self.issues.append(
-                    ValidationIssue(
-                        table=self.table.table,
-                        code=IssueCode.TYPE,
-                        message=f"第{len(elements) + 1}个元素期望 {element_text} 类型",
-                        row_index=self.row_index,
-                        excel_row=self.excel_row,
-                        column=column.index - 1,
-                        field=column.stable_path,
-                        value=token,
-                    )
+        elements, error = parse_vector_cell(str(raw), element_text)
+        if error:
+            self.issues.append(
+                ValidationIssue(
+                    table=self.table.table,
+                    code=IssueCode.TYPE,
+                    message=error,
+                    row_index=self.row_index,
+                    excel_row=self.excel_row,
+                    column=column.index - 1,
+                    field=column.stable_path,
+                    value=raw,
                 )
-            elements.append(value)
+            )
         return elements
 
     def _vector_element_text(self, vector: VectorType) -> str:
@@ -259,6 +370,7 @@ def read_canonical_excel(
     table: TableResource,
     *,
     records: dict[str, object] | None = None,
+    enums: dict[str, EnumResource] | None = None,
 ) -> CanonicalParsedRows:
     """Read Excel rows against a canonical layout; returns canonical values."""
     wb = load_workbook(str(excel_path), read_only=True, data_only=True)
@@ -276,6 +388,7 @@ def read_canonical_excel(
                 layout,
                 table,
                 records=records,
+                enums=enums,
                 excel_row=row_index,
                 row_index=len(rows) + 1,
             )

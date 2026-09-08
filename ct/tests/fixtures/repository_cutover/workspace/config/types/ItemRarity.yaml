@@ -1,4 +1,10 @@
 kind: enum
 name: ItemRarity
-values: [common, rare, epic]
+values:
+  - name: common
+    comment: 普通
+  - name: rare
+    comment: 稀有
+  - name: epic
+    comment: 史诗
 comment: "稀有度"

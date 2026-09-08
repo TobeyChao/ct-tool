@@ -1,0 +1,12 @@
+kind: enum
+name: ShowcaseRarity
+comment: 复杂示例的稀有度枚举
+values:
+  - name: Common
+    comment: 普通品质，适合基础掉落
+  - name: Rare
+    comment: 稀有品质，出现概率较低
+  - name: Epic
+    comment: 史诗品质，通常拥有额外效果
+  - name: Legendary
+    comment: 传说品质，仅用于高价值奖励

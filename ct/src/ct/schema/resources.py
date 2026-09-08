@@ -46,8 +46,16 @@ class FieldDef(BaseModel):
     ref: str | None = None
     server_only: bool = False
     comment: str = ""
-    separator: str | None = None
     excel_columns: int | None = Field(default=None, ge=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_removed_separator(cls, value: object) -> object:
+        if isinstance(value, dict) and "separator" in value:
+            raise ValueError(
+                "字段 separator 已移除；vector 必须使用内置 [...] 英文逗号文法"
+            )
+        return value
 
     @field_validator("type_expr", mode="before")
     @classmethod
@@ -67,18 +75,6 @@ class FieldDef(BaseModel):
             isinstance(self.type_expr, ScalarType) and self.type_expr.name == "string"
         ):
             raise ValueError(f"字段 {self.name}: 只有 string 类型可以标记 i18n")
-        if self.separator is not None:
-            if not self.separator:
-                raise ValueError(f"字段 {self.name}: separator 不能为空")
-            if not isinstance(self.type_expr, VectorType):
-                raise ValueError(
-                    f"字段 {self.name}: separator 仅允许配 vector<Scalar>/vector<Enum>"
-                    f"（当前类型 {self.type_text}）"
-                )
-            if isinstance(self.type_expr.element, NamedType) and self.type_expr.element.expected_kind == "record":
-                raise ValueError(
-                    f"字段 {self.name}: vector<Record> 按展开列组读取，不能声明 separator"
-                )
         if self.excel_columns is not None and not isinstance(
             self.type_expr, VectorType
         ):
@@ -206,8 +202,21 @@ class EnumResource(BaseModel):
 
     kind: Literal["enum"] = "enum"
     name: str
-    values: list[str]
+    values: list["EnumItem"]
     comment: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_items(cls, value: object) -> object:
+        if isinstance(value, dict) and isinstance(value.get("values"), list):
+            # Keep Python-level construction ergonomic; repository loading
+            # rejects this legacy YAML shape before model validation.
+            value = dict(value)
+            value["values"] = [
+                {"name": item, "comment": ""} if isinstance(item, str) else item
+                for item in value["values"]
+            ]
+        return value
 
     @model_validator(mode="after")
     def _validate_enum(self) -> EnumResource:
@@ -217,12 +226,10 @@ class EnumResource(BaseModel):
         if len(self.values) > 256:
             raise ValueError(f"Enum {self.name}: byte wire type 最多支持 256 个值")
         seen: set[str] = set()
-        for value in self.values:
-            if not value or not value.isidentifier():
-                raise ValueError(f"Enum {self.name}: '{value}' 不是合法标识符")
-            if value in seen:
-                raise ValueError(f"Enum {self.name}: 值 '{value}' 重复")
-            seen.add(value)
+        for item in self.values:
+            if item.name in seen:
+                raise ValueError(f"Enum {self.name}: 值 '{item.name}' 重复")
+            seen.add(item.name)
         return self
 
     @property
@@ -232,6 +239,21 @@ class EnumResource(BaseModel):
     @property
     def wire_type(self) -> Literal["byte"]:
         return "byte"
+
+
+class EnumItem(BaseModel):
+    """Ordered, documented Enum item; list position is its wire ordinal."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    name: str
+    comment: str = ""
+
+    @model_validator(mode="after")
+    def _validate_item(self) -> "EnumItem":
+        if not self.name or not self.name.isidentifier():
+            raise ValueError(f"'{self.name}' 不是合法标识符")
+        return self
 
 
 NamedResource: TypeAlias = Annotated[
@@ -265,3 +287,32 @@ def named_references(type_expr: TypeExpression) -> tuple[NamedType, ...]:
     if isinstance(type_expr, VectorType):
         return named_references(type_expr.element)
     return ()
+
+
+def canonical_default(
+    type_expr: TypeExpression,
+    *,
+    records: dict[str, RecordResource] | None = None,
+    enums: dict[str, EnumResource] | None = None,
+) -> Any:
+    """Return the canonical runtime default for a resolved type expression."""
+    records = records or {}
+    enums = enums or {}
+    if isinstance(type_expr, ScalarType):
+        return {"int32": 0, "int64": 0, "float": 0.0, "double": 0.0, "bool": False, "string": ""}[type_expr.name]
+    if isinstance(type_expr, VectorType):
+        return []
+    if isinstance(type_expr, NamedType):
+        if type_expr.expected_kind == "enum":
+            enum = enums.get(type_expr.name)
+            if enum is None:
+                raise ValueError(f"缺少 Enum 定义: {type_expr.name}")
+            return enum.values[0].name
+        record = records.get(type_expr.name)
+        if record is None:
+            raise ValueError(f"缺少 Record 定义: {type_expr.name}")
+        return {
+            field.name: canonical_default(field.type_expr, records=records, enums=enums)
+            for field in record.fields
+        }
+    raise TypeError(f"不支持的类型: {type_expr!r}")

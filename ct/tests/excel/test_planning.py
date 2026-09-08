@@ -94,7 +94,7 @@ def test_migrate_rows_uses_new_header_row_count(tmp_path: Path) -> None:
     old_layout = _layout(old_table, {})
     new_layout = _layout(new_table, records)
     assert old_layout.header_rows == 2
-    assert new_layout.header_rows == 3
+    assert new_layout.header_rows == 4
     old_path = tmp_path / "old.xlsx"
     new_path = tmp_path / "new.xlsx"
     generate_canonical_template(old_layout, old_path, enums={}, primary="Id")

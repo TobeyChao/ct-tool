@@ -26,7 +26,7 @@ def test_flat_table_layout() -> None:
         [
             FieldDef(name="Id", type="int32"),
             FieldDef(name="Rarity", type="ItemRarity"),
-            FieldDef(name="Tags", type="vector<int32>", separator=","),
+            FieldDef(name="Tags", type="vector<int32>"),
         ]
     )
     layout = build_layout(
@@ -67,7 +67,7 @@ def test_record_field_expands_to_multiple_columns() -> None:
         "table:Item/DropRange/Max",
     ]
     # field + record leaf + comment row
-    assert layout.header_rows == 3
+    assert layout.header_rows == 4
 
 
 def test_expanded_vector_record_groups() -> None:
@@ -90,7 +90,7 @@ def test_expanded_vector_record_groups() -> None:
     assert layout.columns[3].stable_path == "table:Item/Rewards[2]/ItemId"
     assert layout.columns[3].group_index == 2
     # field + group + record leaf + comment row
-    assert layout.header_rows == 4
+    assert layout.header_rows == 6
 
 
 def test_expanded_scalar_vector_groups() -> None:
@@ -106,6 +106,7 @@ def test_expanded_scalar_vector_groups() -> None:
         "table:Item/Tags[3]",
     ]
     assert [column.group_index for column in layout.columns[1:]] == [1, 2, 3]
+    assert layout.header_rows == 4
 
 
 def test_single_cell_vector_record_has_no_groups() -> None:
@@ -166,4 +167,4 @@ def test_manifest_missing_and_corruption(tmp_path: Path) -> None:
 
     path.write_text('{"format":"template-layout/1","columns":[]}', encoding="utf-8")
     manifest = load_manifest(cache, "Item")
-    assert manifest is not None and manifest.columns == ()
+    assert manifest is None

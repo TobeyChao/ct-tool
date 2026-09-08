@@ -55,7 +55,7 @@ def types_fbs_text(
         resource = resources[resource_id]
         if isinstance(resource, EnumResource):
             entries = ", ".join(
-                f"{value} = {index}" for index, value in enumerate(resource.values)
+                f"{item.name} = {index}" for index, item in enumerate(resource.values)
             )
             lines.append(f"enum {resource.name} : byte {{ {entries} }}")
             lines.append("")

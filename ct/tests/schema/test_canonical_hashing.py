@@ -36,7 +36,7 @@ def test_canonical_hash_changes_for_type_and_excel_layout_inputs() -> None:
         primary="Id",
         fields=[
             FieldDef(name="Id", type="int32"),
-            FieldDef(name="Rewards", type="vector<DropReward>", separator=","),
+                FieldDef(name="Rewards", type="vector<DropReward>"),
         ],
     )
     expanded = single_cell.model_copy(

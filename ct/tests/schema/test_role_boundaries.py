@@ -63,7 +63,7 @@ def test_i18n_requires_string_type() -> None:
 
 
 def test_separator_on_scalar_field_rejected() -> None:
-    with pytest.raises(ValueError, match="separator.*vector"):
+    with pytest.raises(ValueError, match="separator.*移除"):
         FieldDef(name="Price", type="int32", separator=",")
 
 
@@ -85,7 +85,7 @@ def test_separator_on_vector_record_rejected_with_owner_path(tmp_path: Path) -> 
         encoding="utf-8",
     )
     repository = YamlResourceRepository(schemas, types)
-    with pytest.raises(ValueError, match=r"Item/Rewards.*separator"):
+    with pytest.raises(ValueError, match=r"separator.*移除"):
         repository.load()
 
 
@@ -105,8 +105,8 @@ def test_non_vector_rejects_excel_columns() -> None:
         FieldDef(name="Price", type="int32", excel_columns=3)
 
 
-def test_record_vector_without_excel_columns_is_valid(tmp_path: Path) -> None:
-    """vector<Record> 在 canonical 模型里合法；excel_columns 是 Excel 录入层配置。"""
+def test_record_vector_without_excel_columns_is_rejected(tmp_path: Path) -> None:
+    """vector<Record> 必须配置展开槽位。"""
     schemas = tmp_path / "config/schemas"
     types = tmp_path / "config/types"
     schemas.mkdir(parents=True)
@@ -124,8 +124,8 @@ def test_record_vector_without_excel_columns_is_valid(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     repository = YamlResourceRepository(schemas, types)
-    workspace = repository.load()
-    assert len(workspace.tables) == 1
+    with pytest.raises(ValueError, match="必须配置 excel_columns"):
+        repository.load()
 
 
 def test_scalar_vector_accepts_excel_columns(tmp_path: Path) -> None:

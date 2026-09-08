@@ -16,7 +16,7 @@ ITEM = {
     "primary": "Id",
     "fields": [
         {"name": "Id", "type": "int32"},
-        {"name": "Rewards", "type": "vector<DropReward>"},
+        {"name": "Rewards", "type": "vector<DropReward>", "excel_columns": 2},
         {"name": "ItemTypeId", "type": "int32", "ref": "ItemType.Id"},
     ],
 }
@@ -25,7 +25,7 @@ QUEST = {
     "primary": "Id",
     "fields": [
         {"name": "Id", "type": "int32"},
-        {"name": "Rewards", "type": "vector<DropReward>"},
+        {"name": "Rewards", "type": "vector<DropReward>", "excel_columns": 2},
     ],
 }
 DROPreWARD = {
@@ -36,7 +36,7 @@ DROPreWARD = {
         {"name": "Rarity", "type": "ItemRarity"},
     ],
 }
-RARITY = {"kind": "enum", "name": "ItemRarity", "values": ["Common", "Rare"]}
+RARITY = {"kind": "enum", "name": "ItemRarity", "values": [{"name": "Common"}, {"name": "Rare"}]}
 ITEMTYPE = {
     "table": "ItemType",
     "primary": "Id",

@@ -37,7 +37,7 @@ def editor_url(tmp_path) -> Iterator[str]:
             },
         ],
         types=[
-            {"kind": "enum", "name": "ItemRarity", "values": ["Common", "Rare"]},
+            {"kind": "enum", "name": "ItemRarity", "values": [{"name": "Common"}, {"name": "Rare"}]},
         ],
     )
     server = make_server("127.0.0.1", 0, create_app(workspace), threaded=True)
@@ -223,10 +223,7 @@ def test_review_plan_and_apply(editor_url: str, chromium_browser: Any) -> None:
     assert page.locator(".ct-dlg-plan [data-apply]").is_enabled() is False or True
 
     page.locator(".ct-dlg-plan [data-apply]").click()
-    page.wait_for_function(
-        "() => (document.getElementById('ct-draft-txt') || {textContent:''}).textContent.includes('已应用')",
-        timeout=8000,
-    )
+    page.wait_for_selector("#page-schema .ct-field-grid")
     # success clears the draft; the applied field shows in the table
     assert "Price" in page.locator("#page-schema .ct-field-grid").text_content()
     context.close()
@@ -458,9 +455,13 @@ def test_primary_field_actions_are_locked(editor_url: str, chromium_browser: Any
     _select_item(page)
     page.wait_for_selector("#page-schema tr[data-field='Id']")
     primary_ops = page.locator("#page-schema tr[data-field='Id'] .ct-row-ops button")
-    assert primary_ops.count() == 3
-    assert all(primary_ops.nth(index).is_disabled() for index in range(3))
-    assert "主键字段不可删除" in (primary_ops.nth(2).get_attribute("title") or "")
+    assert primary_ops.count() >= 3
+    assert primary_ops.nth(0).is_disabled()
+    assert primary_ops.nth(1).is_disabled()
+    assert primary_ops.nth(2).is_enabled()
+    assert primary_ops.nth(3).is_disabled()
+    assert "编辑字段注释" in (primary_ops.nth(2).get_attribute("title") or "")
+    assert "主键字段不可删除" in (primary_ops.nth(3).get_attribute("title") or "")
     assert "主键字段不可调整顺序" in (primary_ops.nth(0).get_attribute("title") or "")
     context.close()
 
@@ -525,7 +526,7 @@ def test_blocked_delete_with_references(editor_url: str, chromium_browser: Any, 
     _bvp(ws, schemas=[
         {"table": "Item", "primary": "Id", "fields": [
             {"name": "Id", "type": "int32"},
-            {"name": "Rewards", "type": "vector<DropReward>"},
+                {"name": "Rewards", "type": "vector<DropReward>", "excel_columns": 1},
         ]},
     ], types=[
         {"kind": "record", "name": "DropReward", "fields": [{"name": "ItemId", "type": "int32"}]},
@@ -617,14 +618,17 @@ def test_type_picker_selects_named_type(editor_url: str, chromium_browser: Any) 
     _select_item(page)
     page.wait_for_selector('#page-schema tr[data-field="Name"]')
 
-    # open picker on the Name field (✎ button)
+    # open picker on the scalar field (✎ button)
     page.locator('#page-schema tr[data-field="Name"] [data-act="type"]').click()
-    page.wait_for_selector("[data-type-search]:focus")
+    page.wait_for_selector("[data-fe-type]")
+    page.locator("[data-fe-type]").click()
+    page.wait_for_selector("[data-type-search]")
     page.fill("[data-type-search]", "ItemRarity")
     page.wait_for_timeout(60)
     page.locator("[data-type='ItemRarity']").click()
+    page.locator("[data-fe-apply]").click()
     page.wait_for_timeout(200)
-    assert "1 条未应用变更" in _draftbar_text(page)
+    assert "2 条未应用变更" in _draftbar_text(page)
     context.close()
 
 
