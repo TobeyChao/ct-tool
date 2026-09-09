@@ -612,9 +612,15 @@ export async function mount(container) {
       return;
     }
     const refs = state.reverseRefs[resource.resourceId] || [];
+    // Record 字段没有角色/约束语义（i18n / server_only / ref / Code 均为表级概念），
+    // 隐藏该列与字段名旁的标记，避免空列误导；Table 保持完整列。
+    const isRecord = kind === "record";
+    const roleHeader = isRecord ? "" : "<th>角色与约束</th>";
+    const roleMark = (f) => isRecord ? "" : `<span class="ct-field-role">${f.i18n ? "🌐" : ""}${f.server_only ? "🖥" : ""}${f.ref ? "🔗" : ""}</span>`;
+    const roleTd = (f) => isRecord ? "" : `<td><span class="ct-role-list">${f.name === resource.primary ? '<span class="ct-badge ct-badge-warn">PRIMARY</span>' : ""}${f.i18n ? '<span class="ct-badge ct-badge-mute">I18N</span>' : ""}${f.server_only ? '<span class="ct-badge ct-badge-mute">SERVER</span>' : ""}${f.ref ? `<button class="ct-type-link" data-navigate-type="${escapeHtml(f.ref.split(".")[0])}" title="打开 ${escapeHtml(f.ref.split(".")[0])}">REF ${escapeHtml(f.ref)}</button>` : ""}</span></td>`;
     editorBody.innerHTML = `${warning}<section class="ct-editor-section">
       <div class="ct-section-heading"><div><h2>字段结构</h2><p>类型和字段注释可直接在字段操作中编辑。</p></div></div>
-      <div class="ct-field-table"><table class="ct-data ct-field-grid"><thead><tr><th>字段</th><th>类型表达式</th><th>Excel</th><th>角色与约束</th><th aria-label="操作"></th></tr></thead>
+      <div class="ct-field-table"><table class="ct-data ct-field-grid"><thead><tr><th>字段</th><th>类型表达式</th><th>Excel</th>${roleHeader}<th aria-label="操作"></th></tr></thead>
       <tbody>${resource.fields.map((f, index) => {
         const rawType = f.type || f.type_expr || "?";
         const typeExpr = typeof rawType === "string" ? rawType : JSON.stringify(rawType);
@@ -622,10 +628,10 @@ export async function mount(container) {
         const isPrimary = f.name === resource.primary;
         return `<tr class="${selected ? "ct-row-selected" : ""}" data-field="${escapeHtml(f.name)}">
           <td><button class="ct-inline-btn" data-act="rename" title="改名">${escapeHtml(f.name)}</button>
-              <span class="ct-field-role">${f.i18n ? "🌐" : ""}${f.server_only ? "🖥" : ""}${f.ref ? "🔗" : ""}</span></td>
+              ${roleMark(f)}</td>
           <td>${renderTypeExpression(typeExpr)}</td>
           <td class="ct-mono">${f.excel_columns ? `expanded × ${f.excel_columns}` : "1 column"}</td>
-          <td><span class="ct-role-list">${f.name === resource.primary ? '<span class="ct-badge ct-badge-warn">PRIMARY</span>' : ""}${f.i18n ? '<span class="ct-badge ct-badge-mute">I18N</span>' : ""}${f.server_only ? '<span class="ct-badge ct-badge-mute">SERVER</span>' : ""}${f.ref ? `<button class="ct-type-link" data-navigate-type="${escapeHtml(f.ref.split(".")[0])}" title="打开 ${escapeHtml(f.ref.split(".")[0])}">REF ${escapeHtml(f.ref)}</button>` : ""}</span></td>
+          ${roleTd(f)}
           <td class="ct-row-ops">
             <button class="ct-inline-btn" data-act="up" ${isPrimary || index === 0 ? "disabled" : ""} title="${isPrimary ? "主键字段不可调整顺序" : "上移"}">↑</button>
             <button class="ct-inline-btn" data-act="down" ${isPrimary || index === resource.fields.length - 1 ? "disabled" : ""} title="${isPrimary ? "主键字段不可调整顺序" : "下移"}">↓</button>

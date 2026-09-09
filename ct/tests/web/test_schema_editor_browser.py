@@ -566,6 +566,61 @@ def test_blocked_delete_with_references(editor_url: str, chromium_browser: Any, 
         server.shutdown()
 
 
+def test_record_editor_hides_table_only_field_options(
+    editor_url: str, chromium_browser: Any, tmp_path: Path
+) -> None:
+    """Record 字段表不展示「角色与约束」列；Record 添加字段弹窗隐藏
+    角色行、禁用 I18N/Server-only/Code，仅保留 vector。"""
+    import threading as _t
+    from werkzeug.serving import make_server as _ms
+    from web_helpers import build_project as _bvp
+
+    ws = tmp_path / "recordws"
+    _bvp(ws, schemas=[
+        {"table": "Item", "primary": "Id", "fields": [
+            {"name": "Id", "type": "int32"},
+            {"name": "Name", "type": "string"},
+            {"name": "Rewards", "type": "vector<DropReward>", "excel_columns": 1},
+        ]},
+    ], types=[
+        {"kind": "record", "name": "DropReward", "fields": [{"name": "ItemId", "type": "int32"}]},
+    ])
+    server = _ms("127.0.0.1", 0, create_app(ws), threaded=True)
+    _t.Thread(target=server.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{server.server_port}/static/index.html"
+    try:
+        context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
+        page = context.new_page()
+        page.goto(url, wait_until="load")
+        _open_schema_module(page, url)
+
+        # Table 字段表：保留「角色与约束」列
+        _select_item(page)
+        table_headers = page.locator("#page-schema table.ct-field-grid thead th").all_text_contents()
+        assert "角色与约束" in table_headers
+
+        # Record 字段表：无「角色与约束」列
+        page.wait_for_selector('#page-schema [data-navigate-type="DropReward"]')
+        page.locator('#page-schema [data-navigate-type="DropReward"]').click()
+        page.wait_for_function("() => document.querySelector('#editor-title').textContent === 'DropReward'")
+        record_headers = page.locator("#page-schema table.ct-field-grid thead th").all_text_contents()
+        assert "角色与约束" not in record_headers
+        assert record_headers == ["字段", "类型表达式", "Excel", ""]
+
+        # Record 添加字段弹窗：角色行隐藏、Code 禁用、vector 可用
+        page.locator("#page-schema #add-field").click()
+        page.wait_for_selector(".ct-dialog-mask.open")
+        assert page.locator("[data-af-role-row]").is_hidden()
+        assert page.locator('[data-af-role-row] input[name="af-role"][value="i18n"]').is_disabled()
+        assert page.locator('[data-af-role-row] input[name="af-role"][value="server"]').is_disabled()
+        assert page.locator("[data-af-code]").is_disabled()
+        assert page.locator("[data-af-vec]").is_enabled()
+        page.locator(".ct-dialog-mask.open [data-cancel]").click()
+        context.close()
+    finally:
+        server.shutdown()
+
+
 def test_quick_open_keyboard_navigation(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()

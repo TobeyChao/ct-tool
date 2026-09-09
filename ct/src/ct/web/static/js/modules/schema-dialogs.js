@@ -308,6 +308,7 @@ export function openAddField(ctx, resource) {
   let typeSel = "int32";
   let fixedVector = false;
   const hasCode = (resource.fields || []).some((f) => f.name === "Code");
+  const isRecord = resource.kind === "record";
   const isRefText = (t) => Boolean(t) && t.includes(".") && !t.startsWith("vector");
   const isRecordText = (t) => {
     const r = (ctx.state.resources || []).find((x) => x.name === t);
@@ -328,16 +329,16 @@ export function openAddField(ctx, resource) {
         <button class="ct-type-trigger" type="button" data-af-type><span class="ct-mono" data-af-type-txt>int32</span><span class="ct-caret">▾</span></button>
       </div>
       <div class="ct-opt-group">
-        <div class="ct-opt-row"><span class="ct-opt-label">角色</span>
+        <div class="ct-opt-row" data-af-role-row ${isRecord ? "hidden" : ""}><span class="ct-opt-label">角色</span>
           <div class="ct-opt-chips">
             <label class="ct-chip"><input type="radio" name="af-role" value="" checked><span>无</span></label>
-            <label class="ct-chip"><input type="radio" name="af-role" value="i18n"><span>I18N</span></label>
-            <label class="ct-chip"><input type="radio" name="af-role" value="server"><span>Server-only</span></label>
+            <label class="ct-chip"><input type="radio" name="af-role" value="i18n" ${isRecord ? "disabled" : ""}><span>I18N</span></label>
+            <label class="ct-chip"><input type="radio" name="af-role" value="server" ${isRecord ? "disabled" : ""}><span>Server-only</span></label>
           </div>
         </div>
         <div class="ct-opt-row"><span class="ct-opt-label">约束</span>
           <div class="ct-opt-chips">
-            <label class="ct-chip"><input type="checkbox" data-af-code ${hasCode ? "disabled" : ""}><span>代号（Code）</span></label>
+            <label class="ct-chip"><input type="checkbox" data-af-code ${hasCode || isRecord ? "disabled" : ""}><span>代号（Code）</span></label>
             <label class="ct-chip"><input type="checkbox" data-af-vec><span>vector</span></label>
           </div>
         </div>
@@ -347,6 +348,7 @@ export function openAddField(ctx, resource) {
             <label><input type="radio" name="af-flavor" data-af-flavor-fix><span>定长</span></label>
           </div>
         </div>
+        ${isRecord ? '<div class="ct-opt-sub">Record 不支持 I18N / Server-only / 代号（Code），仅支持普通字段与 vector</div>' : ""}
         ${hasCode ? '<div class="ct-opt-sub">该表已有代号字段 Code，一表至多一个</div>' : ""}
         <div class="ct-opt-sub" data-af-sep-note hidden>变长 · 分隔符工具内置（,）</div>
         <div class="ct-opt-sub" data-af-cols-row hidden>定长 · 固定展开列组　展开组数 <input class="ct-dlg-input" data-af-cols value="3"> 组</div>
@@ -378,7 +380,9 @@ export function openAddField(ctx, resource) {
     const codeOn = codeEl.checked;
     nameEl.disabled = codeOn;
     typeEl.disabled = codeOn;
-    roleEls.forEach((r) => { if (r.value === "i18n" || r.value === "server") r.disabled = codeOn; });
+    roleEls.forEach((r) => {
+      if (r.value === "i18n" || r.value === "server") r.disabled = codeOn || isRecord;
+    });
     vecEl.disabled = codeOn || role() === "i18n" || role() === "server" || isRefText(typeSel);
   }
   function syncVec() {
@@ -439,6 +443,7 @@ export function openAddField(ctx, resource) {
     const vecOn = vecEl.checked;
     if (currentRole === "i18n" && (vecOn || typeSel !== "string")) { showMsg("I18N 角色仅支持 string 类型"); return; }
     if (value === "Code") {
+      if (isRecord) { showMsg("Record 不支持代号字段 Code（表级概念）"); return; }
       if (hasCode) { showMsg("该表已有代号字段 Code，一表至多一个"); return; }
       if (vecOn || typeSel !== "string" || currentRole !== "") { showMsg("代号字段 Code 必须为 string 且角色为「无」"); return; }
     }
