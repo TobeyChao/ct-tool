@@ -70,7 +70,7 @@
     ],
     "format": "template-layout/2",
     "header_rows": 4,
-    "layout_revision": 1,
+    "layout_revision": 2,
     "nodes": [
         {
             "annotation": "int32",

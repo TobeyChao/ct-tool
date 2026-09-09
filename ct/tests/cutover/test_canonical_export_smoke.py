@@ -31,6 +31,27 @@ def test_canonical_export_writes_fbs_binary_accessors(tmp_path: Path) -> None:
     assert (generated / "lua" / "ItemAccessor.lua").exists()
 
 
+def test_canonical_export_preserves_layout_revision(tmp_path: Path) -> None:
+    """Export must carry the previous manifest revision forward (not reset to 1)."""
+    workspace = tmp_path / "gd"
+    for section in ("config", "excel", "i18n"):
+        shutil.copytree(FIXTURE / section, workspace / section)
+
+    run_canonical_export(workspace)
+    manifest_path = workspace / "excel" / "layout_manifests" / "Item.json"
+    first = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert first["layout_revision"] == 1
+
+    # Simulate a gen-template run bumping the revision to 7 outside export.
+    data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    data["layout_revision"] = 7
+    manifest_path.write_text(json.dumps(data), encoding="utf-8")
+
+    run_canonical_export(workspace)
+    second = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert second["layout_revision"] == 8
+
+
 def test_canonical_export_task_reports_phases_and_history(tmp_path: Path) -> None:
     import time
 

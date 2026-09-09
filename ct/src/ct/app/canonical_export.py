@@ -31,7 +31,7 @@ from ct.cache.fingerprints import bundle_fingerprint
 from ct.excel.canonical_reader import read_canonical_excel
 from ct.excel.canonical_template import generate_canonical_template
 from ct.excel.layout import Layout, build_layout
-from ct.excel.layout_manifest import LayoutManifest, save_manifest
+from ct.excel.layout_manifest import LayoutManifest, load_manifest, save_manifest
 from ct.export.canonical_accessor import (
     generate_csharp_accessor,
     generate_lua_accessor,
@@ -222,7 +222,18 @@ def run_canonical_export(
                     layout, excel_path, enums=enums, primary=table.primary
                 )
                 written.append(str(excel_path))
-            save_manifest(excel_dir / "layout_manifests", table.table, LayoutManifest.from_layout(layout))
+            manifest_dir = excel_dir / "layout_manifests"
+            old_manifest = load_manifest(manifest_dir, table.table)
+            save_manifest(
+                manifest_dir,
+                table.table,
+                LayoutManifest.from_layout(
+                    layout,
+                    previous_revision=old_manifest.layout_revision
+                    if old_manifest is not None
+                    else 0,
+                ),
+            )
     finally:
         reporter.step_finished(CANONICAL_STEPS[2])
 
