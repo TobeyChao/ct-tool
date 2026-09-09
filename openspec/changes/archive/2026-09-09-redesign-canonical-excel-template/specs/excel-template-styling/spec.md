@@ -19,7 +19,7 @@
 
 #### Scenario: Long nested comment remains readable
 - **WHEN** Record 或叶子注释需要换行
-- **THEN** 注释从左侧统一起点换行，而其对应字段名和类型仍在节点跨度内居中
+- **THEN** 注释、字段名和类型均在节点跨度内水平及垂直居中换行，且无额外缩进
 
 ### Requirement: Enum 表头悬停 Note
 每个 Enum 物理叶子字段格 SHALL 附加传统 Excel Note，Note SHALL 显示 Enum 名称、Enum 类型注释，以及按声明顺序排列的每个 `name: comment`；空项注释只显示 name。Note SHALL 挂在合并区域锚点，使用固定宽度和按行数计算且有上限的高度。它 SHALL 作为辅助信息而非枚举定义的唯一入口。

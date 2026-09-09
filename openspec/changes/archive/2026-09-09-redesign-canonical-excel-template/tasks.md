@@ -18,6 +18,7 @@
 - [x] 3.1 Add the explicit header-node tree with mutually exclusive `field|record|array|slot` kind, derived leafness, stable path, role, depth, own comment, child list, slot index and leaf span; verify scalar slots and equal-text siblings retain unique identities.
 - [x] 3.2 Expand named Records and fixed vectors recursively, derive flat leaf columns from the same tree, and compute `D` plus `header_rows=2D`; verify flat, Record, nested Record, fixed scalar vector and fixed Record vector layouts.
 - [x] 3.3 Introduce `template-layout/2` and persist sufficient node/leaf identity for regeneration and data mapping; verify v2 round-trip retains slot paths, spans, depth and schema hash, an existing workbook with missing/corrupt/v1 manifest is left untouched, and a new path without workbook or manifest still generates normally.
+- [x] 3.4 Serialize tracked layout manifests as deterministic four-space pretty JSON with sorted keys and one trailing newline, independently from one-record-per-line business JSON.
 
 ## 4. Workbook header rendering and styling
 

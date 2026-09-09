@@ -1,1 +1,205 @@
-{"columns": [{"annotation": "int32", "depth": 1, "index": 1, "leaf": "Id", "stablePath": "table:Item/Id", "typeExpr": "int32"}, {"annotation": "string", "depth": 1, "index": 2, "leaf": "Name", "stablePath": "table:Item/Name", "typeExpr": "string"}, {"annotation": "float", "depth": 1, "index": 3, "leaf": "Price", "stablePath": "table:Item/Price", "typeExpr": "float"}, {"annotation": "ItemRarity", "depth": 1, "index": 4, "leaf": "Rarity", "stablePath": "table:Item/Rarity", "typeExpr": "ItemRarity"}, {"annotation": "int32", "depth": 1, "index": 5, "leaf": "ItemTypeId", "stablePath": "table:Item/ItemTypeId", "typeExpr": "int32"}, {"annotation": "int32", "depth": 1, "index": 6, "leaf": "Min", "stablePath": "table:Item/DropRange/Min", "typeExpr": "int32"}, {"annotation": "int32", "depth": 1, "index": 7, "leaf": "Max", "stablePath": "table:Item/DropRange/Max", "typeExpr": "int32"}, {"annotation": "vector<int32>", "depth": 1, "index": 8, "leaf": "Tags", "stablePath": "table:Item/Tags", "typeExpr": "int32"}, {"annotation": "bool", "depth": 1, "index": 9, "leaf": "IsActive", "stablePath": "table:Item/IsActive", "typeExpr": "bool"}], "format": "template-layout/2", "header_rows": 4, "layout_revision": 2, "nodes": [{"annotation": "int32", "children": [], "comment": "道具唯一ID，禁止修改", "depth": 1, "displayName": "Id", "kind": "field", "leafEnd": 1, "leafStart": 1, "slotIndex": null, "stablePath": "table:Item/Id"}, {"annotation": "string", "children": [], "comment": "道具名称（多语言）", "depth": 1, "displayName": "Name", "kind": "field", "leafEnd": 2, "leafStart": 2, "slotIndex": null, "stablePath": "table:Item/Name"}, {"annotation": "float", "children": [], "comment": "售价（金币），0=不可出售", "depth": 1, "displayName": "Price", "kind": "field", "leafEnd": 3, "leafStart": 3, "slotIndex": null, "stablePath": "table:Item/Price"}, {"annotation": "ItemRarity", "children": [], "comment": "稀有度", "depth": 1, "displayName": "Rarity", "kind": "field", "leafEnd": 4, "leafStart": 4, "slotIndex": null, "stablePath": "table:Item/Rarity"}, {"annotation": "int32", "children": [], "comment": "道具类型，关联 ItemType.Id", "depth": 1, "displayName": "ItemTypeId", "kind": "field", "leafEnd": 5, "leafStart": 5, "slotIndex": null, "stablePath": "table:Item/ItemTypeId"}, {"annotation": "ItemDropRange", "children": ["DropRange/Min", "DropRange/Max"], "comment": "掉落数量下限", "depth": 1, "displayName": "DropRange", "kind": "record", "leafEnd": 7, "leafStart": 6, "slotIndex": null, "stablePath": "table:Item/DropRange"}, {"annotation": "ItemDropRange", "children": [], "comment": "掉落数量下限", "depth": 2, "displayName": "Min", "kind": "field", "leafEnd": 6, "leafStart": 6, "slotIndex": null, "stablePath": "table:Item/DropRange/Min"}, {"annotation": "ItemDropRange", "children": [], "comment": "掉落数量上限", "depth": 2, "displayName": "Max", "kind": "field", "leafEnd": 7, "leafStart": 7, "slotIndex": null, "stablePath": "table:Item/DropRange/Max"}, {"annotation": "vector<int32>", "children": [], "comment": "标签列表，使用 [1,2,3] 文法", "depth": 1, "displayName": "Tags", "kind": "field", "leafEnd": 8, "leafStart": 8, "slotIndex": null, "stablePath": "table:Item/Tags"}, {"annotation": "bool", "children": [], "comment": "是否启用（仅服务端）", "depth": 1, "displayName": "IsActive", "kind": "field", "leafEnd": 9, "leafStart": 9, "slotIndex": null, "stablePath": "table:Item/IsActive"}], "schema_hash": "96343225c88cc8b8"}
+{
+    "columns": [
+        {
+            "annotation": "int32",
+            "depth": 1,
+            "index": 1,
+            "leaf": "Id",
+            "stablePath": "table:Item/Id",
+            "typeExpr": "int32"
+        },
+        {
+            "annotation": "string",
+            "depth": 1,
+            "index": 2,
+            "leaf": "Name",
+            "stablePath": "table:Item/Name",
+            "typeExpr": "string"
+        },
+        {
+            "annotation": "float",
+            "depth": 1,
+            "index": 3,
+            "leaf": "Price",
+            "stablePath": "table:Item/Price",
+            "typeExpr": "float"
+        },
+        {
+            "annotation": "ItemRarity",
+            "depth": 1,
+            "index": 4,
+            "leaf": "Rarity",
+            "stablePath": "table:Item/Rarity",
+            "typeExpr": "ItemRarity"
+        },
+        {
+            "annotation": "int32",
+            "depth": 1,
+            "index": 5,
+            "leaf": "ItemTypeId",
+            "stablePath": "table:Item/ItemTypeId",
+            "typeExpr": "int32"
+        },
+        {
+            "annotation": "int32",
+            "depth": 1,
+            "index": 6,
+            "leaf": "Min",
+            "stablePath": "table:Item/DropRange/Min",
+            "typeExpr": "int32"
+        },
+        {
+            "annotation": "int32",
+            "depth": 1,
+            "index": 7,
+            "leaf": "Max",
+            "stablePath": "table:Item/DropRange/Max",
+            "typeExpr": "int32"
+        },
+        {
+            "annotation": "vector<int32>",
+            "depth": 1,
+            "index": 8,
+            "leaf": "Tags",
+            "stablePath": "table:Item/Tags",
+            "typeExpr": "int32"
+        },
+        {
+            "annotation": "bool",
+            "depth": 1,
+            "index": 9,
+            "leaf": "IsActive",
+            "stablePath": "table:Item/IsActive",
+            "typeExpr": "bool"
+        }
+    ],
+    "format": "template-layout/2",
+    "header_rows": 4,
+    "layout_revision": 1,
+    "nodes": [
+        {
+            "annotation": "int32",
+            "children": [],
+            "comment": "道具唯一ID，禁止修改",
+            "depth": 1,
+            "displayName": "Id",
+            "kind": "field",
+            "leafEnd": 1,
+            "leafStart": 1,
+            "slotIndex": null,
+            "stablePath": "table:Item/Id"
+        },
+        {
+            "annotation": "string",
+            "children": [],
+            "comment": "道具名称（多语言）",
+            "depth": 1,
+            "displayName": "Name",
+            "kind": "field",
+            "leafEnd": 2,
+            "leafStart": 2,
+            "slotIndex": null,
+            "stablePath": "table:Item/Name"
+        },
+        {
+            "annotation": "float",
+            "children": [],
+            "comment": "售价（金币），0=不可出售",
+            "depth": 1,
+            "displayName": "Price",
+            "kind": "field",
+            "leafEnd": 3,
+            "leafStart": 3,
+            "slotIndex": null,
+            "stablePath": "table:Item/Price"
+        },
+        {
+            "annotation": "ItemRarity",
+            "children": [],
+            "comment": "稀有度",
+            "depth": 1,
+            "displayName": "Rarity",
+            "kind": "field",
+            "leafEnd": 4,
+            "leafStart": 4,
+            "slotIndex": null,
+            "stablePath": "table:Item/Rarity"
+        },
+        {
+            "annotation": "int32",
+            "children": [],
+            "comment": "道具类型，关联 ItemType.Id",
+            "depth": 1,
+            "displayName": "ItemTypeId",
+            "kind": "field",
+            "leafEnd": 5,
+            "leafStart": 5,
+            "slotIndex": null,
+            "stablePath": "table:Item/ItemTypeId"
+        },
+        {
+            "annotation": "ItemDropRange",
+            "children": [
+                "DropRange/Min",
+                "DropRange/Max"
+            ],
+            "comment": "掉落数量下限",
+            "depth": 1,
+            "displayName": "DropRange",
+            "kind": "record",
+            "leafEnd": 7,
+            "leafStart": 6,
+            "slotIndex": null,
+            "stablePath": "table:Item/DropRange"
+        },
+        {
+            "annotation": "ItemDropRange",
+            "children": [],
+            "comment": "掉落数量下限",
+            "depth": 2,
+            "displayName": "Min",
+            "kind": "field",
+            "leafEnd": 6,
+            "leafStart": 6,
+            "slotIndex": null,
+            "stablePath": "table:Item/DropRange/Min"
+        },
+        {
+            "annotation": "ItemDropRange",
+            "children": [],
+            "comment": "掉落数量上限",
+            "depth": 2,
+            "displayName": "Max",
+            "kind": "field",
+            "leafEnd": 7,
+            "leafStart": 7,
+            "slotIndex": null,
+            "stablePath": "table:Item/DropRange/Max"
+        },
+        {
+            "annotation": "vector<int32>",
+            "children": [],
+            "comment": "标签列表，使用 [1,2,3] 文法",
+            "depth": 1,
+            "displayName": "Tags",
+            "kind": "field",
+            "leafEnd": 8,
+            "leafStart": 8,
+            "slotIndex": null,
+            "stablePath": "table:Item/Tags"
+        },
+        {
+            "annotation": "bool",
+            "children": [],
+            "comment": "是否启用（仅服务端）",
+            "depth": 1,
+            "displayName": "IsActive",
+            "kind": "field",
+            "leafEnd": 9,
+            "leafStart": 9,
+            "slotIndex": null,
+            "stablePath": "table:Item/IsActive"
+        }
+    ],
+    "schema_hash": "96343225c88cc8b8"
+}

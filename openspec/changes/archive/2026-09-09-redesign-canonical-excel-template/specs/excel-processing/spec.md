@@ -29,7 +29,7 @@
 
 #### Scenario: Fixed scalar vector renders slots
 - **WHEN** `Weights: vector<float>` 配置 `excel_columns: 3`
-- **THEN** 数组节点横跨三个数据列，第 2 层绘制三个独立槽位节点 `#1/#2/#3`，每个槽位是最终叶子并显示确定性的第 N 槽位默认值说明
+- **THEN** 数组节点横跨三个数据列，第 2 层绘制三个独立槽位节点 `#1/#2/#3`，注释分别显示 `数据项[1]`、`数据项[2]`、`数据项[3]`
 
 #### Scenario: Fixed Record vector renders slot subtrees
 - **WHEN** `Rewards: vector<DropReward>` 配置 `excel_columns: 2` 且 DropReward 含 ItemId/Count
@@ -54,6 +54,10 @@
 #### Scenario: Update header preserves data rows
 - **WHEN** 目标 Excel 含可按受支持的 `template-layout/2` manifest 稳定叶子路径读取的数据并重新生成模板
 - **THEN** 工具将可映射的数据值搬到新表头后的对应叶子列，所有工具管理的格式与辅助效果重新生成
+
+#### Scenario: Layout manifest is diff-friendly
+- **WHEN** 工具在 `excel/layout_manifests` 生成或更新 `template-layout/2` manifest
+- **THEN** manifest 使用键排序、4 空格缩进和单个文件末尾换行的完整 pretty JSON；此规则不改变 `output/json` 业务数据的一记录一行格式
 
 #### Scenario: Update header on legacy file uses new schema header_rows
 - **WHEN** 已存在的 Excel 缺少可信 manifest、manifest 损坏或仍为 `template-layout/1`

@@ -1,12 +1,8 @@
-"""Generate Excel template workbooks from the canonical  ``Layout``.
+"""Generate Excel template workbooks from the canonical ``Layout``.
 
-The header is a tree rendered from each column's stable canonical path:
-
-- row 1: the top-level field name + its type annotation, merged horizontally
-  across the field's column range (primary key cells use the gold fill);
-- rows 2..header_rows-1: intermediate segments (record / expanded group
-  levels) merged across sibling columns;
-- last header row: leaf field comments.
+The header node tree uses paired comment/field rows at every depth. Structural
+nodes merge horizontally over their leaf span, while shallow leaves merge their
+field cells vertically through the final header row.
 
 Every column's stable path and annotation is driven by ``ct.excel.layout``,
 so headers always match the Web type expressions.

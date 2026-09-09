@@ -39,7 +39,7 @@ For a maximum tree depth `D`, depth `d` owns comment row `2d-1` and field row `2
 - A leaf uses its own column on comment row `2d-1`, then vertically merges its field cell from row `2d` through row `2D`.
 - Rows belonging to descendants are left available for those descendants; no rectangular merge may cover them.
 - A merge is created from one node's computed span only. Adjacent nodes are never merged because their text, type or comment happens to match.
-- Every schema-backed node uses the owning `FieldDef.comment`; a blank comment remains a deliberately blank cell and does not collapse the row. Generated fixed-vector slots use label `#N` and comment `第 N 个槽位；位于最后已填写槽位之前的空槽位使用默认值`, rather than borrowing the parent comment.
+- Every schema-backed node uses the owning `FieldDef.comment`; a blank comment remains a deliberately blank cell and does not collapse the row. Generated fixed-vector slots use label `#N` and the concise comment `数据项[N]`, rather than borrowing the parent comment.
 
 This regular paired-row grid is easier to inspect and test than variable row bands, and it keeps structural documentation next to the node it describes.
 
@@ -55,7 +55,7 @@ The renderer maps node role to immutable style tokens rather than choosing color
 | Slot | `E7D9F7` | `172033` / `6B4AA1` | `DCE3EC` | `475569` |
 | Primary | `FBE6A5` | `172033` / `8A5A00` | `DCE3EC` | `475569` |
 
-Field cells use centered, wrapped rich text: Aptos 11 bold for the name and Consolas 9 for the type. Comments use Aptos 9, left and vertically centered with indent 1 and wrapping; generated slot comments are centered. Comment rows start at 30 pt and may grow to 60 pt, while field rows are 38 pt. Comment height is estimated deterministically from explicit newlines plus wrapped character count across the merged column width; the maximum estimate among nodes on that row wins and is clamped to 30–60 pt.
+Field cells use centered, wrapped rich text: Aptos 11 bold for the name and Consolas 9 for the type. Comments use centered Aptos 9 text with no indent and wrapping. Comment rows start at 30 pt and may grow to 60 pt, while field rows are 38 pt. Comment height is estimated deterministically from explicit newlines plus wrapped character count across the merged column width; the maximum estimate among nodes on that row wins and is clamped to 30–60 pt.
 
 Borders are also semantic: thin `CBD5E1` inside a node, medium `64748B` between siblings and slots, medium `1E293B` around top-level fields, medium `0F172A` around the complete header, and double `334155` between header and data. For each cell edge the precedence is data divider > outer frame > top-level boundary > sibling/slot boundary > inner line. The renderer applies the winning edge after merges are known so merged anchors and perimeter cells agree.
 
@@ -91,13 +91,13 @@ Data validation uses a literal inline list of item names only when Excel's seria
 
 Comment-only edits do not affect ordinals. New items append by default. Rename, delete, insertion and reorder are compared by the change planner, which reports old/new ordinals and scans Excel values. An explicit rename preserves the item's position and transactionally rewrites exact occurrences in scalar Enum cells, fixed Enum slots and bracketed Enum vectors; an unpaired delete/add is not inferred as a rename. Deleting a used item remains blocked, while deleting an unused item and any insertion/reorder report all shifted ordinals as wire-level risk.
 
-### 7. Apply input aids to the complete data region
+### 7. Apply non-visual input aids to the complete data region
 
-Validation and conditional-format rules cover from `data_start_row` through Excel row 1,048,576. Bool cells receive a portable TRUE/FALSE list validation; TRUE uses fill/text `DCFCE7/166534`, FALSE uses `F1F5F9/475569`. Enum columns use fill/text `F3E8FF/581C87` and the inline dropdown when eligible. Ref columns use fill/text `ECFEFF/155E75` plus an input prompt naming the target; final cross-table validity remains the responsibility of validate/export and requires no hidden lookup data. Int32 uses bounded whole-number validation, while float/double use bounded decimal validation. Int64 receives a prompt rather than numeric DataValidation because Excel cannot exactly retain every 64-bit integer beyond 15 significant digits; the prompt tells authors to enter such values as text, and canonical validate/export remains authoritative.
+Validation and prompt rules cover from `data_start_row` through Excel row 1,048,576. Bool cells receive a portable TRUE/FALSE list validation. Enum columns receive the inline dropdown when eligible. Ref columns receive an input prompt naming the target; final cross-table validity remains the responsibility of validate/export and requires no hidden lookup data. Int32 uses bounded whole-number validation, while float/double use bounded decimal validation. Int64 receives a prompt rather than numeric DataValidation because Excel cannot exactly retain every 64-bit integer beyond 15 significant digits; the prompt tells authors to enter such values as text, and canonical validate/export remains authoritative.
 
-When roles overlap, data assistance precedence is Bool > Enum > ref > ordinary zebra. Enum validation therefore wins over a ref prompt for an unusual Enum+ref combination. Variable vectors and over-limit Enums use prompt-only validation that always permits input, leaving syntax/value enforcement to validate/export.
+When roles overlap, data assistance precedence is Bool > Enum > ref. Enum validation therefore wins over a ref prompt for an unusual Enum+ref combination. Variable vectors and over-limit Enums use prompt-only validation that always permits input, leaving syntax/value enforcement to validate/export.
 
-Ordinary data columns keep a neutral white background without zebra striping. Bool, Enum and ref columns use only their type-specific fills, avoiding visual noise while retaining input guidance.
+All data columns keep a neutral white background. The template emits no zebra striping and no Bool/Enum/ref conditional-format colors; input assistance remains non-visual through validation, prompts and Notes.
 
 ### 8. Serialize canonical JSON one source row per physical line
 
@@ -108,6 +108,8 @@ This is preferred to post-processing pretty-printed JSON because line rewriting 
 ### 9. Regeneration is authoritative for all tool-managed workbook features
 
 Template generation recreates the workbook and reapplies the layout, merges, row/column dimensions, freeze panes, styles, Notes, validation, conditional formatting and metadata from schema. `template-layout/2` stores the new node/leaf identity. Regeneration with a compatible v2 manifest SHALL copy canonical data values by stable leaf path, but it does not merge arbitrary user workbook presentation state. When an existing workbook has a missing, corrupt or v1 manifest, it is deliberately incompatible and must be backed up/deleted before an empty template is generated; a genuinely new path with no workbook remains valid. The tool never guesses old header rows.
+
+Layout manifests are tracked migration metadata rather than business export data. Files under `gd/excel/layout_manifests` use deterministic four-space pretty JSON, sorted object keys and exactly one trailing newline so structural changes remain reviewable in Git. This formatting rule is intentionally independent from canonical business JSON, whose source records remain compact one-line values under `gd/output/json`.
 
 For this breaking change, fixtures are rebuilt instead of migrated. This keeps the production path free of temporary compatibility code and makes generated files evidence of the new canonical behavior.
 

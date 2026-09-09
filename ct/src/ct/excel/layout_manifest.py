@@ -116,7 +116,9 @@ def save_manifest(manifest_dir: Path, table: str, manifest: LayoutManifest) -> P
             },
             ensure_ascii=False,
             sort_keys=True,
-        ),
+            indent=4,
+        )
+        + "\n",
         encoding="utf-8",
     )
     return path

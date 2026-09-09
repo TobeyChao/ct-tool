@@ -1,91 +1,117 @@
-## Purpose
+# excel-template-styling Specification
 
-为生成的 Excel 模板表头定义统一视觉样式（深绿色系、富文本双行渲染、下拉菜单等），提升策划填表体验与可读性。
+## Purpose
+定义 Canonical Excel 模板的视觉样式规范，确保生成的表头层次清晰、文字可读、不同字段类型可区分。
 
 ## Requirements
 
-### Requirement: 深绿色系视觉层次
-模板表头各行 SHALL 使用深绿色系配色，形成视觉层次：普通字段名行 `1B4332`（深森林绿）+ 白色加粗字体（名字部分），struct 名称行 `40916C`（中绿）+ 白色加粗字体（名字部分），主键字段名行 `C9A227`（暖金色）+ 白色加粗字体（名字部分），comment 行 `F2F2F2`（浅灰）+ 灰色字体。所有字段名单元格内的"类型注解"部分均使用 9pt 斜体浅绿 `D8F3DC` 字体，叠加在所属单元格底色上。
+### Requirement: 类型化可访问表头配色
+模板 SHALL 使用节点类型而非嵌套深度决定表头颜色，并 SHALL 同时以类型文字和边框表达结构，避免颜色成为唯一线索。表头采用中等明度底和深色文字：普通叶子 `E2E8F0/64748B/DCE3EC/475569`，Record `CFE8D8/2F6B4A/DCE3EC/475569`，数组 `D7E6FA/315B9A/DCE3EC/475569`，数组槽位 `E7D9F7/6B4AA1/DCE3EC/475569`，主键 `FBE6A5/8A5A00/DCE3EC/475569`；字段名统一使用 `172033`，保证文字与白色数据区有足够对比度。配色优先级 SHALL 为主键 > 结构节点类型 > 普通叶子；Enum 叶子的类型文字改用 `6B4AA1`，ref 叶子的类型文字改用 `315B9A`，Enum+ref 时 Enum 强调优先。
 
-#### Scenario: 普通字段名单元格渲染
-- **WHEN** 生成包含普通字段的模板
-- **THEN** 单元格背景色为 `1B4332`，名字部分为白色加粗 12pt，类型部分为浅绿 `D8F3DC` 斜体 9pt
+#### Scenario: Mixed node types are visually distinct
+- **WHEN** 同一表头含普通叶子、Record、数组、数组槽位和主键
+- **THEN** 各节点使用规定配色，且字段类型文字仍明确包含 Record 类型、`vector<T>[N]`、槽位序号或 `[primary]`
 
-#### Scenario: struct 字段名单元格渲染
-- **WHEN** 生成包含 struct 类型字段的模板
-- **THEN** 横向合并单元格背景色为 `40916C`，名字部分为白色加粗 12pt，类型部分（PascalCase 类名）为浅绿 `D8F3DC` 斜体 9pt
+### Requirement: 表头节点边框层级
+模板 SHALL 使用 `thin #CBD5E1` 表示普通内部边界、`medium #64748B` 表示兄弟结构节点与数组槽位边界、`medium #1E293B` 表示顶层字段边界、`medium #0F172A` 表示完整表头外框，并在表头与数据区之间使用 `double #334155`。合并节点 SHALL 在完整周界绘制边框且 SHALL NOT 保留合并区域内部竖线。单条边重叠时优先级 SHALL 为数据分隔双线 > 表头外框 > 顶层字段边界 > 兄弟/槽位边界 > 普通内部线。
 
-#### Scenario: 主键字段单元格渲染
-- **WHEN** 生成模板且 schema 定义了 primary 字段
-- **THEN** 单元格背景色为 `C9A227`，名字部分为白色加粗 12pt，类型部分为浅绿 `D8F3DC` 斜体 9pt
+#### Scenario: Nested boundaries remain legible
+- **WHEN** Record、嵌套 Record 和定长 Record vector 同时出现
+- **THEN** 用户可由外框、顶层边界、槽位边界和叶子细线识别每个节点的准确跨度
 
-#### Scenario: comment 行渲染
-- **WHEN** 生成模板
-- **THEN** comment 行背景色为 `F2F2F2`，字体为灰色
+### Requirement: 表头文字对齐
+字段名、类型、系统生成的槽位说明及 Schema 注释 SHALL 水平和垂直居中、开启自动换行、禁用 shrink-to-fit、无额外缩进且不旋转。纵向合并叶子 SHALL 在完整合并区域内居中。
+
+#### Scenario: Long nested comment remains readable
+- **WHEN** Record 或叶子注释需要换行
+- **THEN** 注释、字段名和类型均在节点跨度内水平及垂直居中换行，且无额外缩进
+
+### Requirement: Enum 表头悬停 Note
+每个 Enum 物理叶子字段格 SHALL 附加传统 Excel Note，Note SHALL 显示 Enum 名称、Enum 类型注释，以及按声明顺序排列的每个 `name: comment`；空项注释只显示 name。Note SHALL 挂在合并区域锚点，使用固定宽度和按行数计算且有上限的高度。它 SHALL 作为辅助信息而非枚举定义的唯一入口。
+
+#### Scenario: Hover enum header shows item comments
+- **WHEN** ItemRarity 定义 Common/Rare/Epic 及各自注释
+- **THEN** Rarity 表头字段格显示 Note 指示，悬停可按声明顺序读取类型说明和三个枚举项注释
+
+#### Scenario: Fixed enum vector repeats the note
+- **WHEN** `vector<ItemRarity>[3]` 展开为三个槽位
+- **THEN** 三个 Enum 叶子字段格均附加相同的 ItemRarity Note
+
+### Requirement: Freeze complete generated header
+模板 SHALL 冻结全部 `2D` 行表头但 SHALL NOT 默认冻结任何数据列。
+
+#### Scenario: Scroll deep table data
+- **WHEN** 用户向下滚动 `D=3` 的工作表
+- **THEN** `freeze_panes` 为 `A7`，第 1 至第 6 行保持可见且所有数据列仍可水平滚动
 
 ### Requirement: 字段名与类型在同一单元格富文本双行渲染
-模板表头中每个字段单元格 SHALL 使用 openpyxl 的 `CellRichText` 在同一格内渲染两段文字：第一段为字段名（12pt 粗体白色字体，沿用 `_HEADER_FONT` 风格），第二段为类型注解（9pt 斜体，浅色字 `D8F3DC`），中间用换行分隔。叶子字段的类型注解文本使用 `_type_annotation(field)` 现有规则（例如 `int32`、`int32[ref:item_type.id]`、`string[i18n]`、`enum[a,b,c]`、`array<int32>`、`array<enum[a,b]>`）；struct 字段的类型注解文本使用 `to_pascal_case(field.name)`（与 FBS 生成的 table 名一致）。无论 struct 还是叶子，类型行字体样式 MUST 完全一致。
+模板中每个字段格 SHALL 以富文本显示两段：字段名使用 Aptos 11pt `172033` 加粗，类型注解使用 Consolas 9pt 和节点对应强调色，中间以单个换行分隔。普通类型显示 canonical 类型文本；Enum 显示 `<EnumName> [enum]`；Record 显示具名类型；定长展开数组显示 `vector<T>[N]`；槽位显示 `#N` 与元素类型；主键、ref、i18n、server 标记按 `[primary] [ref: T.F] [i18n] [server]` 顺序追加。
 
 #### Scenario: 叶子字段渲染
-- **WHEN** 生成模板，schema 含一个 `id: int32` 字段
-- **THEN** 该字段单元格内为富文本：第一行 "id"（12pt 粗体白），第二行 "int32"（9pt 斜体浅绿 `D8F3DC`）
+- **WHEN** 生成 `Id: int32` 主键字段
+- **THEN** 字段格第一行显示 Id，第二行显示 `int32 [primary]`
+
+#### Scenario: Named enum is explicit
+- **WHEN** Rarity 引用 ItemRarity Enum
+- **THEN** 字段格第一行显示 Rarity，第二行显示 `ItemRarity [enum]`
+
+#### Scenario: Record field renders named type
+- **WHEN** DropRange 引用 ItemDropRange Record
+- **THEN** 横向合并字段格第一行显示 DropRange，第二行显示 ItemDropRange
+
+#### Scenario: Fixed vector exposes maximum slots
+- **WHEN** Rewards 为 `vector<DropReward>` 且 `excel_columns: 3`
+- **THEN** 数组字段格第二行显示 `vector<DropReward>[3]`，三个槽位分别显示 `#1/#2/#3` 与 DropReward
 
 #### Scenario: 带 ref 的叶子字段渲染
-- **WHEN** schema 字段 `item_type_id: int32, ref: item_type.id`
-- **THEN** 单元格第一行为 "item_type_id"，第二行为 "int32[ref:item_type.id]"，字体规则同上
+- **WHEN** `ItemTypeId: int32` 标记 `ref: ItemType.Id`
+- **THEN** 第一行显示 ItemTypeId，第二行显示 `int32 [ref: ItemType.Id]`，使用同一富文本字体规则
 
 #### Scenario: i18n 字段渲染
-- **WHEN** schema 字段 `name: string, i18n: true`
-- **THEN** 单元格第一行为 "name"，第二行为 "string[i18n]"
+- **WHEN** `Name: string` 标记 `i18n: true`
+- **THEN** 第一行显示 Name，第二行显示 `string [i18n]`
 
 #### Scenario: enum 字段渲染
-- **WHEN** schema 字段 `rarity: enum, values: [common, rare, epic]`
-- **THEN** 单元格第一行为 "rarity"，第二行为 "enum[common,rare,epic]"
+- **WHEN** Rarity 引用 ItemRarity Enum
+- **THEN** 第一行显示 Rarity，第二行显示 `ItemRarity [enum]`，Enum 类型文字使用节点对应的浅紫强调色
 
 #### Scenario: array 字段渲染
-- **WHEN** schema 字段 `tags: array, element: int32`
-- **THEN** 单元格第一行为 "tags"，第二行为 "array<int32>"
+- **WHEN** Tags 为 `vector<int32>`
+- **THEN** 第一行显示 Tags，第二行显示 `vector<int32>`；定长展开时另含 `[N]`
 
 #### Scenario: struct 字段横向合并单元格渲染类型
-- **WHEN** schema 含 `drop_range: struct{min: int32, max: int32}`
-- **THEN** 横向合并的 struct 单元格内第一行为 "drop_range"（12pt 粗体白），第二行为 "DropRange"（9pt 斜体浅绿 `D8F3DC`），与 FBS 生成的 table 名一致
+- **WHEN** DropRange 引用 ItemDropRange 且展开为 Min/Max
+- **THEN** DropRange 字段格横跨两个后代叶子，第一行显示 DropRange，第二行显示 ItemDropRange
 
 #### Scenario: 主键字段类型行字体规则不变
-- **WHEN** schema primary 为 id（int32）
-- **THEN** id 单元格底色仍为 `C9A227` 金色，第一行 "id" 仍为 12pt 粗体白色，第二行 "int32" 字体仍为 9pt 斜体浅绿 `D8F3DC`，与非主键字段在类型字体上完全一致
+- **WHEN** Id 为 int32 主键
+- **THEN** 使用主键配色，但名字仍为 Aptos 11pt `172033` 加粗，类型仍为 Consolas 9pt 并显示 `int32 [primary]`
 
 ### Requirement: 名字所在表头行显式设置行高
-`generate_template` SHALL 为表头中所有字段名所在的行（即第 1 行至第 `max_nesting_depth` 行）显式设置行高为 36pt，确保富文本两段文字均不被裁切。注释行（最后一行）不设置显式行高，使用 Excel 默认值。
+模板 SHALL 将每个注释行默认设为 30pt，并根据显式换行及合并跨度总列宽估算的换行数确定性增长、上限 60pt；同一行取所有节点估算值的最大值。每个字段行 SHALL 固定为 38pt。空注释 SHALL 保留注释行高度，任何节点 SHALL NOT 因注释为空而折叠层级。
 
 #### Scenario: 浅嵌套表行高
-- **WHEN** 表 `max_nesting_depth = 1`，生成模板
-- **THEN** 第 1 行行高为 36pt，第 2 行（注释行）使用默认行高
+- **WHEN** `D=1` 且注释无需额外换行
+- **THEN** 第 1 行为 30pt 注释行，第 2 行为 38pt 字段行
 
 #### Scenario: 深嵌套表行高
-- **WHEN** 表 `max_nesting_depth = 3`，生成模板
-- **THEN** 第 1、2、3 行行高均为 36pt，第 4 行（注释行）使用默认行高
+- **WHEN** `D=3`
+- **THEN** 三组注释/字段行分别遵循 30pt/38pt，长注释所在行可增长但不超过 60pt
 
 ### Requirement: enum 字段下拉菜单
-模板 SHALL 为所有 `type == "enum"` 的叶字段添加 DataValidation，限定合法值为 schema 定义的 `values` 列表，范围覆盖该列数据区（表头后第 1 行至第 1000 行）。
+模板 SHALL 为 Enum 的每个物理叶子数据列添加直接内嵌候选值的列表 DataValidation，范围从数据起始行覆盖至 Excel 第 1,048,576 行；候选值 SHALL 保持 Schema 声明顺序。若包含外层引号的完整验证公式超过 255 字符，模板 SHALL 跳过下拉、保留输入提示并产生明确 warning，且 SHALL NOT 创建隐藏 Sheet、辅助列或命名范围。
 
 #### Scenario: enum 字段有下拉
-- **WHEN** schema 包含 enum 字段且生成模板
-- **THEN** 该字段对应列的数据区单元格显示下拉菜单，仅允许输入 schema 中定义的枚举值
+- **WHEN** ItemRarity 候选公式不超过 255 字符
+- **THEN** 每个 Rarity 数据格从数据起始行到第 1,048,576 行均可选择按声明顺序排列的合法值
 
 #### Scenario: enum 值过长跳过
-- **WHEN** enum 所有值拼接后超过 255 字符
-- **THEN** 跳过该字段的 DataValidation 并记录 warning 日志，模板正常生成
+- **WHEN** Enum 候选公式超过 255 字符
+- **THEN** 模板正常生成、不含该下拉、不创建隐藏数据结构，并报告具体 Enum 的辅助降级 warning
 
-### Requirement: Auto-filter
-模板 SHALL 在表头最后一行（comment 行）对应的整行范围添加 Auto-filter。
+### Requirement: 数据区视觉保持简洁
+模板 SHALL NOT 对数据区生成任何条件格式颜色。数据区所有列保持白色底。
 
-#### Scenario: auto-filter 存在
-- **WHEN** 打开生成的模板
-- **THEN** 表头末行每列显示筛选箭头
-
-### Requirement: 数据区斑马纹
-模板 SHALL 通过条件格式为数据区设置斑马纹：奇数行白色背景，偶数行 `EDF7EE`（极浅绿）背景，范围为表头后第 1 行至第 1000 行。
-
-#### Scenario: 斑马纹渲染
-- **WHEN** 在生成的模板中填入数据
-- **THEN** 奇数数据行背景为白色，偶数数据行背景为极浅绿 `EDF7EE`
+#### Scenario: 普通数据区保持简洁
+- **WHEN** 打开包含预留空行的模板
+- **THEN** 数据列不包含斑马纹或类型辅助色条件格式并保持白色底

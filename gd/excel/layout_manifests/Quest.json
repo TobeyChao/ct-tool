@@ -1,1 +1,189 @@
-{"columns": [{"annotation": "int32", "depth": 1, "index": 1, "leaf": "Id", "stablePath": "table:Quest/Id", "typeExpr": "int32"}, {"annotation": "string", "depth": 1, "index": 2, "leaf": "Title", "stablePath": "table:Quest/Title", "typeExpr": "string"}, {"annotation": "string", "depth": 1, "index": 3, "leaf": "Description", "stablePath": "table:Quest/Description", "typeExpr": "string"}, {"annotation": "int32", "depth": 1, "index": 4, "leaf": "RewardItemId", "stablePath": "table:Quest/RewardItemId", "typeExpr": "int32"}, {"annotation": "int32", "depth": 1, "index": 5, "leaf": "RequiredLevel", "stablePath": "table:Quest/RequiredLevel", "typeExpr": "int32"}, {"annotation": "vector<double>", "depth": 2, "groupIndex": 1, "index": 6, "leaf": "Test[1]", "stablePath": "table:Quest/Test[1]", "typeExpr": "double"}, {"annotation": "vector<double>", "depth": 2, "groupIndex": 2, "index": 7, "leaf": "Test[2]", "stablePath": "table:Quest/Test[2]", "typeExpr": "double"}, {"annotation": "vector<double>", "depth": 2, "groupIndex": 3, "index": 8, "leaf": "Test[3]", "stablePath": "table:Quest/Test[3]", "typeExpr": "double"}], "format": "template-layout/2", "header_rows": 4, "layout_revision": 2, "nodes": [{"annotation": "int32", "children": [], "comment": "任务唯一ID，禁止修改", "depth": 1, "displayName": "Id", "kind": "field", "leafEnd": 1, "leafStart": 1, "slotIndex": null, "stablePath": "table:Quest/Id"}, {"annotation": "string", "children": [], "comment": "任务标题（多语言）", "depth": 1, "displayName": "Title", "kind": "field", "leafEnd": 2, "leafStart": 2, "slotIndex": null, "stablePath": "table:Quest/Title"}, {"annotation": "string", "children": [], "comment": "任务描述（多语言）", "depth": 1, "displayName": "Description", "kind": "field", "leafEnd": 3, "leafStart": 3, "slotIndex": null, "stablePath": "table:Quest/Description"}, {"annotation": "int32", "children": [], "comment": "奖励道具ID，关联 Item.Id", "depth": 1, "displayName": "RewardItemId", "kind": "field", "leafEnd": 4, "leafStart": 4, "slotIndex": null, "stablePath": "table:Quest/RewardItemId"}, {"annotation": "int32", "children": [], "comment": "接取等级要求", "depth": 1, "displayName": "RequiredLevel", "kind": "field", "leafEnd": 5, "leafStart": 5, "slotIndex": null, "stablePath": "table:Quest/RequiredLevel"}, {"annotation": "vector<double>[3]", "children": ["Test/1", "Test/2", "Test/3"], "comment": "数据项[1]", "depth": 1, "displayName": "Test", "kind": "array", "leafEnd": 8, "leafStart": 6, "slotIndex": null, "stablePath": "table:Quest/Test"}, {"annotation": "vector<double>[3]", "children": [], "comment": "数据项[1]", "depth": 2, "displayName": "#1", "kind": "slot", "leafEnd": 6, "leafStart": 6, "slotIndex": 1, "stablePath": "table:Quest/Test[1]"}, {"annotation": "vector<double>[3]", "children": [], "comment": "数据项[2]", "depth": 2, "displayName": "#2", "kind": "slot", "leafEnd": 7, "leafStart": 7, "slotIndex": 2, "stablePath": "table:Quest/Test[2]"}, {"annotation": "vector<double>[3]", "children": [], "comment": "数据项[3]", "depth": 2, "displayName": "#3", "kind": "slot", "leafEnd": 8, "leafStart": 8, "slotIndex": 3, "stablePath": "table:Quest/Test[3]"}], "schema_hash": "d9f7624dd77fe5ba"}
+{
+    "columns": [
+        {
+            "annotation": "int32",
+            "depth": 1,
+            "index": 1,
+            "leaf": "Id",
+            "stablePath": "table:Quest/Id",
+            "typeExpr": "int32"
+        },
+        {
+            "annotation": "string",
+            "depth": 1,
+            "index": 2,
+            "leaf": "Title",
+            "stablePath": "table:Quest/Title",
+            "typeExpr": "string"
+        },
+        {
+            "annotation": "string",
+            "depth": 1,
+            "index": 3,
+            "leaf": "Description",
+            "stablePath": "table:Quest/Description",
+            "typeExpr": "string"
+        },
+        {
+            "annotation": "int32",
+            "depth": 1,
+            "index": 4,
+            "leaf": "RewardItemId",
+            "stablePath": "table:Quest/RewardItemId",
+            "typeExpr": "int32"
+        },
+        {
+            "annotation": "int32",
+            "depth": 1,
+            "index": 5,
+            "leaf": "RequiredLevel",
+            "stablePath": "table:Quest/RequiredLevel",
+            "typeExpr": "int32"
+        },
+        {
+            "annotation": "vector<double>",
+            "depth": 2,
+            "groupIndex": 1,
+            "index": 6,
+            "leaf": "Test[1]",
+            "stablePath": "table:Quest/Test[1]",
+            "typeExpr": "double"
+        },
+        {
+            "annotation": "vector<double>",
+            "depth": 2,
+            "groupIndex": 2,
+            "index": 7,
+            "leaf": "Test[2]",
+            "stablePath": "table:Quest/Test[2]",
+            "typeExpr": "double"
+        },
+        {
+            "annotation": "vector<double>",
+            "depth": 2,
+            "groupIndex": 3,
+            "index": 8,
+            "leaf": "Test[3]",
+            "stablePath": "table:Quest/Test[3]",
+            "typeExpr": "double"
+        }
+    ],
+    "format": "template-layout/2",
+    "header_rows": 4,
+    "layout_revision": 1,
+    "nodes": [
+        {
+            "annotation": "int32",
+            "children": [],
+            "comment": "任务唯一ID，禁止修改",
+            "depth": 1,
+            "displayName": "Id",
+            "kind": "field",
+            "leafEnd": 1,
+            "leafStart": 1,
+            "slotIndex": null,
+            "stablePath": "table:Quest/Id"
+        },
+        {
+            "annotation": "string",
+            "children": [],
+            "comment": "任务标题（多语言）",
+            "depth": 1,
+            "displayName": "Title",
+            "kind": "field",
+            "leafEnd": 2,
+            "leafStart": 2,
+            "slotIndex": null,
+            "stablePath": "table:Quest/Title"
+        },
+        {
+            "annotation": "string",
+            "children": [],
+            "comment": "任务描述（多语言）",
+            "depth": 1,
+            "displayName": "Description",
+            "kind": "field",
+            "leafEnd": 3,
+            "leafStart": 3,
+            "slotIndex": null,
+            "stablePath": "table:Quest/Description"
+        },
+        {
+            "annotation": "int32",
+            "children": [],
+            "comment": "奖励道具ID，关联 Item.Id",
+            "depth": 1,
+            "displayName": "RewardItemId",
+            "kind": "field",
+            "leafEnd": 4,
+            "leafStart": 4,
+            "slotIndex": null,
+            "stablePath": "table:Quest/RewardItemId"
+        },
+        {
+            "annotation": "int32",
+            "children": [],
+            "comment": "接取等级要求",
+            "depth": 1,
+            "displayName": "RequiredLevel",
+            "kind": "field",
+            "leafEnd": 5,
+            "leafStart": 5,
+            "slotIndex": null,
+            "stablePath": "table:Quest/RequiredLevel"
+        },
+        {
+            "annotation": "vector<double>[3]",
+            "children": [
+                "Test/1",
+                "Test/2",
+                "Test/3"
+            ],
+            "comment": "数据项[1]",
+            "depth": 1,
+            "displayName": "Test",
+            "kind": "array",
+            "leafEnd": 8,
+            "leafStart": 6,
+            "slotIndex": null,
+            "stablePath": "table:Quest/Test"
+        },
+        {
+            "annotation": "vector<double>[3]",
+            "children": [],
+            "comment": "数据项[1]",
+            "depth": 2,
+            "displayName": "#1",
+            "kind": "slot",
+            "leafEnd": 6,
+            "leafStart": 6,
+            "slotIndex": 1,
+            "stablePath": "table:Quest/Test[1]"
+        },
+        {
+            "annotation": "vector<double>[3]",
+            "children": [],
+            "comment": "数据项[2]",
+            "depth": 2,
+            "displayName": "#2",
+            "kind": "slot",
+            "leafEnd": 7,
+            "leafStart": 7,
+            "slotIndex": 2,
+            "stablePath": "table:Quest/Test[2]"
+        },
+        {
+            "annotation": "vector<double>[3]",
+            "children": [],
+            "comment": "数据项[3]",
+            "depth": 2,
+            "displayName": "#3",
+            "kind": "slot",
+            "leafEnd": 8,
+            "leafStart": 8,
+            "slotIndex": 3,
+            "stablePath": "table:Quest/Test[3]"
+        }
+    ],
+    "schema_hash": "d9f7624dd77fe5ba"
+}

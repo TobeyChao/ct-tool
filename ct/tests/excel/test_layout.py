@@ -145,7 +145,12 @@ def test_manifest_create_read_and_revision(tmp_path: Path) -> None:
     layout = build_layout(table, schema_hash="abc", records={})
 
     assert load_manifest(manifests, "Item") is None
-    save_manifest(manifests, "Item", LayoutManifest.from_layout(layout))
+    path = save_manifest(manifests, "Item", LayoutManifest.from_layout(layout))
+    manifest_text = path.read_text(encoding="utf-8")
+    assert manifest_text.startswith('{\n    "columns": [\n        {\n')
+    assert '\n    "format": "template-layout/2",\n' in manifest_text
+    assert manifest_text.endswith("\n")
+    assert not manifest_text.endswith("\n\n")
     first = load_manifest(manifests, "Item")
     assert first is not None and first.layout_revision == 1
     assert first.schema_hash == "abc"

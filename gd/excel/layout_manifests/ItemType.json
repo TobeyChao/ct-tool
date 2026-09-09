@@ -1,1 +1,70 @@
-{"columns": [{"annotation": "int32", "depth": 1, "index": 1, "leaf": "Id", "stablePath": "table:ItemType/Id", "typeExpr": "int32"}, {"annotation": "string", "depth": 1, "index": 2, "leaf": "Name", "stablePath": "table:ItemType/Name", "typeExpr": "string"}, {"annotation": "string", "depth": 1, "index": 3, "leaf": "Code", "stablePath": "table:ItemType/Code", "typeExpr": "string"}], "format": "template-layout/2", "header_rows": 2, "layout_revision": 2, "nodes": [{"annotation": "int32", "children": [], "comment": "类型唯一ID，禁止修改", "depth": 1, "displayName": "Id", "kind": "field", "leafEnd": 1, "leafStart": 1, "slotIndex": null, "stablePath": "table:ItemType/Id"}, {"annotation": "string", "children": [], "comment": "类型名称（多语言）", "depth": 1, "displayName": "Name", "kind": "field", "leafEnd": 2, "leafStart": 2, "slotIndex": null, "stablePath": "table:ItemType/Name"}, {"annotation": "string", "children": [], "comment": "类型代码，程序引用用", "depth": 1, "displayName": "Code", "kind": "field", "leafEnd": 3, "leafStart": 3, "slotIndex": null, "stablePath": "table:ItemType/Code"}], "schema_hash": "f6fdb73245af7d34"}
+{
+    "columns": [
+        {
+            "annotation": "int32",
+            "depth": 1,
+            "index": 1,
+            "leaf": "Id",
+            "stablePath": "table:ItemType/Id",
+            "typeExpr": "int32"
+        },
+        {
+            "annotation": "string",
+            "depth": 1,
+            "index": 2,
+            "leaf": "Name",
+            "stablePath": "table:ItemType/Name",
+            "typeExpr": "string"
+        },
+        {
+            "annotation": "string",
+            "depth": 1,
+            "index": 3,
+            "leaf": "Code",
+            "stablePath": "table:ItemType/Code",
+            "typeExpr": "string"
+        }
+    ],
+    "format": "template-layout/2",
+    "header_rows": 2,
+    "layout_revision": 1,
+    "nodes": [
+        {
+            "annotation": "int32",
+            "children": [],
+            "comment": "类型唯一ID，禁止修改",
+            "depth": 1,
+            "displayName": "Id",
+            "kind": "field",
+            "leafEnd": 1,
+            "leafStart": 1,
+            "slotIndex": null,
+            "stablePath": "table:ItemType/Id"
+        },
+        {
+            "annotation": "string",
+            "children": [],
+            "comment": "类型名称（多语言）",
+            "depth": 1,
+            "displayName": "Name",
+            "kind": "field",
+            "leafEnd": 2,
+            "leafStart": 2,
+            "slotIndex": null,
+            "stablePath": "table:ItemType/Name"
+        },
+        {
+            "annotation": "string",
+            "children": [],
+            "comment": "类型代码，程序引用用",
+            "depth": 1,
+            "displayName": "Code",
+            "kind": "field",
+            "leafEnd": 3,
+            "leafStart": 3,
+            "slotIndex": null,
+            "stablePath": "table:ItemType/Code"
+        }
+    ],
+    "schema_hash": "f6fdb73245af7d34"
+}
