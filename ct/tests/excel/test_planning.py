@@ -5,8 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
+from openpyxl.cell.rich_text import CellRichText
 
-from ct.app.canonical_commands import _migrate_excel_rows
+from ct.app.canonical_commands import (
+    _migrate_excel_rows,
+    _publish_staged_workbook,
+    _validate_staged_workbook,
+)
 from ct.excel.canonical_template import generate_canonical_template
 from ct.excel.layout import build_layout
 from ct.excel.layout_manifest import LayoutManifest
@@ -75,6 +80,60 @@ def test_migrate_rows_preserves_values_when_columns_move(tmp_path: Path) -> None
     )))
     workbook.close()
     assert values == ("剑", 7, None)
+
+
+def test_migrate_rows_preserves_rich_text_headers(tmp_path: Path) -> None:
+    table = TableResource(
+        table="Item",
+        primary="Id",
+        fields=[FieldDef(name="Id", type="int32")],
+    )
+    layout = _layout(table, {})
+    old_path = tmp_path / "old.xlsx"
+    new_path = tmp_path / "new.xlsx"
+    generate_canonical_template(layout, old_path, enums={}, primary="Id")
+    generate_canonical_template(layout, new_path, enums={}, primary="Id")
+
+    workbook = load_workbook(old_path)
+    workbook.active.cell(layout.header_rows + 1, 1).value = 7
+    workbook.save(old_path)
+    workbook.close()
+
+    _migrate_excel_rows(
+        old_path, new_path, layout, layout, _tracked_manifest(layout)
+    )
+
+    workbook = load_workbook(new_path, rich_text=True)
+    assert isinstance(workbook.active.cell(2, 1).value, CellRichText)
+    assert workbook.active.cell(layout.header_rows + 1, 1).value == 7
+    workbook.close()
+
+
+def test_validate_and_publish_staged_workbook(tmp_path: Path) -> None:
+    target = tmp_path / "item.xlsx"
+    staged = tmp_path / ".item.staged.xlsx"
+    _make_workbook(target, 1, [["old"]])
+    _make_workbook(staged, 1, [["new"]])
+
+    _validate_staged_workbook(staged)
+    _publish_staged_workbook(staged, target)
+
+    assert not staged.exists()
+    workbook = load_workbook(target, read_only=True)
+    assert workbook.active.cell(2, 1).value == "new"
+    workbook.close()
+
+
+def test_validate_staged_workbook_rejects_invalid_zip(tmp_path: Path) -> None:
+    staged = tmp_path / ".item.staged.xlsx"
+    staged.write_bytes(b"not an xlsx")
+
+    try:
+        _validate_staged_workbook(staged)
+    except ValueError as exc:
+        assert "候选文件校验失败" in str(exc)
+    else:
+        raise AssertionError("invalid XLSX should be rejected")
 
 
 def test_migrate_rows_uses_new_header_row_count(tmp_path: Path) -> None:

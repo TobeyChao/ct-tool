@@ -111,9 +111,17 @@ def generate_canonical_template(
     for row in range(1, layout.header_rows + 1):
         if ws.row_dimensions[row].height is None:
             ws.row_dimensions[row].height = 30 if row % 2 else 38
-    ws.freeze_panes = ws.cell(row=layout.header_rows + 1, column=1)
+    data_start = layout.header_rows + 1
+    ws.freeze_panes = ws.cell(row=data_start, column=1)
+    # openpyxl creates the bottom-pane selection at A1 by default.  With a
+    # frozen multi-row header Excel initially paints rows 1..header_rows in
+    # both panes until the user scrolls.  Anchor the active cell in the
+    # scrollable pane so its first render starts at the first data row.
+    selection = ws.sheet_view.selection[0]
+    selection.activeCell = f"A{data_start}"
+    selection.sqref = f"A{data_start}"
 
-    _add_data_validations(ws, layout, enums, data_start=layout.header_rows + 1)
+    _add_data_validations(ws, layout, enums, data_start=data_start)
     # Ordinary data cells intentionally retain the neutral workbook white
     # background; validation and Notes provide the non-visual assistance.
 
@@ -222,16 +230,6 @@ def _add_data_validations(ws, layout: Layout, enums: dict[str, EnumResource], da
             dv.sqref = f"{letter}{data_start}:{letter}1048576"
             ws.add_data_validation(dv)
             continue
-        if column.ref and column.type_text not in enums:
-            dv = DataValidation(type="custom", formula1="TRUE", allow_blank=True, showInputMessage=True, promptTitle="引用", prompt=f"目标：{column.ref}；最终以 canonical 校验为准")
-            dv.sqref = f"{letter}{data_start}:{letter}1048576"
-            ws.add_data_validation(dv)
-            continue
-        if column.type_text == "int64":
-            dv = DataValidation(type="custom", formula1="TRUE", allow_blank=True, showInputMessage=True, promptTitle="int64", prompt="超过 15 位的整数请按文本输入，最终以 canonical 校验为准")
-            dv.sqref = f"{letter}{data_start}:{letter}1048576"
-            ws.add_data_validation(dv)
-            continue
         if column.type_text == "int32":
             dv = DataValidation(type="whole", operator="between", formula1="-2147483648", formula2="2147483647", allow_blank=True)
             dv.sqref = f"{letter}{data_start}:{letter}1048576"
@@ -251,10 +249,11 @@ def _add_data_validations(ws, layout: Layout, enums: dict[str, EnumResource], da
             continue
         formula = '"' + ",".join(item.name for item in enum.values) + '"'
         if len(formula) > 255:
-            warnings.warn(f"Enum {enum.name} 候选超过 Excel 255 字符限制，已降级为输入提示", UserWarning)
-            dv = DataValidation(type="custom", formula1="TRUE", allow_blank=True, showInputMessage=True, promptTitle=enum.name, prompt="候选列表过长，请按表头 Note 中的枚举项填写")
-            dv.sqref = f"{letter}{data_start}:" + f"{letter}1048576"
-            ws.add_data_validation(dv)
+            warnings.warn(
+                f"Enum {enum.name} 候选超过 Excel 255 字符限制，"
+                "请参考表头 Note 填写",
+                UserWarning,
+            )
             continue
         dv = DataValidation(
             type="list",

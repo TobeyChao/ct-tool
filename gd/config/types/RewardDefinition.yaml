@@ -1,6 +1,5 @@
 kind: record
 name: RewardDefinition
-comment: 奖励定义，演示 Record 内的 Enum、向量和嵌套 Record
 fields:
   - name: Kind
     type: RewardKind
@@ -17,3 +16,4 @@ fields:
   - name: Bounds
     type: RewardBounds
     comment: 奖励数量上下限
+comment: 奖励定义，演示 Record 内的 Enum、向量和嵌套 Record

@@ -1,6 +1,5 @@
 kind: record
 name: RewardBounds
-comment: 奖励数量范围
 fields:
   - name: Min
     type: int32
@@ -11,3 +10,4 @@ fields:
   - name: Guaranteed
     type: bool
     comment: 是否保证至少发放一次
+comment: 奖励数量范围

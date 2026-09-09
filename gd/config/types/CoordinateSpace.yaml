@@ -1,6 +1,5 @@
 kind: enum
 name: CoordinateSpace
-comment: 坐标空间类型
 values:
   - name: World
     comment: 世界坐标系
@@ -8,3 +7,4 @@ values:
     comment: 相对父节点的局部坐标系
   - name: Screen
     comment: 屏幕或 UI 坐标系
+comment: 坐标空间类型

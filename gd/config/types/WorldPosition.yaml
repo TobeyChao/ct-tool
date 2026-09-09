@@ -1,6 +1,5 @@
 kind: record
 name: WorldPosition
-comment: 三维世界坐标及其空间标签
 fields:
   - name: X
     type: double
@@ -17,3 +16,4 @@ fields:
   - name: IsPrecise
     type: bool
     comment: 是否启用高精度定位
+comment: 三维世界坐标及其空间标签

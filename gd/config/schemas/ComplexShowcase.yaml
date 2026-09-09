@@ -1,7 +1,5 @@
 table: ComplexShowcase
 primary: Id
-excel_file: complex_showcase.xlsx
-json_key: complexShowcases
 fields:
   - name: Id
     type: int64
@@ -47,12 +45,12 @@ fields:
     comment: 变长 int64 列表
   - name: Ratios
     type: vector<float>
-    excel_columns: 4
     comment: 最多四个浮点数据项，Excel 展开为四列
+    excel_columns: 4
   - name: Precisions
     type: vector<double>
-    excel_columns: 3
     comment: 最多三个双精度数据项，末尾空项按默认值处理
+    excel_columns: 3
   - name: Flags
     type: vector<bool>
     comment: 变长布尔列表
@@ -61,13 +59,15 @@ fields:
     comment: 变长字符串列表
   - name: Rarities
     type: vector<ShowcaseRarity>
-    excel_columns: 3
     comment: 最多三个 Enum 数据项
+    excel_columns: 3
   - name: SpawnPoints
     type: vector<WorldPosition>
-    excel_columns: 2
     comment: 最多两个嵌套坐标 Record 数据项
+    excel_columns: 2
   - name: RewardTiers
     type: vector<RewardDefinition>
+    comment: 最多两个嵌套奖励 Record 数据项11
     excel_columns: 2
-    comment: 最多两个嵌套奖励 Record 数据项
+json_key: complexShowcases
+excel_file: complex_showcase.xlsx

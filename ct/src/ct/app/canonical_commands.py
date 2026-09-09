@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import tempfile
+import zipfile
 from pathlib import Path
 
 from openpyxl import load_workbook
@@ -285,7 +286,11 @@ def _migrate_excel_rows(
         if migration.new_index is not None
     }
     old_wb = load_workbook(str(old_path), read_only=True, data_only=False)
-    new_wb = load_workbook(str(new_path), read_only=False, data_only=False)
+    # Preserve CellRichText header runs while saving migrated data; loading
+    # without rich_text=True permanently flattens them to plain strings.
+    new_wb = load_workbook(
+        str(new_path), read_only=False, data_only=False, rich_text=True
+    )
     try:
         old_ws = old_wb.active
         new_ws = new_wb.active
@@ -319,6 +324,58 @@ def _template_column_count(path: Path) -> int | None:
         return None
 
 
+def _validate_staged_workbook(path: Path) -> None:
+    """Reject an incomplete or unreadable XLSX before publishing it."""
+    try:
+        with zipfile.ZipFile(path) as archive:
+            broken_member = archive.testzip()
+        if broken_member is not None:
+            raise ValueError(f"XLSX ZIP 成员损坏: {broken_member}")
+
+        workbook = load_workbook(str(path), read_only=True, data_only=False)
+        try:
+            if not workbook.sheetnames:
+                raise ValueError("XLSX 中没有工作表")
+        finally:
+            workbook.close()
+    except (OSError, KeyError, ValueError, zipfile.BadZipFile) as exc:
+        raise ValueError(f"生成的 Excel 候选文件校验失败: {exc}") from exc
+
+
+def _publish_staged_workbook(staged_path: Path, out_path: Path) -> None:
+    """Atomically publish a staged workbook while preserving Windows metadata."""
+    if os.name != "nt" or not out_path.exists():
+        os.replace(staged_path, out_path)
+        return
+
+    # ReplaceFileW merges the replaced file's DACL and other metadata into the
+    # replacement.  os.replace() only renames the replacement file on Windows,
+    # so its ACL can unexpectedly become the destination ACL.
+    import ctypes
+    from ctypes import wintypes
+
+    replace_file = ctypes.WinDLL("kernel32", use_last_error=True).ReplaceFileW
+    replace_file.argtypes = [
+        wintypes.LPCWSTR,
+        wintypes.LPCWSTR,
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+        wintypes.LPVOID,
+        wintypes.LPVOID,
+    ]
+    replace_file.restype = wintypes.BOOL
+    if not replace_file(
+        str(out_path.resolve()),
+        str(staged_path.resolve()),
+        None,
+        0,
+        None,
+        None,
+    ):
+        error = ctypes.get_last_error()
+        raise OSError(error, ctypes.FormatError(error), str(out_path))
+
+
 def canonical_gen_template(
     root: Path,
     *,
@@ -346,8 +403,16 @@ def canonical_gen_template(
         old_manifest = _load_manifest(manifest_dir, table.table)
         if out_path.exists() and old_manifest is not None:
             old_layout = _layout_from_manifest(table.resource_id, old_manifest)
-            with tempfile.TemporaryDirectory(dir=str(excel_dir)) as temp_dir:
-                staged_path = Path(temp_dir) / out_path.name
+            # Create the candidate directly under excel_dir so it receives the
+            # same inherited Windows ACL and remains on the same volume.
+            staged_fd, staged_name = tempfile.mkstemp(
+                prefix=f".{out_path.stem}.",
+                suffix=".staged.xlsx",
+                dir=str(excel_dir),
+            )
+            os.close(staged_fd)
+            staged_path = Path(staged_name)
+            try:
                 generate_canonical_template(
                     layout,
                     staged_path,
@@ -361,7 +426,10 @@ def canonical_gen_template(
                     layout,
                     old_manifest,
                 )
-                os.replace(staged_path, out_path)
+                _validate_staged_workbook(staged_path)
+                _publish_staged_workbook(staged_path, out_path)
+            finally:
+                staged_path.unlink(missing_ok=True)
             save_manifest(
                 manifest_dir,
                 table.table,

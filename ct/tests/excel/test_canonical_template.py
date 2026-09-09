@@ -80,6 +80,13 @@ def test_template_headers_follow_layout(tmp_path: Path) -> None:
     assert props["ct_schema_hash"] == "sha1"
     assert props["ct_header_rows"] == layout.header_rows
 
+    # The selection belongs to the scrollable pane and must start below the
+    # frozen header; otherwise Excel initially renders the header twice.
+    selection = ws.sheet_view.selection[0]
+    assert selection.pane == "bottomLeft"
+    assert selection.activeCell == f"A{layout.header_rows + 1}"
+    assert selection.sqref == f"A{layout.header_rows + 1}"
+
     # enum dropdown on Rarity column (col 2)
     formulas = [dv.formula1 for dv in ws.data_validations.dataValidation]
     assert any("Common" in formula and "Rare" in formula for formula in formulas)
@@ -96,6 +103,31 @@ def test_template_golden_stable_across_runs(tmp_path: Path) -> None:
     generate_canonical_template(layout, first, enums=enums, primary=table.primary)
     generate_canonical_template(layout, second, enums=enums, primary=table.primary)
     assert first.read_bytes() == second.read_bytes()
+
+
+def test_template_has_no_data_validation_input_prompts(tmp_path: Path) -> None:
+    table = TableResource(
+        table="PromptFree",
+        primary="Id",
+        fields=[
+            FieldDef(name="Id", type="int64"),
+            FieldDef(name="ItemId", type="int32", ref="Item.Id"),
+            FieldDef(name="Enabled", type="bool"),
+        ],
+    )
+    layout = build_layout(table, schema_hash="prompt-free", records={})
+    out = generate_canonical_template(
+        layout,
+        tmp_path / "prompt_free.xlsx",
+        enums={},
+        primary="Id",
+    )
+
+    wb = load_workbook(str(out))
+    validations = wb.active.data_validations.dataValidation
+    assert validations
+    assert all(not validation.showInputMessage for validation in validations)
+    wb.close()
 
 
 def test_fixed_scalar_vector_comment_is_merged(tmp_path: Path) -> None:

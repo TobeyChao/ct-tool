@@ -509,7 +509,7 @@
     ],
     "format": "template-layout/2",
     "header_rows": 8,
-    "layout_revision": 1,
+    "layout_revision": 2,
     "nodes": [
         {
             "annotation": "int64",
@@ -1455,5 +1455,5 @@
             "stablePath": "table:ComplexShowcase/RewardTiers[2]/Bounds/Guaranteed"
         }
     ],
-    "schema_hash": "5067cb18c5d1f427"
+    "schema_hash": "c1d64a7fa047fbb0"
 }
