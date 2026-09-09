@@ -1,4 +1,4 @@
-"""``cache/template_layouts/<table>.json`` sidecar manifests.
+"""``excel/layout_manifests/<table>.json`` sidecar manifests.
 
 The Excel template keeps only lightweight Custom Document Properties; the
 full stable column-path mapping lives here so data migration never guesses
@@ -80,13 +80,13 @@ class LayoutManifest:
         )
 
 
-def _manifest_path(cache_dir: Path, table: str) -> Path:
-    return cache_dir / "template_layouts" / f"{table}.json"
+def _manifest_path(manifest_dir: Path, table: str) -> Path:
+    return manifest_dir / f"{table}.json"
 
 
-def load_manifest(cache_dir: Path, table: str) -> LayoutManifest | None:
+def load_manifest(manifest_dir: Path, table: str) -> LayoutManifest | None:
     """Return the manifest, or ``None`` for missing/corrupt/incompatible files."""
-    path = _manifest_path(cache_dir, table)
+    path = _manifest_path(manifest_dir, table)
     if not path.exists():
         return None
     try:
@@ -101,8 +101,8 @@ def load_manifest(cache_dir: Path, table: str) -> LayoutManifest | None:
         return None
 
 
-def save_manifest(cache_dir: Path, table: str, manifest: LayoutManifest) -> Path:
-    path = _manifest_path(cache_dir, table)
+def save_manifest(manifest_dir: Path, table: str, manifest: LayoutManifest) -> Path:
+    path = _manifest_path(manifest_dir, table)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(

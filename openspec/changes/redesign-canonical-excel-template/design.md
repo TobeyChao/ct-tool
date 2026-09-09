@@ -129,7 +129,7 @@ For this breaking change, fixtures are rebuilt instead of migrated. This keeps t
 3. Update Enum consumers and JSON serialization, then update workbench/API payloads and change-planning risk output.
 4. Close any open fixture workbook and remove the stale `~$item.xlsx` lock file if it remains.
 5. Bump the layout manifest to `template-layout/2`; reject v1 for cutover while verifying a subsequent v2-to-v2 regeneration preserves canonical values.
-6. Delete the tracked test workbooks and generated test outputs, update YAML fixtures to structured Enum items and bracket vectors, regenerate templates, manually refill the small canonical sample dataset, then run validate/export to rebuild outputs. Preserve unrelated panel history such as `gd/cache/panel_history.json`.
+6. Delete the tracked test workbooks and generated test outputs, update YAML fixtures to structured Enum items and bracket vectors, regenerate templates, manually refill the small canonical sample dataset, then run validate/export to rebuild outputs. Preserve unrelated panel history such as `gd/cache/panel_history.json`; keep cross-device `gd/excel/layout_manifests/*.json` under version control.
 7. Run focused schema/layout/reader/export/workbench tests, the full pytest suite, and visual workbook inspection.
 
 Rollback is a source-and-fixture revert through Git. No user-data migration state or hidden workbook state is written, so rollback does not require a reverse migrator.

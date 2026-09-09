@@ -34,4 +34,4 @@ Canonical Excel 模板目前把层级路径直接推导成合并区域，导致 
 - Schema/API：`EnumResource.values` 从字符串变为结构化项；`FieldDef.separator` 删除，相关 Workspace command 和 Web JSON 载荷同步变化。
 - Excel：`ct.excel.layout`、`canonical_template`、`canonical_reader`、layout manifest、模板 hash、数据验证、Note 和测试需要更新。
 - 导出：FBS/Binary/Accessor 需从 Enum 项读取 `name`；canonical JSON writer 改变纯格式输出。
-- 测试数据：`gd/config/types/*.yaml`、`gd/excel/*.xlsx`、`gd/cache` 中可丢弃的 canonical 派生产物和 `gd/output` 全量重建；保留 `gd/cache/panel_history.json` 等非派生状态，不保留旧测试文件兼容路径。
+- 测试数据：`gd/config/types/*.yaml`、`gd/excel/*.xlsx`、`gd/output` 全量重建；`gd/excel/layout_manifests/*.json` 作为跨端迁移元数据纳入版本控制，`gd/cache` 仅保留可丢弃的运行时状态。

@@ -200,6 +200,7 @@ def canonical_status(root: Path) -> dict[str, list[str]]:
     records = _records_map(ws)
     excel_dir = ws.resolve("excel_dir")
     cache_dir = ws.resolve("cache_dir")
+    manifest_dir = ws.resolve("excel_dir") / "layout_manifests"
     state = load_state(cache_dir)
     changed: list[str] = []
     drifted: list[str] = []
@@ -210,7 +211,7 @@ def canonical_status(root: Path) -> dict[str, list[str]]:
             missing.append(table.table)
             continue
         current_hash = _file_sha256(excel_path)
-        manifest = _load_manifest(cache_dir, table.table)
+        manifest = _load_manifest(manifest_dir, table.table)
         schema_hash = _schema_hash(table, records)
         layout = build_layout(table, schema_hash=schema_hash, records=records)
         workbook_column_count = _template_column_count(excel_path)
@@ -226,10 +227,10 @@ def canonical_status(root: Path) -> dict[str, list[str]]:
     return {"changed": sorted(set(changed)), "drifted": sorted(set(drifted)), "missing": sorted(missing)}
 
 
-def _load_manifest(cache_dir: Path, table: str) -> LayoutManifest | None:
+def _load_manifest(manifest_dir: Path, table: str) -> LayoutManifest | None:
     from ct.excel.layout_manifest import load_manifest
 
-    return load_manifest(cache_dir, table)
+    return load_manifest(manifest_dir, table)
 
 
 def _schema_hash(table, records) -> str:
@@ -330,6 +331,7 @@ def canonical_gen_template(
     excel_dir = ws.resolve("excel_dir")
     excel_dir.mkdir(parents=True, exist_ok=True)
     cache_dir = ws.resolve("cache_dir")
+    manifest_dir = ws.resolve("excel_dir") / "layout_manifests"
     targets = [t for t in ws.tables if table_filter is None or table_filter == t.table]
     if table_filter is None and not all_tables:
         raise ValueError("请指定 --all 或 --table <表名>")
@@ -341,7 +343,7 @@ def canonical_gen_template(
             records=records,
         )
         out_path = excel_dir / (table.excel_file or f"{table.table}.xlsx")
-        old_manifest = _load_manifest(cache_dir, table.table)
+        old_manifest = _load_manifest(manifest_dir, table.table)
         if out_path.exists() and old_manifest is not None:
             old_layout = _layout_from_manifest(table.resource_id, old_manifest)
             with tempfile.TemporaryDirectory(dir=str(excel_dir)) as temp_dir:
@@ -361,7 +363,7 @@ def canonical_gen_template(
                 )
                 os.replace(staged_path, out_path)
             save_manifest(
-                cache_dir,
+                manifest_dir,
                 table.table,
                 LayoutManifest.from_layout(
                     layout, previous_revision=old_manifest.layout_revision
@@ -376,7 +378,7 @@ def canonical_gen_template(
             generate_canonical_template(
                 layout, out_path, enums={e.name: e for e in ws.enums}, primary=table.primary
             )
-            save_manifest(cache_dir, table.table, LayoutManifest.from_layout(layout))
+            save_manifest(manifest_dir, table.table, LayoutManifest.from_layout(layout))
         messages.append(f"模板已生成: {table.table}")
     if targets:
         state = load_state(cache_dir) or CanonicalCacheState()

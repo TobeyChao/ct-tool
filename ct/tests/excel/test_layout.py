@@ -140,31 +140,31 @@ def test_logical_path_strips_group_marker() -> None:
 
 
 def test_manifest_create_read_and_revision(tmp_path: Path) -> None:
-    cache = tmp_path / "cache"
+    manifests = tmp_path / "layout_manifests"
     table = _table([FieldDef(name="Id", type="int32")])
     layout = build_layout(table, schema_hash="abc", records={})
 
-    assert load_manifest(cache, "Item") is None
-    save_manifest(cache, "Item", LayoutManifest.from_layout(layout))
-    first = load_manifest(cache, "Item")
+    assert load_manifest(manifests, "Item") is None
+    save_manifest(manifests, "Item", LayoutManifest.from_layout(layout))
+    first = load_manifest(manifests, "Item")
     assert first is not None and first.layout_revision == 1
     assert first.schema_hash == "abc"
     assert first.columns[0]["stablePath"] == "table:Item/Id"
 
-    save_manifest(cache, "Item", LayoutManifest.from_layout(layout, previous_revision=first.layout_revision))
-    second = load_manifest(cache, "Item")
+    save_manifest(manifests, "Item", LayoutManifest.from_layout(layout, previous_revision=first.layout_revision))
+    second = load_manifest(manifests, "Item")
     assert second is not None and second.layout_revision == 2
 
 
 def test_manifest_missing_and_corruption(tmp_path: Path) -> None:
-    cache = tmp_path / "cache"
-    assert load_manifest(cache, "Item") is None
+    manifests = tmp_path / "layout_manifests"
+    assert load_manifest(manifests, "Item") is None
 
-    path = cache / "template_layouts" / "Item.json"
+    path = manifests / "Item.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("{ not json", encoding="utf-8")
-    assert load_manifest(cache, "Item") is None
+    assert load_manifest(manifests, "Item") is None
 
     path.write_text('{"format":"template-layout/1","columns":[]}', encoding="utf-8")
-    manifest = load_manifest(cache, "Item")
+    manifest = load_manifest(manifests, "Item")
     assert manifest is None

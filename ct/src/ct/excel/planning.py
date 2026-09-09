@@ -166,8 +166,15 @@ def plan_excel_migration(
     migrations: list[ColumnMigration] = []
     new_used: set[int] = set()
     for old_column in old_layout.columns:
+        # Stable paths include fixed-vector slot markers ([1], [2], ...), so
+        # they are the authoritative identity when a compatible manifest is
+        # available.  Logical-path fallback is only for legacy rename/collapse
+        # cases where a stable path cannot be preserved.
+        stable_mapped = rename_map.get(old_column.stable_path, old_column.stable_path)
+        target = new_stable.get(stable_mapped)
         mapped = rename_map.get(old_column.logical_path, old_column.logical_path)
-        target = new_stable.get(mapped)
+        if target is None:
+            target = new_stable.get(mapped)
         if target is None:
             candidates = new_logical.get(mapped, [])
             # A logical path is safe only when it identifies one new column.
@@ -201,7 +208,7 @@ def plan_excel_migration(
         issues.append(
             PlanIssue(
                 kind="untracked",
-                message="Excel 缺少可信路径清单（template_layouts manifest），"
+                message="Excel 缺少可信路径清单（excel/layout_manifests manifest），"
                 "列映射需人工核对，不允许静默写回",
             )
         )

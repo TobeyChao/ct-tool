@@ -412,7 +412,8 @@ ct i18n compact [OPTIONS]
 ├── excel/                   # Excel 数据表（策划填写）
 │   ├── item.xlsx
 │   ├── item_type.xlsx
-│   └── quest.xlsx
+│   ├── quest.xlsx
+│   └── layout_manifests/    # Excel 迁移元数据（需纳入版本控制）
 ├── output/                  # 导出产物输出目录
 │   ├── json/                #   JSON 文件（按语言分目录）
 │   │   ├── zh/
@@ -422,7 +423,7 @@ ct i18n compact [OPTIONS]
 │   └── generated/           #   生成的 Accessor 代码
 │       ├── csharp/          #     C# Accessor
 │       └── lua/             #     Lua Accessor
-├── cache/                   # 增量导出缓存（自动生成，勿手动编辑）
+├── cache/                   # 本机运行时缓存（自动生成，勿手动编辑）
 │   ├── state.json           #   每表的 Excel hash、ID 集合、schema_hash、fbs bytes hash
 │   └── fbs_bytes/           #   未变化表的 FlatBuffers bytes 缓存
 ├── i18n/                    # 国际化翻译文件（按语言/表二维拆分）
@@ -440,9 +441,9 @@ ct i18n compact [OPTIONS]
 | 目录       | 用途                                                                                        |
 | ---------- | ------------------------------------------------------------------------------------------- |
 | `config/`  | 全局配置文件和表 Schema 定义。`global.yaml` 控制语言、路径等全局设置；`schemas/` 下每表一个 YAML |
-| `excel/`   | 策划维护的 Excel 数据表，文件名与 Schema 中的 `excel_file` 对应                              |
+| `excel/`   | 策划维护的 Excel 数据表及跨端迁移所需的 `layout_manifests/` 元数据                          |
 | `output/`  | 所有导出产物的输出目录，包括 JSON、.fbs、Binary Bundle 和生成的 Accessor 代码                 |
-| `cache/`   | 增量导出的缓存数据，记录文件 hash 以判断哪些表有变化。由工具自动管理，不应手动修改            |
+| `cache/`   | 本机增量状态、面板历史和临时事务文件。由工具自动管理，不应手动修改；Excel layout manifest 不在此目录 |
 | `i18n/`    | 国际化文件，按"语言/表"二维拆分。`source/` 由工具自动维护（主语言原文），`{lang}/` 由翻译者维护译文 |
 
 ---

@@ -222,7 +222,7 @@ def run_canonical_export(
                     layout, excel_path, enums=enums, primary=table.primary
                 )
                 written.append(str(excel_path))
-            save_manifest(cache_dir, table.table, LayoutManifest.from_layout(layout))
+            save_manifest(excel_dir / "layout_manifests", table.table, LayoutManifest.from_layout(layout))
     finally:
         reporter.step_finished(CANONICAL_STEPS[2])
 
