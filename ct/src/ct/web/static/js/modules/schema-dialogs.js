@@ -16,6 +16,8 @@ import { api } from "../core/api.js";
 import { escapeHtml } from "../core/dom.js";
 
 const NAME_RE = /^[A-Z][A-Za-z0-9_]*$/;
+// 后端 EnumItem 用 str.isidentifier() 校验；这里做 ASCII 近似（允许小写开头与 _）。
+const ENUM_VALUE_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 export const KIND_LABEL = { table: "Table", record: "Record", enum: "Enum" };
 // shared kind inference: named resources carry an explicit kind, otherwise
 // tables/records have a `fields` list and enums do not.
@@ -159,18 +161,113 @@ export function promptRenameField(ctx, resource, oldName) {
 }
 
 export function promptEnumValue(ctx, resource, values) {
+  const items = values.map((v) => typeof v === "string" ? { name: v, comment: "" } : v);
+  const handle = openDialog({
+    title: "新增值",
+    variant: "sm",
+    initialFocusSelector: "[data-aev-name]",
+    body: `<div class="ct-dlg-field">
+        <label class="ct-dlg-label">值名称</label>
+        <input class="ct-dlg-input" data-aev-name placeholder="如 Epic" autocomplete="off">
+        <div class="ct-dlg-err">标识符：字母/下划线开头，可含数字</div>
+      </div>
+      <div class="ct-dlg-field">
+        <label class="ct-dlg-label">注释</label>
+        <textarea class="ct-dlg-input ct-comment-input" data-aev-comment rows="3" placeholder="可选"></textarea>
+      </div>
+      <div class="ct-dlg-msg" data-aev-msg hidden></div>`,
+    footer: `<button class="ct-btn ct-btn-ghost" data-cancel>取消</button>
+      <button class="ct-btn ct-btn-primary" data-submit>添加</button>`,
+  });
+  const nameEl = handle.el.querySelector("[data-aev-name]");
+  const commentEl = handle.el.querySelector("[data-aev-comment]");
+  const msgEl = handle.el.querySelector("[data-aev-msg]");
+  const showMsg = (text) => { msgEl.hidden = !text; msgEl.textContent = text || ""; };
+  nameEl.addEventListener("input", () => { nameEl.classList.remove("invalid"); showMsg(""); });
+  nameEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") handle.el.querySelector("[data-submit]").click();
+  });
+  handle.el.querySelector("[data-cancel]").addEventListener("click", () => handle.close());
+  handle.el.querySelector("[data-submit]").addEventListener("click", async () => {
+    const name = nameEl.value.trim();
+    if (!ENUM_VALUE_RE.test(name)) {
+      nameEl.classList.add("invalid");
+      nameEl.focus();
+      showMsg("值名称须为标识符（字母/下划线开头，可含数字）");
+      return;
+    }
+    if (items.some((item) => item.name === name)) {
+      nameEl.classList.add("invalid");
+      showMsg(`值 '${name}' 已存在`);
+      return;
+    }
+    const next = [...items, { name, comment: commentEl.value.trim() }];
+    // 提交前后端校验兜底（标识符/重复/256 上限），失败保持弹窗打开
+    try {
+      const validation = await api("/api/schema-workspace/validate", {
+        method: "POST",
+        body: JSON.stringify({ commands: [{ type: "set_enum_values", payload: { name: resource.resourceId, values: next } }] }),
+      });
+      if (!validation.valid) {
+        const first = validation.issues && validation.issues[0];
+        showMsg(first ? `${first.message}${first.location ? `（${first.location}）` : ""}` : "值约束校验失败");
+        return;
+      }
+    } catch (e) {
+      showMsg(e.message || "校验失败");
+      return;
+    }
+    ctx.pushCommand({ type: "set_enum_values", payload: { name: resource.resourceId, values: next } });
+    handle.close();
+  });
+}
+
+/* ---- 重命名枚举值（与重命名字段同为表单弹窗） ---- */
+export function promptRenameEnumValue(ctx, resource, oldName, ordinal) {
   formDialog({
-    title: "新增枚举值",
-    label: "枚举值名称",
-    placeholder: "如 Epic",
-    submitLabel: "添加",
-    validate: { check: (v) => v.length > 0, hint: "枚举值不能为空" },
+    title: "重命名值",
+    label: "新值名称",
+    placeholder: oldName,
+    initial: oldName,
+    submitLabel: "重命名",
+    validate: {
+      check: (v) =>
+        ENUM_VALUE_RE.test(v) &&
+        !resource.values.some((x, i) => i !== ordinal && (typeof x === "string" ? x : x.name) === v),
+      hint: "标识符（字母/下划线开头），且不与现有值重复",
+    },
     onSubmit: (value) => {
-      const items = values.map((v) => typeof v === "string" ? { name: v, comment: "" } : v);
-      const comment = window.prompt("枚举项注释（可留空）", "") ?? "";
-      ctx.pushCommand({ type: "set_enum_values", payload: { name: resource.resourceId, values: [...items, { name: value, comment }] } });
+      if (value === oldName) return false;
+      ctx.pushCommand({ type: "rename_enum_item", payload: { name: resource.resourceId, oldName, newName: value, originalOrdinal: ordinal } });
     },
   });
+}
+
+/* ---- 编辑枚举值注释（与字段注释同为 textarea 弹窗） ---- */
+export function openEnumCommentEditor(ctx, resource, item, ordinal) {
+  const handle = openDialog({
+    title: `编辑值注释 · ${item.name}`,
+    variant: "sm",
+    initialFocusSelector: "[data-enum-comment-input]",
+    body: `<div class="ct-dlg-field">
+        <label class="ct-dlg-label" for="enum-comment-input">注释</label>
+        <textarea class="ct-dlg-input ct-comment-input" id="enum-comment-input" data-enum-comment-input rows="4" placeholder="填写该枚举值含义">${escapeHtml(item.comment || "")}</textarea>
+      </div>`,
+    footer: `<button class="ct-btn ct-btn-ghost" data-cancel>取消</button><button class="ct-btn ct-btn-primary" data-submit>保存注释</button>`,
+  });
+  const input = handle.el.querySelector("[data-enum-comment-input]");
+  const submit = () => {
+    const values = resource.values.map((v) => typeof v === "string" ? { name: v, comment: "" } : v);
+    values[ordinal] = { ...values[ordinal], comment: input.value.trim() };
+    ctx.pushCommand({ type: "set_enum_values", payload: { name: resource.resourceId, values } });
+    handle.close();
+  };
+  handle.el.querySelector("[data-cancel]").addEventListener("click", () => handle.close());
+  handle.el.querySelector("[data-submit]").addEventListener("click", submit);
+  input.addEventListener("keydown", (event) => {
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") submit();
+  });
+  return handle;
 }
 
 /* ---- F2 类型选择器（可嵌套：F1 内与字段表独立入口共用） ---- */

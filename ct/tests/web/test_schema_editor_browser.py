@@ -490,7 +490,7 @@ def test_query_index_cards_emit_set_indexes(editor_url: str, chromium_browser: A
     context.close()
 
 
-def test_enum_editor_values_and_reverse_refs(editor_url: str, chromium_browser: Any) -> None:
+def test_enum_editor_value_operations(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
     _open_schema_module(page, editor_url)
@@ -498,21 +498,29 @@ def test_enum_editor_values_and_reverse_refs(editor_url: str, chromium_browser: 
     page.locator('#page-schema .ct-resource-row[data-name="ItemRarity"]').first.click()
     page.wait_for_selector("#page-schema #enum-add-value")
 
-    assert "byte（只读" in page.locator("#page-schema #editor-body").text_content()
-
-    # add a value via the form dialog
+    # add a value via the dialog (name + optional comment), backend pre-check runs
     page.locator("#page-schema #enum-add-value").click()
-    page.wait_for_selector("[data-form-input]")
-    page.fill("[data-form-input]", "Legendary")
+    page.wait_for_selector("[data-aev-name]")
+    page.fill("[data-aev-name]", "Legendary")
     page.locator("[data-submit]").click()
-    page.wait_for_timeout(200)
+    page.wait_for_selector(".ct-dialog-mask", state="hidden")
+    page.wait_for_selector('#page-schema tr[data-enum-value="Legendary"]')
     assert "1 条未应用变更" in _draftbar_text(page)
     assert "Legendary" in page.locator("#page-schema #editor-body").text_content()
 
-    # remove a value (idempotent full-list command, no confirm)
-    page.locator('#page-schema [data-enum-remove="Common"]').click()
-    page.wait_for_timeout(200)
+    # rename by clicking the value name (form dialog, same as field rename)
+    page.locator('#page-schema tr[data-enum-value="Legendary"] [data-act="rename"]').click()
+    page.wait_for_selector("[data-form-input]")
+    page.fill("[data-form-input]", "Mythic")
+    page.locator("[data-submit]").click()
+    page.wait_for_selector(".ct-dialog-mask", state="hidden")
+    page.wait_for_selector('#page-schema tr[data-enum-value="Mythic"]')
     assert "2 条未应用变更" in _draftbar_text(page)
+
+    # remove a value (idempotent full-list command, no confirm)
+    page.locator('#page-schema tr[data-enum-value="Common"] [data-act="delete"]').click()
+    page.wait_for_selector('#page-schema tr[data-enum-value="Common"]', state="detached")
+    assert "3 条未应用变更" in _draftbar_text(page)
     context.close()
 
 

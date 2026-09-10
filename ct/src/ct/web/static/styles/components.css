@@ -238,8 +238,6 @@ table.ct-data thead th { position: sticky; top: 0; z-index: 2; }
 .ct-index-card-head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 13px; margin-bottom: 8px; }
 .ct-index-preview { color: var(--ct-ink-3); font-size: 11.5px; }
 
-.ct-enum-values { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
-.ct-enum-value { display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--ct-border); border-radius: 6px; padding: 5px 8px; }
 .ct-ref-list { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ct-ink-2); }
 
 .ct-vlist-window { display: flex; flex-direction: column; gap: 0; }

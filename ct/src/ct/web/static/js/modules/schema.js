@@ -15,6 +15,8 @@ import {
   confirmDeleteResource,
   promptRenameField,
   promptEnumValue,
+  promptRenameEnumValue,
+  openEnumCommentEditor,
   openTypePicker,
   openFieldTypeEditor,
   openFieldCommentEditor,
@@ -581,32 +583,40 @@ export async function mount(container) {
     }
     if (resource.kind === "enum" || !resource.fields) {
       const values = resource.values || [];
-      const refs = state.reverseRefs[resource.resourceId] || [];
       const enumId = resource.resourceId;
+      const enumRows = values.map((v, ordinal) => {
+        const item = typeof v === "string" ? { name: v, comment: "" } : v;
+        return `<tr data-enum-value="${escapeHtml(item.name)}">
+          <td><span class="ct-mono ct-hint">${ordinal}:</span> <button class="ct-inline-btn" data-act="rename" title="重命名">${escapeHtml(item.name)}</button></td>
+          <td class="ct-mono">${escapeHtml(item.comment || "")}</td>
+          <td class="ct-row-ops">
+            <button class="ct-inline-btn" data-act="comment" title="编辑值注释">注释</button>
+            <button class="ct-inline-btn ct-danger" data-act="delete" title="删除值">✕</button>
+          </td>
+        </tr>`;
+      }).join("");
       editorBody.innerHTML = `${warning}
-        <div class="ct-field"><label class="ct-field-label">Wire 类型</label><div><span class="ct-badge ct-badge-mute">byte（只读，FlatBuffers 固定）</span></div></div>
-        <div class="ct-field"><label class="ct-field-label">值</label>
-          <div class="ct-enum-values">${values.map((v, ordinal) => {
-            const item = typeof v === "string" ? { name: v, comment: "" } : v;
-            return `<div class="ct-enum-value"><span class="ct-mono">${ordinal}: ${escapeHtml(item.name)}</span><span>${escapeHtml(item.comment || "")}</span><button class="ct-inline-btn" data-enum-rename="${escapeHtml(item.name)}" data-enum-ordinal="${ordinal}">重命名</button><button class="ct-inline-btn ct-danger" data-enum-remove="${escapeHtml(item.name)}">✕</button></div>`;
-          }).join("") || '<div class="ct-empty-sub">（空）</div>'}</div>
-          <button class="ct-btn ct-btn-ghost" id="enum-add-value">新增值</button></div>
-        <div class="ct-field"><label class="ct-field-label">反向引用（${refs.length}）</label>
-          <div class="ct-ref-list">${refs.map((r) => `<div class="ct-mono">${escapeHtml(r.field)}（${escapeHtml(r.kind)}）</div>`).join("") || '<div class="ct-empty-sub">未被引用</div>'}</div></div>`;
+        <section class="ct-editor-section">
+          <div class="ct-section-heading"><div><h2>值</h2><p>列表位置即 wire 序号（byte），点击值名可重命名。</p></div></div>
+          <div class="ct-field-table"><table class="ct-data ct-field-grid"><thead><tr><th>值</th><th>注释</th><th aria-label="操作"></th></tr></thead>
+          <tbody>${enumRows || '<tr><td colspan="3" class="ct-empty-sub">（空）</td></tr>'}</tbody></table>
+          <button class="ct-add-row" id="enum-add-value">＋ 新增值</button></div>
+        </section>`;
       editorBody.querySelector("#enum-add-value").addEventListener("click", () => promptEnumValue(ctx, resource, values));
-      editorBody.querySelectorAll("[data-enum-remove]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const value = btn.dataset.enumRemove;
-          pushCommand({ type: "set_enum_values", payload: { name: enumId, values: values.filter((v) => (typeof v === "string" ? v : v.name) !== value) } });
-        });
-      });
-      editorBody.querySelectorAll("[data-enum-rename]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const oldName = btn.dataset.enumRename;
-          const newName = window.prompt("新的枚举名称", oldName);
-          if (!newName || newName === oldName) return;
-          const ordinal = Number(btn.dataset.enumOrdinal);
-          pushCommand({ type: "rename_enum_item", payload: { name: enumId, oldName, newName, originalOrdinal: ordinal } });
+      editorBody.querySelectorAll("[data-act]").forEach((btn) => {
+        btn.addEventListener("click", (event) => {
+          event.stopPropagation();
+          const value = btn.closest("tr").dataset.enumValue;
+          const ordinal = values.findIndex((v) => (typeof v === "string" ? v : v.name) === value);
+          const act = btn.dataset.act;
+          if (act === "rename") {
+            promptRenameEnumValue(ctx, resource, value, ordinal);
+          } else if (act === "comment") {
+            const item = values[ordinal];
+            openEnumCommentEditor(ctx, resource, typeof item === "string" ? { name: item, comment: "" } : item, ordinal);
+          } else if (act === "delete") {
+            pushCommand({ type: "set_enum_values", payload: { name: enumId, values: values.filter((v) => (typeof v === "string" ? v : v.name) !== value) } });
+          }
         });
       });
       return;
