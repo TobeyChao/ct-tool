@@ -111,7 +111,7 @@ def _emit_csharp_field(field: AccessorField, qualified_row: str, indent: int) ->
     ``ItemAccessor.``); inside the accessor class pass ``""``"""
     slot = _vtable_slot(field)
     if field.kind == "vector":
-        # harmony 风格单一容器（NArray<T> / NStructArray<T>）；record 行类型需带 qualified 前缀
+        # 参考实现 风格单一容器（NArray<T> / NStructArray<T>）；record 行类型需带 qualified 前缀
         if field.element_kind == "record" and field.record_name:
             container = f"NStructArray<{qualified_row}{field.record_name}Row>"
         elif field.container_text:

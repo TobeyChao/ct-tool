@@ -41,7 +41,7 @@ class AccessorField:
 
     @property
     def container_text(self) -> str | None:
-        """The harmony-style single value container type for a vector field."""
+        """The ref-style single value container type for a vector field."""
         if self.kind != "vector":
             return None
         if self.element_kind == "record" and self.record_name:

@@ -6,14 +6,14 @@ using System.Text;
 using System.Threading;
 
 // NOTE: 本 reader 只面向【可信、工具生成、不可变】的 FlatBuffers 配置数据。
-// Release（未定义 CONFIG_DEBUG）下，逐元素的版本/越界检查被编译掉（harmony LH_DEBUG 同款），
+// Release（未定义 CONFIG_DEBUG）下，逐元素的版本/越界检查被编译掉（参考实现 LH_DEBUG 同款），
 // 以获得 VecBase 直读的性能；调用方必须传合法下标，且只使用“当前已加载这套 bin”里的句柄。
 // 仅 `_base == null`（缺失字段）做无条件安全兜底。若喂脏数据/损坏 bundle，属未定义行为。
 // 并发契约：只支持【只读并发】——多线程可同时读；世代推进（LoadBundle 加载 / Clear 销毁整套）
 // 只允许发生在整套边界，不得与读取并发。bin 为原子单元，无“部分更新/单表重载”语义：
 // 单表重载（不经 LoadBundle）不受支持、不失效旧句柄与驻留缓存。
 
-/// <summary>read-only 回调式 struct 读取协议（对齐 harmony IConfigStruct）。</summary>
+/// <summary>read-only 回调式 struct 读取协议（对齐 参考实现 IConfigStruct）。</summary>
 public interface IConfigStruct
 {
     unsafe void SetPointer(byte* p, int pVersion);
@@ -41,7 +41,7 @@ public static unsafe class TableVersion
     }
 }
 
-/// <summary>FlatBuffers 标量向量容器：一次 Indirect 拿基址+长度，[i] 直读（B-2b / harmony NArray&lt;T&gt;）。</summary>
+/// <summary>FlatBuffers 标量向量容器：一次 Indirect 拿基址+长度，[i] 直读（B-2b / 参考实现 NArray&lt;T&gt;）。</summary>
 public unsafe struct NArray<T> : IEnumerable<T> where T : unmanaged
 {
     private byte* _base;
@@ -82,7 +82,7 @@ public unsafe struct NArray<T> : IEnumerable<T> where T : unmanaged
     IEnumerator IEnumerable.GetEnumerator() { for (int i = 0; i < _len; i++) yield return this[i]; }
 }
 
-/// <summary>FlatBuffers 结构体/嵌套表向量容器：每元素为 uoffset 指向嵌套表（harmony NStructArray&lt;T&gt;）。</summary>
+/// <summary>FlatBuffers 结构体/嵌套表向量容器：每元素为 uoffset 指向嵌套表（参考实现 NStructArray&lt;T&gt;）。</summary>
 public unsafe struct NStructArray<T> : IEnumerable<T> where T : struct, IConfigStruct
 {
     private byte* _elements;
@@ -130,7 +130,7 @@ public unsafe struct NString : IConfigStruct
     public int Length => _ptr == null ? 0 : *(int*)_ptr;
     public override string ToString()
     {
-        TableVersion.Check(_pVersion); // 与 harmony 一致：访问字符串前先做版本检查（Release 条件编译掉）
+        TableVersion.Check(_pVersion); // 与 参考实现 一致：访问字符串前先做版本检查（Release 条件编译掉）
         return NStringCache.Get(_ptr, _pVersion);
     }
     public static implicit operator string(NString ns) => ns.ToString();

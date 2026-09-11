@@ -5,7 +5,7 @@
 - [x] 1.3 新增每表查询：`Count(table)` / `ByIndex(table, i)` / `ByID(table, id)`，保留 `IndexSearch`
 - [x] 1.4 新增容器：`NArray<T>`（unmanaged）、`NStructArray<T>`、`NString`；构造时调用 `VecBase`，提供 `Length`/`[i]`/`IEnumerable<T>`/`SafeGet`
 - [x] 1.5 引导层：load bundle → 取表 → `VectorBase`/`Count`/`RowAt`（供 accessor 的 `ByID/ByIndex`）
-- [x] 1.6 版本/epoch 守卫（对齐 harmony `pVersion`/`PointerCheck`），随表重载/切语言失效
+- [x] 1.6 版本/epoch 守卫（对齐 参考实现 `pVersion`/`PointerCheck`），随表重载/切语言失效
 - [x] 1.7 `NStringCache` 字符串驻留
 - [x] 1.8 在 `test-proj/ConfigAccessorBench` 集成本 reader（替代临时 WireReader），跑通正确性
 

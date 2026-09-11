@@ -40,7 +40,7 @@
 - **THEN** 生成 `output/fbs/container.fbs`，包含 `BundledTable` 和 `DataBundle` 定义
 
 ### Requirement: Generate canonical C# Accessor with query API and typed fields
-工具 SHALL 为每张表生成 C# Accessor，与 canonical 指针式 reader（`WireReader`）对齐 harmony 的接口与性能：行句柄持 `IntPtr`；每表提供 `Count/ByID/ByIndex` 查询；字段类型化暴露（enum 返回 `(EnumType)`，跨表 `ref` 提供类型化访问）；vector 字段暴露为**单一可索引/可枚举容器**（`NArray<T>`/`NStructArray<T>`）并在构造时捕获向量基址（`VecBase`）实现 O(1) 直读。i18n 字段按当前语言表读取。
+工具 SHALL 为每张表生成 C# Accessor，与 canonical 指针式 reader（`WireReader`）对齐 参考实现 的接口与性能：行句柄持 `IntPtr`；每表提供 `Count/ByID/ByIndex` 查询；字段类型化暴露（enum 返回 `(EnumType)`，跨表 `ref` 提供类型化访问）；vector 字段暴露为**单一可索引/可枚举容器**（`NArray<T>`/`NStructArray<T>`）并在构造时捕获向量基址（`VecBase`）实现 O(1) 直读。i18n 字段按当前语言表读取。
 
 #### Scenario: C# Accessor exposes per-table query API
 - **WHEN** 生成 `ItemAccessor.cs`
@@ -63,7 +63,7 @@
 - **THEN** 生成 `public NArray<int> Tags => new NArray<int>(WireReader.VecBase(_row, slot), count);`，支持 `Tags.Length`、`Tags[i]`、`foreach`；`vector<Record>` 生成 `NStructArray<T>`；`vector<string>` 生成 `NStructArray<NString>`
 
 ### Requirement: Generate canonical Lua Accessor with query API and typed fields
-工具 SHALL 为每张表生成 Lua Accessor，与 canonical reader（`GD`）对齐 harmony 的接口与性能：提供 `M.Count/M.ByID/M.ByIndex` 查询，enum 返回类型化值，跨表 `ref` 提供类型化访问，vector 返回惰性表（数组值）经基址捕获读取。i18n 字段按当前语言表读取。
+工具 SHALL 为每张表生成 Lua Accessor，与 canonical reader（`GD`）对齐 参考实现 的接口与性能：提供 `M.Count/M.ByID/M.ByIndex` 查询，enum 返回类型化值，跨表 `ref` 提供类型化访问，vector 返回惰性表（数组值）经基址捕获读取。i18n 字段按当前语言表读取。
 
 #### Scenario: Lua Accessor exposes per-table query API
 - **WHEN** 生成 `ItemAccessor.lua`
@@ -89,7 +89,7 @@
 - **THEN** 构造器调用一次 `VecBase(obj, slot)` 获取基址与 `len`，后续索引不再解析 vtable
 
 ### Requirement: Cross-table ref typed accessor is backed by cache
-工具 SHALL 为跨表 `ref` 生成类型化访问，其底层用**一次建立的 id→行缓存**，避免每个字段访问都触发原生 P/Invoke（对齐 harmony 的 `{RefType}.ByID(id)`，但不牺牲性能）。
+工具 SHALL 为跨表 `ref` 生成类型化访问，其底层用**一次建立的 id→行缓存**，避免每个字段访问都触发原生 P/Invoke（对齐 参考实现 的 `{RefType}.ByID(id)`，但不牺牲性能）。
 
 #### Scenario: ref typed lookup uses cached id→row
 - **WHEN** 首次调用 `item.ItemType` 访问目标表

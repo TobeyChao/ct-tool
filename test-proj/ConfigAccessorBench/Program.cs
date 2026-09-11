@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 
 /// <summary>
-/// 独立 reader runtime 演示 + 基准（对照 harmony 读取模型）。
+/// 独立 reader runtime 演示 + 基准（对照 参考实现 读取模型）。
 /// 读 ct 导出的 DataBundle（或单表 .bin），用指针式 reader + 容器 + 字符串驻留 + 版本守卫，
 /// 全程不依赖 Unity/游戏，可在本工程独立运行。
 /// </summary>

@@ -1,4 +1,4 @@
-"""Canonical C#/Lua accessor + Code/Group API tests (harmony-aligned, pointer-based row handle)."""
+"""Canonical C#/Lua accessor + Code/Group API tests (ref-aligned, pointer-based row handle)."""
 
 from __future__ import annotations
 

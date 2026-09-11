@@ -1,6 +1,6 @@
 # ConfigAccessorBench — 独立 reader runtime + accessor 接口/性能基准
 
-仓库内**独立于游戏/Unity** 运行的 .NET 10 工程：实现并验证“为 ct 导出物设计的指针式 reader runtime”（对齐 harmony 读取模型），并基准对比 accessor 读取方式。它只依赖 `gd/output/binary/data_zh.bin`，可在本工程直接 `dotnet run`。
+仓库内**独立于游戏/Unity** 运行的 .NET 10 工程：实现并验证“为 ct 导出物设计的指针式 reader runtime”（对齐 参考实现 读取模型），并基准对比 accessor 读取方式。它只依赖 `gd/output/binary/data_zh.bin`，可在本工程直接 `dotnet run`。
 
 > 本工程是 reader 运行时的**首版落点**（按 change `align-config-accessor-api`），后续 ct 生成器按此契约输出、游戏工程再集成。
 
@@ -38,8 +38,8 @@ ratio  after/before = 0.139  (≈7.2× 更快)
 ```
 
 **关键结论**：
-1. **性能对齐 harmony 靠“构造时一次捕获向量基址（`VecBase`）+ `[i]` 直读”**，向量越长收益越大。
-2. **版本守卫/越界必须 `[Conditional("CONFIG_DEBUG")]`**（harmony `LH_DEBUG` 同款）：否则每次访问的开销会吃掉基址捕获收益——这正是本工程先发现、写进 `design.md` 的点。
+1. **性能对齐 参考实现 靠“构造时一次捕获向量基址（`VecBase`）+ `[i]` 直读”**，向量越长收益越大。
+2. **版本守卫/越界必须 `[Conditional("CONFIG_DEBUG")]`**（参考实现 `LH_DEBUG` 同款）：否则每次访问的开销会吃掉基址捕获收益——这正是本工程先发现、写进 `design.md` 的点。
 3. 读端契约由我们定义（指针式 `(IntPtr row, int slot)`，行句柄持 `IntPtr`），独立可运行；游戏后续集成。
 
 ## 再生成大表测试数据

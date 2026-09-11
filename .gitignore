@@ -1,21 +1,89 @@
-# ---------- 跨平台通用（Global/macOS.gitignore 与 Global/Windows.gitignore 节选） ----------
-
-# macOS
+# General
 .DS_Store
+.localized
+__MACOSX/
 .AppleDouble
 .LSOverride
+Icon[
+]
+
+# Resource forks
 ._*
-__MACOSX/
 
-# Windows
+# Files and directories that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.com.apple.timemachine.supported
+.PKInstallSandboxManager
+.PKInstallSandboxManager-SystemSoftware
+.hotfiles.btree
+.vol
+.file
+.disk_label*
+lost+found
+.HFS+ Private Directory Data[
+]
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Mac OS 6 to 9
+Desktop DB
+Desktop DF
+TheFindByContentFolder
+TheVolumeSettingsFolder
+.FBCIndex
+.FBCSemaphoreFile
+.FBCLockFolder
+
+# Quota system
+.quota.group
+.quota.user
+.quota.ops.group
+.quota.ops.user
+
+# TimeMachine
+Backups.backupdb
+.MobileBackups
+.MobileBackups.trash
+MobileBackups.trash
+tmbootpicker.efi
+
+# Windows thumbnail cache files
 Thumbs.db
+Thumbs.db:encryptable
 ehthumbs.db
-Desktop.ini
-*.lnk
-test-artifacts/
+ehthumbs_vista.db
 
-# ---------- test-proj（.NET 二进制读取测试工程） ----------
-test-proj/**/bin/
-test-proj/**/obj/
-test-proj/**/.vs/
-test-proj/ConfigAccessorBench/item_large.bin
+# Dump file
+*.stackdump
+
+# Folder config file
+[Dd]esktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
+
+# ============================================================
+# 项目自有追加（官方模板之上）—— 刷新模板时保留本段以下内容
+# ============================================================
+test-artifacts/
