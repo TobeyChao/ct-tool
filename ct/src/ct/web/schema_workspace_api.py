@@ -20,7 +20,7 @@ from ct.app.schema_workspace.apply import (
     load_plan,
     recover,
 )
-from ct.app.schema_workspace.candidate import validate_candidate
+from ct.app.schema_workspace.candidate import merge_indexes, validate_candidate
 from ct.app.schema_workspace.commands_reducer import Command, DraftLog
 from ct.app.schema_workspace.plan import build_change_plan
 from ct.app.schema_workspace.snapshot import build_snapshot
@@ -107,6 +107,8 @@ def workspace_validate():
     try:
         _ws, log = _draft_from_payload(payload)
         resources, indexes = log.current()
+        # 索引并进资源：否则落盘的 YAML 里没有 indexes，导出器永远看不到它
+        resources = merge_indexes(resources, indexes)
     except (KeyError, ValueError) as exc:
         issue = _stale_draft_issue(exc)
         return jsonify({"ok": True, "data": {"valid": False, "issues": [issue]}})
@@ -147,6 +149,8 @@ def workspace_change_plan():
     try:
         ws, log = _draft_from_payload(payload)
         resources, indexes = log.current()
+        # 索引并进资源：否则落盘的 YAML 里没有 indexes，导出器永远看不到它
+        resources = merge_indexes(resources, indexes)
     except (KeyError, ValueError) as exc:
         return jsonify(
             {
@@ -210,7 +214,8 @@ def workspace_candidate():
     """Return the candidate resource payloads for the draft commands."""
     try:
         _ws, log = _draft_from_payload(request.get_json(silent=True) or {})
-        resources, _ = log.current()
+        resources, indexes = log.current()
+        resources = merge_indexes(resources, indexes)
     except (KeyError, ValueError) as exc:
         return jsonify({"ok": False, "error": _stale_draft_issue(exc)["message"]}), 400
     return jsonify(
@@ -228,6 +233,8 @@ def workspace_prepare_apply():
     try:
         ws, log = _draft_from_payload(payload)
         resources, indexes = log.current()
+        # 索引并进资源：否则落盘的 YAML 里没有 indexes，导出器永远看不到它
+        resources = merge_indexes(resources, indexes)
     except (KeyError, ValueError) as exc:
         return jsonify({"ok": False, "error": _stale_draft_issue(exc)["message"]}), 400
     issues = validate_candidate(resources, indexes)

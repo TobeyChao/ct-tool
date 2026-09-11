@@ -16,8 +16,14 @@ from ct.schema.naming import validate_name
 
 
 ScalarName: TypeAlias = Literal[
+    "int8",
+    "uint8",
+    "int16",
+    "uint16",
     "int32",
+    "uint32",
     "int64",
+    "uint64",
     "float",
     "double",
     "bool",
@@ -26,8 +32,42 @@ ScalarName: TypeAlias = Literal[
 NamedKind: TypeAlias = Literal["record", "enum"]
 
 SCALAR_TYPE_NAMES = frozenset(
-    {"int32", "int64", "float", "double", "bool", "string"}
+    {
+        "int8",
+        "uint8",
+        "int16",
+        "uint16",
+        "int32",
+        "uint32",
+        "int64",
+        "uint64",
+        "float",
+        "double",
+        "bool",
+        "string",
+    }
 )
+
+#: 整数标量（可作主键 / Group 索引键）。
+INTEGER_SCALAR_NAMES = frozenset(
+    {"int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64"}
+)
+
+#: 各标量的默认值（flatbuffers 的 default；**值 == 默认时槽位不写**）。
+SCALAR_DEFAULTS: dict[str, object] = {
+    "int8": 0,
+    "uint8": 0,
+    "int16": 0,
+    "uint16": 0,
+    "int32": 0,
+    "uint32": 0,
+    "int64": 0,
+    "uint64": 0,
+    "float": 0.0,
+    "double": 0.0,
+    "bool": False,
+    "string": "",
+}
 RESERVED_TYPE_NAMES = SCALAR_TYPE_NAMES | {"vector", "table", "record", "enum"}
 
 

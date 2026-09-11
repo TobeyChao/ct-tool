@@ -25,6 +25,13 @@ class LayoutManifest:
     header_rows: int = 2
     columns: tuple[dict[str, Any], ...] = ()
     nodes: tuple[dict[str, Any], ...] = ()
+    # ---- 定宽布局（uniform）----
+    # 导出期决定：字段填充率 >= 阈值的表开定宽，所有行共享同一 vtable，
+    # 于是 slot→offset 是表级常量，生成器可直接发射字面量偏移（无偏移表间接层）。
+    uniform: bool = False
+    fill_rate: float = 0.0
+    # slot -> 行内字节偏移（仅 uniform=True 时有意义）
+    slot_offsets: tuple[tuple[int, int], ...] = ()
 
     @classmethod
     def from_layout(
@@ -32,9 +39,16 @@ class LayoutManifest:
         layout: Layout,
         *,
         previous_revision: int = 0,
+        layout_info: dict[str, Any] | None = None,
     ) -> LayoutManifest:
+        info = layout_info or {}
         return cls(
             layout_revision=previous_revision + 1,
+            uniform=bool(info.get("uniform", False)),
+            fill_rate=float(info.get("fill_rate", 0.0)),
+            slot_offsets=tuple(
+                sorted((int(k), int(v)) for k, v in (info.get("slot_offsets") or {}).items())
+            ),
             schema_hash=layout.schema_hash,
             header_rows=layout.header_rows,
             columns=tuple(
@@ -77,7 +91,19 @@ class LayoutManifest:
                 dict(column) for column in data.get("columns", [])
             ),
             nodes=tuple(dict(node) for node in data.get("nodes", [])),
+            uniform=bool(data.get("uniform", False)),
+            fill_rate=float(data.get("fill_rate", 0.0)),
+            slot_offsets=tuple(
+                (int(pair[0]), int(pair[1]))
+                for pair in data.get("slot_offsets", [])
+                if isinstance(pair, (list, tuple)) and len(pair) == 2
+            ),
         )
+
+    @property
+    def slot_offset_map(self) -> dict[int, int]:
+        """slot -> 行内偏移（uniform 表专用）。"""
+        return dict(self.slot_offsets)
 
 
 def _manifest_path(manifest_dir: Path, table: str) -> Path:
@@ -113,6 +139,9 @@ def save_manifest(manifest_dir: Path, table: str, manifest: LayoutManifest) -> P
                 "header_rows": manifest.header_rows,
                 "columns": list(manifest.columns),
                 "nodes": list(manifest.nodes),
+                "uniform": manifest.uniform,
+                "fill_rate": round(manifest.fill_rate, 6),
+                "slot_offsets": [list(pair) for pair in manifest.slot_offsets],
             },
             ensure_ascii=False,
             sort_keys=True,

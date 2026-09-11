@@ -40,6 +40,27 @@ def _resolve_named(
     return type_expr
 
 
+def merge_indexes(
+    resources: tuple[SchemaResource, ...],
+    indexes: dict[str, tuple[QueryIndex, ...]],
+) -> tuple[SchemaResource, ...]:
+    """把草稿里的索引**并进 Table 资源**。
+
+    索引原本只存在于编辑器的草稿字典里，落盘时被丢弃（``stage_candidate_yaml`` 只写
+    resources）—— 于是编辑器里设的索引从来没有到达 YAML/导出器。并进资源后，
+    持久化、加载、导出走同一条数据通路。
+    """
+    merged: list[SchemaResource] = []
+    for resource in resources:
+        if isinstance(resource, TableResource):
+            merged.append(
+                resource.model_copy(update={"indexes": tuple(indexes.get(resource.resource_id, ()))})
+            )
+        else:
+            merged.append(resource)
+    return tuple(merged)
+
+
 def _resolve_candidate_resources(
     resources: tuple[SchemaResource, ...],
     by_name: dict[str, SchemaResource],

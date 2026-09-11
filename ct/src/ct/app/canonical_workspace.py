@@ -37,6 +37,11 @@ class CanonicalWorkspace:
             config.resolve("types_dir"),
         )
         resources = repository.load()
+        # 索引随 Table 资源加载；这里做一次 schema 级校验（字段存在、类型允许、非 i18n）
+        from ct.schema.indexes import validate_indexes
+
+        for table in resources.tables:
+            validate_indexes(table, table.indexes)
         named_graph = named_dependency_edges(resources.resources)
         order = resource_topological_order(resources.resources, named_graph=named_graph)
         reverse = reverse_references(resources.resources)
@@ -54,6 +59,11 @@ class CanonicalWorkspace:
     @property
     def tables(self) -> tuple:
         return self.resources.tables
+
+    @property
+    def indexes(self) -> dict[str, tuple]:
+        """表 id → 查询索引声明（Code/Group）。"""
+        return {table.resource_id: table.indexes for table in self.resources.tables}
 
     @property
     def records(self) -> tuple:

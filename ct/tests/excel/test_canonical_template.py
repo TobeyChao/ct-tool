@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import time
+import zipfile
+
 from pathlib import Path
 
 from openpyxl import load_workbook
@@ -93,7 +96,30 @@ def test_template_headers_follow_layout(tmp_path: Path) -> None:
     wb.close()
 
 
+#: xlsx 里**必然随生成时刻变化**的成员，比较稳定性时要排除：
+#:   docProps/core.xml    —— openpyxl 在保存时强制把 dcterms:modified 写成当前时间
+#:                           （openpyxl/writer/excel.py），无法从外部钉住
+#:   docProps/custom.xml  —— ct_generated_at 自定义属性
+_VOLATILE_XLSX_MEMBERS = frozenset({"docProps/core.xml", "docProps/custom.xml"})
+
+
+def _stable_members(path: Path) -> dict[str, bytes]:
+    """zip 成员内容，剔除随生成时刻变化的部分。"""
+    with zipfile.ZipFile(path) as zf:
+        return {
+            name: zf.read(name)
+            for name in zf.namelist()
+            if name not in _VOLATILE_XLSX_MEMBERS
+        }
+
+
 def test_template_golden_stable_across_runs(tmp_path: Path) -> None:
+    """同一份输入 + 固定时间戳 ⇒ 模板内容可复现。
+
+    注意：xlsx 里有两处随生成时刻变化的元数据（见 ``_VOLATILE_XLSX_MEMBERS``），
+    所以**不能**直接比对整个文件的字节 —— 原先那样写会让本用例在同一秒内偶发通过、
+    跨秒必失败（本文件 2026-09-11 修正）。
+    """
     table = _table()
     records = _records()
     layout = build_layout(table, schema_hash="sha2", records=records)
@@ -101,8 +127,13 @@ def test_template_golden_stable_across_runs(tmp_path: Path) -> None:
     first = tmp_path / "a.xlsx"
     second = tmp_path / "b.xlsx"
     generate_canonical_template(layout, first, enums=enums, primary=table.primary)
+    time.sleep(1.1)          # 强制跨秒，确保哪怕有时间戳也会暴露
     generate_canonical_template(layout, second, enums=enums, primary=table.primary)
-    assert first.read_bytes() == second.read_bytes()
+
+    a, b = _stable_members(first), _stable_members(second)
+    assert set(a) == set(b), f"成员集合不同: {set(a) ^ set(b)}"
+    differing = [name for name in sorted(a) if a[name] != b[name]]
+    assert not differing, f"跨秒两次生成的模板内容不同: {differing}"
 
 
 def test_template_has_no_data_validation_input_prompts(tmp_path: Path) -> None:

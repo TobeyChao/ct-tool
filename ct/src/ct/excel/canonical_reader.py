@@ -22,7 +22,13 @@ from openpyxl import load_workbook
 
 from ct.excel.layout import Column, Layout
 from ct.schema.resources import EnumResource, RecordResource, TableResource
-from ct.schema.type_expression import NamedType, ScalarType, VectorType
+from ct.schema.type_expression import (
+    INTEGER_SCALAR_NAMES,
+    SCALAR_DEFAULTS,
+    NamedType,
+    ScalarType,
+    VectorType,
+)
 from ct.diagnostics.errors import IssueCode, ValidationIssue
 
 _BOOL_TRUE = frozenset({"true", "1", "yes", "TRUE", "True", "YES", "Yes", "✓"})
@@ -35,7 +41,7 @@ def _coerce_scalar(type_text: str, raw: Any) -> tuple[Any, bool]:
         if type_text == "string":
             return "", True
         return None, True
-    if type_text in ("int32", "int64"):
+    if type_text in INTEGER_SCALAR_NAMES:
         try:
             return int(float(raw)) if isinstance(raw, float) else int(raw), True
         except (TypeError, ValueError):
@@ -120,7 +126,7 @@ def parse_vector_cell(text: str, element_text: str) -> tuple[list[Any], str | No
                 return [], f"第{index}个元素 bool 必须是 true 或 false"
             values.append(token == "true")
             continue
-        if element_text in {"int32", "int64"}:
+        if element_text in INTEGER_SCALAR_NAMES:
             if not re.fullmatch(r"[+-]?\d+", token):
                 return [], f"第{index}个元素期望 {element_text} 类型"
             values.append(int(token))
@@ -327,7 +333,7 @@ class _RowReader:
 
     def _default(self, typ):
         if isinstance(typ, ScalarType):
-            return {"int32": 0, "int64": 0, "float": 0.0, "double": 0.0, "bool": False, "string": ""}[typ.name]
+            return SCALAR_DEFAULTS[typ.name]
         if isinstance(typ, VectorType):
             return []
         if isinstance(typ, NamedType):

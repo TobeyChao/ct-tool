@@ -62,6 +62,36 @@ def test_i18n_requires_string_type() -> None:
         FieldDef(name="Price", type="int32", i18n=True)
 
 
+def test_i18n_rejects_vector_of_string() -> None:
+    """`vector<string>` 是比 `int32` 更像样的诱饵，必须同样被拒。
+
+    约束是「**标量** string」，不是「跟 string 沾边」。若哪天放宽成 `vector<string>`，
+    下面三层会**静默**地不一致：`_i18n_table()` 只按行取值、稀疏表按「一字段一槽位」建模，
+    而向量字段在 i18n 表里没有承载形态。所以这一条要么明确支持、要么明确拒绝，
+    不能让它悄悄通过。
+    """
+    with pytest.raises(ValueError, match="只有 string"):
+        FieldDef(name="Aliases", type="vector<string>", i18n=True)
+
+
+def test_record_i18n_is_enforced_at_schema_layer_not_downstream() -> None:
+    """record 字段的 i18n 必须在 **schema 层**报错 —— 下游两层是**静默**的。
+
+    实测（绕过本校验用 `model_construct` 构造）：record 里的 `i18n: true` 会被
+    `build_accessor_model` 直接忽略 —— 不进 `i18n_fields`、稀疏表不含该字段、
+    生成物按**普通 string** 读，且**零告警**。
+    所以这条校验是唯一的防线，不能当成「反正下游也不会错」而删掉。
+    """
+    with pytest.raises(ValueError, match=r"record:DropReward/Name"):
+        RecordResource(
+            name="DropReward",
+            fields=[
+                FieldDef(name="Id", type="int32"),
+                FieldDef(name="Name", type="string", i18n=True),
+            ],
+        )
+
+
 def test_separator_on_scalar_field_rejected() -> None:
     with pytest.raises(ValueError, match="separator.*移除"):
         FieldDef(name="Price", type="int32", separator=",")
