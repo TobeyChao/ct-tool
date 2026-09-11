@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>UniformE2EBench</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\ConfigAccessorBench\WireReader.cs" />
+    <Compile Include="..\ConfigAccessorBench\Runtime.cs" />
+    <Compile Include="..\ConfigAccessorBench\ConfigReader.cs" />
+    <Compile Include="..\ConfigAccessorBench\Enums.cs" />
+    <Compile Include="..\RefConfigBench\ItemBenchAccessor.g.cs" />
+    <Compile Include="..\RefConfigBench\ItemBenchLiteral.g.cs" />
+    <None Include="..\RefConfigBench\fixtures\ItemBench.bundle.bin" Link="fixtures\ItemBench.bundle.bin" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\RefConfigBench\fixtures\ItemBenchUniform.bundle.bin" Link="fixtures\ItemBenchUniform.bundle.bin" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="fixtures\OurItem.bundle.bin" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="fixtures\OurItemUniform.bundle.bin" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

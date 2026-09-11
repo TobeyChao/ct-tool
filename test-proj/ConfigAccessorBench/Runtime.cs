@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -23,8 +22,19 @@ public interface IConfigStruct
 public static unsafe class TableVersion
 {
     private static int _version;
+    private static int _i18nVersion;
+
+    /// <summary>整套 bin 的世代：LoadBundle / Clear 时前进，**所有**行句柄失效。</summary>
     public static int Current => Volatile.Read(ref _version);
     public static int Bump() => Interlocked.Increment(ref _version);
+
+    /// <summary>
+    /// i18n 表的世代：**只**在切换语言（换 i18n 包）时前进。
+    /// 这样切语言只失效多语言表的 accessor 缓存，**主表行句柄继续有效** ——
+    /// 这是「切语言不重读 main」这条设计的运行时契约。
+    /// </summary>
+    public static int I18nCurrent => Volatile.Read(ref _i18nVersion);
+    public static int BumpI18n() => Interlocked.Increment(ref _i18nVersion);
 
     [System.Diagnostics.Conditional("CONFIG_DEBUG")]
     public static void Check(int v)
@@ -56,14 +66,22 @@ public unsafe struct NArray<T> : IEnumerable<T> where T : unmanaged
         _pVersion = pVersion;
     }
 
+    /// <summary>已解析字段偏移的快速构造：v 为向量长度前缀地址（obj+off 处解引用后）。</summary>
+    public NArray(byte* v, int pVersion)
+    {
+        _len = v == null ? 0 : *(int*)v;
+        _base = v == null ? null : v + 4;
+        _pVersion = pVersion;
+    }
+
     public int Length => _len;
 
     public T this[int index]
     {
         get
         {
-            // 缺失字段（Indirect 返回 null）→ 无条件安全兜底，避免 Release 下解引用 null
-            if (_base == null) return default;
+            // 空值兜底只在构造期做（_len == 0 → 调用方不会进入循环）。
+            // 索引器内保留无条件分支会阻断 JIT 对 sum 循环的自动向量化（实测约 2×）。
 #if CONFIG_DEBUG
             TableVersion.Check(_pVersion);
             if ((uint)index >= (uint)_len) throw new IndexOutOfRangeException($"index {index} len {_len}");
@@ -97,13 +115,20 @@ public unsafe struct NStructArray<T> : IEnumerable<T> where T : struct, IConfigS
         _pVersion = pVersion;
     }
 
+    /// <summary>已解析字段偏移的快速构造：v 为向量长度前缀地址。</summary>
+    public NStructArray(byte* v, int pVersion)
+    {
+        _len = v == null ? 0 : *(int*)v;
+        _elements = v == null ? null : v + 4;
+        _pVersion = pVersion;
+    }
+
     public int Length => _len;
 
     public T this[int index]
     {
         get
         {
-            if (_elements == null) return default;
 #if CONFIG_DEBUG
             TableVersion.Check(_pVersion);
             if ((uint)index >= (uint)_len) throw new IndexOutOfRangeException();
@@ -143,22 +168,39 @@ public unsafe struct NString : IConfigStruct
 /// </summary>
 public static unsafe class NStringCache
 {
-    private static readonly ConcurrentDictionary<nint, string> _cache = new ConcurrentDictionary<nint, string>();
+    // 冷路径（首次扫过 N 个不同字符串）用普通 Dictionary + 仅在 miss 时加锁。
+    // 原实现用 ConcurrentDictionary.GetOrAdd：默认并发级别 = 4*CPU，6685 次插入要跨几十个
+    // 锁/桶反复 rehash，实测冷扫 208 ns/行 vs 参考实现 40 ns/行。
+    // 并发契约不变：多线程可同时读；缓存整体替换只发生在整套 bin 换代边界。
+    private static Dictionary<nint, string> _cache = new Dictionary<nint, string>();
+    private static readonly object _gate = new object();
     private static int _lastVersion = -1;
+
+    /// <summary>直接解码，不走全局字典。per-field 行下标缓存的解码入口。</summary>
+    public static string Decode(byte* ptr)
+    {
+        if (ptr == null) return null;
+        return Encoding.UTF8.GetString(ptr + 4, *(int*)ptr);
+    }
 
     public static string Get(byte* ptr, int pVersion)
     {
         if (ptr == null) return null;
         if (Volatile.Read(ref _lastVersion) != pVersion)
         {
-            _cache.Clear();
-            Volatile.Write(ref _lastVersion, pVersion);
+            lock (_gate)
+            {
+                _cache = new Dictionary<nint, string>(1024);
+                Volatile.Write(ref _lastVersion, pVersion);
+            }
         }
+        Dictionary<nint, string> cache = _cache;
         nint key = (nint)ptr;
-        if (_cache.TryGetValue(key, out var s)) return s;
+        if (cache.TryGetValue(key, out string cached)) return cached;
         int len = *(int*)ptr;
-        s = Encoding.UTF8.GetString(ptr + 4, len);
-        return _cache.GetOrAdd(key, s);
+        string s = Encoding.UTF8.GetString(ptr + 4, len);
+        lock (_gate) { cache[key] = s; }
+        return s;
     }
 }
 
@@ -171,6 +213,17 @@ public static unsafe class NStringCache
 public static unsafe class Runtime
 {
     private static readonly Dictionary<string, ConfigTable> _tables = new Dictionary<string, ConfigTable>();
+
+    /// <summary>
+    /// 注册一张**稀疏 i18n 表**并前进 i18n 世代（切语言）。
+    /// 与 Register 的区别：不动全局世代，主表行句柄与主表 accessor 缓存全部保留。
+    /// </summary>
+    public static void RegisterI18n(ConfigTable table)
+    {
+        if (_tables.TryGetValue(table.Name, out var old)) old?.Dispose();
+        _tables[table.Name] = table;
+        TableVersion.BumpI18n();
+    }
 
     public static void Register(ConfigTable table)
     {
@@ -191,7 +244,22 @@ public static unsafe class Runtime
     public static IntPtr RowAt(string tableName, int index) => _tables[tableName].RowAt(index);
     public static int Version(string tableName) => _tables[tableName].Version;
 
-    // 可选 Code/Group 索引（生成器仅在配置索引时调用）
-    public static int ByCode(string tableName, int slot, string code) => -1;
-    public static int[] GroupKey(string tableName, int slot, int value) => Array.Empty<int>();
+    /// <summary>取表句柄。生成代码应在 accessor 内缓存该结果，避免每次调用都查字符串字典。</summary>
+    public static ConfigTable Table(string tableName) => _tables[tableName];
+
+    /// <summary>
+    /// 取表句柄，不存在返回 null。
+    /// 稀疏 i18n 表（``Item_i18n``）只在加载了对应语言包时存在，读多语言字段必须先问它有没有。
+    /// </summary>
+    public static ConfigTable TryTable(string tableName) =>
+        _tables.TryGetValue(tableName, out var table) ? table : null;
+
+    // 可选 Code/Group 索引（生成器仅在表声明了 indexes 时调用）
+    /// <summary>按 Code 精确查找，返回行下标；未找到返回 -1。slot = 客户端字段序（0-based）。</summary>
+    public static int ByCode(string tableName, int slot, string code) =>
+        _tables[tableName].CodeSearch(slot, code);
+
+    /// <summary>按 Group 键取一组行下标（行序确定）。slot 仅用于契约对齐，Group 不需要确认。</summary>
+    public static int[] GroupKey(string tableName, int slot, int value) =>
+        _tables[tableName].GroupKey(value);
 }

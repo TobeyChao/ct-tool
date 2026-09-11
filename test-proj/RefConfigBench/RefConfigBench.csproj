@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>RefConfigBench</AssemblyName>
+    <RootNamespace>RefConfigBench</RootNamespace>
+    <!-- 单进程内同时跑 参考实现 原生运行时与 ct reader：GC/JIT 配置对两者一致 -->
+    <TieredPGO>true</TieredPGO>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ct 侧读取运行时：直接复用 ConfigAccessorBench 的既有实现，避免双份真相 -->
+    <Compile Include="..\ConfigAccessorBench\WireReader.cs" />
+    <Compile Include="..\ConfigAccessorBench\Runtime.cs" />
+    <Compile Include="..\ConfigAccessorBench\ConfigReader.cs" />
+    <None Include="fixtures\*.bin" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
