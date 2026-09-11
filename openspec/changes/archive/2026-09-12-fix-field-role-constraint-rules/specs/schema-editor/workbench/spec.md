@@ -1,7 +1,7 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Add-field role and constraint mutual exclusion
-添加字段流程 SHALL 依据真实 schema 功能联动「角色」「约束」与「类型修饰」，禁止产出非法或客户端不可用的字段配置；主键字段 `Id` 为固定必有不通过添加字段指派，代号字段 `Code` 为可选固定名字段，`vector` 为可选类型修饰符；无真实语义的约束只作信息提示，不进入草稿命令。
+添加字段流程 SHALL 依据真实 schema 功能联动「角色」「约束」与「类型修饰」，禁止产出非法或客户端不可用的字段配置；主键字段 `Id` 为固定必有不通过添加字段指派，代号字段 `Code` 为可选固定名字段，`vector` 为可选类型修饰符；变长 scalar/Enum/string vector 使用内置 `[...]` 逗号文法且不提供 separator，定长形态使用 `excel_columns` 表示最大槽位数，Record vector 仅允许定长展开，ref 不允许 vector；无真实语义的约束只作信息提示，不进入草稿命令。
 
 #### Scenario: Primary key field is fixed and not offered in add-field
 - **WHEN** 用户打开添加字段流程
@@ -24,6 +24,14 @@
 - **THEN** 可选择单格变长录入或固定列数录入；变长使用内置分隔符，定长配置 `excel_columns`；两者运行时都生成普通变长 vector
 - **AND WHEN** 基础类型 T 为 ref 外键
 - **THEN** 不支持勾选 vector
+
+#### Scenario: Fixed vector explains maximum slots
+- **WHEN** 用户选择定长 vector 并填写 N
+- **THEN** 提交 `excel_columns: N` 且 UI 明确 N 是最大槽位数、末尾空槽位不计入长度
+
+#### Scenario: Record and reference vector constraints
+- **WHEN** 基础类型是 Record 或 ref
+- **THEN** Record vector 只允许配置 excel_columns 的展开形态，ref 禁止 vector
 
 #### Scenario: Informational constraints only
 - **WHEN** 字段涉及工具强制的约束（ref 外键有效性、Code 索引非空唯一等）
