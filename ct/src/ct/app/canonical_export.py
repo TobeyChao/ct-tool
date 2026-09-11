@@ -15,6 +15,7 @@ fingerprints is not wired up yet).
 
 from __future__ import annotations
 
+import shutil
 import time
 from pathlib import Path
 from typing import Any
@@ -34,12 +35,17 @@ from ct.excel.layout import Layout, build_layout
 from ct.excel.layout_manifest import LayoutManifest, load_manifest, save_manifest
 from ct.export.canonical_accessor import (
     generate_csharp_accessor,
+    generate_csharp_enums,
     generate_lua_accessor,
+    generate_lua_enums,
 )
 from ct.export.canonical_accessor_model import build_accessor_model
 from ct.export.canonical_binary import (
     build_canonical_bundle,
     build_canonical_table_bytes,
+    count_vtables,
+    probe_row_layout,
+    written_slot_ratio,
 )
 from ct.export.canonical_fbs import (
     table_fbs_text,
@@ -59,6 +65,11 @@ from ct.schema.resources import (
 CODEGEN_VERSION = "1.0"
 
 CANONICAL_STEPS = ("解析校验", "JSON", "Accessor", "FBS", "Bundle")
+
+# 定宽布局（uniform）的启用阈值：字段填充率 >= 此值的表才开。
+# 依据：填充率 75% 时体积膨胀 <=1.18x（实测扫描），低于此值稀疏表会明显变大。
+# 收益：消除每行访问的 ConfigTable.OffsetsFor（2 种 vtable 约 2.9ns，16 种约 11.2ns）。
+UNIFORM_FILL_THRESHOLD = 0.75
 
 
 class _NullReporter:
@@ -80,6 +91,48 @@ def _records_map(workspace: CanonicalWorkspace) -> dict[str, RecordResource]:
 
 def _enums_map(workspace: CanonicalWorkspace) -> dict[str, EnumResource]:
     return {enum.name: enum for enum in workspace.enums}
+
+
+def _assert_single_vtable(name: str, lang: str, data: bytes) -> None:
+    """定宽硬断言：开了 uniform 就必须真的只有 1 种 vtable。"""
+    n_vt = count_vtables(data)
+    if n_vt != 1:
+        raise CanonicalValidationError(
+            [
+                f"{name}[{lang}]：uniform 布局下出现 {n_vt} 种 vtable（要求恰好 1 种）"
+                "——检查是否有字段类型漏了无条件写槽位"
+            ]
+        )
+
+
+def _i18n_table(table: TableResource) -> TableResource | None:
+    """该表的**稀疏 i18n 表**定义：主键 + i18n 字段（保持主表里的声明顺序）。
+
+    与主表同序是「按下标定位」的前提（否则只能按主键二分查找）。
+    没有 i18n 字段的表返回 ``None``（不产出 i18n 表）。
+    """
+    i18n_fields = [f for f in table.fields if f.i18n and not f.server_only]
+    if not i18n_fields:
+        return None
+    primary = next((f for f in table.fields if f.name == table.primary), None)
+    if primary is None:
+        return None
+    return TableResource(
+        table=f"{table.table}_i18n",
+        primary=table.primary,
+        fields=[primary, *i18n_fields],
+    )
+
+
+def _i18n_rows(
+    table: TableResource, i18n_table: TableResource, merged_rows: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """主表行 → i18n 表行（主键 + i18n 字段），**保持主表行序**。"""
+    i18n_names = [f.name for f in i18n_table.fields if f.name != table.primary]
+    return [
+        {table.primary: row.get(table.primary), **{n: row.get(n) for n in i18n_names}}
+        for row in merged_rows
+    ]
 
 
 def _merge_i18n(
@@ -148,6 +201,23 @@ def run_canonical_export(
 
     written: list[str] = []
     table_bytes: dict[str, dict[str, bytes]] = {}
+    # 每张表的定宽布局决策与落盘信息（阶段 2 产生，阶段 3 写入 layout manifest）
+    layout_info: dict[str, dict[str, Any]] = {}
+    # 次级语言的**稀疏 i18n 表**字节：table → lang → bytes
+    i18n_table_bytes: dict[str, dict[str, bytes]] = {}
+    # ---- B4：全量导出前清理「纯生成物」目录 ----
+    # 陈旧的 output/fbs、output/generated 会让消费方看到**已废弃格式**的 schema
+    # （实例：2026/8/14 的 *_i18n.fbs 与 9/10 的产物并存，而全仓已无代码生成它们）。
+    # 只在**全量导出**时清理：带 table/lang 过滤的导出是增量的，不能删别的表。
+    if table_filter is None and lang_filter is None:
+        # json / binary 是**整目录重写**的产物（每张表、每种语言各一份），
+        # 删表或删语言后旧文件会残留（实测确认），所以一并清理。
+        for stale_dir in ("fbs", "generated", "json", "binary"):
+            target = output_dir / stale_dir
+            if target.exists():
+                shutil.rmtree(target)
+                reporter.log(f"清理陈旧产物目录 output/{stale_dir}")
+
     bundle_hashes: dict[str, str] = {}
 
     # ---- 阶段 1：解析校验（所有表） ----
@@ -190,16 +260,90 @@ def run_canonical_export(
             _check_cancel(cancel_token)
             base_rows = parsed.rows
             table_bytes[table.table] = {}
+
+            # 逐表决定是否启用定宽布局：先用**非 uniform** 产出主语言字节，
+            # 直接从字节统计填充率（不复刻写入规则），>= 阈值才开。
+            client_count = len([f for f in table.fields if not f.server_only])
+            probe = build_canonical_table_bytes(
+                base_rows, table, records=records, enums=enums
+            )
+            fill = written_slot_ratio(probe, client_count)
+            use_uniform = fill >= UNIFORM_FILL_THRESHOLD
+            layout_info[table.table] = {
+                "uniform": use_uniform,
+                "fill_rate": fill,
+                "bytes_normal": len(probe),
+                "slot_offsets": probe_row_layout(table, records=records, enums=enums)
+                if use_uniform
+                else {},
+            }
+
+            # ---- 主语言：主表全量（含原文），随 data_{primary}.bin 一起加载 ----
+            primary_rows = _merge_i18n(
+                base_rows, table, load_translation(i18n_dir, config.primary_lang, table.table)
+            )
+            primary_json = output_dir / "json" / f"{table.table}_{config.primary_lang}.json"
+            write_canonical_json(primary_rows, table, primary_json)
+            written.append(str(primary_json))
+            if config.primary_lang in languages:
+                data = probe if not use_uniform else build_canonical_table_bytes(
+                    primary_rows, table, records=records, enums=enums, uniform=True
+                )
+                if use_uniform:
+                    _assert_single_vtable(table.table, config.primary_lang, data)
+                    layout_info[table.table]["bytes_uniform"] = len(data)
+                table_bytes[table.table][config.primary_lang] = data
+
+            # ---- 次级语言：JSON 仍是「全量行」（可 diff 评审），
+            #      bin 走**稀疏 i18n 表**（只含主键 + i18n 字段，行序与主表一致）----
+            i18n_table = _i18n_table(table)
+            if i18n_table is not None:
+                i18n_table_bytes[table.table] = {}
+                # i18n 表沿用主表的定宽决策；但它的 slot→offset 是**自己**的表级常量
+                layout_info[i18n_table.table] = {
+                    "uniform": use_uniform,
+                    "fill_rate": fill,
+                    "bytes_normal": 0,
+                    "slot_offsets": probe_row_layout(
+                        i18n_table, records=records, enums=enums
+                    )
+                    if use_uniform
+                    else {},
+                }
             for lang in languages:
-                rows = base_rows if lang == config.primary_lang else _merge_i18n(
+                if lang == config.primary_lang:
+                    continue
+                merged = _merge_i18n(
                     base_rows, table, load_translation(i18n_dir, lang, table.table)
                 )
                 lang_json = output_dir / "json" / f"{table.table}_{lang}.json"
-                write_canonical_json(rows, table, lang_json)
+                write_canonical_json(merged, table, lang_json)
                 written.append(str(lang_json))
-                table_bytes[table.table][lang] = build_canonical_table_bytes(
-                    rows, table, records=records, enums=enums
+                if i18n_table is None:
+                    continue
+                i18n_rows = _i18n_rows(table, i18n_table, merged)
+                if len(i18n_rows) != len(primary_rows):
+                    raise CanonicalValidationError(
+                        [
+                            f"{table.table}_i18n[{lang}]：{len(i18n_rows)} 行 ≠ 主表 "
+                            f"{len(primary_rows)} 行 —— i18n 表与主表必须同序等长"
+                        ]
+                    )
+                i18n_data = build_canonical_table_bytes(
+                    i18n_rows, i18n_table, records=records, enums=enums, uniform=use_uniform
                 )
+                if use_uniform:
+                    _assert_single_vtable(f"{table.table}_i18n", lang, i18n_data)
+                i18n_table_bytes[table.table][lang] = i18n_data
+
+            info = layout_info[table.table]
+            detail = f"填充率 {fill:.1%} → {'定宽' if use_uniform else '变长'}"
+            if use_uniform:
+                detail += (
+                    f"（{info['bytes_normal']:,} → {info['bytes_uniform']:,} B，"
+                    f"{info['bytes_uniform'] / info['bytes_normal']:.3f}x）"
+                )
+            reporter.log(f"{table.table}：{detail}")
     finally:
         reporter.step_finished(CANONICAL_STEPS[1])
 
@@ -208,7 +352,25 @@ def run_canonical_export(
     try:
         for table, layout, excel_path, _parsed in prepared:
             _check_cancel(cancel_token)
-            model = build_accessor_model(table, (), records=records)
+            info = layout_info.get(table.table) or {}
+            sparse_i18n = _i18n_table(table)
+            # 稀疏 i18n 表**不再**单独产出 accessor：它的唯一消费者是主表的字段 getter，
+            # 读路径已经内联进主 accessor（`_emit_csharp_i18n_support`）。
+            # 但它**自己的**定宽偏移仍要交给生成器 —— 那是另一份表级常量。
+            i18n_info = (layout_info.get(sparse_i18n.table) or {}) if sparse_i18n is not None else {}
+            model = build_accessor_model(
+                table,
+                # 表级查询索引（Code/Group）：来自 schema（原先硬编码成 () ⇒ 永不生成 ByCode/ByGroupKey）
+                tuple(table.indexes),
+                records=records,
+                # 定宽表：偏移是表级常量，生成器发射字面量（无偏移表）
+                uniform_offsets=(info.get("slot_offsets") or None) if info.get("uniform") else None,
+                # 多语言字段按行下标去稀疏 i18n 表读当前语言
+                i18n_table=sparse_i18n.table if sparse_i18n is not None else None,
+                i18n_uniform_offsets=(i18n_info.get("slot_offsets") or None)
+                if i18n_info.get("uniform")
+                else None,
+            )
             csharp_path = generated / "csharp" / f"{table.table}Accessor.cs"
             lua_path = generated / "lua" / f"{table.table}Accessor.lua"
             csharp_path.parent.mkdir(parents=True, exist_ok=True)
@@ -232,8 +394,21 @@ def run_canonical_export(
                     previous_revision=old_manifest.layout_revision
                     if old_manifest is not None
                     else 0,
+                    # 定宽布局决策 + 表级 slot→offset 常量，供生成器读取
+                    layout_info=layout_info.get(table.table),
                 ),
             )
+
+        # 枚举类型声明：生成物里的 (Enum)WireReader.I8At(...) cast 需要它才能编译
+        if enums:
+            enum_cs = generated / "csharp" / "Enums.cs"
+            enum_lua = generated / "lua" / "Enums.lua"
+            enum_cs.parent.mkdir(parents=True, exist_ok=True)
+            enum_lua.parent.mkdir(parents=True, exist_ok=True)
+            enum_cs.write_text(generate_csharp_enums(enums), encoding="utf-8")
+            enum_lua.write_text(generate_lua_enums(enums), encoding="utf-8")
+            written.extend([str(enum_cs), str(enum_lua)])
+            reporter.log(f"枚举声明 {len(enums)} 个 → Enums.cs / Enums.lua")
     finally:
         reporter.step_finished(CANONICAL_STEPS[2])
 
@@ -275,7 +450,20 @@ def run_canonical_export(
         bundle_dir.mkdir(parents=True, exist_ok=True)
         for lang in languages:
             _check_cancel(cancel_token)
-            name_to_bytes = {name: bytes_by_lang[lang] for name, bytes_by_lang in table_bytes.items()}
+            if lang == config.primary_lang:
+                # 主语言包 = 主表（全量字段）
+                name_to_bytes = {
+                    name: bytes_by_lang[lang]
+                    for name, bytes_by_lang in table_bytes.items()
+                    if lang in bytes_by_lang
+                }
+            else:
+                # 次级语言包 = **稀疏 i18n 表**（ItemType_i18n / Item_i18n / ...）
+                name_to_bytes = {
+                    f"{name}_i18n": bytes_by_lang[lang]
+                    for name, bytes_by_lang in i18n_table_bytes.items()
+                    if lang in bytes_by_lang
+                }
             bundle = build_canonical_bundle(name_to_bytes)
             bundle_path = bundle_dir / f"data_{lang}.bin"
             bundle_path.write_bytes(bundle)

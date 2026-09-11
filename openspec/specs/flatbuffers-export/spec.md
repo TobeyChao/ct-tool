@@ -44,11 +44,11 @@
 
 #### Scenario: C# Accessor exposes per-table query API
 - **WHEN** 生成 `ItemAccessor.cs`
-- **THEN** 包含 `public static int Count`、`public static ItemRow? ByID(int id)`、`public static ItemRow? ByIndex(int i)`（越界返回 null）；若配置了 Code/Group 索引，还包含 `ByCode`/`ByGroupKey`
+- **THEN** 包含 `public static int Count`、`public static Item? ByID(int id)`、`public static Item? ByIndex(int i)`（越界返回 null）；若配置了 CodeName/Group 索引，还包含 `ByCodeName`/`ByGroupKey`（前者固定指向名为 `CodeName` 的 string 字段）
 
 #### Scenario: C# row is a pointer handle
 - **WHEN** 通过 `ItemAccessor.ByID(id)` 取到一行
-- **THEN** `ItemRow` 持有行对象指针，字段读取用 `WireReader.I32(_row, slot)`（`slot = 4 + 2*字段序`）
+- **THEN** `Item` 持有行对象指针，字段读取用 `WireReader.I32(_row, slot)`（`slot = 4 + 2*字段序`）
 
 #### Scenario: C# enum field typed
 - **WHEN** item 表有 `Rarity: ItemRarity` 枚举字段
@@ -56,18 +56,36 @@
 
 #### Scenario: C# cross-table ref typed accessor
 - **WHEN** item 表有 `ItemTypeId: int32` 且 `ref: ItemType.Id`
-- **THEN** 保留裸 id 快路径 `public int ItemTypeId => WireReader.I32(_row, slot)`，并生成类型化访问 `public ItemTypeRow ItemType => ItemTypeAccessor.ByID(ItemTypeId);`（底层用 id→行缓存，避免每字段 P/Invoke）
+- **THEN** 保留裸 id 快路径 `public int ItemTypeId => WireReader.I32(_row, slot)`，并生成类型化访问 `public ItemType ItemType => ItemTypeAccessor.ByID(ItemTypeId);`（底层用 id→行缓存，避免每字段 P/Invoke）
 
 #### Scenario: C# vector field as single container
 - **WHEN** item 表有 `Tags: vector<int32>`
 - **THEN** 生成 `public NArray<int> Tags => new NArray<int>(WireReader.VecBase(_row, slot), count);`，支持 `Tags.Length`、`Tags[i]`、`foreach`；`vector<Record>` 生成 `NStructArray<T>`；`vector<string>` 生成 `NStructArray<NString>`
+
+### Requirement: Generated C# files live in a dedicated namespace and name row types after the table
+生成的 C# 产物 SHALL 包在固定命名空间 `GameFramework.ConfigGen` 中，
+SHALL NOT 把类型撒在全局命名空间里。
+
+行类型 SHALL 以**表名本身**命名（`Item`），SHALL NOT 带 `Row` 后缀（`ItemRow`）——
+带后缀的唯一作用是在全局命名空间里避开与业务类撞名，而表名（`Player`/`Shop`/`Order` …）
+早晚会撞上，届时被迫改名的是业务代码；加命名空间后这个后缀就没有存在理由了。
+同一规则适用于嵌套 record 类型（`ItemDropRange`）与容器实参（`NStructArray<Chest.DropReward>`）。
+
+#### Scenario: C# output is namespaced
+- **WHEN** 生成 `ItemAccessor.cs`
+- **THEN** 文件含 `namespace GameFramework.ConfigGen`
+- **AND** 其中的类与结构体 SHALL NOT 出现 `*Row` 类型名
+
+#### Scenario: consumers need an explicit using
+- **WHEN** 业务代码引用生成物
+- **THEN** 需要 `using GameFramework.ConfigGen;`（不再靠全局命名空间隐式可见）
 
 ### Requirement: Generate canonical Lua Accessor with query API and typed fields
 工具 SHALL 为每张表生成 Lua Accessor，与 canonical reader（`GD`）对齐 参考实现 的接口与性能：提供 `M.Count/M.ByID/M.ByIndex` 查询，enum 返回类型化值，跨表 `ref` 提供类型化访问，vector 返回惰性表（数组值）经基址捕获读取。i18n 字段按当前语言表读取。
 
 #### Scenario: Lua Accessor exposes per-table query API
 - **WHEN** 生成 `ItemAccessor.lua`
-- **THEN** 包含 `M.Count`、`M.ByID(id)`、`M.ByIndex(i)`；若配置索引还包含 `M.ByCode`/`M.ByGroupKey`
+- **THEN** 包含 `M.Count`、`M.ByID(id)`、`M.ByIndex(i)`；若配置索引还包含 `M.ByCodeName`/`M.ByGroupKey`
 
 #### Scenario: Lua enum field typed
 - **WHEN** item 表有 `Rarity: ItemRarity` 枚举字段
@@ -123,6 +141,185 @@ reader SHALL 作为独立运行时（纯 C# + unsafe 读 FlatBuffers），不依
 #### Scenario: No i18n tables
 - **WHEN** 所有表均无 i18n 字段，请求导出次语言
 - **THEN** 不生成次语言 .bin 文件，记录 info 日志
+
+### Requirement: Sparse i18n tables mirror the main table row order
+工具 SHALL 让 `{Table}_i18n` 表的行顺序与主表**完全一致**（同一行下标指向同一逻辑行），且行数相等；
+否则多语言字段只能按主键二分查找，无法按下标定位。
+
+#### Scenario: i18n row order matches main table
+- **WHEN** 导出次语言，且 item 有 i18n 字段
+- **THEN** `Item_i18n` 的第 i 行对应主表 `Item` 的第 i 行，两表行数相等
+- **AND** 若行数不等，导出 SHALL 失败并报错（不得静默产出错位数据）
+
+#### Scenario: tables without i18n fields produce no i18n table
+- **WHEN** 某表没有任何 `i18n: true` 字段
+- **THEN** 不生成该表的 `{Table}_i18n` 变体
+
+### Requirement: Language switch replaces only the i18n bundle
+切换语言 SHALL 只替换 i18n 表（`data_{lang}.bin`）；SHALL NOT 重新加载或失效主表，也 SHALL NOT 使主表行句柄失效。
+原生 SHALL 提供独立的 i18n 装载入口（`GD_SetI18nBytes`），它 SHALL NOT 推进主表世代，
+且 SHALL 只重注册属于 i18n 包的容器表。
+
+#### Scenario: main row handle survives a language switch
+- **WHEN** 调用方持有主表某行的句柄，随后切换到另一语言
+- **THEN** 该句柄仍然有效：读取其标量/枚举/向量/嵌套 record 字段的结果不变（向量与 record 视图亦然）
+- **AND** 该句柄随后读取 i18n 字段时返回**新语言**的文本
+
+#### Scenario: i18n bundle rows invalidate on language switch
+- **WHEN** 调用方持有的是 i18n 包（`{Table}_i18n`）里的行句柄，随后切换语言
+- **THEN** 该句柄 SHALL 失效并明确报错（其数据来自被替换的那份 i18n 缓冲）
+- **AND** 主表行句柄 SHALL NOT 因此失效
+
+#### Scenario: i18n caches invalidate on language switch only
+- **WHEN** 切换语言
+- **THEN** 主表访问器里 i18n 表句柄缓存与译文驻留缓存失效
+- **AND** 该失效 SHALL 与「整套 bin 换代」的世代**分开**，以免连带失效主表行句柄与主表原文缓存
+
+### Requirement: i18n is limited to top-level scalar string fields
+标记 `i18n` 的字段 SHALL 只允许出现在 **Table 顶层**，且类型 SHALL 是**标量 `string`**。
+`record` 字段（含嵌套 record 与 `vector<Record>` 的元素字段）SHALL NOT 允许 `i18n`；
+`vector<string>` SHALL NOT 允许 `i18n`。违反者 SHALL 在 **schema 校验期**报错并带上字段路径。
+
+这条约束 SHALL 由 schema 层独占负责：下游两层**不会**报错，只会**静默忽略**——
+`_i18n_table()` 只遍历顶层字段，`build_accessor_model` 的 `i18n_fields` 也只从顶层字段里取。
+实测（绕过 schema 校验直接构造模型）：record 里的 `i18n: true` 不进 `i18n_fields`、
+稀疏 i18n 表不含该字段、生成物按普通 string 读，且**零告警**。
+⇒ 若要支持 record 多语言，只放开这条校验是不够的，必须同时改导出与生成两层。
+
+#### Scenario: record field with i18n is rejected with a path
+- **WHEN** 某个 `record` 的字段标了 `i18n: true`
+- **THEN** schema 校验 SHALL 抛错，错误信息含 `record:{name}/{field}` 与 `i18n`
+
+#### Scenario: vector of string with i18n is rejected
+- **WHEN** 顶层字段是 `vector<string>` 且标了 `i18n: true`
+- **THEN** schema 校验 SHALL 抛错（不是「跟 string 沾边就放行」）
+
+#### Scenario: downstream layers do not re-check
+- **WHEN** 有字段绕过了 schema 校验进入导出/生成
+- **THEN** 下游 SHALL NOT 报错；`i18n_fields` 与稀疏 i18n 表 SHALL 只含顶层字段
+
+### Requirement: i18n field reads go through the sparse table by row index
+生成的多语言字段访问器 SHALL 用**行下标**读取当前语言的 `{Table}_i18n` 表。
+该表未加载（未加载对应语言包）时 SHALL 回退读主表内的原文，SHALL NOT 抛错。
+行句柄 SHALL NOT 缓存 i18n 表指针（切语言会替换整张表，缓存下来即为悬垂指针）。
+
+#### Scenario: i18n table missing falls back to source text
+- **WHEN** 只加载了主语言包（无 `{Table}_i18n`），读取某行的 i18n 字段
+- **THEN** 返回主表内的原文，不抛异常
+
+#### Scenario: i18n table loaded returns the current language text
+- **WHEN** 加载了 en 的 i18n 表，读取主表第 i 行的 i18n 字段
+- **THEN** 返回 `{Table}_i18n` 第 i 行的对应文本
+
+#### Scenario: i18n pointer is resolved per read
+- **WHEN** 切换语言后再次读取同一行句柄的 i18n 字段
+- **THEN** 返回新语言的文本（证明行句柄没有缓存 i18n 表指针）
+
+#### Scenario: i18n read does not depend on main row order matching primary-key order
+- **WHEN** 主表行序不等于主键升序（导出器 SHALL NOT 对 items 排序，行序即 Excel 序）
+- **THEN** i18n 字段仍返回正确译文
+- **AND** 读取 SHALL NOT 在 i18n 表的 items 向量上按主键二分——items 按主表行序排列，
+  在其上二分会**静默**查不到任何译文并回退成原文
+
+### Requirement: The sparse i18n read path is inlined in the main accessor
+生成器 SHALL NOT 为 `{Table}_i18n` 单独产出一份访问器（文件、类、行类型都不产出）。
+该表的句柄解析、译文驻留缓存与逐字段读取 SHALL 内联在主表访问器里——
+它对外没有独立用途，唯一消费者就是主表的 i18n 字段读取。
+
+主表访问器里的 i18n 句柄 SHALL 从 **i18n 包**解析（C# 侧 `FindTableI18n` / Lua 侧
+`GD.FindTableI18n`），SHALL NOT 从主包解析；主语言包下解析结果为「表不存在」，
+读取 SHALL 回退主表原文，SHALL NOT 抛错。
+
+#### Scenario: no standalone i18n accessor is generated
+- **WHEN** 导出带 i18n 字段的表
+- **THEN** 产物中 SHALL NOT 出现 `{Table}_i18nAccessor.cs` / `{Table}_i18nAccessor.lua`
+- **AND** SHALL NOT 出现 `{Table}_i18n` 行类型
+- **AND** 主表访问器 SHALL 含 i18n 表句柄与逐字段译文读取
+
+#### Scenario: i18n handle resolves from the i18n bundle
+- **WHEN** 加载了 en 的 i18n 包，读取主表第 i 行的 i18n 字段
+- **THEN** 返回 `{Table}_i18n` 第 i 行的对应文本
+
+### Requirement: The i18n handle and translation caches re-resolve per i18n generation
+i18n 句柄与译文缓存 SHALL 按 **i18n 世代**失效（与「整套 bin 换代」的世代分开），
+以免切语言连带失效主表行句柄与主表原文缓存。
+
+该句柄守卫 SHALL 在「表**缺席**」时同样生效：SHALL NOT 采用 `t != null && 世代相符`
+这种写法——表缺席时 `t` 恒为空，守卫永不成立，于是**每读一次 i18n 字段都重走一遍**
+表解析（字典查找 + 字符串哈希）。缺席结果 SHALL 与世代一起被记住。
+
+#### Scenario: handle re-resolves after switching back to the primary language
+- **WHEN** 先加载 en（`{Table}_i18n` 可解析），再切回主语言 zh（包内无 `{Table}_i18n`）
+- **THEN** i18n 字段读取回退到主表原文，SHALL NOT 抛错
+- **AND** 再次切到 en 时能重新解析到句柄并返回英文文本
+
+#### Scenario: absent i18n table is not re-resolved on every read
+- **WHEN** 主语言包下反复读取同一行的 i18n 字段
+- **THEN** 表解析 SHALL 只发生一次（世代不变期间）
+- **AND** 该失效 SHALL NOT 推进主表世代（旧行句柄保持有效）
+
+### Requirement: An empty translation falls back to the source text
+i18n 行存在但该字段**没有译文**时，读取 SHALL 回退主表原文。
+C# 与 Lua 两个目标语言的语义 SHALL 一致——SHALL NOT 出现「行在就无条件返回该值
+（哪怕为空）」这种与另一侧 `空即回退` 不同的写法。
+
+#### Scenario: row present but field empty
+- **WHEN** `{Table}_i18n` 第 i 行存在，但该 i18n 字段槽位缺失
+- **THEN** 返回主表第 i 行的原文，而不是空值
+
+### Requirement: Sparse i18n table mirrors main rows one-to-one, including rows without translations
+稀疏 i18n 表 SHALL 对**每一个**主表行产出一行（主键 + i18n 字段），SHALL NOT 只产出「有译文」的行；
+行序 SHALL 与主表一致。没有译文的行以「该字段槽位缺失」表示，读取侧据此回退主表原文。
+
+#### Scenario: a row without translation still occupies its slot
+- **WHEN** 某主表行的 i18n 字段在所有语言里都没有确认译文
+- **THEN** 该行在 `{Table}_i18n` 里**仍然存在**（占据同一行下标），只是该字段缺失
+- **AND** `{Table}_i18n` 的行数等于主表行数（按下标定位因此始终成立）
+
+### Requirement: Primary and secondary lookups are all O(1) — no binary search at read time
+生成的容器 SHALL 让**每一条查询路径**在运行期都是哈希定位，SHALL NOT 依赖二分查找：
+
+- **主键（ByID）**：容器 slot 2 = `idHash`，开放寻址桶存「`index` 向量位置 + 1」，`0` = 空。
+  哈希用 `key * 2654435761` 取低位，线性探测，命中后按 `index` 向量里的 key 确认。
+  导出器对**每张表**都 SHALL 产出该向量（`TableResource.primary` 是必填项）。
+  ⇒ 读端 SHALL NOT 再保留「无哈希时回退二分」的兜底：缺 `idHash` 属于 bundle 来历不对，
+  SHALL 在**加载/建表期硬报错**（C#）或**首次查询时报错**（Lua/原生），SHALL NOT 静默返回空。
+- **CodeName**：容器 slot 3 = `codeNameIndex`，开放寻址桶存 `rowIndex + 1`，key 用 FNV-1a 64 取低位；
+  **固定**指向名为 `CodeName` 的 string 字段（schema 只写 `kind: codename`，不写 `field`）。
+- **Group**：容器 slot 4 = `groupIndex`（按 key 排序的 `(key:int32, rowIndex:int32)`，stride 8，
+  **行的来源**）+ 容器 slot 5 = `groupHash`（开放寻址桶，每桶两个 int32 = `(start:int32, count:int32)`，
+  stride 8，`count == 0` = 空）。哈希规则与主键同款；命中后按 `groupIndex[start*2] == key` 确认。
+  ⇒ 「按 key 取全部行」是一次探测拿到区间再顺序拷 count 行，
+  SHALL NOT 在 `groupIndex` 上做 lower_bound/upper_bound 两次二分。
+
+> `groupHash` 的空槽用 `count == 0` 而不是「key 为 0」表示 —— 因为 **key 本身可以是 0**
+> （int32 的 Group 字段、枚举第 0 项）。桶存区间而非 key，正是为了让 0 成为合法 key。
+
+#### Scenario: group lookup does not binary search
+- **WHEN** 一张表声明了 group 索引，运行期按某个 key 取全部行
+- **THEN** 查询 SHALL 只做一次哈希探测（+ 探测链上的碰撞确认），SHALL NOT 二分
+- **AND** key 为 `0` 时 SHALL 与其它 key 一样能取到该组全部行
+- **AND** 不存在的 key SHALL 返回空集，SHALL NOT 误命中其它组
+
+#### Scenario: missing primary hash fails loudly
+- **WHEN** bundle 的某张表缺容器 slot 2（例如不是当前导出器产出的）
+- **THEN** C# 侧 SHALL 在建 `ConfigTable` 时抛错
+- **AND** Lua/原生侧 SHALL 在首次 `ByID` 时抛 Lua 错误
+- **AND** SHALL NOT 静默返回「未找到」
+
+### Requirement: Generated accessors read uniform tables by literal offset
+定宽（uniform）表的行内字段偏移是**表级常量**，生成器 SHALL 据此发射**字面量偏移**读 ——
+C# 侧 `WireReader.I32At(row, 28)`，Lua 侧 `GD.I32Off(s, 28)` —— 而不是每次读重走 vtable。
+非定宽表 SHALL 继续走槽位（偏移不是常量，字面量化会读错）。
+
+#### Scenario: uniform table emits literal offsets
+- **WHEN** 某表被判定为定宽
+- **THEN** 其 C# / Lua 访问器的标量、字符串、容器取指针均按**导出期算出的常量偏移**读
+- **AND** 嵌套 record **内部**字段仍走槽位（record 不是定宽表）
+
+#### Scenario: non-uniform table keeps slot reads
+- **WHEN** 某表不是定宽
+- **THEN** 访问器走 vtable 槽位读，SHALL NOT 出现字面量偏移
 
 ### Requirement: Serialize Record and vector Record consistently
 Binary writer SHALL 按同一 canonical model 序列化单个 Record 与 `vector<Record>`，JSON、FBS、Binary 和生成 Accessor 对空元素、顺序和字段默认值 SHALL 具有一致语义。

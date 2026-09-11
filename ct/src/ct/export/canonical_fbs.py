@@ -24,9 +24,16 @@ from ct.schema.type_expression import (
     serialize_type_expression,
 )
 
+# flatbuffers 的标准标量名（byte/ubyte/short/ushort/int/uint/long/ulong/float/double/bool/string）
 _FBS_TYPE_MAP = {
-    "int32": "int32",
-    "int64": "int64",
+    "int8": "byte",
+    "uint8": "ubyte",
+    "int16": "short",
+    "uint16": "ushort",
+    "int32": "int",
+    "uint32": "uint",
+    "int64": "long",
+    "uint64": "ulong",
     "float": "float32",
     "double": "float64",
     "bool": "bool",
@@ -87,10 +94,39 @@ def _table_fbs_text(table: TableResource, order: list[str]) -> str:
         lines.append("  row: int32;")
         lines.append("}")
         lines.append("")
+
+    # 稀疏 i18n 表（只含主键 + i18n 字段，行序与主表一致）。
+    # 见 openspec/specs/flatbuffers-export：主表之外另出 {Table}I18nEntry/{Table}I18nTable。
+    i18n_fields = [f for f in table.fields if f.i18n and not f.server_only]
+    has_i18n = bool(i18n_fields) and bool(table.primary)
+    if has_i18n:
+        lines.append(f"table {table.table}I18nEntry {{")
+        lines.append(f"  {table.primary}: int32;")
+        for field in i18n_fields:
+            lines.append(f"  {field.name}: {_fbs_type(field.type_expr)};")
+        lines.append("}")
+        lines.append("")
+        lines.append(f"table {table.table}I18nTable {{")
+        lines.append(f"  items: [{table.table}I18nEntry];")
+        lines.append("}")
+        lines.append("")
+
     lines.append(f"table {table.table}Table {{")
     lines.append(f"  items: [{table.table}];")
     if table.primary:
         lines.append("  index: [IndexEntry];")
+        lines.append("  idHash: [int32];")
+    # 二级查询索引（表级 indexes 声明）：codename = 桶表，group = 交错的 (key, row) 序列
+    has_codename = any(i.kind == "codename" for i in getattr(table, "indexes", ()) or ())
+    has_group = any(i.kind == "group" for i in getattr(table, "indexes", ()) or ())
+    if has_codename:
+        lines.append("  codeNameIndex: [int32];")
+    if has_group:
+        # groupIndex = 按 key 排序的 (key, row)，stride 8（**行的来源**）
+        # groupHash  = 开放寻址桶，每桶 (start, count)，stride 8；count == 0 = 空
+        #              ⇒ 运行期一次探测定位区间，**不再二分**
+        lines.append("  groupIndex: [int32];")
+        lines.append("  groupHash: [int32];")
     lines.append("}")
     lines.append("")
     lines.append(f"root_type {table.table}Table;")

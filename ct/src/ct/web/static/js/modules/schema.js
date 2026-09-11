@@ -722,9 +722,22 @@ export async function mount(container) {
           </div>
         </div></div>`;
     };
+    // CodeName 索引**固定指向名为 CodeName 的 string 字段** —— 不是「随便指一个 string 字段」，
+    // 所以这里是一个开关，没有字段选择器。表里没有 CodeName 字段时禁用（后端也会拒）。
+    const codenameOn = current.some((i) => i.kind === "codename");
+    const hasCodename = resource.fields.some((f) => f.name === "CodeName");
+    const codenameCard = `<div class="ct-index-card">
+      <div class="ct-index-card-head">CodeName（唯一 · 固定字段）<span class="ct-mono ct-index-preview">ByCodeName(codeName)</span></div>
+      <label class="ct-index-toggle${hasCodename ? "" : " is-disabled"}">
+        <input type="checkbox" data-index-codename ${codenameOn ? "checked" : ""} ${hasCodename ? "" : "disabled"}>
+        <span>${hasCodename
+          ? "启用（固定指向 <span class=\"ct-mono\">CodeName</span> 字段）"
+          : "本表没有名为 <span class=\"ct-mono\">CodeName</span> 的 string 字段，无法启用"}</span>
+      </label>
+    </div>`;
     return `<div class="ct-index-cards">
       <div class="ct-index-cards-title">查询索引</div>
-      ${card("code", "Code（唯一）", "ByCode(code)")}
+      ${codenameCard}
       ${card("group", "Group（一对多）", "ByGroupKey(value)")}
     </div>`;
   }
@@ -784,6 +797,18 @@ export async function mount(container) {
         trigger.focus();
       });
     });
+    // CodeName 索引是个开关：勾上 = 声明 kind: codename（不写 field，后端固定指向 CodeName）
+    const codenameBox = editorBody.querySelector("[data-index-codename]");
+    if (codenameBox) {
+      codenameBox.addEventListener("change", () => {
+        const rest = (state.indexesByTable[resource.resourceId] || []).filter(
+          (i) => i.kind !== "codename"
+        );
+        const next = codenameBox.checked ? [...rest, { kind: "codename" }] : rest;
+        state.indexesByTable[resource.resourceId] = next;
+        pushCommand({ type: "set_indexes", payload: { table: resource.resourceId, indexes: next } });
+      });
+    }
     if (editorBody.dataset.indexMenuDismiss !== "true") {
       editorBody.addEventListener("click", (event) => {
         if (!event.target.closest(".ct-select")) closeMenus(null);

@@ -45,18 +45,20 @@ class AccessorField:
         if self.kind != "vector":
             return None
         if self.element_kind == "record" and self.record_name:
-            return f"NStructArray<{self.record_name}Row>"
+            return f"NStructArray<{self.record_name}>"
         if self.element_kind == "string":
             return "NStructArray<NString>"
         if self.element_kind == "enum":
             return f"NArray<{self.element_type}>"
-        scalar = {"int32": "int", "int64": "long", "float": "float", "double": "double", "bool": "bool"}
-        return f"NArray<{scalar.get(self.element_type, "int")}>"
+        # 复用生成器的 C# 类型映射（单一来源，避免新增标量时漏改这里）
+        from ct.export.canonical_accessor import CSHARP_SCALAR_TYPES
+
+        return f"NArray<{CSHARP_SCALAR_TYPES[self.element_type]}>"
 
 
 @dataclass(frozen=True)
 class AccessorIndex:
-    kind: str  # code | group
+    kind: str  # codename | group
     field: str
     slot: int
 
@@ -69,10 +71,24 @@ class CanonicalAccessorModel:
     i18n_fields: tuple[AccessorField, ...]
     indexes: tuple[AccessorIndex, ...]
     records: dict[str, RecordResource] | None = None
+    # 定宽布局（uniform）：非空表示该表所有行共享同一 vtable，
+    # 这张 slot→行内偏移映射是**表级常量**，生成器据此发射字面量偏移（无偏移表）。
+    uniform_offsets: dict[int, int] | None = None
+    # 稀疏 i18n 表名（如 ``Item_i18n``）：非空时多语言字段的 getter 按**行下标**去该表读
+    # 当前语言的文本，缺失时回退主表原文（切语言只换这张表，主表行句柄不动）。
+    # 该表**不再**单独产出一份 accessor：它对外没有独立用途，读路径已经完全内联到这里。
+    i18n_table: str | None = None
+    # 稀疏 i18n 表**自己的**定宽偏移表（vtable 字节偏移 → 行内偏移）。为空表示该表不是定宽
+    # 布局，生成物按槽位走 vtable 读（与主表的 uniform_offsets 是两份独立的表级常量）。
+    i18n_uniform_offsets: dict[int, int] | None = None
 
     @property
     def has_i18n(self) -> bool:
         return bool(self.i18n_fields)
+
+    @property
+    def is_uniform(self) -> bool:
+        return bool(self.uniform_offsets)
 
 
 def _lookup_record(named: NamedType, records) -> RecordResource | None:
@@ -206,6 +222,9 @@ def build_accessor_model(
     table: TableResource,
     indexes: tuple[QueryIndex, ...],
     records: dict[str, RecordResource] | None = None,
+    uniform_offsets: dict[int, int] | None = None,
+    i18n_table: str | None = None,
+    i18n_uniform_offsets: dict[int, int] | None = None,
 ) -> CanonicalAccessorModel:
     client = [field for field in table.fields if not field.server_only]
     slots = {field.name: index for index, field in enumerate(client)}
@@ -214,6 +233,11 @@ def build_accessor_model(
     )
     primary = next(field for field in fields if field.name == table.primary)
     i18n_fields = tuple(field for field in fields if field.i18n)
+
+    # 稀疏 i18n 表名按约定推导（`{Table}_i18n`，与导出器 `_i18n_table()` 一致）。
+    # 这样**单独**调用生成器也不会漏掉 i18n 读取（否则多语言字段会静默退回主表原文）。
+    if i18n_table is None and i18n_fields:
+        i18n_table = f"{table.table}_i18n"
     accessor_indexes = tuple(
         AccessorIndex(index.kind, index.field, slots[index.field])
         for index in indexes
@@ -225,4 +249,7 @@ def build_accessor_model(
         i18n_fields=i18n_fields,
         indexes=accessor_indexes,
         records=records,
+        uniform_offsets=uniform_offsets,
+        i18n_table=i18n_table,
+        i18n_uniform_offsets=i18n_uniform_offsets,
     )

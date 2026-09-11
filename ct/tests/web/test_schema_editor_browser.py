@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 import threading
 from pathlib import Path
 from typing import Any, Iterator
@@ -28,6 +29,8 @@ def editor_url(tmp_path) -> Iterator[str]:
                 "fields": [
                     {"name": "Id", "type": "int32", "comment": "主键"},
                     {"name": "Name", "type": "string", "comment": "名称"},
+                    # codename 索引固定指向名为 CodeName 的 string 字段 ⇒ 表里必须有它
+                    {"name": "CodeName", "type": "string", "comment": "唯一代码名"},
                 ],
             },
             {
@@ -346,7 +349,8 @@ def test_field_rename_delete_move_set_type_emit_commands(editor_url: str, chromi
     _select_item(page)
 
     # rename Name -> DisplayName via the form dialog
-    page.locator('#page-schema [data-act="rename"]', has_text="Name").click()
+    # 精确匹配 ^Name$：表里现在还有 CodeName（子串匹配会同时命中两个）
+    page.locator('#page-schema [data-act="rename"]').filter(has_text=re.compile(r"^Name$")).click()
     page.wait_for_selector("[data-form-input]")
     page.fill("[data-form-input]", "DisplayName")
     page.locator("[data-submit]").click()
@@ -474,13 +478,14 @@ def test_query_index_cards_emit_set_indexes(editor_url: str, chromium_browser: A
     page.get_by_role("button", name="查询索引").click()
     page.wait_for_selector("#page-schema .ct-index-card")
 
-    page.select_option("#page-schema [data-index-kind='code']", "Name")
+    # codename 是开关（固定指向 CodeName 字段，没有字段选择器）
+    page.check("#page-schema [data-index-codename]")
     page.wait_for_timeout(200)
     page.select_option("#page-schema [data-index-kind='group']", "Id")
     page.wait_for_timeout(200)
 
     assert "2 条未应用变更" in _draftbar_text(page)
-    assert page.locator("#page-schema .ct-index-preview", has_text="ByCode").count() == 1
+    assert page.locator("#page-schema .ct-index-preview", has_text="ByCodeName").count() == 1
     assert page.locator("#page-schema .ct-index-preview", has_text="ByGroupKey").count() == 1
 
     # review plan surfaces Accessor impact for the index change

@@ -315,13 +315,21 @@ def _template_column_count(path: Path) -> int | None:
     """Read the actual number of columns in the Excel template."""
     if not path.exists():
         return None
+    workbook = None
     try:
         from openpyxl import load_workbook
 
         workbook = load_workbook(str(path), read_only=True, data_only=False)
-        return int(workbook.active.max_column)
-    except (OSError, KeyError, TypeError, ValueError):
+        ws = workbook.active
+        if ws is None:
+            return None
+        return int(ws.max_column)
+    except (OSError, KeyError, TypeError, ValueError, AttributeError):
         return None
+    finally:
+        if workbook is not None:
+            workbook.close()
+
 
 
 def _validate_staged_workbook(path: Path) -> None:
