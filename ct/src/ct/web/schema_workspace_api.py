@@ -11,7 +11,7 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, request
 
-from ct.app.canonical_commands import canonical_gen_template
+from ct.app.canonical_commands import UnknownTableError, canonical_gen_template
 from ct.app.canonical_workspace import CanonicalWorkspace
 from ct.app.schema_workspace.apply import (
     ApplyError,
@@ -136,10 +136,11 @@ def workspace_gen_template():
         return jsonify({"ok": False, "error": "缺少 table"}), 400
     try:
         messages = canonical_gen_template(_root(), table_filter=table)
+    except UnknownTableError:
+        # 保持既有 404 契约（`canonical_gen_template` 现在对未知表名一律报错）
+        return jsonify({"ok": False, "error": f"未找到表: {table}"}), 404
     except (ValueError, OSError) as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
-    if not messages:
-        return jsonify({"ok": False, "error": f"未找到表: {table}"}), 404
     return jsonify({"ok": True, "data": {"messages": messages}})
 
 

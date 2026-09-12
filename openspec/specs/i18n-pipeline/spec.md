@@ -154,9 +154,11 @@ sync 流程 SHALL 按以下规则计算并写入每个 lang 条目的 `status` �
 - `--by-table`：每语言每表一行（便于定位翻译瓶颈）
 - `--json`：机器可读 JSON，供 CI 解析
 
+进度百分比 SHALL 为 `translated / (total - orphan)`：orphan 是 source 中已不存在的残留条目（由 `compact` 清理），不计入分母；无活跃条目视为 100%。JSON 的 `total` 仍是四态之和（含 orphan），`progress` 是不含 orphan 的分母比值。
+
 #### Scenario: Default summary shows per-language progress
 - **WHEN** 执行 `ct i18n status`
-- **THEN** 每个 secondary_lang 输出一行：进度百分比、translated/missing/stale/orphan 的计数
+- **THEN** 每个 secondary_lang 输出一行：进度百分比、10 格进度条、`translated/(total - orphan)` 分数，以及 translated/missing/stale/orphan 的计数
 
 #### Scenario: By-table breakdown
 - **WHEN** 执行 `ct i18n status --by-table`

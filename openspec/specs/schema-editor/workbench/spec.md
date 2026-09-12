@@ -123,7 +123,7 @@ Schema 工作台 SHALL 在同一工作区提供 Tables、Records、Enums 三类�
 
 #### Scenario: Primary key field is fixed and not offered in add-field
 - **WHEN** 用户打开添加字段流程
-- **THEN** 不提供「主键」指派（主键是固定字段 `Id`，由表定义与固定字段编辑维护；其类型 `int32`/`int64`、非 `i18n`、非 `server_only` 由模型校验保障）
+- **THEN** 不提供「主键」指派（主键是固定字段 `Id`，由表定义与固定字段编辑维护；其类型 `int32`、非 `i18n`、非 `server_only` 由模型校验保障——主键在索引向量、`idHash` 与生成的 `ByID(int)` 上均以 32 位承载，故除 `int32` 外的整数标量在 Apply 时同样被模型拒绝）
 
 #### Scenario: I18N role restricted to string type
 - **WHEN** 角色选择 I18N 后选择非 `string` 类型（含勾选 vector）

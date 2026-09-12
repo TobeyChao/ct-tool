@@ -24,6 +24,7 @@ from ct.excel.layout import Column, Layout
 from ct.schema.resources import EnumResource, RecordResource, TableResource
 from ct.schema.type_expression import (
     INTEGER_SCALAR_NAMES,
+    INTEGER_SCALAR_RANGES,
     SCALAR_DEFAULTS,
     NamedType,
     ScalarType,
@@ -36,16 +37,25 @@ _BOOL_FALSE = frozenset({"false", "0", "no", "FALSE", "False", "NO", "No", "✗"
 
 
 def _coerce_scalar(type_text: str, raw: Any) -> tuple[Any, bool]:
-    """Coerce one leaf cell; returns (value, ok). None passes through for scalars."""
+    """Coerce one leaf cell; returns (value, ok). None passes through for scalars.
+
+    整数标量额外校验值域：越界值（Excel 里手填的超范围数字）若放行，会在产物写入
+    阶段由 flatbuffers builder 抛 `TypeError: bad number ... for type int32` 并以
+    Python traceback 结束；必须在解析校验阶段就报为类型错误。
+    """
     if raw is None:
         if type_text == "string":
             return "", True
         return None, True
     if type_text in INTEGER_SCALAR_NAMES:
         try:
-            return int(float(raw)) if isinstance(raw, float) else int(raw), True
+            value = int(float(raw)) if isinstance(raw, float) else int(raw)
         except (TypeError, ValueError):
             return raw, False
+        low, high = INTEGER_SCALAR_RANGES[type_text]
+        if not low <= value <= high:
+            return raw, False
+        return value, True
     if type_text in ("float", "double"):
         try:
             return float(raw), True
@@ -129,7 +139,11 @@ def parse_vector_cell(text: str, element_text: str) -> tuple[list[Any], str | No
         if element_text in INTEGER_SCALAR_NAMES:
             if not re.fullmatch(r"[+-]?\d+", token):
                 return [], f"第{index}个元素期望 {element_text} 类型"
-            values.append(int(token))
+            value = int(token)
+            low, high = INTEGER_SCALAR_RANGES[element_text]
+            if not low <= value <= high:
+                return [], f"第{index}个元素 {token} 超出 {element_text} 值域"
+            values.append(value)
             continue
         if element_text in {"float", "double"}:
             if not re.fullmatch(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", token):

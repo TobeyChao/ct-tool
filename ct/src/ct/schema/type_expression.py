@@ -48,10 +48,28 @@ SCALAR_TYPE_NAMES = frozenset(
     }
 )
 
-#: 整数标量（可作主键；Group 索引已删除，见 openspec/specs/schema-editor/query-indexes）。
+#: 整数标量（Group 索引已删除，见 openspec/specs/schema-editor/query-indexes）。
 INTEGER_SCALAR_NAMES = frozenset(
     {"int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64"}
 )
+
+#: 各整数标量的值域（读取层用它拦截越界值：越界值会让 flatbuffers builder 抛
+#: `TypeError: bad number ... for type int32`，必须以类型错误在解析校验阶段报出）。
+INTEGER_SCALAR_RANGES: dict[str, tuple[int, int]] = {
+    "int8": (-(2**7), 2**7 - 1),
+    "uint8": (0, 2**8 - 1),
+    "int16": (-(2**15), 2**15 - 1),
+    "uint16": (0, 2**16 - 1),
+    "int32": (-(2**31), 2**31 - 1),
+    "uint32": (0, 2**32 - 1),
+    "int64": (-(2**63), 2**63 - 1),
+    "uint64": (0, 2**64 - 1),
+}
+
+#: 主键唯一允许的类型：主键在导出侧存进 4 字节索引向量、`idHash` 恒取低 32 位、
+#: 生成的 C# 查询签名恒为 `ByID(int)`，只有 int32 让这条链自洽（见
+#: openspec/specs/schema-management「Validate primary key type」）。
+PRIMARY_KEY_TYPE = "int32"
 
 #: 各标量的默认值（flatbuffers 的 default；**值 == 默认时槽位不写**）。
 SCALAR_DEFAULTS: dict[str, object] = {

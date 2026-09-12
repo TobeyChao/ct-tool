@@ -54,15 +54,25 @@ class CLIProgressReporter:
         typer.echo(line, err=err)
 
 
+def _friendly_exit(prefix: str, exc: BaseException) -> None:
+    """配置/schema 级失败：友好提示 + 退出码 1，不把 Python 堆栈丢给策划。
+
+    `--verbose`（日志级别 DEBUG）时先把完整堆栈写进日志，供开发排查
+    （`Designer-friendly error messages` 要求的 `--verbose` 逃生门）。
+    已在异常处理中的调用会带堆栈；纯参数校验（如未知语言）没有堆栈可打。
+    """
+    if logger.isEnabledFor(logging.DEBUG) and sys.exc_info()[0] is not None:
+        logger.debug("命令失败", exc_info=True)
+    typer.echo(f"{prefix} {exc}", err=True)
+    raise typer.Exit(1)
+
+
 def _load_workspace(root: Path) -> CanonicalWorkspace:
     """加载 canonical workspace；配置/schema 错误转为友好提示（不抛 traceback）。"""
     try:
         return CanonicalWorkspace.load(root)
     except (FileNotFoundError, ValueError) as e:
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug("加载 workspace 失败", exc_info=True)
-        typer.echo(f"[error] {e}", err=True)
-        raise typer.Exit(1)
+        _friendly_exit("[error]", e)
 
 
 def _run_deploy(root: Path, for_build: bool) -> None:
@@ -134,7 +144,11 @@ def validate(
     """只走解析和校验，不输出产物。"""
     _setup_logging(verbose)
     root = _root(project_root)
-    errors = canonical_validate(root, table_filter=table)
+    try:
+        errors = canonical_validate(root, table_filter=table)
+    except (FileNotFoundError, ValueError) as e:
+        # schema/配置级错误（例如非 int32 主键）：友好报错，不丢 traceback
+        _friendly_exit("[error]", e)
     if errors:
         report_errors(errors, verbose)
         raise typer.Exit(1)
@@ -173,7 +187,11 @@ def status(
     """
     _setup_logging()
     root = _root(project_root)
-    report = canonical_status(root)
+    try:
+        report = canonical_status(root)
+    except (FileNotFoundError, ValueError) as e:
+        # schema/配置级错误：友好报错，不丢 traceback
+        _friendly_exit("[error]", e)
     if report["missing"]:
         typer.echo("缺失文件:")
         for name in report["missing"]:
@@ -220,21 +238,55 @@ def panel(
 
 # ---------------------------------------------------------------- ct i18n group
 
+#: 进度条格数（`ct i18n status`）。
+_I18N_BAR_WIDTH = 10
+
+
+def _render_i18n_progress_line(label: str, counts: dict) -> str:
+    """渲染一行进度：`[en]  89% [█████████░] 170/190 translated, 12 missing, ...`。
+
+    分母取 `total - orphan`（orphan 是 source 已不存在的残留条目，不计入工作量）。
+    """
+    progress = float(counts.get("progress", 1.0))
+    active = counts["total"] - counts["orphan"]
+    filled = int(round(max(0.0, min(1.0, progress)) * _I18N_BAR_WIDTH))
+    bar = "█" * filled + "░" * (_I18N_BAR_WIDTH - filled)
+    return (
+        f"{label}  {round(progress * 100)}% [{bar}] "
+        f"{counts['translated']}/{active} translated, "
+        f"{counts['missing']} missing, {counts['stale']} stale, "
+        f"{counts['orphan']} orphan"
+    )
+
+
+def _fail(prefix: str, exc: BaseException) -> None:
+    """友好失败：不打印 traceback，退出码 1（`--verbose` 时堆栈进日志）。
+
+    与 `_friendly_exit` 同一条路径，只是前缀不同（i18n / compact 各自的命令名）。
+    """
+    _friendly_exit(prefix, exc)
+
 
 @i18n_app.command("sync")
 def i18n_sync(
-    lang: Optional[str] = typer.Option(None, "--lang", help="只处理指定语言的 lang 文件"),
+    lang: Optional[str] = typer.Option(
+        None, "--lang", help="只更新该语言的 lang 文件（source 仍全量刷新）"
+    ),
     table: Optional[str] = typer.Option(None, "--table", help="只处理指定表"),
     project_root: Optional[str] = typer.Option(None, "--root", help="项目根目录"),
-    verbose: bool = typer.Option(False, "--verbose", help="显示详细日志"),
+    verbose: bool = typer.Option(False, "--verbose", help="输出每个写入文件的路径与变更条目数"),
 ) -> None:
     """刷新 i18n source 文件并为每个 secondary 语言生成/更新 lang 骨架。"""
     _setup_logging(verbose)
     root = _root(project_root)
-    messages = canonical_i18n_sync(root, table_filter=table)
+    try:
+        messages = canonical_i18n_sync(
+            root, table_filter=table, lang_filter=lang, verbose=verbose
+        )
+    except (FileNotFoundError, ValueError) as e:
+        _fail("[i18n sync]", e)
     for message in messages:
         typer.echo(f"[i18n sync] {message}", err=True)
-    typer.echo("[i18n sync] 完成", err=True)
 
 
 @i18n_app.command("status")
@@ -247,20 +299,28 @@ def i18n_status(
     """报告 i18n 翻译进度。"""
     _setup_logging()
     root = _root(project_root)
-    report = canonical_i18n_status(root)
+    try:
+        report = canonical_i18n_status(root)
+    except (FileNotFoundError, ValueError) as e:
+        _fail("[i18n status]", e)
+    if lang is not None and lang not in report:
+        langs = ", ".join(sorted(report)) or "无"
+        _fail("[i18n status]", f"语言 '{lang}' 不在 secondary_langs 中（可用: {langs}）")
+    selected = {
+        name: counts
+        for name, counts in sorted(report.items())
+        if lang is None or name == lang
+    }
     if json_out:
         import json
 
-        sys.stdout.write(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+        typer.echo(json.dumps({"langs": selected}, ensure_ascii=False, indent=2))
         return
-    for lang_name, counts in sorted(report.items()):
-        if lang is not None and lang_name != lang:
-            continue
-        typer.echo(
-            f"{lang_name}: translated={counts['translated']}, "
-            f"missing={counts['missing']}, stale={counts['stale']}, "
-            f"orphan={counts['orphan']}"
-        )
+    for lang_name, counts in selected.items():
+        typer.echo(_render_i18n_progress_line(f"[{lang_name}]", counts))
+        if by_table:
+            for table_name, table_counts in sorted(counts["tables"].items()):
+                typer.echo(_render_i18n_progress_line(f"  {table_name}", table_counts))
 
 
 @i18n_app.command("compact")
@@ -273,11 +333,27 @@ def i18n_compact(
     """物理移除 lang 文件中所有 status: orphan 的条目。"""
     _setup_logging()
     root = _root(project_root)
-    removed = canonical_i18n_compact(root, table_filter=table)
-    if not removed:
+    try:
+        result = canonical_i18n_compact(
+            root, table_filter=table, lang_filter=lang, dry_run=dry_run
+        )
+    except (FileNotFoundError, ValueError) as e:
+        _fail("[compact]", e)
+    verb = "将移除" if dry_run else "移除"
+    for item in result["files"]:
+        keys = item["removed_keys"]
+        typer.echo(
+            f"[compact] {item['lang']}/{item['table']}: {verb} {len(keys)} 条 orphan"
+        )
+        if dry_run:
+            typer.echo(f"  {'、'.join(keys)}")
+    total = result["total_removed"]
+    if not total:
         typer.echo("[compact] 无 orphan 条目，无需操作")
+    elif dry_run:
+        typer.echo(f"[compact] 共 {total} 条 orphan 待移除（dry-run，未修改任何文件）")
     else:
-        typer.echo(f"[compact] 总计移除 {removed} 条")
+        typer.echo(f"[compact] 共 {total} 条 orphan 已移除")
 
 
 if __name__ == "__main__":

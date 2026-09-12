@@ -91,7 +91,7 @@ deploy:                          # 可选；见「部署到 Unity」
 
 ```yaml
 table: Item                 # 表名（唯一标识）
-primary: Id                 # 主键字段名，必须在 fields 里；**必须是 int32/int64 标量**，且不能 server_only
+primary: Id                 # 主键字段名，必须在 fields 里；**必须是 int32**（索引向量/idHash/ByID(int) 都是 32 位），且不能 server_only
 json_key: Items             # 可选，JSON 根键；默认 {Table}s
 excel_file: Item.xlsx       # 可选，Excel 文件名；默认 {Table}.xlsx
 fields:
@@ -422,7 +422,8 @@ ct i18n compact [--lang L] [--table T] [--dry-run] [--root DIR]
 | `vector<Record>` 缺 `excel_columns` | ❌ 必填 |
 | `excel_columns` 用在非 vector 上 | ❌ 仅适用于 `vector<T>` |
 | 主键标记 `server_only` | ❌ 主键必须进客户端二进制 |
-| 主键类型不是 int32/int64 | ❌ |
+| 主键类型不是 `int32`（含 `int64`/`int8`/`uint*`） | ❌ |
+| 整数列的值超出其声明类型的值域（如 `int32` 列填 `5000000000`） | ❌ 解析校验阶段报类型错误 |
 | `i18n: true` 标在非**标量 string** 上（含 `vector<string>`） | ❌ |
 | 同一字段同时 `i18n` + `server_only` | ❌ |
 | record 字段标 `i18n` / `server_only` | ❌ schema 层报错（下游不会报，只会静默忽略） |

@@ -205,6 +205,11 @@ def run_canonical_export(
     cache_dir = config.resolve("cache_dir")
     generated = output_dir / "generated"
     languages = [lang for lang in config.all_langs if lang_filter is None or lang == lang_filter]
+    if lang_filter is not None and not languages:
+        raise ValueError(
+            f"语言 '{lang_filter}' 不在可导出语言中"
+            f"（可用: {', '.join(config.all_langs)}）"
+        )
 
     written: list[str] = []
     table_bytes: dict[str, dict[str, bytes]] = {}

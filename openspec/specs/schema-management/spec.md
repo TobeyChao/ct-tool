@@ -97,6 +97,7 @@ Schema 中每个字段 SHALL 声明恰好一个类型表达式（canonical 文�
 #### Scenario: Reference vector rejected
 - **WHEN** 带 ref 的字段声明 vector 类型
 - **THEN** 工具拒绝该组合
+
 ### Requirement: Calculate maximum nesting depth
 工具 SHALL 以表头节点树计算最大节点深度 D：顶层字段为第 1 层；Record 子字段增加一层；定长 scalar/Enum/string vector 的槽位增加一层；定长 Record vector 的槽位增加一层且 Record 子字段继续逐层增加。模板表头行数 SHALL 为 `2D`。
 
@@ -148,13 +149,12 @@ Enum comment 修改 SHALL NOT 改变 ordinal；新增项默认 SHALL 追加。�
 - **THEN** Change Plan 定位表、字段、Excel 行和值并阻止 Apply
 
 ### Requirement: Validate primary key type
-工具 SHALL 在 schema 加载阶段校验主键字段的类型必须是 `int32` 或
-`int64`；其他类型（含 `string`、`bool`、`float`、`double`、`enum` 等）
-一律拒绝。报错 SHALL 指明表名、主键字段名与当前类型，且不得输出
-Python traceback。
+工具 SHALL 在 schema 加载阶段校验主键字段的类型必须是 `int32`。主键在导出侧存进 4 字节索引向量、`idHash` 取 32 位、生成的 C# 查询签名恒为 `ByID(int)`，只有 `int32` 能让这条链自洽；其它类型（含 `string`、`bool`、`float`、`double`、`enum`，以及 `int8` / `int16` / `int64` / `uint*` 等其它整数标量）一律拒绝。报错 SHALL 指明表名、主键字段名与当前类型，且不得输出 Python traceback。
+
+主键**值**（来自 Excel）SHALL 落在 `int32` 值域 `[-2147483648, 2147483647]` 内，越界由读取层的整数值域校验在解析校验阶段报为类型错误（见 `excel-processing`），SHALL NOT 留到产物生成阶段抛出 `TypeError`。
 
 #### Scenario: Integer primary key accepted
-- **WHEN** schema 定义 `primary: Id` 且 `Id` 字段 `type: int32`（或 `int64`）
+- **WHEN** schema 定义 `primary: Id` 且 `Id` 字段 `type: int32`
 - **THEN** 工具成功加载 schema，后续 validate / export / gen-template 正常执行
 
 #### Scenario: String primary key rejected
@@ -166,6 +166,10 @@ Python traceback。
 - **WHEN** schema 定义 `primary: Name` 且 `Name` 字段 `type: bool`
   （或 `float`、`enum` 等其他非整数类型）
 - **THEN** 工具在加载阶段报错，指明表名、主键字段名与当前类型
+
+#### Scenario: Non-int32 integer primary key rejected
+- **WHEN** schema 定义 `primary: Id` 且 `Id` 字段 `type: int64`（或 `int8`、`uint32` 等其它整数标量）
+- **THEN** 工具在加载阶段报错，指明表名、主键字段名与当前类型，并说明索引向量、`idHash` 与 `ByID(int)` 均为 32 位承载
 
 ### Requirement: Load and validate table-level query indexes
 Table 资源 SHALL 从 YAML 的 `indexes` 列表加载表级查询索引。当前 SHALL 只支持 `kind: codename`，且该条目**只接受 `kind` 一个键**：附带 `field`（或其他键）SHALL 在加载阶段被拒绝（codename 固定指向名为 `CodeName` 的字段，字段名不是配置项）。`kind: code`（改名前的旧名）与已删除的 `kind: group` SHALL 同样被拒绝，不提供兼容别名。

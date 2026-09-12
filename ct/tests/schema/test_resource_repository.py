@@ -33,7 +33,7 @@ table: Quest
 primary: Id
 fields:
   - name: Id
-    type: int64
+    type: int32
   - name: Reward
     type: DropReward
 """

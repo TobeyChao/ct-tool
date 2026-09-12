@@ -363,8 +363,9 @@ def test_field_rename_delete_move_set_type_emit_commands(editor_url: str, chromi
     page.wait_for_timeout(200)
     assert "2 条未应用变更" in _draftbar_text(page)
 
-    # set_type on Id via the type picker (✎ edit button)
-    page.locator('#page-schema tr[data-field="Id"] [data-act="type"]').click()
+    # set_type on the renamed non-primary field via the type picker (✎ edit button)
+    # （不拿主键 `Id` 试：主键类型被模型固定为 int32，改成 int64 的草稿永远无法 Apply）
+    page.locator('#page-schema tr[data-field="DisplayName"] [data-act="type"]').click()
     page.locator("[data-fe-type]").click()
     page.wait_for_selector("[data-type-search]:focus")
     page.locator("[data-type='int64']").click()

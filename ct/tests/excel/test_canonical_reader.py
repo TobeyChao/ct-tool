@@ -9,6 +9,7 @@ from openpyxl import load_workbook
 from ct.excel.canonical_reader import read_canonical_excel
 from ct.excel.canonical_template import generate_canonical_template
 from ct.excel.layout import build_layout
+from ct.diagnostics.errors import IssueCode
 from ct.schema.resources import FieldDef, RecordResource, TableResource
 
 
@@ -114,3 +115,50 @@ def test_vector_element_error_is_located(tmp_path: Path) -> None:
     assert "第2个元素" in issue.message
     assert issue.field == "table:Item/Tags"
     assert issue.column == 3  # 0-based column index for Tags
+
+
+def test_out_of_range_integer_is_a_type_issue(tmp_path: Path) -> None:
+    """越界值必须在读取层报类型错误，而不是留到 flatbuffers builder 抛 TypeError。"""
+    table = TableResource(
+        table="Item",
+        primary="Id",
+        fields=[FieldDef(name="Id", type="int32"), FieldDef(name="Small", type="int8")],
+    )
+    layout = build_layout(table, schema_hash="s", records={})
+    template = generate_canonical_template(
+        layout, tmp_path / "range.xlsx", enums={}, primary=table.primary
+    )
+    _append_row(template, [5000000000, 5000])
+
+    parsed = read_canonical_excel(template, layout, table, records={})
+    assert [(i.field, i.message) for i in parsed.issues] == [
+        ("table:Item/Id", "期望 int32 类型"),
+        ("table:Item/Small", "期望 int8 类型"),
+    ]
+    assert all(i.code is IssueCode.TYPE for i in parsed.issues)
+
+
+def test_in_range_boundary_values_pass(tmp_path: Path) -> None:
+    table = TableResource(
+        table="Item",
+        primary="Id",
+        fields=[FieldDef(name="Id", type="int32"), FieldDef(name="Small", type="int8")],
+    )
+    layout = build_layout(table, schema_hash="s", records={})
+    template = generate_canonical_template(
+        layout, tmp_path / "boundary.xlsx", enums={}, primary=table.primary
+    )
+    _append_row(template, [2147483647, -128])
+
+    parsed = read_canonical_excel(template, layout, table, records={})
+    assert parsed.issues == []
+    assert parsed.rows == [{"Id": 2147483647, "Small": -128}]
+
+
+def test_out_of_range_vector_element_is_located(tmp_path: Path) -> None:
+    template, table = _make_template(tmp_path)
+    _append_row(template, [4, 1, 2, "[1,99999999999]", None, None, None, None, None, None])
+
+    parsed = _read(template, table)
+    assert len(parsed.issues) == 1
+    assert "第2个元素 99999999999 超出 int32 值域" in parsed.issues[0].message

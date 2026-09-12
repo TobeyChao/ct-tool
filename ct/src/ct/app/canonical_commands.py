@@ -436,6 +436,43 @@ def _publish_staged_workbook(staged_path: Path, out_path: Path) -> None:
         raise OSError(error, ctypes.FormatError(error), str(out_path))
 
 
+class UnknownTableError(ValueError):
+    """表名不存在。
+
+    CLI 与其他 `ValueError` 一样转为友好提示 + 退出码 1；Web 端点据类型映射为 404
+    （`/api/schema-workspace/gen-template` 既有契约是 404 + `未找到表`）。
+    """
+
+
+def _require_table(ws: CanonicalWorkspace, name: str) -> str:
+    """校验表名存在（精确匹配 PascalCase），返回原名。
+
+    与 `canonical_validate` / `run_canonical_export` 同口径：未知表名一律报错，
+    绝不静默处理 0 张表。仅大小写不符时提示正确写法——规格要求表名精确匹配
+    PascalCase，这是最常见的输入错误。
+    """
+    names = [t.table for t in ws.tables]
+    if name in names:
+        return name
+    hint = next((n for n in names if n.lower() == name.lower()), None)
+    if hint is not None:
+        raise UnknownTableError(
+            f"表 '{name}' 不存在（是否想用 '{hint}'？表名精确匹配 PascalCase）"
+        )
+    raise UnknownTableError(f"表 '{name}' 不存在")
+
+
+def _require_lang(ws: CanonicalWorkspace, lang: str) -> str:
+    """校验语言在 `secondary_langs` 中，返回原名。"""
+    langs = list(ws.config.secondary_langs)
+    if lang in langs:
+        return lang
+    raise ValueError(
+        f"语言 '{lang}' 不在 secondary_langs 中"
+        f"（可用: {', '.join(langs) if langs else '无'}）"
+    )
+
+
 def canonical_gen_template(
     root: Path,
     *,
@@ -449,9 +486,11 @@ def canonical_gen_template(
     excel_dir.mkdir(parents=True, exist_ok=True)
     cache_dir = ws.resolve("cache_dir")
     manifest_dir = ws.resolve("excel_dir") / "layout_manifests"
-    targets = [t for t in ws.tables if table_filter is None or table_filter == t.table]
     if table_filter is None and not all_tables:
         raise ValueError("请指定 --all 或 --table <表名>")
+    if table_filter is not None:
+        _require_table(ws, table_filter)
+    targets = [t for t in ws.tables if table_filter is None or table_filter == t.table]
     messages: list[str] = []
     for table in targets:
         layout = build_layout(
@@ -574,8 +613,18 @@ def canonical_i18n_status(root: Path) -> dict[str, dict]:
     return result
 
 
-def canonical_i18n_sync(root: Path, *, table_filter: str | None = None) -> list[str]:
-    """Refresh source files and lang skeletons for a canonical workspace."""
+def canonical_i18n_sync(
+    root: Path,
+    *,
+    table_filter: str | None = None,
+    lang_filter: str | None = None,
+    verbose: bool = False,
+) -> list[str]:
+    """Refresh source files and lang skeletons for a canonical workspace.
+
+    ``lang_filter`` 只限定 **lang 骨架** 的写入范围：source 仍按选中的表全量刷新
+    （规格 `ct i18n sync --lang`）。返回逐表（verbose 时含逐文件）消息，**末条为汇总**。
+    """
     from ct.export.i18n.merger import write_lang_file, write_source_file
     from ct.export.i18n.state import sync_lang_table
 
@@ -584,11 +633,19 @@ def canonical_i18n_sync(root: Path, *, table_filter: str | None = None) -> list[
     config = ws.config
     excel_dir = config.resolve("excel_dir")
     i18n_dir = config.resolve("i18n_dir")
+    if table_filter is not None:
+        _i18n_table(ws, table_filter)
+    langs = list(config.secondary_langs)
+    if lang_filter is not None:
+        _require_lang(ws, lang_filter)
+        langs = [lang_filter]
     tables = [
         t for t in ws.tables
         if (table_filter is None or t.table == table_filter) and any(f.i18n for f in t.fields)
     ]
     messages: list[str] = []
+    totals = {"added": 0, "updated": 0, "stale": 0, "orphan": 0}
+    processed = 0
     for table in tables:
         i18n_fields = [f for f in table.fields if f.i18n]
         field_order = [f.name for f in i18n_fields]
@@ -607,15 +664,42 @@ def canonical_i18n_sync(root: Path, *, table_filter: str | None = None) -> list[
             for field in i18n_fields:
                 source[f"{row_id}.{field.name}"] = str(row.get(field.name, ""))
         write_source_file(source, i18n_dir / "source" / f"{table.table}.json", field_order)
-        for lang in config.secondary_langs:
+        messages.append(f"synced {table.table}")
+        if verbose:
+            messages.append(
+                f"写入 i18n/source/{table.table}.json（{len(source)} 条 source）"
+            )
+        processed += 1
+        for lang in langs:
             lang_path = i18n_dir / lang / f"{table.table}.json"
             existing = (
                 json.loads(lang_path.read_text(encoding="utf-8"))
                 if lang_path.exists()
                 else {}
             )
-            write_lang_file(sync_lang_table(source, existing), lang_path, field_order)
-        messages.append(f"synced {table.table}")
+            synced = sync_lang_table(source, existing)
+            added = sum(1 for key in synced if key not in existing)
+            updated = sum(
+                1 for key, entry in synced.items()
+                if key in existing and existing[key] != entry
+            )
+            stale = sum(1 for e in synced.values() if e["status"] == "stale")
+            orphan = sum(1 for e in synced.values() if e["status"] == "orphan")
+            write_lang_file(synced, lang_path, field_order)
+            for stat, count in (
+                ("added", added), ("updated", updated),
+                ("stale", stale), ("orphan", orphan),
+            ):
+                totals[stat] += count
+            if verbose:
+                messages.append(
+                    f"写入 i18n/{lang}/{table.table}.json"
+                    f"（新增 {added}、更新 {updated}、stale {stale}、orphan {orphan}）"
+                )
+    messages.append(
+        f"处理 {processed} 张表 × {len(langs)} 语言：新增 {totals['added']}、"
+        f"更新 {totals['updated']}、stale {totals['stale']}、orphan {totals['orphan']}"
+    )
     return messages
 
 
@@ -623,6 +707,7 @@ def canonical_i18n_compact(
     root: Path,
     *,
     table_filter: str | None = None,
+    lang_filter: str | None = None,
     dry_run: bool = False,
 ) -> dict:
     """Remove orphan entries from lang files.
@@ -634,6 +719,12 @@ def canonical_i18n_compact(
     ws = CanonicalWorkspace.load(root)
     config = ws.config
     i18n_dir = config.resolve("i18n_dir")
+    if table_filter is not None:
+        _i18n_table(ws, table_filter)
+    langs = list(config.secondary_langs)
+    if lang_filter is not None:
+        _require_lang(ws, lang_filter)
+        langs = [lang_filter]
     removed = 0
     touched = 0
     files: list[dict] = []
@@ -647,7 +738,7 @@ def canonical_i18n_compact(
         if not source_path.exists():
             continue
         source = set(json.loads(source_path.read_text(encoding="utf-8")).keys())
-        for lang in config.secondary_langs:
+        for lang in langs:
             lang_path = i18n_dir / lang / f"{table.table}.json"
             if not lang_path.exists():
                 continue
@@ -689,9 +780,8 @@ def canonical_i18n_tables(root: Path) -> list[dict]:
 
 def _i18n_table(ws: CanonicalWorkspace, table: str) -> object:
     """Find an i18n-capable table by name, raising a friendly error otherwise."""
+    _require_table(ws, table)
     t = next((t for t in ws.tables if t.table == table), None)
-    if t is None:
-        raise ValueError(f"表 '{table}' 不存在")
     if not t.has_i18n:
         raise ValueError(f"表 '{table}' 没有 i18n 字段")
     return t

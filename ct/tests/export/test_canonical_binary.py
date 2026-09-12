@@ -623,15 +623,22 @@ def test_new_scalars_generate_fbs_standard_names() -> None:
     assert "VUINT64: ulong;" in text
 
 
-def test_integer_scalars_allowed_as_primary_key() -> None:
-    """主键以前只允许 int32/int64；现在 8 种整数标量都可以。"""
-    from ct.schema.type_expression import INTEGER_SCALAR_NAMES
+def test_integer_scalars_rejected_as_primary_key() -> None:
+    """主键只允许 `int32`：索引向量 stride 4、`idHash` 取低 32 位、`ByID(int)` 恒为 int。
 
-    for name in sorted(INTEGER_SCALAR_NAMES):
-        table = TableResource(
-            table="K", primary="Id", fields=[FieldDef(name="Id", type=name)]
-        )
-        assert table.primary == "Id"
+    （2026-09-12 收紧。此前「补标量类型」把主键放宽到 8 种整数标量，但导出侧仍以
+    int32 承载主键——越界值会在产物写入阶段抛 TypeError，读取端也只会生成 `ByID(int)`。）
+    """
+    import pytest
+
+    from ct.schema.type_expression import INTEGER_SCALAR_NAMES, PRIMARY_KEY_TYPE
+
+    TableResource(table="K", primary="Id", fields=[FieldDef(name="Id", type=PRIMARY_KEY_TYPE)])
+    for name in sorted(INTEGER_SCALAR_NAMES - {PRIMARY_KEY_TYPE}):
+        with pytest.raises(ValueError, match="主键字段 'Id' 类型必须为 int32"):
+            TableResource(
+                table="K", primary="Id", fields=[FieldDef(name="Id", type=name)]
+            )
 
 
 def test_scalar_defaults_are_flatbuffers_defaults() -> None:

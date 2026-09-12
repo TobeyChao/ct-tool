@@ -15,7 +15,7 @@ from pydantic import (
 
 from ct.schema.naming import validate_name
 from ct.schema.type_expression import (
-    INTEGER_SCALAR_NAMES,
+    PRIMARY_KEY_TYPE,
     SCALAR_DEFAULTS,
     NamedType,
     ScalarType,
@@ -151,11 +151,12 @@ class TableResource(BaseModel):
             raise ValueError(f"表 {self.table}: 主键 '{self.primary}' 不在字段列表中")
         if not (
             isinstance(primary.type_expr, ScalarType)
-            and primary.type_expr.name in INTEGER_SCALAR_NAMES
+            and primary.type_expr.name == PRIMARY_KEY_TYPE
         ):
             raise ValueError(
                 f"表 {self.table}: 主键字段 '{self.primary}' 类型必须为 "
-                f"int32 或 int64（当前: {primary.type_text}）"
+                f"{PRIMARY_KEY_TYPE}（当前: {primary.type_text}）"
+                f"——主键在索引向量、idHash 与生成的 ByID(int) 上均以 32 位承载"
             )
         if primary.server_only:
             raise ValueError(

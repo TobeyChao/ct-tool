@@ -141,7 +141,7 @@ def test_template_has_no_data_validation_input_prompts(tmp_path: Path) -> None:
         table="PromptFree",
         primary="Id",
         fields=[
-            FieldDef(name="Id", type="int64"),
+            FieldDef(name="Id", type="int32"),
             FieldDef(name="ItemId", type="int32", ref="Item.Id"),
             FieldDef(name="Enabled", type="bool"),
         ],

@@ -1,8 +1,4 @@
-## Purpose
-
-提供 `ct` 命令行接口，用统一的子命令（export/validate/status/gen-template/i18n/deploy）驱动 canonical 导出、校验与 i18n 工作流，供脚本与 CI 调用。
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: ct export command
 `ct export` SHALL 全量重跑 canonical 导出管道，步骤序列即 `CANONICAL_STEPS`：`解析校验 → JSON → Accessor → FBS → Bundle`（`ct/app/canonical_export.py`）。管道内**无 i18n sync、无 flatc 调用、无 deploy stage**；`ct export` 不调用 `canonical_i18n_sync`，因此不写 `i18n/source/`（只有 `ct i18n sync` 会写）。
@@ -36,19 +32,6 @@
 #### Scenario: Unknown table or language fails
 - **WHEN** 用户执行 `ct export --lang zz`（`zz` 不在 `all_langs` 中），或 `ct export --table Nope`
 - **THEN** 命令以非 0 退出码失败并输出可用取值（`语言 'zz' 不在可导出语言中（可用: zh, en, ja）` / `表 'Nope' 不存在`），不写任何产物、不提交缓存指纹
-
-### Requirement: ct i18n subcommand group
-CLI SHALL 提供 `ct i18n` 子命令组，承载所有翻译骨架与状态管理操作。子命令组下 SHALL 包含 `sync`、`status`、`compact` 三个子命令。
-
-所有子命令 SHALL 支持 `--root <dir>` 选项，用法与现有顶层命令一致。
-
-#### Scenario: Help lists subcommands
-- **WHEN** 用户执行 `ct i18n --help`
-- **THEN** 输出列出 `sync`、`status`、`compact` 三个子命令及简短描述
-
-#### Scenario: Unknown subcommand fails clearly
-- **WHEN** 用户执行 `ct i18n foo`
-- **THEN** 命令以非零退出码失败，输出可用子命令列表
 
 ### Requirement: ct i18n sync command
 `ct i18n sync` SHALL 刷新主语言 source 文件并为每个 secondary_lang 生成或更新 lang 骨架。
@@ -153,17 +136,6 @@ CLI SHALL 提供 `ct i18n` 子命令组，承载所有翻译骨架与状态管�
 - **WHEN** 执行 `ct i18n compact --lang zz`（`zz` 不在 `secondary_langs` 中）或 `ct i18n compact --table Nope`
 - **THEN** 命令以非 0 退出码失败并输出可用取值，不修改任何文件
 
-### Requirement: ct validate command
-`ct validate` SHALL 只执行解析和校验流程，不生成任何输出文件。
-
-#### Scenario: Validate all tables
-- **WHEN** 用户执行 `ct validate`
-- **THEN** 校验所有表，报告错误总数，不修改任何文件
-
-#### Scenario: Validate passes
-- **WHEN** 所有表校验通过
-- **THEN** 输出 `校验通过`，退出码 0
-
 ### Requirement: ct gen-template command
 `ct gen-template` SHALL 依据 schema 生成或**重建并迁移** Excel 模板，并写入 `excel/layout_manifests/{table}.json` 布局 manifest（模板漂移由 manifest 的 `schema_hash` 与工作簿实际列数判定；模板内不写 `ct_*` 元数据）。
 
@@ -215,32 +187,6 @@ CLI SHALL 提供 `ct i18n` 子命令组，承载所有翻译骨架与状态管�
 - **WHEN** 用户执行 `ct gen-template --table item`（存在表 `Item`）
 - **THEN** 命令以非 0 退出码失败，并在错误中提示 `是否想用 'Item'？`
 
-### Requirement: ct status command
-`ct status` SHALL 输出且仅输出三类状态（由 `canonical_status` 计算）：
-1. **`missing`**：Excel 文件不存在 → 标题 `缺失文件:`，逐行 `  [missing] <Table>`
-2. **`changed`**：Excel 当前 sha256 与 `cache/state.json` 的 `excel_hashes` 记录不一致，或无记录 → 标题 `数据变更（待导出）:`，逐行 `  [changed] <Table>`
-3. **`drifted`**：`excel/layout_manifests/{table}.json` 缺失、其 `schema_hash` 与当前 schema 不一致，或工作簿实际列数与 layout 列数不一致 → 标题 `模板已过时（schema 修改后未重建）:`，逐行 `  [template-stale] <Table>  (建议: ct gen-template --table <Table>)`
-
-命令 SHALL NOT 输出 deploy 行；不存在「无元数据 / untracked」这一独立类别（无 manifest 的表归入 `drifted`）。三类全空时输出 `[OK] 所有表已是最新（数据 + 模板）`。提示中 SHALL NOT 出现 `--update-header`。
-
-（本能力未实现）原始意图：无 `ct_*` 元数据的模板单独报为 `[template-untracked]`，并提示 `--update-header` 重建；该类别与 `--update-header` 提示都不存在。
-
-#### Scenario: Show pending data changes
-- **WHEN** `Item.xlsx` 已修改但未导出（hash 与 `excel_hashes` 不一致）
-- **THEN** 输出 `  [changed] Item`
-
-#### Scenario: Show drifted templates
-- **WHEN** `Quest` 的 schema 已修改但 `excel/layout_manifests/Quest.json` 未重建
-- **THEN** 输出 `  [template-stale] Quest  (建议: ct gen-template --table Quest)`，提示中不含 `--update-header`
-
-#### Scenario: Missing Excel is its own category
-- **WHEN** 某表的 Excel 文件不存在
-- **THEN** 该表报为 `  [missing] <Table>`，且不同时报为 changed 或 drifted
-
-#### Scenario: All clean reports nothing pending
-- **WHEN** 三类状态均为空
-- **THEN** 输出 `[OK] 所有表已是最新（数据 + 模板）`
-
 ### Requirement: Designer-friendly error messages
 所有校验错误 SHALL 以中文输出，包含表名、**Excel 绝对行号**、列字母、
 字段名、当前单元格值与错误说明，不暴露 Python 堆栈跟踪给非技术用户。
@@ -263,3 +209,4 @@ schema / 配置**加载阶段**的错误（非 `int32` 主键、schema 文件缺
 #### Scenario: Schema load error is friendly
 - **WHEN** 某表主键声明为 `int64`（模型固定为 `int32`），执行 `ct validate` 或 `ct status`
 - **THEN** 输出 `[error] 加载 Table 失败 [<Table>.yaml]: 表 <Table>: 主键字段 'Id' 类型必须为 int32（当前: int64）…`，退出码 1，输出中不含 `Traceback`；加 `--verbose` 时堆栈写入日志供开发排查
+
