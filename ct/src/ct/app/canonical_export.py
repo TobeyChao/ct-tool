@@ -93,10 +93,15 @@ def _enums_map(workspace: CanonicalWorkspace) -> dict[str, EnumResource]:
     return {enum.name: enum for enum in workspace.enums}
 
 
-def _assert_single_vtable(name: str, lang: str, data: bytes) -> None:
-    """定宽硬断言：开了 uniform 就必须真的只有 1 种 vtable。"""
+def _assert_single_vtable(name: str, lang: str, data: bytes, row_count: int) -> None:
+    """定宽硬断言：开了 uniform 就必须真的只有 1 种 vtable。
+
+    空表（0 行）没有行对象 ⇒ 自然也没有 vtable；「所有行共享同一 vtable」的
+    前提**空真成立**，允许 0 种。有行时仍必须恰好 1 种，否则生成器发射的字面量
+    偏移会静默读错位数据。
+    """
     n_vt = count_vtables(data)
-    if n_vt != 1:
+    if n_vt != 1 and not (n_vt == 0 and row_count == 0):
         raise CanonicalValidationError(
             [
                 f"{name}[{lang}]：uniform 布局下出现 {n_vt} 种 vtable（要求恰好 1 种）"
@@ -205,19 +210,6 @@ def run_canonical_export(
     layout_info: dict[str, dict[str, Any]] = {}
     # 次级语言的**稀疏 i18n 表**字节：table → lang → bytes
     i18n_table_bytes: dict[str, dict[str, bytes]] = {}
-    # ---- B4：全量导出前清理「纯生成物」目录 ----
-    # 陈旧的 output/fbs、output/generated 会让消费方看到**已废弃格式**的 schema
-    # （实例：2026/8/14 的 *_i18n.fbs 与 9/10 的产物并存，而全仓已无代码生成它们）。
-    # 只在**全量导出**时清理：带 table/lang 过滤的导出是增量的，不能删别的表。
-    if table_filter is None and lang_filter is None:
-        # json / binary 是**整目录重写**的产物（每张表、每种语言各一份），
-        # 删表或删语言后旧文件会残留（实测确认），所以一并清理。
-        for stale_dir in ("fbs", "generated", "json", "binary"):
-            target = output_dir / stale_dir
-            if target.exists():
-                shutil.rmtree(target)
-                reporter.log(f"清理陈旧产物目录 output/{stale_dir}")
-
     bundle_hashes: dict[str, str] = {}
 
     # ---- 阶段 1：解析校验（所有表） ----
@@ -250,6 +242,22 @@ def run_canonical_export(
             raise CanonicalValidationError(validation_issues)
     finally:
         reporter.step_finished(CANONICAL_STEPS[0])
+
+    # ---- B4：校验**通过后**清理「纯生成物」目录 ----
+    # 陈旧的 output/fbs、output/generated 会让消费方看到**已废弃格式**的 schema
+    # （实例：2026/8/14 的 *_i18n.fbs 与 9/10 的产物并存，而全仓已无代码生成它们）。
+    # 只在**全量导出**时清理：带 table/lang 过滤的导出是增量的，不能删别的表。
+    # ⚠️ 必须放在校验通过之后：校验失败（重复主键/悬空 ref 等）时，output/ 里的
+    #    仍是上次成功导出的完整产物 —— 前置校验闸门承诺失败导出不落脏数据，
+    #    更不能反过来把上次的成功产物删掉。
+    if table_filter is None and lang_filter is None:
+        # json / binary 是**整目录重写**的产物（每张表、每种语言各一份），
+        # 删表或删语言后旧文件会残留（实测确认），所以一并清理。
+        for stale_dir in ("fbs", "generated", "json", "binary"):
+            target = output_dir / stale_dir
+            if target.exists():
+                shutil.rmtree(target)
+                reporter.log(f"清理陈旧产物目录 output/{stale_dir}")
 
     # ---- 阶段 2：JSON + 各语言 bytes ----
     types_path = output_dir / "fbs" / "types.fbs"
@@ -290,7 +298,7 @@ def run_canonical_export(
                     primary_rows, table, records=records, enums=enums, uniform=True
                 )
                 if use_uniform:
-                    _assert_single_vtable(table.table, config.primary_lang, data)
+                    _assert_single_vtable(table.table, config.primary_lang, data, len(primary_rows))
                     layout_info[table.table]["bytes_uniform"] = len(data)
                 table_bytes[table.table][config.primary_lang] = data
 
@@ -333,16 +341,21 @@ def run_canonical_export(
                     i18n_rows, i18n_table, records=records, enums=enums, uniform=use_uniform
                 )
                 if use_uniform:
-                    _assert_single_vtable(f"{table.table}_i18n", lang, i18n_data)
+                    _assert_single_vtable(f"{table.table}_i18n", lang, i18n_data, len(i18n_rows))
                 i18n_table_bytes[table.table][lang] = i18n_data
 
             info = layout_info[table.table]
             detail = f"填充率 {fill:.1%} → {'定宽' if use_uniform else '变长'}"
             if use_uniform:
-                detail += (
-                    f"（{info['bytes_normal']:,} → {info['bytes_uniform']:,} B，"
-                    f"{info['bytes_uniform'] / info['bytes_normal']:.3f}x）"
-                )
+                # bytes_uniform 只在主语言被纳入本次导出时才有（--lang 次级语言时
+                # 主语言分支不产出字节），日志只报已计算的部分。
+                detail += f"（{info['bytes_normal']:,} B"
+                if "bytes_uniform" in info:
+                    detail += (
+                        f" → {info['bytes_uniform']:,} B，"
+                        f"{info['bytes_uniform'] / info['bytes_normal']:.3f}x"
+                    )
+                detail += "）"
             reporter.log(f"{table.table}：{detail}")
     finally:
         reporter.step_finished(CANONICAL_STEPS[1])

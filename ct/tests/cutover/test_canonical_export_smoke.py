@@ -236,16 +236,16 @@ def test_export_emits_enum_declarations(tmp_path: Path) -> None:
 
 
 def test_export_wires_declared_indexes_into_accessors(tmp_path: Path) -> None:
-    """B1：表声明的 indexes 必须一路到达生成物（原先硬编码 () ⇒ 永不生成 ByCode）。"""
+    """B1：表声明的 indexes 必须一路到达生成物（原先硬编码 () ⇒ 永不生成 ByCodeName）。"""
     workspace = _export_fixture(tmp_path)
     gen = workspace / "output" / "generated" / "csharp"
     item_type = (gen / "ItemTypeAccessor.cs").read_text(encoding="utf-8")
     uiconfig = (gen / "UIConfigAccessor.cs").read_text(encoding="utf-8")
     # ItemType 声明了 Code 索引；UIConfig 声明了 Group 索引
-    assert "Runtime.ByCode(TableName" in item_type
+    assert "Runtime.ByCodeName(TableName" in item_type
     assert "Runtime.GroupKey(TableName" in uiconfig
     # 没声明索引的表不应出现
-    assert "Runtime.ByCode" not in (gen / "QuestAccessor.cs").read_text(encoding="utf-8")
+    assert "Runtime.ByCodeName" not in (gen / "QuestAccessor.cs").read_text(encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -348,3 +348,33 @@ def test_main_accessor_reads_i18n_from_sparse_table(tmp_path: Path) -> None:
     )
     assert "local function i18n_table()" in lua
     assert 'GD.FindTableI18n("Item_i18n")' in lua
+
+
+# ---------------------------------------------------------------------------
+# P1/P2 回归：清理时序 / 仅次级语言导出 / 空表
+# ---------------------------------------------------------------------------
+
+
+def test_export_secondary_lang_only_uniform_table(tmp_path: Path) -> None:
+    """P1：--lang en（仅次级语言）导出定宽 i18n 表不得 KeyError。
+
+    修复前主语言被过滤掉时 ``bytes_uniform`` 从未写入 layout_info，
+    阶段 2 的日志格式化直接 KeyError。
+    """
+    workspace = tmp_path / "gd"
+    for section in ("config", "excel", "i18n"):
+        shutil.copytree(FIXTURE / section, workspace / section)
+
+    result = run_canonical_export(workspace, lang_filter="en")
+
+    assert result["languages"] == ["en"]
+    binary = workspace / "output" / "binary"
+    assert (binary / "data_en.bin").exists()
+    # 次级语言包 = 稀疏 i18n 表（Item 是定宽表，en 语言只走 i18n 侧表）
+    assert set(_bundle_table_names((binary / "data_en.bin").read_bytes())) == {
+        "ItemType_i18n",
+        "Item_i18n",
+        "Quest_i18n",
+    }
+    # 主语言未请求 ⇒ 不产出主语言包
+    assert not (binary / "data_zh.bin").exists()
