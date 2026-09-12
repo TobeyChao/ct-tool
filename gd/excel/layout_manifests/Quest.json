@@ -68,7 +68,6 @@
             "typeExpr": "double"
         }
     ],
-    "fill_rate": 1.0,
     "format": "template-layout/2",
     "header_rows": 4,
     "nodes": [
@@ -211,6 +210,5 @@
             14,
             24
         ]
-    ],
-    "uniform": true
+    ]
 }

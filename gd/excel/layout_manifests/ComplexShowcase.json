@@ -507,7 +507,6 @@
             "typeExpr": "bool"
         }
     ],
-    "fill_rate": 0.973684,
     "format": "template-layout/2",
     "header_rows": 8,
     "nodes": [
@@ -1533,6 +1532,5 @@
             40,
             80
         ]
-    ],
-    "uniform": true
+    ]
 }

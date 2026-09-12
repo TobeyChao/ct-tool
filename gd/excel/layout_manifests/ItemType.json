@@ -25,7 +25,6 @@
             "typeExpr": "string"
         }
     ],
-    "fill_rate": 1.0,
     "format": "template-layout/2",
     "header_rows": 2,
     "nodes": [
@@ -80,6 +79,5 @@
             8,
             12
         ]
-    ],
-    "uniform": true
+    ]
 }

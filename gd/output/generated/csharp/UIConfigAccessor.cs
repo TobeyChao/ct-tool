@@ -9,7 +9,6 @@ namespace GameFramework.ConfigGen
     public static partial class UIConfigAccessor
     {
         private const string TableName = "UIConfig";
-        private const int MaxSlot = 14;
         private static ConfigTable _table;
         private static int _tableVersion = -1;
 
@@ -52,7 +51,7 @@ namespace GameFramework.ConfigGen
             }
             else
             {
-                return new UIConfig(p, t.OffsetsFor(p, MaxSlot), t.Version, idx);
+                return new UIConfig(p, t.Version, idx);
             }
         }
 
@@ -67,7 +66,7 @@ namespace GameFramework.ConfigGen
             }
             else
             {
-                return new UIConfig(p, t.OffsetsFor(p, MaxSlot), t.Version, i);
+                return new UIConfig(p, t.Version, i);
             }
         }
 
@@ -102,13 +101,11 @@ namespace GameFramework.ConfigGen
     public unsafe readonly struct UIConfig
     {
         private readonly IntPtr _row;
-        private readonly int[] _off;
         private readonly int _version;
         private readonly int _index;
-        internal UIConfig(IntPtr row, int[] offsets, int version, int rowIndex)
+        internal UIConfig(IntPtr row, int version, int rowIndex)
         {
             _row = row;
-            _off = offsets;
             _version = version;
             _index = rowIndex;
         }
@@ -119,7 +116,7 @@ namespace GameFramework.ConfigGen
                 #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
                 TableVersion.Check(_version);
                 #endif
-                return WireReader.I32At(_row, _off[4]);
+                return WireReader.I32At(_row, 4);
             }
         }
         public UIConfigLayer Layer
@@ -129,7 +126,7 @@ namespace GameFramework.ConfigGen
                 #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
                 TableVersion.Check(_version);
                 #endif
-                return (UIConfigLayer)WireReader.I8At(_row, _off[6]);
+                return (UIConfigLayer)WireReader.I8At(_row, 8);
             }
         }
         public string ResourceKey
@@ -145,7 +142,7 @@ namespace GameFramework.ConfigGen
                 {
                     return s;
                 }
-                s = NStringCache.Decode((byte*)WireReader.IndirectAt(_row, _off[8]));
+                s = NStringCache.Decode((byte*)WireReader.IndirectAt(_row, 12));
                 c[_index] = s;
                 return s;
             }
@@ -157,7 +154,7 @@ namespace GameFramework.ConfigGen
                 #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
                 TableVersion.Check(_version);
                 #endif
-                return WireReader.BoolAt(_row, _off[10]);
+                return WireReader.BoolAt(_row, 16);
             }
         }
         public bool Stack
@@ -167,7 +164,7 @@ namespace GameFramework.ConfigGen
                 #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
                 TableVersion.Check(_version);
                 #endif
-                return WireReader.BoolAt(_row, _off[12]);
+                return WireReader.BoolAt(_row, 17);
             }
         }
     }

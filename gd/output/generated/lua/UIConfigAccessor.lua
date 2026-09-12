@@ -19,13 +19,15 @@ local ArrayMeta = {
     __pairs = ipairs,   -- 契约测试要求 for _, v in pairs(tags) 可用
 }
 
+-- ⚠️ 本表是**定宽布局**：下面全是字面量偏移读（无 vtable 走查）。
+--    偏移由导出期 `probe_row_layout` 算出，是表级常量；改变 schema 必须重新导出。
 -- 行访问器元表（self = 行 userdata）
 local RowMeta = make_meta({
-    Id = function(s) return GD.I32(s, 4) end,
-    Layer = function(s) return GD.I8(s, 6) end,
-    ResourceKey = function(s) return GD.Str(s, 8) end,
-    BlocksRaycast = function(s) return GD.I8(s, 10) ~= 0 end,
-    Stack = function(s) return GD.I8(s, 12) ~= 0 end,
+    Id = function(s) return GD.I32Off(s, 4) end,
+    Layer = function(s) return GD.I8Off(s, 8) end,
+    ResourceKey = function(s) return GD.StrOff(s, 12) end,
+    BlocksRaycast = function(s) return GD.I8Off(s, 16) ~= 0 end,
+    Stack = function(s) return GD.I8Off(s, 17) ~= 0 end,
 })
 
 -- 公开 API（纯函数，无状态）

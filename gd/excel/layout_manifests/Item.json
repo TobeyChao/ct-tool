@@ -73,7 +73,6 @@
             "typeExpr": "bool"
         }
     ],
-    "fill_rate": 0.928571,
     "format": "template-layout/2",
     "header_rows": 4,
     "nodes": [
@@ -231,6 +230,5 @@
             16,
             28
         ]
-    ],
-    "uniform": true
+    ]
 }

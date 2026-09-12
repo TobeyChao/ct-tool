@@ -41,7 +41,6 @@
             "typeExpr": "bool"
         }
     ],
-    "fill_rate": 0.6,
     "format": "template-layout/2",
     "header_rows": 2,
     "nodes": [
@@ -107,6 +106,26 @@
         }
     ],
     "schema_hash": "19d52f7f29abccfb",
-    "slot_offsets": [],
-    "uniform": false
+    "slot_offsets": [
+        [
+            4,
+            4
+        ],
+        [
+            6,
+            8
+        ],
+        [
+            8,
+            12
+        ],
+        [
+            10,
+            16
+        ],
+        [
+            12,
+            17
+        ]
+    ]
 }
