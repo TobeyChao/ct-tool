@@ -31,28 +31,23 @@ def test_canonical_export_writes_fbs_binary_accessors(tmp_path: Path) -> None:
     assert (generated / "lua" / "ItemAccessor.lua").exists()
 
 
-def test_canonical_export_preserves_layout_revision(tmp_path: Path) -> None:
-    """Export must carry the previous manifest revision forward (not reset to 1)."""
+def test_canonical_export_manifest_is_content_stable(tmp_path: Path) -> None:
+    """manifest 不带 layout_revision：重复导出（含强制）内容逐字节不变。"""
     workspace = tmp_path / "gd"
     for section in ("config", "excel", "i18n"):
         shutil.copytree(FIXTURE / section, workspace / section)
 
-    run_canonical_export(workspace)
     manifest_path = workspace / "excel" / "layout_manifests" / "Item.json"
-    first = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert first["layout_revision"] == 1
-
-    # Simulate a gen-template run bumping the revision to 7 outside export.
-    data = json.loads(manifest_path.read_text(encoding="utf-8"))
-    data["layout_revision"] = 7
-    manifest_path.write_text(json.dumps(data), encoding="utf-8")
+    run_canonical_export(workspace)
+    first = manifest_path.read_bytes()
+    assert "layout_revision" not in json.loads(first)
 
     run_canonical_export(workspace)
-    second = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert second["layout_revision"] == 7  # unchanged layout does not create a revision
+    assert manifest_path.read_bytes() == first
 
+    # 强制导出按规格重写全部选中产物，但字节必须与同输入的增量结果相同
     run_canonical_export(workspace, forced=True)
-    assert json.loads(manifest_path.read_text())["layout_revision"] == 8
+    assert manifest_path.read_bytes() == first
 
 
 def test_canonical_export_task_reports_phases_and_history(tmp_path: Path) -> None:

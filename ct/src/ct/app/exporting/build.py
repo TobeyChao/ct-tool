@@ -535,14 +535,11 @@ def run_pipeline(
             )
             candidate_manifest = LayoutManifest.from_layout(
                 layout,
-                previous_revision=old_manifest.layout_revision
-                if old_manifest is not None
-                else 0,
                 # 定宽布局决策 + 表级 slot→offset 常量，供生成器读取
                 layout_info=build.to_layout_info(),
             )
             if request.forced or old_manifest is None or replace(
-                candidate_manifest, layout_revision=old_manifest.layout_revision,
+                candidate_manifest,
                 fill_rate=round(candidate_manifest.fill_rate, 6),
             ) != old_manifest:
                 emit(
@@ -701,7 +698,6 @@ def persist_export_state(
     state = CanonicalCacheState(
         tables=state.tables,
         bundles={**state.bundles, **bundle_hashes},
-        layout_revisions=state.layout_revisions,
         excel_hashes=state.excel_hashes,
     )
     return save_state(cache_dir, state)

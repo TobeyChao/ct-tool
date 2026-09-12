@@ -63,7 +63,7 @@
 
 ### Requirement: cache/state.json 是 ct status 的变更账本，不是导出缓存
 
-系统 SHALL 保持 `cache/state.json` 的 `canonical-cache/1` 可读性以及 tables、bundles、layout_revisions、excel_hashes 字段。excel_hashes SHALL 用于 status 的数据变化判断，bundles 保存成功导出的 Bundle 指纹；此账本 SHALL NOT 决定跳过解析校验或生成缓存命中。部分导出 SHALL 保留未选中表和语言的账本记录。
+系统 SHALL 保持 `cache/state.json` 的 `canonical-cache/1` 可读性以及 tables、bundles、excel_hashes 字段。excel_hashes SHALL 用于 status 的数据变化判断，bundles 保存成功导出的 Bundle 指纹；此账本 SHALL NOT 决定跳过解析校验或生成缓存命中。部分导出 SHALL 保留未选中表和语言的账本记录。
 
 CLI export SHALL 仅在本地导出和配置的部署成功后提交账本；Web export SHALL 在本地导出成功后提交账本。失败 SHALL 不推进账本。生成缓存是可丢弃数据，失败运行可以留下有效缓存条目；不得把“账本不变”解释为所有 cache 文件不变。
 

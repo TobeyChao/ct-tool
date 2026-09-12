@@ -165,7 +165,7 @@ def capture_translation_contents(
 def capture_manifest_contents(
     workspace: CanonicalWorkspace, *, tables: Iterable[TableResource]
 ) -> dict[Path, bytes]:
-    """捕获旧的 layout manifest 字节（读取它决定 layout_revision）。"""
+    """捕获旧的 layout manifest 字节（作为本次导出消费的输入快照）。"""
     manifest_dir = workspace.resolve("excel_dir") / "layout_manifests"
     captured: dict[Path, bytes] = {}
     for table in tables:
@@ -197,7 +197,7 @@ def consumed_paths(
 ) -> list[Path]:
     """本次导出实际消费的输入文件集合（含旧 layout manifest 与译文）。
 
-    ``include_manifests``：layout manifest 既被**读**（决定 layout_revision）又被
+    ``include_manifests``：layout manifest 既被**读**（作为比较旧布局的输入）又被
     本次导出**写**（design 决策 4 把它列为发布目标）。因此它只进入「记录用」快照，
     不进入发布前的变更复核 —— 否则本次自己刚写的 manifest 会被判成「输入变化」。
     """

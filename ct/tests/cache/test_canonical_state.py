@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from ct.cache.canonical_state import (
@@ -86,16 +87,16 @@ def test_canonical_state_round_trip(tmp_path: Path) -> None:
     fps = ArtifactFingerprints(
         schema="s", data="d", i18n={"en": "e1", "ja": "j1"}
     )
-    state = upsert_table(state, "Item", fps, layout_revision=2)
+    state = upsert_table(state, "Item", fps)
     state = upsert_bundle(state, "en", "bundle-en")
 
     saved = save_state(cache, state)
     assert saved.exists()
+    assert "layout_revisions" not in json.loads(saved.read_text(encoding="utf-8"))
     loaded = load_state(cache)
     assert loaded is not None
     assert loaded.tables["Item"].schema == "s"
     assert loaded.tables["Item"].i18n == {"en": "e1", "ja": "j1"}
-    assert loaded.layout_revisions["Item"] == 2
     assert loaded.bundles["en"] == "bundle-en"
 
 

@@ -20,7 +20,6 @@ MANIFEST_FORMAT = "template-layout/2"
 @dataclass(frozen=True)
 class LayoutManifest:
     format: str = MANIFEST_FORMAT
-    layout_revision: int = 1
     schema_hash: str = ""
     header_rows: int = 2
     columns: tuple[dict[str, Any], ...] = ()
@@ -38,12 +37,10 @@ class LayoutManifest:
         cls,
         layout: Layout,
         *,
-        previous_revision: int = 0,
         layout_info: dict[str, Any] | None = None,
     ) -> LayoutManifest:
         info = layout_info or {}
         return cls(
-            layout_revision=previous_revision + 1,
             uniform=bool(info.get("uniform", False)),
             fill_rate=float(info.get("fill_rate", 0.0)),
             slot_offsets=tuple(
@@ -84,7 +81,6 @@ class LayoutManifest:
     def parse(cls, data: dict[str, Any]) -> LayoutManifest:
         return cls(
             format=str(data.get("format", "")),
-            layout_revision=int(data.get("layout_revision", 0)),
             schema_hash=str(data.get("schema_hash", "")),
             header_rows=int(data.get("header_rows", 2)),
             columns=tuple(
@@ -145,7 +141,6 @@ def manifest_payload(manifest: LayoutManifest) -> str:
         json.dumps(
             {
                 "format": manifest.format,
-                "layout_revision": manifest.layout_revision,
                 "schema_hash": manifest.schema_hash,
                 "header_rows": manifest.header_rows,
                 "columns": list(manifest.columns),

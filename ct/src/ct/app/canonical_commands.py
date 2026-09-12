@@ -385,9 +385,7 @@ def canonical_gen_template(
             save_manifest(
                 manifest_dir,
                 table.table,
-                LayoutManifest.from_layout(
-                    layout, previous_revision=old_manifest.layout_revision
-                ),
+                LayoutManifest.from_layout(layout),
             )
         else:
             if out_path.exists() and old_manifest is None:

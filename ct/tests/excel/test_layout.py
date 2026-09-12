@@ -139,7 +139,7 @@ def test_logical_path_strips_group_marker() -> None:
     assert layout.columns[1].logical_path == "table:Item/Rewards/Min"
 
 
-def test_manifest_create_read_and_revision(tmp_path: Path) -> None:
+def test_manifest_create_read_round_trip(tmp_path: Path) -> None:
     manifests = tmp_path / "layout_manifests"
     table = _table([FieldDef(name="Id", type="int32")])
     layout = build_layout(table, schema_hash="abc", records={})
@@ -149,16 +149,19 @@ def test_manifest_create_read_and_revision(tmp_path: Path) -> None:
     manifest_text = path.read_text(encoding="utf-8")
     assert manifest_text.startswith('{\n    "columns": [\n        {\n')
     assert '\n    "format": "template-layout/2",\n' in manifest_text
+    assert '\n    "layout_revision"' not in manifest_text
     assert manifest_text.endswith("\n")
     assert not manifest_text.endswith("\n\n")
     first = load_manifest(manifests, "Item")
-    assert first is not None and first.layout_revision == 1
+    assert first is not None
     assert first.schema_hash == "abc"
     assert first.columns[0]["stablePath"] == "table:Item/Id"
 
-    save_manifest(manifests, "Item", LayoutManifest.from_layout(layout, previous_revision=first.layout_revision))
+    # 同一 layout 再写一次：manifest 逐字节不变（没有版本字段会自己漂移）
+    save_manifest(manifests, "Item", LayoutManifest.from_layout(layout))
+    assert path.read_text(encoding="utf-8") == manifest_text
     second = load_manifest(manifests, "Item")
-    assert second is not None and second.layout_revision == 2
+    assert second is not None and second.schema_hash == "abc"
 
 
 def test_manifest_missing_and_corruption(tmp_path: Path) -> None:

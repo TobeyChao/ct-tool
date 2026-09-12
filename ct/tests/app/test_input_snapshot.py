@@ -286,11 +286,11 @@ def test_generation_consumes_captured_schema(tmp_path: Path, monkeypatch) -> Non
 
 
 def test_generation_consumes_captured_manifest(tmp_path: Path, monkeypatch) -> None:
-    """旧 manifest 也来自捕获内容：revision 必须接着**捕获的**那一版递增。"""
+    """旧 manifest 也来自捕获内容：判定「要不要重写」用的是捕获的那一份。"""
     import ct.app.exporting.build as build
 
     root = _project(tmp_path)
-    run_canonical_export(root)  # 先产出 revision 1 的 manifest
+    run_canonical_export(root)  # 先产出一份与当前布局一致的 manifest
 
     real = build.capture_manifest_contents
 
@@ -298,16 +298,26 @@ def test_generation_consumes_captured_manifest(tmp_path: Path, monkeypatch) -> N
         out = dict(real(workspace, **kwargs))
         key = workspace.resolve("excel_dir") / "layout_manifests" / "Item.json"
         document = json.loads(out[key].decode("utf-8"))
-        # 让捕获到的旧 manifest 与当前布局「确有差异」，否则实现会按设计跳过重写
-        document["layout_revision"] = 41
+        # 让**捕获到的**旧 manifest 与当前布局「确有差异」，而磁盘上那份仍与当前一致。
+        # 于是：用捕获内容 ⇒ 判为有差异 ⇒ 重写；改读磁盘 ⇒ 判为无差异 ⇒ 跳过。
         document["schema_hash"] = "captured-schema-hash"
         out[key] = json.dumps(document, ensure_ascii=False).encode("utf-8")
         return out
 
     monkeypatch.setattr(build, "capture_manifest_contents", fake)
+
+    revisions: list[str] = []
+    real_payload = build.manifest_payload
+
+    def spy(manifest):
+        revisions.append(manifest.schema_hash)
+        return real_payload(manifest)
+
+    monkeypatch.setattr(build, "manifest_payload", spy)
     run_canonical_export(root)
 
+    assert revisions, "manifest 未被重写：说明旧 manifest 不是从捕获内容读取的"
     manifest = json.loads(
         (root / "excel" / "layout_manifests" / "Item.json").read_text("utf-8")
     )
-    assert manifest["layout_revision"] == 42, manifest["layout_revision"]
+    assert manifest["schema_hash"] != "captured-schema-hash"
