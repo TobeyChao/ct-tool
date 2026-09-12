@@ -92,7 +92,7 @@ def _run_deploy(root: Path, for_build: bool) -> None:
 @app.command()
 def export(
     all_tables: bool = typer.Option(
-        False, "--all", help="（保留项）导出恒为全量重建，此开关只记入结果，不改变行为"
+        False, "--all", help="强制重建所有选中产物，跳过增量缓存"
     ),
     table: Optional[str] = typer.Option(None, "--table", help="只导出指定表"),
     lang: Optional[str] = typer.Option(None, "--lang", help="只导出指定语言"),
@@ -100,7 +100,7 @@ def export(
     for_build: bool = typer.Option(False, "--for-build", help="部署时追加构建目标"),
     project_root: Optional[str] = typer.Option(None, "--root", help="项目根目录"),
 ) -> None:
-    """导出主流程（canonical）——**恒全量重建**，无增量模式。"""
+    """导出主流程（canonical）：默认增量复用，--all 强制重建。"""
     _setup_logging(verbose)
     root = _root(project_root)
     try:

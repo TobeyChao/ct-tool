@@ -19,6 +19,8 @@ from ct.schema.resources import (
     resource_to_data,
 )
 
+from ct.schema.type_expression import NamedType, VectorType
+
 
 CANONICAL_SCHEMA_FORMAT_VERSION = "schema-resource/1"
 
@@ -37,13 +39,35 @@ def compute_schema_hash(
     schema: TableResource,
     dependencies: tuple[RecordResource | EnumResource, ...] = (),
 ) -> str:
-    """Return a 16-char hex sha256 prefix of the schema's normalized JSON."""
+    """Hash the table and its transitive named types from the supplied pool.
+
+    Unrelated resources and cross-table ref targets do not affect its template.
+    Record fields are traversed recursively, including vector element types.
+    """
+    available = {resource.name: resource for resource in dependencies}
+    reachable: dict[str, RecordResource | EnumResource] = {}
+
+    def visit(resource: TableResource | RecordResource) -> None:
+        for field in resource.fields:
+            expr = field.type_expr
+            if isinstance(expr, VectorType):
+                expr = expr.element
+            if not isinstance(expr, NamedType) or expr.name in reachable:
+                continue
+            target = available.get(expr.name)
+            if target is None:
+                continue
+            reachable[expr.name] = target
+            if isinstance(target, RecordResource):
+                visit(target)
+
+    visit(schema)
     data: object = {
         "format": CANONICAL_SCHEMA_FORMAT_VERSION,
         "table": resource_to_data(schema),
         "dependencies": [
             resource_to_data(resource)
-            for resource in sorted(dependencies, key=lambda item: item.resource_id)
+            for resource in sorted(reachable.values(), key=lambda item: item.resource_id)
         ],
     }
     return _stable_sha256(data)[:16]

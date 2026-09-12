@@ -360,7 +360,7 @@ deploy:                            # 可选；整段不配 或 enabled: false �
 
 | 命令 | 作用 |
 |---|---|
-| `ct export` | 导出主流程（**当前实现是全量重建**，见下） |
+| `ct export` | 导出主流程（默认增量复用，`--all` 强制重建） |
 | `ct deploy` | 只把**当前产物**同步到 Unity，不触发导出 |
 | `ct validate` | 只解析校验，不产出 |
 | `ct gen-template` | 按 schema 生成 Excel 模板表头 |
@@ -384,16 +384,15 @@ ct i18n status  [--lang L] [--by-table] [--json] [--root DIR]
 ct i18n compact [--lang L] [--table T] [--dry-run] [--root DIR]
 ```
 
-### ⚠️ `ct export` 的实际语义（与命令帮助里的措辞不一致）
+### `ct export` 的增量语义
 
-- **目前每次都全量重建**：分层指纹的增量复用**尚未接线**（`canonical_export.py` 顶部注释明确写了
-  「the current pipeline always rebuilds every artifact」）。缓存 `cache/state.json` 只服务
-  `ct status` 的「待导出」判断，**不参与跳过**。
-- **`--all` 是 no-op**：它被接受并记录，只为与旧流水线保持参数兼容。
-- **清空 `output/{fbs,generated,json,binary}` 的条件是「没给 `--table` / `--lang`」**，与 `--all` 无关。
-  ⇒ 裸跑 `ct export` 会**先清空这四个目录再重建**（避免陈旧产物残留）。
-- `--table T` / `--lang L` **限制处理范围并跳过上述清理**，但不改变「全量重建所选部分」这一点
-  （其它表的产物保持原样）。
+- 默认完整读取、校验 Excel（含主键与跨表 ref），校验通过后按生成器版本和实际输入复用 JSON、表级 bytes、Accessor、FBS 与 Bundle。缓存位于 `cache/artifacts/`，缺失或损坏会自动重建；完整导出成功后回收本次未使用的旧缓存。
+- 输出内容一致时不重写，保留文件时间戳；缺失或被修改的产物会恢复。布局未变时不递增 manifest revision。
+- 翻译按实际合并结果参与缓存；仅改 JSON 排版、派生状态或 orphan 条目不会重建产物。Accessor 的输入包含数据决定的定宽布局，因此填充率跨越阈值时会重新生成。
+- `--all` 强制重新生成并写出选中范围内的所有产物。
+- 无 `--table` / `--lang` 过滤时，在生成成功后删除已不需要的旧产物，不再清空整个输出目录。
+- `--table T` / `--lang L` 保留既有范围语义（Bundle 也仅包含所选表）；过滤导出不清理范围外产物。
+- `cache/state.json` 继续记录成功导出及部署后的 Excel 状态；纯生成缓存独立维护，不代表导出或部署已经成功。修改生成器行为时需更新 `CODEGEN_VERSION`。
 
 `ct status` 的真实输出（三类，只在非空时打印；全新鲜时只有一行）：
 

@@ -51,19 +51,23 @@ def test_export_module_renders(module_url: str, chromium_browser: Any) -> None:
     page.locator('.ct-sitem[data-module="export"]').click()
     page.wait_for_selector("#page-export #export-start")
     assert page.locator("#page-export .ct-panel-title", has_text="导出").count() == 1
-    assert page.locator("#page-export #forced").count() == 0
+    assert page.locator("#page-export #export-force").inner_text() == "强制全量重建"
     page.close()
 
 
-def test_export_summary_refreshes_after_run(module_url: str, chromium_browser: Any) -> None:
+@pytest.mark.parametrize("forced", [False, True])
+def test_export_summary_refreshes_after_run(module_url: str, chromium_browser: Any, forced: bool) -> None:
     page = chromium_browser.new_page(viewport={"width": 1280, "height": 720})
     page.goto(module_url, wait_until="load")
     page.locator('.ct-sitem[data-module="export"]').click()
-    page.locator("#page-export #export-start").click()
+    with page.expect_request(lambda request: request.url.endswith("/api/export") and request.method == "POST") as request:
+        page.locator("#page-export #export-force" if forced else "#page-export #export-start").click()
+    assert request.value.post_data_json == {"forced": forced}
 
     page.locator("#export-badge", has_text="成功").wait_for(timeout=5_000)
 
-    assert page.locator("#export-context-pending").inner_text() == "0 张表"
+    playwright_api.expect(page.locator("#export-context-mode")).to_have_text("强制全量重建" if forced else "增量导出")
+    playwright_api.expect(page.locator("#export-context-pending")).to_have_text("0 张表")
     assert "成功" in page.locator("#export-context-result").inner_text()
     assert "4 张表" in page.locator("#export-context-result").inner_text()
     page.close()

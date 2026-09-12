@@ -73,3 +73,29 @@ def test_dependency_order_does_not_change_table_hash() -> None:
         table,
         (rarity, reward),
     )
+
+
+def test_unrelated_types_do_not_change_schema_hash() -> None:
+    table = _table("DropReward")
+    reward = RecordResource(name="DropReward", fields=[FieldDef(name="Amount", type="int32")])
+    unused = RecordResource(name="Unused", fields=[FieldDef(name="Amount", type="int64")])
+    unused_enum = EnumResource(name="UnusedEnum", values=["First"])
+    assert compute_schema_hash(table, (reward,)) == compute_schema_hash(
+        table, (unused_enum, unused, reward)
+    )
+    assert compute_schema_hash(_table()) == compute_schema_hash(_table(), (unused, unused_enum))
+
+
+def test_transitive_vector_enum_change_affects_schema_hash() -> None:
+    table = _table("vector<DropReward>")
+    reward = RecordResource(name="DropReward", fields=[FieldDef(name="Entries", type="vector<Detail>")])
+    detail = RecordResource(name="Detail", fields=[FieldDef(name="Rarity", type="ItemRarity")])
+    before = EnumResource(name="ItemRarity", values=["Common"])
+    after = EnumResource(name="ItemRarity", values=["Common", "Rare"])
+    assert compute_schema_hash(table, (reward, detail, before)) != compute_schema_hash(
+        table, (reward, detail, after)
+    )
+    changed_detail = detail.model_copy(update={"comment": "模板说明变更"})
+    assert compute_schema_hash(table, (reward, detail, before)) != compute_schema_hash(
+        table, (reward, changed_detail, before)
+    )

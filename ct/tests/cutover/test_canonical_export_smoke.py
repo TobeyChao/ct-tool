@@ -49,7 +49,10 @@ def test_canonical_export_preserves_layout_revision(tmp_path: Path) -> None:
 
     run_canonical_export(workspace)
     second = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert second["layout_revision"] == 8
+    assert second["layout_revision"] == 7  # unchanged layout does not create a revision
+
+    run_canonical_export(workspace, forced=True)
+    assert json.loads(manifest_path.read_text())["layout_revision"] == 8
 
 
 def test_canonical_export_task_reports_phases_and_history(tmp_path: Path) -> None:

@@ -7,17 +7,16 @@ then writes JSON, shared ``types.fbs`` + per-table FBS, a real FlatBuffers
 
 Progress reporting is phase-based (``CANONICAL_STEPS``): each phase covers
 the full table set so the step index only moves forward, which keeps the
-web progress cells stable during an export. ``forced`` is accepted and
-recorded for parity with the legacy pipeline, but it does **not** change
-behaviour: this pipeline always rebuilds every artifact (incremental reuse
-via the layered fingerprints in ``ct.cache.fingerprints`` is not wired up
-yet).
+web progress cells stable during an export. Pure generator results are cached
+by version and effective inputs; unchanged output files retain their mtimes.
+``forced`` bypasses reuse and rewrites all selected artifacts. Validation
+always runs before publication, including on a completely warm cache.
 """
 
 from __future__ import annotations
 
-import shutil
 import time
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +28,7 @@ from ct.app.canonical_commands import (
 )
 from ct.app.canonical_workspace import CanonicalWorkspace
 from ct.app.events import CancelledError, CancelToken, ProgressReporter
+from ct.cache.artifacts import ArtifactCache, atomic_write
 from ct.cache.canonical_state import CanonicalCacheState, load_state, record_excel_hashes, save_state
 from ct.cache.fingerprints import bundle_fingerprint
 from ct.excel.canonical_reader import read_canonical_excel
@@ -54,7 +54,7 @@ from ct.export.canonical_fbs import (
     types_fbs_text,
     validate_canonical_fbs,
 )
-from ct.export.canonical_json import write_canonical_json
+from ct.export.canonical_json import serialize_table_json
 from ct.export.i18n.merger import load_translation
 from ct.schema.hashing import compute_schema_hash
 from ct.schema.resources import (
@@ -64,7 +64,7 @@ from ct.schema.resources import (
     TableResource,
 )
 
-CODEGEN_VERSION = "1.0"
+CODEGEN_VERSION = "incremental/1"
 
 CANONICAL_STEPS = ("解析校验", "JSON", "Accessor", "FBS", "Bundle")
 
@@ -93,6 +93,28 @@ def _records_map(workspace: CanonicalWorkspace) -> dict[str, RecordResource]:
 
 def _enums_map(workspace: CanonicalWorkspace) -> dict[str, EnumResource]:
     return {enum.name: enum for enum in workspace.enums}
+
+
+def _table_types(
+    table: TableResource,
+    records: dict[str, RecordResource],
+    enums: dict[str, EnumResource],
+) -> tuple[dict[str, RecordResource], dict[str, EnumResource]]:
+    """Limit generator inputs to the table's transitive named dependencies."""
+    used_records: dict[str, RecordResource] = {}
+    used_enums: dict[str, EnumResource] = {}
+
+    def visit(resource: TableResource | RecordResource) -> None:
+        for field in resource.fields:
+            name = _named_ref(field)
+            if name in records and name not in used_records:
+                used_records[name] = records[name]
+                visit(records[name])
+            elif name in enums:
+                used_enums[name] = enums[name]
+
+    visit(table)
+    return used_records, used_enums
 
 
 def _assert_single_vtable(name: str, lang: str, data: bytes, row_count: int) -> None:
@@ -230,7 +252,7 @@ def run_canonical_export(
             _check_cancel(cancel_token)
             layout = build_layout(
                 table,
-                schema_hash=compute_schema_hash(table, tuple(records.values())),
+                schema_hash=compute_schema_hash(table, (*workspace.records, *workspace.enums)),
                 records=records,
             )
             excel_path = excel_dir / (table.excel_file or f"{table.table}.xlsx")
@@ -251,22 +273,18 @@ def run_canonical_export(
     finally:
         reporter.step_finished(CANONICAL_STEPS[0])
 
-    # ---- B4：校验**通过后**清理「纯生成物」目录 ----
-    # 陈旧的 output/fbs、output/generated 会让消费方看到**已废弃格式**的 schema
-    # （实例：2026/8/14 的 *_i18n.fbs 与 9/10 的产物并存，而全仓已无代码生成它们）。
-    # 只在**不过滤**时清理：带 table/lang 过滤的导出只**重写**被选中的部分
-    # （产物目录仍是整目录重写，所以清理会误删未选中表的产物）。
-    # ⚠️ 必须放在校验通过之后：校验失败（重复主键/悬空 ref 等）时，output/ 里的
-    #    仍是上次成功导出的完整产物 —— 前置校验闸门承诺失败导出不落脏数据，
-    #    更不能反过来把上次的成功产物删掉。
-    if table_filter is None and lang_filter is None:
-        # json / binary 是**整目录重写**的产物（每张表、每种语言各一份），
-        # 删表或删语言后旧文件会残留（实测确认），所以一并清理。
-        for stale_dir in ("fbs", "generated", "json", "binary"):
-            target = output_dir / stale_dir
-            if target.exists():
-                shutil.rmtree(target)
-                reporter.log(f"清理陈旧产物目录 output/{stale_dir}")
+    cache = ArtifactCache(cache_dir, version=CODEGEN_VERSION, forced=forced)
+    expected: set[Path] = set()
+    reused: list[str] = []
+
+    def emit(path: Path, payload: str | bytes) -> None:
+        expected.add(path)
+        data = payload.encode("utf-8") if isinstance(payload, str) else payload
+        if not forced and path.is_file() and path.read_bytes() == data:
+            reused.append(str(path))
+            return
+        atomic_write(path, data)
+        written.append(str(path))
 
     # ---- 阶段 2：JSON + 各语言 bytes ----
     types_path = output_dir / "fbs" / "types.fbs"
@@ -275,14 +293,16 @@ def run_canonical_export(
     try:
         for table, _layout, _excel_path, parsed in prepared:
             _check_cancel(cancel_token)
+            table_records, table_enums = _table_types(table, records, enums)
             base_rows = parsed.rows
             table_bytes[table.table] = {}
 
             # 逐表决定是否启用定宽布局：先用**非 uniform** 产出主语言字节，
             # 直接从字节统计填充率（不复刻写入规则），>= 阈值才开。
             client_count = len([f for f in table.fields if not f.server_only])
-            probe = build_canonical_table_bytes(
-                base_rows, table, records=records, enums=enums
+            probe = cache.call(
+                "build_canonical_table_bytes", build_canonical_table_bytes,
+                base_rows, table, records=table_records, enums=table_enums
             )
             fill = written_slot_ratio(probe, client_count)
             use_uniform = fill >= UNIFORM_FILL_THRESHOLD
@@ -290,7 +310,7 @@ def run_canonical_export(
                 "uniform": use_uniform,
                 "fill_rate": fill,
                 "bytes_normal": len(probe),
-                "slot_offsets": probe_row_layout(table, records=records, enums=enums)
+                "slot_offsets": probe_row_layout(table, records=table_records, enums=table_enums)
                 if use_uniform
                 else {},
             }
@@ -300,11 +320,11 @@ def run_canonical_export(
                 base_rows, table, load_translation(i18n_dir, config.primary_lang, table.table)
             )
             primary_json = output_dir / "json" / f"{table.table}_{config.primary_lang}.json"
-            write_canonical_json(primary_rows, table, primary_json)
-            written.append(str(primary_json))
+            emit(primary_json, cache.call("json", serialize_table_json, primary_rows, table))
             if config.primary_lang in languages:
-                data = probe if not use_uniform else build_canonical_table_bytes(
-                    primary_rows, table, records=records, enums=enums, uniform=True
+                data = probe if not use_uniform and primary_rows == base_rows else cache.call(
+                    "build_canonical_table_bytes", build_canonical_table_bytes,
+                    primary_rows, table, records=table_records, enums=table_enums, uniform=use_uniform
                 )
                 if use_uniform:
                     _assert_single_vtable(table.table, config.primary_lang, data, len(primary_rows))
@@ -322,7 +342,7 @@ def run_canonical_export(
                     "fill_rate": fill,
                     "bytes_normal": 0,
                     "slot_offsets": probe_row_layout(
-                        i18n_table, records=records, enums=enums
+                        i18n_table, records=table_records, enums=table_enums
                     )
                     if use_uniform
                     else {},
@@ -334,8 +354,7 @@ def run_canonical_export(
                     base_rows, table, load_translation(i18n_dir, lang, table.table)
                 )
                 lang_json = output_dir / "json" / f"{table.table}_{lang}.json"
-                write_canonical_json(merged, table, lang_json)
-                written.append(str(lang_json))
+                emit(lang_json, cache.call("json", serialize_table_json, merged, table))
                 if i18n_table is None:
                     continue
                 i18n_rows = _i18n_rows(table, i18n_table, merged)
@@ -346,8 +365,9 @@ def run_canonical_export(
                             f"{len(primary_rows)} 行 —— i18n 表与主表必须同序等长"
                         ]
                     )
-                i18n_data = build_canonical_table_bytes(
-                    i18n_rows, i18n_table, records=records, enums=enums, uniform=use_uniform
+                i18n_data = cache.call(
+                    "build_canonical_table_bytes", build_canonical_table_bytes,
+                    i18n_rows, i18n_table, records=table_records, enums=table_enums, uniform=use_uniform
                 )
                 if use_uniform:
                     _assert_single_vtable(f"{table.table}_i18n", lang, i18n_data, len(i18n_rows))
@@ -380,11 +400,12 @@ def run_canonical_export(
             # 读路径已经内联进主 accessor（`_emit_csharp_i18n_support`）。
             # 但它**自己的**定宽偏移仍要交给生成器 —— 那是另一份表级常量。
             i18n_info = (layout_info.get(sparse_i18n.table) or {}) if sparse_i18n is not None else {}
+            table_records, _ = _table_types(table, records, enums)
             model = build_accessor_model(
                 table,
                 # 表级查询索引（CodeName）：来自 schema（原先硬编码成 () ⇒ 永不生成 ByCodeName）
                 tuple(table.indexes),
-                records=records,
+                records=table_records,
                 # 定宽表：偏移是表级常量，生成器发射字面量（无偏移表）
                 uniform_offsets=(info.get("slot_offsets") or None) if info.get("uniform") else None,
                 # 多语言字段按行下标去稀疏 i18n 表读当前语言
@@ -397,9 +418,8 @@ def run_canonical_export(
             lua_path = generated / "lua" / f"{table.table}Accessor.lua"
             csharp_path.parent.mkdir(parents=True, exist_ok=True)
             lua_path.parent.mkdir(parents=True, exist_ok=True)
-            csharp_path.write_text(generate_csharp_accessor(model), encoding="utf-8")
-            lua_path.write_text(generate_lua_accessor(model), encoding="utf-8")
-            written.append(str(csharp_path))
+            emit(csharp_path, cache.call("generate_csharp_accessor", generate_csharp_accessor, model))
+            emit(lua_path, cache.call("generate_lua_accessor", generate_lua_accessor, model))
 
             if not excel_path.exists():
                 generate_canonical_template(
@@ -408,18 +428,19 @@ def run_canonical_export(
                 written.append(str(excel_path))
             manifest_dir = excel_dir / "layout_manifests"
             old_manifest = load_manifest(manifest_dir, table.table)
-            save_manifest(
-                manifest_dir,
-                table.table,
-                LayoutManifest.from_layout(
-                    layout,
-                    previous_revision=old_manifest.layout_revision
-                    if old_manifest is not None
-                    else 0,
-                    # 定宽布局决策 + 表级 slot→offset 常量，供生成器读取
-                    layout_info=layout_info.get(table.table),
-                ),
+            candidate_manifest = LayoutManifest.from_layout(
+                layout,
+                previous_revision=old_manifest.layout_revision
+                if old_manifest is not None
+                else 0,
+                # 定宽布局决策 + 表级 slot→offset 常量，供生成器读取
+                layout_info=layout_info.get(table.table),
             )
+            if forced or old_manifest is None or replace(
+                candidate_manifest, layout_revision=old_manifest.layout_revision,
+                fill_rate=round(candidate_manifest.fill_rate, 6),
+            ) != old_manifest:
+                save_manifest(manifest_dir, table.table, candidate_manifest)
 
         # 枚举类型声明：生成物里的 (Enum)WireReader.I8At(...) cast 需要它才能编译
         if enums:
@@ -427,9 +448,8 @@ def run_canonical_export(
             enum_lua = generated / "lua" / "Enums.lua"
             enum_cs.parent.mkdir(parents=True, exist_ok=True)
             enum_lua.parent.mkdir(parents=True, exist_ok=True)
-            enum_cs.write_text(generate_csharp_enums(enums), encoding="utf-8")
-            enum_lua.write_text(generate_lua_enums(enums), encoding="utf-8")
-            written.extend([str(enum_cs), str(enum_lua)])
+            emit(enum_cs, cache.call("generate_csharp_enums", generate_csharp_enums, enums))
+            emit(enum_lua, cache.call("generate_lua_enums", generate_lua_enums, enums))
             reporter.log(f"枚举声明 {len(enums)} 个 → Enums.cs / Enums.lua")
     finally:
         reporter.step_finished(CANONICAL_STEPS[2])
@@ -444,24 +464,20 @@ def run_canonical_export(
         resources_map: dict[str, SchemaResource] = {
             resource.resource_id: resource for resource in workspace.resources.resources
         }
-        types_text = types_fbs_text(order, resources_map)
-        types_path.write_text(types_text, encoding="utf-8")
-        table_fbs = {table.table: table_fbs_text(table) for table, *_ in prepared}
+        types_text = cache.call("types_fbs_text", types_fbs_text, order, resources_map)
+        emit(types_path, types_text)
+        table_fbs = {table.table: cache.call("table_fbs_text", table_fbs_text, table) for table, *_ in prepared}
         validate_canonical_fbs(types_text, table_fbs, list(workspace.resources.resources))
-        written.append(str(types_path))
 
         for table_name, text in table_fbs.items():
             path = output_dir / "fbs" / f"{table_name}.fbs"
-            path.write_text(text, encoding="utf-8")
-            written.append(str(path))
+            emit(path, text)
 
         container = output_dir / "fbs" / "container.fbs"
-        container.write_text(
+        emit(container,
             "table BundledTable {\n  name: string;\n  data: [ubyte];\n}\n"
             "table DataBundle {\n  tables: [BundledTable];\n}\n\nroot_type DataBundle;\n",
-            encoding="utf-8",
         )
-        written.append(str(container))
     finally:
         reporter.step_finished(CANONICAL_STEPS[3])
 
@@ -486,16 +502,26 @@ def run_canonical_export(
                     for name, bytes_by_lang in i18n_table_bytes.items()
                     if lang in bytes_by_lang
                 }
-            bundle = build_canonical_bundle(name_to_bytes)
+            bundle = cache.call("build_canonical_bundle", build_canonical_bundle, name_to_bytes)
             bundle_path = bundle_dir / f"data_{lang}.bin"
-            bundle_path.write_bytes(bundle)
-            written.append(str(bundle_path))
+            emit(bundle_path, bundle)
             bundle_hashes[lang] = bundle_fingerprint(
                 lang,
                 [(name, _sha(data)) for name, data in name_to_bytes.items()],
             )
     finally:
         reporter.step_finished(CANONICAL_STEPS[4])
+
+    # Only obsolete files are removed, after every generation phase succeeds.
+    if table_filter is None and lang_filter is None:
+        for section in ("fbs", "generated", "json", "binary"):
+            for path in (output_dir / section).rglob("*"):
+                if path.is_file() and path not in expected:
+                    path.unlink()
+                    reporter.log(f"清理陈旧产物 {path.relative_to(output_dir)}")
+        cache.prune()
+    mode = "强制重建" if forced else "增量导出"
+    reporter.log(f"{mode}：写入 {len(written)}，复用 {len(reused)}；生成缓存命中 {cache.hits}")
 
     excel_hashes = {
         table.table: _sha(excel_path.read_bytes())
@@ -506,6 +532,9 @@ def run_canonical_export(
         "tables": len(tables),
         "languages": languages,
         "written": written,
+        "reused": reused,
+        "cache_hits": cache.hits,
+        "cache_misses": cache.misses,
         "bundle_hashes": bundle_hashes,
         "excel_hashes": excel_hashes,
         "forced": forced,

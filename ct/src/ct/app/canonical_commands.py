@@ -216,7 +216,7 @@ def canonical_validate(
             continue
         layout = build_layout(
             table,
-            schema_hash=compute_schema_hash(table, tuple(records.values())),
+            schema_hash=compute_schema_hash(table, (*ws.records, *ws.enums)),
             records=records,
         )
         parsed = read_canonical_excel(excel_path, layout, table, records=records, enums={e.name: e for e in ws.enums})
@@ -265,7 +265,7 @@ def canonical_status(root: Path) -> dict[str, list[str]]:
             continue
         current_hash = _file_sha256(excel_path)
         manifest = _load_manifest(manifest_dir, table.table)
-        schema_hash = _schema_hash(table, records)
+        schema_hash = compute_schema_hash(table, (*ws.records, *ws.enums))
         layout = build_layout(table, schema_hash=schema_hash, records=records)
         workbook_column_count = _template_column_count(excel_path)
         if (
@@ -284,10 +284,6 @@ def _load_manifest(manifest_dir: Path, table: str) -> LayoutManifest | None:
     from ct.excel.layout_manifest import load_manifest
 
     return load_manifest(manifest_dir, table)
-
-
-def _schema_hash(table, records) -> str:
-    return compute_schema_hash(table, tuple(records.values()))
 
 
 def _layout_from_manifest(table_id: str, manifest: LayoutManifest) -> Layout:
@@ -495,7 +491,7 @@ def canonical_gen_template(
     for table in targets:
         layout = build_layout(
             table,
-            schema_hash=compute_schema_hash(table, tuple(records.values())),
+            schema_hash=compute_schema_hash(table, (*ws.records, *ws.enums)),
             records=records,
         )
         out_path = excel_dir / (table.excel_file or f"{table.table}.xlsx")
@@ -654,7 +650,7 @@ def canonical_i18n_sync(
             continue
         layout = build_layout(
             table,
-            schema_hash=compute_schema_hash(table, tuple(records.values())),
+            schema_hash=compute_schema_hash(table, (*ws.records, *ws.enums)),
             records=records,
         )
         parsed = read_canonical_excel(excel_path, layout, table, records=records, enums={e.name: e for e in ws.enums})

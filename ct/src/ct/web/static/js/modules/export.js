@@ -1,4 +1,4 @@
-/* Export module: full-rebuild context, phase progress, and persistent task state. */
+/* Export module: incremental/forced builds, phase progress, and persistent task state. */
 import { api } from "../core/api.js";
 import { escapeHtml } from "../core/dom.js";
 import { confirmDialog, openDialog } from "../core/dialog.js";
@@ -79,7 +79,7 @@ export async function mount(container) {
       <div class="ct-page-wrap">
         <div class="ct-panel">
           <div class="ct-panel-head ct-module-head">
-            <div><h1 class="ct-panel-title">导出</h1><p>全量重建：校验通过后生成 JSON、FBS、Binary 与 C#/Lua Accessor。</p></div>
+            <div><h1 class="ct-panel-title">导出</h1><p>增量导出：校验通过后复用未变化产物，生成 JSON、FBS、Binary 与 C#/Lua Accessor。</p></div>
             <div class="ct-module-actions">
               <span class="ct-badge" id="export-badge"></span>
               <div class="ct-command-actions" id="export-actions"></div>
@@ -98,7 +98,7 @@ export async function mount(container) {
               <aside class="ct-export-context" aria-label="导出上下文">
                 <h2>本次导出</h2>
                 <dl class="ct-context-list">
-                  <div><dt>构建模式</dt><dd>全量重建</dd></div>
+                  <div><dt>构建模式</dt><dd id="export-context-mode">增量导出</dd></div>
                   <div><dt>待导出</dt><dd id="export-context-pending"></dd></div>
                   <div><dt>模板漂移</dt><dd id="export-context-drifted"></dd></div>
                   <div><dt>执行结果</dt><dd id="export-context-result"></dd></div>
@@ -115,11 +115,14 @@ export async function mount(container) {
     const host = container.querySelector("#export-actions");
     if (!host) return;
     const running = state.progress?.status === "running";
+    const busy = running || state.submitting;
     host.innerHTML = `
       ${state.drifted.length && !running ? '<button class="ct-btn ct-btn-ghost" id="export-regenerate-template">重新生成模板</button>' : ""}
       <button class="ct-btn ct-btn-ghost" id="export-cancel" ${running ? "" : "hidden"}>取消</button>
-      <button class="ct-btn ct-btn-primary" id="export-start" ${running ? "disabled" : ""}>${state.hasRun ? "重新导出" : "开始导出"}</button>`;
-    host.querySelector("#export-start").addEventListener("click", startExport);
+      <button class="ct-btn ct-btn-ghost" id="export-force" title="跳过增量缓存，重新生成所有产物" ${busy ? "disabled" : ""}>强制全量重建</button>
+      <button class="ct-btn ct-btn-primary" id="export-start" ${busy ? "disabled" : ""}>${state.hasRun ? "重新导出" : "开始导出"}</button>`;
+    host.querySelector("#export-start").addEventListener("click", () => startExport(false));
+    host.querySelector("#export-force").addEventListener("click", () => startExport(true));
     host.querySelector("#export-cancel")?.addEventListener("click", cancelExport);
     host.querySelector("#export-regenerate-template")?.addEventListener("click", regenerateTemplates);
   }
@@ -153,14 +156,21 @@ export async function mount(container) {
     });
   }
 
-  async function startExport() {
+  async function startExport(forced = false) {
+    if (state.submitting || state.progress?.status === "running") return;
+    state.submitting = true;
+    renderActions();
     try {
-      state.progress = await api("/api/export", { method: "POST", body: JSON.stringify({}) });
+      state.progress = await api("/api/export", { method: "POST", body: JSON.stringify({ forced }) });
       state.hasRun = true;
       state.sessionRun = true;
       update();
       poll();
     } catch (error) { showError(error.message); }
+    finally {
+      state.submitting = false;
+      renderActions();
+    }
   }
 
   async function cancelExport() {
@@ -184,6 +194,8 @@ export async function mount(container) {
 
   function renderContext() {
     const progress = state.progress;
+    const mode = container.querySelector("#export-context-mode");
+    if (mode) mode.textContent = progress?.forced ? "强制全量重建" : "增量导出";
     const pending = container.querySelector("#export-context-pending");
     const drifted = container.querySelector("#export-context-drifted");
     const result = container.querySelector("#export-context-result");

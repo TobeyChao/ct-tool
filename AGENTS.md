@@ -138,7 +138,7 @@ launcher 启动优先级：内置运行时 → 设置中的工具目录（venv�
 所有子命令均支持 `--root DIR` 指定项目根目录（默认当前目录，应为 `gd/`）。全部命令走 canonical。
 
 ```bash
-# 导出（canonical 恒全量重建；--all 等同 default，--table/--lang 缩小范围）
+# 导出（默认增量复用；--all 强制重建，--table/--lang 缩小范围）
 ct export
 ct export --all
 ct export --table Item
@@ -272,7 +272,7 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 
 **导出校验闸门**：`run_canonical_export` 在写出产物前做完整校验（Excel 读取类型强转、主键空/重复、跨表 `ref` 外键值须存在于引用表主键集），任一问题即抛 `CanonicalValidationError`，避免脏数据落盘；CLI 渲染并退出 1，Web 任务置为 error 并记日志。
 
-**增量 vs 全量**：canonical 当前恒全量重建；`cache/fingerprints.py` 的分层指纹（schema/data/i18n/bundle）已设计好但**尚未接线**到 `run_canonical_export`（增量复用未启用）。
+**增量 vs 全量**：canonical 默认完整校验后增量复用。`cache/artifacts.py` 按生成器版本及实际输入缓存 JSON、表级 bytes、Accessor、FBS、Bundle，包含数据决定的定宽布局；输出内容未变时保留 mtime，缓存损坏或输出缺失自动恢复。`--all` 强制生成并写出。`cache/state.json` 仍只在成功导出/部署后记录状态；修改生成器行为需更新 `canonical_export.CODEGEN_VERSION`。
 
 **Schema 依赖排序**：`ref` 字段定义跨表外键（`ref: 目标表.字段`）、命名类型引用定义 named 依赖；`resource_graph` 做拓扑排序（命名类型先于依赖它的 Table，被引用表先于引用表），并提供反向引用与删除保护。
 
