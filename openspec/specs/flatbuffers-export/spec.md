@@ -44,7 +44,7 @@
 
 #### Scenario: C# Accessor exposes per-table query API
 - **WHEN** 生成 `ItemAccessor.cs`
-- **THEN** 包含 `public static int Count`、`public static Item? ByID(int id)`、`public static Item? ByIndex(int i)`（越界返回 null）；若配置了 CodeName/Group 索引，还包含 `ByCodeName`/`ByGroupKey`（前者固定指向名为 `CodeName` 的 string 字段）
+- **THEN** 包含 `public static int Count`、`public static Item? ByID(int id)`、`public static Item? ByIndex(int i)`（越界返回 null）；若配置了 CodeName 索引，还包含 `ByCodeName`（固定指向名为 `CodeName` 的 string 字段）
 
 #### Scenario: C# row is a pointer handle
 - **WHEN** 通过 `ItemAccessor.ByID(id)` 取到一行
@@ -85,7 +85,7 @@ SHALL NOT 把类型撒在全局命名空间里。
 
 #### Scenario: Lua Accessor exposes per-table query API
 - **WHEN** 生成 `ItemAccessor.lua`
-- **THEN** 包含 `M.Count`、`M.ByID(id)`、`M.ByIndex(i)`；若配置索引还包含 `M.ByCodeName`/`M.ByGroupKey`
+- **THEN** 包含 `M.Count`、`M.ByID(id)`、`M.ByIndex(i)`；若配置 CodeName 索引还包含 `M.ByCodeName`
 
 #### Scenario: Lua enum field typed
 - **WHEN** item 表有 `Rarity: ItemRarity` 枚举字段
@@ -286,20 +286,10 @@ C# 与 Lua 两个目标语言的语义 SHALL 一致——SHALL NOT 出现「行�
   SHALL 在**加载/建表期硬报错**（C#）或**首次查询时报错**（Lua/原生），SHALL NOT 静默返回空。
 - **CodeName**：容器 slot 3 = `codeNameIndex`，开放寻址桶存 `rowIndex + 1`，key 用 FNV-1a 64 取低位；
   **固定**指向名为 `CodeName` 的 string 字段（schema 只写 `kind: codename`，不写 `field`）。
-- **Group**：容器 slot 4 = `groupIndex`（按 key 排序的 `(key:int32, rowIndex:int32)`，stride 8，
-  **行的来源**）+ 容器 slot 5 = `groupHash`（开放寻址桶，每桶两个 int32 = `(start:int32, count:int32)`，
-  stride 8，`count == 0` = 空）。哈希规则与主键同款；命中后按 `groupIndex[start*2] == key` 确认。
-  ⇒ 「按 key 取全部行」是一次探测拿到区间再顺序拷 count 行，
-  SHALL NOT 在 `groupIndex` 上做 lower_bound/upper_bound 两次二分。
-
-> `groupHash` 的空槽用 `count == 0` 而不是「key 为 0」表示 —— 因为 **key 本身可以是 0**
-> （int32 的 Group 字段、枚举第 0 项）。桶存区间而非 key，正是为了让 0 成为合法 key。
-
-#### Scenario: group lookup does not binary search
-- **WHEN** 一张表声明了 group 索引，运行期按某个 key 取全部行
-- **THEN** 查询 SHALL 只做一次哈希探测（+ 探测链上的碰撞确认），SHALL NOT 二分
-- **AND** key 为 `0` 时 SHALL 与其它 key 一样能取到该组全部行
-- **AND** 不存在的 key SHALL 返回空集，SHALL NOT 误命中其它组
+容器 slot 4 / 5 曾用于 Group 索引（`groupIndex` + `groupHash`）。该索引**已砍**：没有任何表
+声明过它，Lua 侧始终是占位 stub，且导出器会静默丢掉「group 列留空」的行（它们读出来是默认值 0，
+却不在 key 0 的组里）。两个槽位因此空出，等待未来重新设计；重新引入时 SHALL 一并解决上面这条
+默认值语义。
 
 #### Scenario: missing primary hash fails loudly
 - **WHEN** bundle 的某张表缺容器 slot 2（例如不是当前导出器产出的）

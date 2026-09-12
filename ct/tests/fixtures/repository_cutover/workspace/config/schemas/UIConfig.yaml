@@ -16,6 +16,3 @@ fields:
   - name: Stack
     type: bool
     comment: "Page 专用：是否入历史栈"
-indexes:
-  - kind: group
-    field: Layer

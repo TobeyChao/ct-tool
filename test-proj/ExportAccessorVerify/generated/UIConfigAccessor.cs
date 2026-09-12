@@ -4,143 +4,171 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-public static partial class UIConfigAccessor
+namespace GameFramework.ConfigGen
 {
-    private const string TableName = "UIConfig";
-    private const int MaxSlot = 14;
-    private static ConfigTable _table;
-    private static int _tableVersion = -1;
-
-    /// <summary>解析并缓存表句柄；整套 bin 换代后 Runtime 会重建表对象。</summary>
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void Resolve()
+    public static partial class UIConfigAccessor
     {
-        _table = Runtime.Table(TableName);
-        _tableVersion = TableVersion.Current;
-    }
+        private const string TableName = "UIConfig";
+        private const int MaxSlot = 14;
+        private static ConfigTable _table;
+        private static int _tableVersion = -1;
 
-    internal static ConfigTable Table
-    {
-        get
+        /// <summary>解析并缓存表句柄；整套 bin 换代后 Runtime 会重建表对象。</summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Resolve()
         {
-            ConfigTable t = _table;
-            // 世代守卫：整套 bin 换代（LoadBundle/Clear）后必须重新取句柄，
-            // 否则会继续用已被 Dispose 的旧表缓冲（悬垂指针）。
-            if (t != null && _tableVersion == TableVersion.Current)
+            _table = Runtime.Table(TableName);
+            _tableVersion = TableVersion.Current;
+        }
+
+        internal static ConfigTable Table
+        {
+            get
             {
-                return t;
+                ConfigTable t = _table;
+                // 世代守卫：整套 bin 换代（LoadBundle/Clear）后必须重新取句柄，
+                // 否则会继续用已被 Dispose 的旧表缓冲（悬垂指针）。
+                if (t != null && _tableVersion == TableVersion.Current)
+                {
+                    return t;
+                }
+                Resolve();
+                return _table;
             }
-            Resolve();
-            return _table;
         }
-    }
 
-    /// <summary>行数。</summary>
-    public static int Count => Table.Count;
+        /// <summary>行数。</summary>
+        public static int Count => Table.Count;
 
-    /// <summary>按主键查行；未找到返回 null。</summary>
-    public static UIConfigRow? ByID(int id)
-    {
-        ConfigTable t = Table;
-        int idx;
-        IntPtr p = t.ByID(id, out idx);
-        if (p == IntPtr.Zero)
+        /// <summary>按主键查行；未找到返回 null。</summary>
+        public static UIConfig? ByID(int id)
         {
-            return null;
-        }
-        else
-        {
-            return new UIConfigRow(p, t.OffsetsFor(p, MaxSlot), t.Version, idx);
-        }
-    }
-
-    /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>
-    public static UIConfigRow? ByIndex(int i)
-    {
-        ConfigTable t = Table;
-        IntPtr p = t.RowAt(i);
-        if (p == IntPtr.Zero)
-        {
-            return null;
-        }
-        else
-        {
-            return new UIConfigRow(p, t.OffsetsFor(p, MaxSlot), t.Version, i);
-        }
-    }
-
-    /// <summary>Group lookup; returns rows in deterministic order.</summary>
-    public static IReadOnlyList<UIConfigRow> ByGroupKey(int value)
-    {
-        ConfigTable t = Table;
-        var rows = Runtime.GroupKey(TableName, 1, value);
-        var result = new List<UIConfigRow>(rows.Length);
-        foreach (var row in rows)
-        {
-            IntPtr p = t.RowAt(row);
-            result.Add(new UIConfigRow(p, t.OffsetsFor(p, MaxSlot), t.Version, row));
-        }
-        return result;
-    }
-
-    // ---- per-field 字符串缓存（行下标索引，整套 bin 换代时整体重建）----
-    private static string[] _resourceKeyCache;
-    private static int _strCacheVersion = -1;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void ResetStringCaches()
-    {
-        int n = Table.Count;
-        _resourceKeyCache = new string[n];
-        _strCacheVersion = TableVersion.Current;
-    }
-
-    internal static string[] ResourceKeyCache
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get
-        {
-            string[] c = _resourceKeyCache;
-            if (c != null && _strCacheVersion == TableVersion.Current)
+            ConfigTable t = Table;
+            int idx;
+            IntPtr p = t.ByID(id, out idx);
+            if (p == IntPtr.Zero)
             {
-                return c;
+                return null;
             }
-            ResetStringCaches();
-            return _resourceKeyCache;
+            else
+            {
+                return new UIConfig(p, t.OffsetsFor(p, MaxSlot), t.Version, idx);
+            }
+        }
+
+        /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>
+        public static UIConfig? ByIndex(int i)
+        {
+            ConfigTable t = Table;
+            IntPtr p = t.RowAt(i);
+            if (p == IntPtr.Zero)
+            {
+                return null;
+            }
+            else
+            {
+                return new UIConfig(p, t.OffsetsFor(p, MaxSlot), t.Version, i);
+            }
+        }
+
+        // ---- per-field 字符串缓存（行下标索引，整套 bin 换代时整体重建）----
+        private static string[] _resourceKeyCache;
+        private static int _strCacheVersion = -1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ResetStringCaches()
+        {
+            int n = Table.Count;
+            _resourceKeyCache = new string[n];
+            _strCacheVersion = TableVersion.Current;
+        }
+
+        internal static string[] ResourceKeyCache
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                string[] c = _resourceKeyCache;
+                if (c != null && _strCacheVersion == TableVersion.Current)
+                {
+                    return c;
+                }
+                ResetStringCaches();
+                return _resourceKeyCache;
+            }
         }
     }
-}
 
-public unsafe readonly struct UIConfigRow
-{
-    private readonly IntPtr _row;
-    private readonly int[] _off;
-    private readonly int _version;
-    private readonly int _index;
-    internal UIConfigRow(IntPtr row, int[] offsets, int version, int rowIndex)
+    public unsafe readonly struct UIConfig
     {
-        _row = row;
-        _off = offsets;
-        _version = version;
-        _index = rowIndex;
-    }
-    public int Id => WireReader.I32At(_row, _off[4]);
-    public UIConfigLayer Layer => (UIConfigLayer)WireReader.I8At(_row, _off[6]);
-    public string ResourceKey
-    {
-        get
+        private readonly IntPtr _row;
+        private readonly int[] _off;
+        private readonly int _version;
+        private readonly int _index;
+        internal UIConfig(IntPtr row, int[] offsets, int version, int rowIndex)
         {
-            string[] c = UIConfigAccessor.ResourceKeyCache;
-            string s = c[_index];
-            if (s != null)
+            _row = row;
+            _off = offsets;
+            _version = version;
+            _index = rowIndex;
+        }
+        public int Id
+        {
+            get
             {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.I32At(_row, _off[4]);
+            }
+        }
+        public UIConfigLayer Layer
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return (UIConfigLayer)WireReader.I8At(_row, _off[6]);
+            }
+        }
+        public string ResourceKey
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                string[] c = UIConfigAccessor.ResourceKeyCache;
+                string s = c[_index];
+                if (s != null)
+                {
+                    return s;
+                }
+                s = NStringCache.Decode((byte*)WireReader.IndirectAt(_row, _off[8]));
+                c[_index] = s;
                 return s;
             }
-            s = NStringCache.Decode((byte*)WireReader.IndirectAt(_row, _off[8]));
-            c[_index] = s;
-            return s;
+        }
+        public bool BlocksRaycast
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.BoolAt(_row, _off[10]);
+            }
+        }
+        public bool Stack
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.BoolAt(_row, _off[12]);
+            }
         }
     }
-    public bool BlocksRaycast => WireReader.BoolAt(_row, _off[10]);
-    public bool Stack => WireReader.BoolAt(_row, _off[12]);
 }

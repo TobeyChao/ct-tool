@@ -60,11 +60,8 @@ public unsafe sealed class ConfigTable : IDisposable
 
     // 二级查询索引（表级 `indexes:` 声明，导出器产出）
     //   Code  —— 开放寻址桶表，桶里存 rowIndex + 1（0 = 空），key = FNV-1a 64
-    //   Group —— 按 key 排序的 (key:int32, rowIndex:int32) 数组（stride 8）
     private IntPtr _codeSlots;
     private int _codeMask;
-    private IntPtr _groupEntries;
-    private int _groupCount;
 
     public ConfigTable(string name, byte[] bytes)
     {
@@ -109,20 +106,13 @@ public unsafe sealed class ConfigTable : IDisposable
             _codeSlots = (IntPtr)(codeVec + 4);
             _codeMask = WireReader.GetI32(codeVec) - 1;
         }
-        byte* groupVec = (byte*)WireReader.Indirect(root, 12);
-        if (groupVec != null)
-        {
-            _groupEntries = (IntPtr)(groupVec + 4);
-            // 向量是**扁平 int32 对** key,row,key,row… ⇒ 条目数 = 长度 / 2
-            _groupCount = WireReader.GetI32(groupVec) / 2;
-        }
     }
 
     /// <summary>
     /// Code 精确字符串查找，返回行下标；未找到返回 -1。
     /// ``fieldIndex`` 是**客户端字段序**（生成器传入），用于撞哈希时按字段精确确认。
     /// </summary>
-    public int CodeSearch(int fieldIndex, string code)
+    public int CodeNameSearch(int fieldIndex, string code)
     {
         if (_codeMask <= 0 || code == null) return -1;
         int* slots = (int*)_codeSlots;
@@ -139,33 +129,6 @@ public unsafe sealed class ConfigTable : IDisposable
             if (WireReader.Str(p, slot) == code) return row;
             b = (b + 1) & mask;
         }
-    }
-
-    /// <summary>Group 查找：按键二分定位范围，按行序返回全部行下标（无匹配返回空数组）。</summary>
-    public int[] GroupKey(int value)
-    {
-        if (_groupCount == 0) return Array.Empty<int>();
-        int* e = (int*)_groupEntries;
-        int lo = 0, hi = _groupCount;
-        while (lo < hi)                          // 第一个 key >= value
-        {
-            int mid = (lo + hi) >> 1;
-            if (e[mid * 2] < value) lo = mid + 1;
-            else hi = mid;
-        }
-        int start = lo;
-        lo = start; hi = _groupCount;
-        while (lo < hi)                          // 第一个 key > value
-        {
-            int mid = (lo + hi) >> 1;
-            if (e[mid * 2] <= value) lo = mid + 1;
-            else hi = mid;
-        }
-        int end = lo;
-        if (end <= start) return Array.Empty<int>();
-        var rows = new int[end - start];
-        for (int i = start; i < end; i++) rows[i - start] = e[i * 2 + 1];
-        return rows;
     }
 
     public int Version => _pVersion;

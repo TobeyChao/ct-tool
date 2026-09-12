@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using GameFramework.ConfigGen;
 
 public static class Program
 {
@@ -25,7 +26,6 @@ public static class Program
         VerifyQuest(root, manifests);
         VerifyUIConfig(root, manifests);
         VerifyCodeIndex(root);
-        VerifyGroupIndex(root);
         VerifyFnvMatchesPython();
         VerifySparseI18n(root);
         VerifyAllScalars(root);
@@ -75,7 +75,7 @@ public static class Program
             var row = ItemTypeAccessor.ByID(rows[i].GetProperty("Id").GetInt32())!.Value;
             Eq("ItemType", i, "Id", row.Id, rows[i].GetProperty("Id").GetInt32());
             EqS("ItemType", i, "Name", row.Name, rows[i].GetProperty("Name").GetString());
-            EqS("ItemType", i, "Code", row.Code, rows[i].GetProperty("Code").GetString());
+            EqS("ItemType", i, "CodeName", row.CodeName, rows[i].GetProperty("CodeName").GetString());
         }
     }
 
@@ -113,50 +113,26 @@ public static class Program
         }
     }
 
-    /// <summary>B2：Code 索引（开放寻址 + 精确字符串确认）。</summary>
+    /// <summary>B2：CodeName 索引（开放寻址 + 精确字符串确认）。</summary>
     private static void VerifyCodeIndex(string root)
     {
         var rows = Rows(root, "ItemType");
-        Console.WriteLine($"[ItemType] Code 索引  {rows.GetArrayLength()} 行");
+        Console.WriteLine($"[ItemType] CodeName 索引  {rows.GetArrayLength()} 行");
         for (int i = 0; i < rows.GetArrayLength(); i++)
         {
-            string code = rows[i].GetProperty("Code").GetString();
-            var row = ItemTypeAccessor.ByCode(code);
-            if (row == null) { _failed++; Console.WriteLine($"  ✗ ByCode({code}) 未命中"); continue; }
+            string codeName = rows[i].GetProperty("CodeName").GetString();
+            var row = ItemTypeAccessor.ByCodeName(codeName);
+            if (row == null) { _failed++; Console.WriteLine($"  ✗ ByCodeName({codeName}) 未命中"); continue; }
             _checked++;
-            Eq("ItemType", i, "ByCode.Id", row.Value.Id, rows[i].GetProperty("Id").GetInt32());
+            Eq("ItemType", i, "ByCodeName.Id", row.Value.Id, rows[i].GetProperty("Id").GetInt32());
         }
-        // 不存在的 code 必须返回 null（且不能死循环）
+        // 不存在的 codeName 必须返回 null（且不能死循环）
         _checked++;
-        if (ItemTypeAccessor.ByCode("__no_such_code__") != null)
-        { _failed++; Console.WriteLine("  ✗ 不存在的 code 应返回 null"); }
+        if (ItemTypeAccessor.ByCodeName("__no_such_code__") != null)
+        { _failed++; Console.WriteLine("  ✗ 不存在的 codeName 应返回 null"); }
     }
 
-    /// <summary>B2：Group 索引（按 key 二分取一组行，行序确定）。</summary>
-    private static void VerifyGroupIndex(string root)
-    {
-        var rows = Rows(root, "UIConfig");
-        Console.WriteLine($"[UIConfig] Group 索引(Layer)  {rows.GetArrayLength()} 行");
-        var names = new[] { "Page", "Modal", "Panel", "Overlay" };
-        for (int k = 0; k < names.Length; k++)
-        {
-            var want = new List<int>();
-            for (int i = 0; i < rows.GetArrayLength(); i++)
-                if (EnumIndex(rows[i].GetProperty("Layer").GetString(), names) == k)
-                    want.Add(rows[i].GetProperty("Id").GetInt32());
-            var got = new List<int>();
-            foreach (var r in UIConfigAccessor.ByGroupKey(k)) got.Add(r.Id);
-            want.Sort(); got.Sort();
-            _checked++;
-            if (!want.SequenceEqual(got))
-            {
-                _failed++;
-                Console.WriteLine($"  ✗ Layer={names[k]}: got=[{string.Join(",", got)}] want=[{string.Join(",", want)}]");
-            }
-        }
-    }
-
-    /// <summary>运行期 FNV-1a 必须与导出器 Python 实现逐位一致（Code 索引桶下标依赖它）。</summary>
+    /// <summary>运行期 FNV-1a 必须与导出器 Python 实现逐位一致（CodeName 索引桶下标依赖它）。</summary>
     private static void VerifyFnvMatchesPython()
     {
         // 由 prepare.py 写入的对照表（Python ct.export.index_query.fnv1a_64 的结果）

@@ -59,7 +59,7 @@ def _fps(table: TableResource, records, indexes: tuple[QueryIndex, ...]):
     return schema_fingerprint(
         table.model_dump(mode="json", by_alias=True, exclude_none=True, exclude_defaults=True),
         dependencies,
-        [{"kind": index.kind, "field": index.field} for index in indexes],
+        [{"kind": index.kind} for index in indexes],
         codegen_version="1.0",
     )
 

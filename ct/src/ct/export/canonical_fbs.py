@@ -116,17 +116,10 @@ def _table_fbs_text(table: TableResource, order: list[str]) -> str:
     if table.primary:
         lines.append("  index: [IndexEntry];")
         lines.append("  idHash: [int32];")
-    # 二级查询索引（表级 indexes 声明）：codename = 桶表，group = 交错的 (key, row) 序列
+    # 二级查询索引（表级 indexes 声明）：codename = FNV-1a 桶表（桶里存 rowIndex + 1）
     has_codename = any(i.kind == "codename" for i in getattr(table, "indexes", ()) or ())
-    has_group = any(i.kind == "group" for i in getattr(table, "indexes", ()) or ())
     if has_codename:
         lines.append("  codeNameIndex: [int32];")
-    if has_group:
-        # groupIndex = 按 key 排序的 (key, row)，stride 8（**行的来源**）
-        # groupHash  = 开放寻址桶，每桶 (start, count)，stride 8；count == 0 = 空
-        #              ⇒ 运行期一次探测定位区间，**不再二分**
-        lines.append("  groupIndex: [int32];")
-        lines.append("  groupHash: [int32];")
     lines.append("}")
     lines.append("")
     lines.append(f"root_type {table.table}Table;")

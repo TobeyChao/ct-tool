@@ -94,7 +94,7 @@ model = build_accessor_model(table, (), records=records)   # ← indexes 恒为�
 ```
 
 `build_accessor_model(table, indexes, records)` 本身接受索引；`index_query.py` 也已存在。
-且 `Runtime.ByCode` / `Runtime.GroupKey` 是 stub（恒返回 `-1` / `Array.Empty<int>()`）
+且 `Runtime.ByCode` 是 stub（恒返回 `-1`；CodeName 已接线、Group 已砍，见 `ConfigAccessorBench/REVIEW.md`）
 —— ct-tool 自己的 `REVIEW.md` 已记录这条「生成器信任运行时能力」的契约缺口。
 
 ⇒ P6 与 P8 是同一类问题：**能力写好了，出口没接**。

@@ -1,7 +1,7 @@
 """Shared canonical Accessor/Index model for C# and Lua generators.
 
 Both languages consume the same model: client fields in slot order, primary,
-i18n fields, and the Code/Group index contracts. Neither generator parses
+i18n fields, and the CodeName index contract. Neither generator parses
 Type Expressions or re-derives index rules. Named ``record`` fields are resolved
 against the workspace ``records`` map so the generators can emit nested row
 accessors whose wire shape matches the FlatBuffers binary (a record is a nested
@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ct.schema.indexes import QueryIndex
-from ct.schema.resources import RecordResource, TableResource
+from ct.schema.resources import CODENAME_FIELD, RecordResource, TableResource
 from ct.schema.type_expression import (
     NamedType,
     ScalarType,
@@ -58,8 +58,7 @@ class AccessorField:
 
 @dataclass(frozen=True)
 class AccessorIndex:
-    kind: str  # codename | group
-    field: str
+    kind: str  # 当前只有 "codename"
     slot: int
 
 
@@ -238,9 +237,9 @@ def build_accessor_model(
     # 这样**单独**调用生成器也不会漏掉 i18n 读取（否则多语言字段会静默退回主表原文）。
     if i18n_table is None and i18n_fields:
         i18n_table = f"{table.table}_i18n"
+    # codename 索引的槽位 = 约定字段 CodeName 在 client_fields 里的序号（导出器写库时同源）
     accessor_indexes = tuple(
-        AccessorIndex(index.kind, index.field, slots[index.field])
-        for index in indexes
+        AccessorIndex(index.kind, slots[CODENAME_FIELD]) for index in indexes
     )
     return CanonicalAccessorModel(
         table=table,

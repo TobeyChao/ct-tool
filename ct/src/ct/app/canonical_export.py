@@ -373,7 +373,7 @@ def run_canonical_export(
             i18n_info = (layout_info.get(sparse_i18n.table) or {}) if sparse_i18n is not None else {}
             model = build_accessor_model(
                 table,
-                # 表级查询索引（Code/Group）：来自 schema（原先硬编码成 () ⇒ 永不生成 ByCode/ByGroupKey）
+                # 表级查询索引（CodeName）：来自 schema（原先硬编码成 () ⇒ 永不生成 ByCodeName）
                 tuple(table.indexes),
                 records=records,
                 # 定宽表：偏移是表级常量，生成器发射字面量（无偏移表）

@@ -1,6 +1,6 @@
 """C# / Lua accessor emitters for the canonical model.
 
-Emit deterministic row accessors plus the table-level Code/Group query APIs.
+Emit deterministic row accessors plus the table-level CodeName query API.
 Both languages expose the same method names and missing/ordering semantics;
 the actual binary traversal delegates to the platform reader (WireReader /
 GD). This text is a format-contract surface and is verified by golden tests.
@@ -547,7 +547,7 @@ def _emit_csharp_record_structs(model: CanonicalAccessorModel) -> list[str]:
 
 
 def _emit_csharp_query_api(model: CanonicalAccessorModel) -> list[str]:
-    """Emit per-table Count/ByID/ByIndex (+ ByCode/ByGroupKey if indexes).
+    """Emit per-table Count/ByID/ByIndex (+ ByCodeName if the index is declared).
 
     OPT-3：表句柄缓存在 accessor 静态字段里，避免每次查找都做一次
     ``Dictionary<string, ConfigTable>`` 字符串哈希。
@@ -559,7 +559,7 @@ def _emit_csharp_query_api(model: CanonicalAccessorModel) -> list[str]:
     literal = model.is_uniform
     # 行句柄构造实参：定宽表不带偏移表（偏移已是表级常量）
     # ⚠️ 每个查询 API 的行下标变量名不同，必须分别模板（写错会生成编译不过的代码）：
-    #     ByID → idx、ByIndex → i、ByCode → row、ByGroupKey → row
+    #     ByID → idx、ByIndex → i、ByCodeName → row
     def _row_args(var: str) -> tuple[str, str]:
         return (
             f"p, t.OffsetsFor(p, MaxSlot), t.Version, {var}",
@@ -652,21 +652,6 @@ def _emit_csharp_query_api(model: CanonicalAccessorModel) -> list[str]:
             lines.append("            IntPtr p = t.RowAt(row);")
             lines.append(f"            return new {table}({literal_row if literal else offsets_row});")
             lines.append("        }")
-            lines.append("    }")
-        else:
-            lines.append("")
-            lines.append("    /// <summary>Group lookup; returns rows in deterministic order.</summary>")
-            lines.append(f"    public static IReadOnlyList<{table}> ByGroupKey(int value)")
-            lines.append("    {")
-            lines.append("        ConfigTable t = Table;")
-            lines.append(f"        var rows = Runtime.GroupKey(TableName, {index.slot}, value);")
-            lines.append(f"        var result = new List<{table}>(rows.Length);")
-            lines.append("        foreach (var row in rows)")
-            lines.append("        {")
-            lines.append("            IntPtr p = t.RowAt(row);")
-            lines.append(f"            result.Add(new {table}({literal_row if literal else offsets_row}));")
-            lines.append("        }")
-            lines.append("        return result;")
             lines.append("    }")
     return lines
 
@@ -1117,12 +1102,6 @@ def generate_lua_accessor(model: CanonicalAccessorModel) -> str:
                 f"function M.ByCodeName(codeName) "
                 f"return GD.ByCodeName(_tbl, {index.slot}, codeName, RowMeta) end"
             )
-        else:
-            lines.append("-- ⚠️ Group 查询：原生 gd 模块暂无 IndexGroup 绑定（见计划 G2）")
-            lines.append(
-                'function M.ByGroupKey(value) error("[Config] Lua 侧 ByGroupKey 尚不可用：'
-                '原生 gd 模块缺 IndexGroup 绑定") end'
-            )
     lines.append("return M")
     return "\n".join(lines) + "\n"
 
@@ -1170,7 +1149,7 @@ def golden_csharp(table=None, indexes=None, records=None) -> str:
     if table is None:
         table = _table()
     if indexes is None:
-        indexes = (QueryIndex(kind="codename"), QueryIndex(kind="group", field="Category"))
+        indexes = (QueryIndex(kind="codename"),)
     return render_csharp_accessor(table, indexes, records=records)
 
 
@@ -1178,5 +1157,5 @@ def golden_lua(table=None, indexes=None, records=None) -> str:
     if table is None:
         table = _table()
     if indexes is None:
-        indexes = (QueryIndex(kind="codename"), QueryIndex(kind="group", field="Category"))
+        indexes = (QueryIndex(kind="codename"),)
     return render_lua_accessor(table, indexes, records=records)

@@ -150,19 +150,22 @@ fields:
 
 ### 表级查询索引
 
-最多各一个 `codename` / `group`：
+目前只有 `codename` 一种（每张表最多一个）：
 
 ```yaml
 indexes:
   - kind: codename      # 精确字符串查找；**不写 field**，固定指向名为 CodeName 的 string 字段
-  - kind: group         # 分组查找；必须写 field，且字段能以 int32 编码（int32/bool/enum）
-    field: Category
 ```
 
 `codename` 是一个**约定的固定字段名**，不是「随便指一个 string 字段」——与 参考实现 的
 flags `1<<1 CodeName` 同构。所以「表里没有 CodeName 字段 / 它不是 string / 它带 i18n /
 它是 server_only」都会在**加载期**报错，而不是等导出。
 非标量字段（`vector`、`i18n`、`server_only`）不能做索引字段。
+
+> 曾经还有一种 `kind: group`（按 int32/bool/Enum 字段做一对多分组查找），**已砍掉**：
+> 没有任何表声明过它，Lua 侧始终是占位 stub，而且导出器会静默丢掉「group 列留空」的行
+> ——那些行读出来是默认值 `0`，却不在 key `0` 的组里。要重新做，见游戏仓
+> `Docs/TODO/开工方案.md` 里留的计划（含这条默认值语义必须一并解决）。
 
 ---
 
@@ -294,14 +297,13 @@ output/
 | 1 | `index` | 主键**有序**的 `(key, row)` 对，stride 8。**仍是行的来源** |
 | 2 | `idHash` | 主键哈希桶，存「index 位置 + 1」，`0` = 空 |
 | 3 | `codeNameIndex` | CodeName 索引桶，存 `rowIndex + 1`，key = FNV-1a 64 |
-| 4 | `groupIndex` | Group 的 `(key, row)` 对，stride 8（行来源） |
-| 5 | `groupHash` | Group 区间哈希桶，每桶 `(start, count)`，stride 8，`count == 0` = 空 |
 
-**三条查询路径都是 O(1) 哈希，读端不做二分**：
+> slot 4 / 5 曾归 Group 索引（`groupIndex` + `groupHash`），**已砍**，槽位空出。
+
+**两条查询路径都是 O(1) 哈希，读端不做二分**：
 
 - **主键**：`b = (key × 2654435761) & (slots−1)`，线性探测，命中后按 `index[pos]` 确认
 - **Code**：FNV-1a 64 取低位，命中后按字段做精确字符串确认
-- **Group**：同款哈希定位区间 `(start, count)`，再顺序取行。空槽用 `count == 0` 而非「key 为 0」——**因为 key 本身可以是 0**
 
 > `idHash` 对每张表**必然产出**（`primary` 是必填项）。读端**没有**二分兜底：缺 `idHash` 会在建表期（C#）
 > 或首次查询时（Lua/原生）**硬报错**，不会静默返回空。
@@ -406,4 +408,4 @@ ct i18n compact [--lang L] [--table T] [--dry-run] [--root DIR]
 | `i18n: true` 标在非**标量 string** 上（含 `vector<string>`） | ❌ |
 | 同一字段同时 `i18n` + `server_only` | ❌ |
 | record 字段标 `i18n` / `server_only` | ❌ schema 层报错（下游不会报，只会静默忽略） |
-| `indexes` 的 code 字段不是 string、group 字段不是 int32/bool/enum | ❌ |
+| `indexes` 的 CodeName 字段不是 string（或带 i18n / server_only / 是 vector） | ❌ |

@@ -410,7 +410,7 @@ def test_probe_row_layout_returns_nonzero_offsets_for_all_uniform_slots() -> Non
 
 
 # ---------------------------------------------------------------------------
-# 二级查询索引（Code / Group）：容器 slot 3 / 4
+# 二级查询索引（CodeName）：容器 slot 3
 # ---------------------------------------------------------------------------
 
 
@@ -425,10 +425,7 @@ def _indexed_table() -> tuple[TableResource, dict, dict]:
             FieldDef(name="CodeName", type="string"),
             FieldDef(name="Category", type="int32"),
         ],
-        indexes=(
-            QueryIndex(kind="codename"),
-            QueryIndex(kind="group", field="Category"),
-        ),
+        indexes=(QueryIndex(kind="codename"),),
     )
     return table, {}, {}
 
@@ -451,28 +448,12 @@ def test_no_indexes_means_no_extra_container_slots() -> None:
     assert _container_slots(data) == [0, 1, 2]      # items / index / hash
 
 
-def test_codename_and_group_indexes_add_container_slots() -> None:
-    """Group 现在占**两个**槽：4 = 排序对（行来源），5 = 区间哈希（O(1) 定位，取代二分）。"""
+def test_codename_index_adds_container_slot_three() -> None:
+    """声明 codename 索引只多一个槽：3 = CodeName 桶表（4/5 曾归 Group，已砍）。"""
     table, records, enums = _indexed_table()
     rows = [{"Id": 1, "CodeName": "a", "Category": 7}]
     data = build_canonical_table_bytes(rows, table, records=records, enums=enums)
-    assert _container_slots(data) == [0, 1, 2, 3, 4, 5]
-
-
-def test_group_only_index_still_declares_slot_five() -> None:
-    """只声明 Group（无 Code）时，vtable 槽位数仍要覆盖 slot 5（Group 排序对 + 区间哈希）。"""
-    from ct.schema.resources import QueryIndex
-
-    table = TableResource(
-        table="Item",
-        primary="Id",
-        fields=[FieldDef(name="Id", type="int32"), FieldDef(name="Category", type="int32")],
-        indexes=(QueryIndex(kind="group", field="Category"),),
-    )
-    data = build_canonical_table_bytes(
-        [{"Id": 1, "Category": 7}], table, records={}, enums={}
-    )
-    assert _container_slots(data) == [0, 1, 2, 4, 5]
+    assert _container_slots(data) == [0, 1, 2, 3]
 
 
 def test_codename_buckets_are_fnv1a_keyed_and_point_at_rows() -> None:
@@ -498,30 +479,6 @@ def test_codename_buckets_are_fnv1a_keyed_and_point_at_rows() -> None:
     assert buckets[fnv1a_64("consumable") & mask] == 1
     assert buckets[fnv1a_64("equipment") & mask] == 2
     assert buckets.count(0) == count - 2      # 其余为空
-
-
-def test_group_entries_are_sorted_by_key() -> None:
-    table, records, enums = _indexed_table()
-    rows = [
-        {"Id": 1, "CodeName": "a", "Category": 9},
-        {"Id": 2, "CodeName": "b", "Category": 3},
-        {"Id": 3, "CodeName": "c", "Category": 9},
-    ]
-    data = build_canonical_table_bytes(rows, table, records=records, enums=enums)
-    root = struct.unpack_from("<i", data, 0)[0]
-    vt = root - struct.unpack_from("<i", data, root)[0]
-    group_off = struct.unpack_from("<H", data, vt + 12)[0]
-    vec = root + group_off + struct.unpack_from("<i", data, root + group_off)[0]
-    # 向量是**扁平 int32 对** key,row,… ⇒ 长度 = 条目数 * 2
-    length = struct.unpack_from("<i", data, vec)[0]
-    entries = [
-        (
-            struct.unpack_from("<i", data, vec + 4 + i * 8)[0],
-            struct.unpack_from("<i", data, vec + 4 + i * 8 + 4)[0],
-        )
-        for i in range(length // 2)
-    ]
-    assert entries == [(3, 1), (9, 0), (9, 2)]     # 按 key 升序，行序确定
 
 
 # ---------------------------------------------------------------------------
@@ -730,110 +687,3 @@ def test_default_scalar_values_omit_their_slot() -> None:
             absent.append(field.name)
     # 除 string（默认 "" 会被写出，因为 string 是 uoffset）之外，其余默认值都应缺槽位
     assert len(absent) >= 8, f"默认值应缺槽位，实际缺 {absent}"
-
-
-# ---------------------------------------------------------------------------
-# Group 区间哈希：字节级正确性（取代了运行期的两次二分）
-# ---------------------------------------------------------------------------
-
-
-def _indirect(data: bytes, obj: int, slot: int) -> int | None:
-    """取 obj 的第 slot 个字段（uoffset）；缺失返回 None。"""
-    vt = obj - struct.unpack_from("<i", data, obj)[0]
-    vt_len = struct.unpack_from("<H", data, vt)[0]
-    if 4 + 2 * slot >= vt_len:
-        return None
-    off = struct.unpack_from("<H", data, vt + 4 + 2 * slot)[0]
-    if off == 0:
-        return None
-    return obj + off + struct.unpack_from("<I", data, obj + off)[0]
-
-
-def _i32_vec(data: bytes, vec: int) -> list[int]:
-    n = struct.unpack_from("<I", data, vec)[0]
-    return list(struct.unpack_from(f"<{n}i", data, vec + 4))
-
-
-def _group_lookup(data: bytes, value: int) -> list[int]:
-    """按运行期（C#/原生）的算法做一次 group 查询，返回行下标列表。
-
-    刻意**不用**任何导出期的 Python 辅助函数 —— 这里验的是「导出器写出的字节，
-    用运行期那套规则能查对」。
-    """
-    root = struct.unpack_from("<i", data, 0)[0]
-    pairs_vec = _indirect(data, root, 4)
-    hash_vec = _indirect(data, root, 5)
-    assert pairs_vec is not None and hash_vec is not None
-    pairs = _i32_vec(data, pairs_vec)          # [key, row, key, row, ...]
-    slots = _i32_vec(data, hash_vec)           # [start, count, start, count, ...]
-    mask = len(slots) // 2 - 1
-    b = ((value * 2654435761) & 0xFFFFFFFF) & mask
-    while True:
-        start, count = slots[b * 2], slots[b * 2 + 1]
-        if count == 0:
-            return []
-        if pairs[start * 2] == value:
-            return [pairs[(start + i) * 2 + 1] for i in range(count)]
-        b = (b + 1) & mask
-
-
-def _group_table() -> TableResource:
-    from ct.schema.indexes import QueryIndex
-
-    return TableResource(
-        table="Item",
-        primary="Id",
-        fields=[
-            FieldDef(name="Id", type="int32"),
-            FieldDef(name="Category", type="int32"),
-        ],
-        indexes=(QueryIndex(kind="group", field="Category"),),
-    )
-
-
-def test_group_hash_locates_every_key_without_binary_search() -> None:
-    """空槽用 `count == 0` 表示 ⇒ 每个 key 的区间都能一次探测拿到。
-
-    注意 **key 可以是 0**（区间哈希的"空"由 count 而非 key 表示），
-    这正是它比「桶存 key」更稳的地方。
-    """
-    table = _group_table()
-    rows = [
-        {"Id": 1, "Category": 7},
-        {"Id": 2, "Category": 0},          # key = 0 必须可用
-        {"Id": 3, "Category": 7},
-        {"Id": 4, "Category": 9},
-        {"Id": 5, "Category": 7},
-        {"Id": 6, "Category": 0},
-    ]
-    data = build_canonical_table_bytes(rows, table, records={}, enums={})
-
-    assert _group_lookup(data, 7) == [0, 2, 4]
-    assert _group_lookup(data, 0) == [1, 5]
-    assert _group_lookup(data, 9) == [3]
-    # 不存在的 key ⇒ 空列表（走到 count == 0 的空桶）
-    for missing in (1, 8, 12345, -1):
-        assert _group_lookup(data, missing) == [], f"key {missing} 应查不到"
-
-
-def test_group_hash_survives_collisions_and_scale() -> None:
-    """撞桶时靠 `pairs[start*2] == value` 确认 —— 换一批 key 密集的数据再验一遍。"""
-    table = _group_table()
-    # 故意用连续的 key 制造大量相邻桶占用
-    rows = [{"Id": i + 1, "Category": i % 17} for i in range(400)]
-    data = build_canonical_table_bytes(rows, table, records={}, enums={})
-    for key in range(17):
-        assert _group_lookup(data, key) == list(range(key, 400, 17))
-    assert _group_lookup(data, 17) == []
-
-
-def test_group_hash_vector_is_a_power_of_two() -> None:
-    """运行期靠 `& (slots-1)` 定位 ⇒ 桶数必须是 2 的幂（否则掩码是错的）。"""
-    table = _group_table()
-    rows = [{"Id": i + 1, "Category": i % 50} for i in range(500)]
-    data = build_canonical_table_bytes(rows, table, records={}, enums={})
-    root = struct.unpack_from("<i", data, 0)[0]
-    slots = _i32_vec(data, _indirect(data, root, 5))
-    n = len(slots) // 2
-    assert n & (n - 1) == 0, f"桶数 {n} 不是 2 的幂"
-    assert n >= 8

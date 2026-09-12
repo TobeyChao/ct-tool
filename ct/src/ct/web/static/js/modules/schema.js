@@ -703,25 +703,6 @@ export async function mount(container) {
   function renderIndexCards(resource) {
     if (!resource.primary) return "";
     const current = state.indexesByTable[resource.resourceId] || [];
-    const card = (kind, label, preview) => {
-      const selected = (current.find((i) => i.kind === kind) || {}).field || "";
-      const selectedLabel = selected || "（无）";
-      return `<div class="ct-index-card">
-        <div class="ct-index-card-head">${label}<span class="ct-mono ct-index-preview">${preview}</span></div>
-        <div class="ct-select" data-index-select="${kind}">
-          <select class="ct-input ct-index-native" data-index-kind="${kind}" aria-hidden="true" tabindex="-1">
-          <option value="">（无）</option>
-          ${resource.fields.map((f) => `<option value="${escapeHtml(f.name)}" ${f.name === selected ? "selected" : ""}>${escapeHtml(f.name)}</option>`).join("")}
-          </select>
-          <button type="button" class="ct-select-trigger" data-index-trigger="${kind}" aria-haspopup="listbox" aria-expanded="false">
-            <span class="ct-select-value">${escapeHtml(selectedLabel)}</span><span class="ct-select-chevron" aria-hidden="true"></span>
-          </button>
-          <div class="ct-select-menu" data-index-menu="${kind}" role="listbox" tabindex="-1" hidden>
-            <button type="button" class="ct-select-option${selected === "" ? " selected" : ""}" data-index-option="" role="option" aria-selected="${selected === ""}">（无）</button>
-            ${resource.fields.map((f) => `<button type="button" class="ct-select-option${f.name === selected ? " selected" : ""}" data-index-option="${escapeHtml(f.name)}" role="option" aria-selected="${f.name === selected}">${escapeHtml(f.name)}</button>`).join("")}
-          </div>
-        </div></div>`;
-    };
     // CodeName 索引**固定指向名为 CodeName 的 string 字段** —— 不是「随便指一个 string 字段」，
     // 所以这里是一个开关，没有字段选择器。表里没有 CodeName 字段时禁用（后端也会拒）。
     const codenameOn = current.some((i) => i.kind === "codename");
@@ -738,65 +719,10 @@ export async function mount(container) {
     return `<div class="ct-index-cards">
       <div class="ct-index-cards-title">查询索引</div>
       ${codenameCard}
-      ${card("group", "Group（一对多）", "ByGroupKey(value)")}
     </div>`;
   }
 
   function wireIndexCards(resource) {
-    const closeMenus = (except) => {
-      editorBody.querySelectorAll(".ct-select.is-open").forEach((control) => {
-        if (control !== except) {
-          control.classList.remove("is-open");
-          control.querySelector("[data-index-trigger]").setAttribute("aria-expanded", "false");
-          control.querySelector("[data-index-menu]").hidden = true;
-        }
-      });
-    };
-    const updateValue = (select, value) => {
-      select.value = value;
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-    };
-    editorBody.querySelectorAll("[data-index-kind]").forEach((select) => {
-      const control = select.closest(".ct-select");
-      const trigger = control.querySelector("[data-index-trigger]");
-      const menu = control.querySelector("[data-index-menu]");
-      select.addEventListener("change", () => {
-        const kind = select.dataset.indexKind;
-        const current = (state.indexesByTable[resource.resourceId] || []).filter((i) => i.kind !== kind);
-        if (select.value) current.push({ kind, field: select.value });
-        state.indexesByTable[resource.resourceId] = current;
-        pushCommand({ type: "set_indexes", payload: { table: resource.resourceId, indexes: current } });
-        const option = [...select.options].find((item) => item.value === select.value);
-        control.querySelector(".ct-select-value").textContent = option ? option.textContent : "（无）";
-        menu.querySelectorAll("[data-index-option]").forEach((item) => {
-          const active = item.dataset.indexOption === select.value;
-          item.classList.toggle("selected", active);
-          item.setAttribute("aria-selected", String(active));
-        });
-      });
-      trigger.addEventListener("click", () => {
-        const open = control.classList.toggle("is-open");
-        closeMenus(open ? control : null);
-        trigger.setAttribute("aria-expanded", String(open));
-        menu.hidden = !open;
-        if (open) menu.focus();
-      });
-      trigger.addEventListener("keydown", (event) => {
-        if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          trigger.click();
-        }
-      });
-      menu.addEventListener("click", (event) => {
-        const option = event.target.closest("[data-index-option]");
-        if (!option) return;
-        updateValue(select, option.dataset.indexOption || "");
-        control.classList.remove("is-open");
-        trigger.setAttribute("aria-expanded", "false");
-        menu.hidden = true;
-        trigger.focus();
-      });
-    });
     // CodeName 索引是个开关：勾上 = 声明 kind: codename（不写 field，后端固定指向 CodeName）
     const codenameBox = editorBody.querySelector("[data-index-codename]");
     if (codenameBox) {
@@ -808,12 +734,6 @@ export async function mount(container) {
         state.indexesByTable[resource.resourceId] = next;
         pushCommand({ type: "set_indexes", payload: { table: resource.resourceId, indexes: next } });
       });
-    }
-    if (editorBody.dataset.indexMenuDismiss !== "true") {
-      editorBody.addEventListener("click", (event) => {
-        if (!event.target.closest(".ct-select")) closeMenus(null);
-      });
-      editorBody.dataset.indexMenuDismiss = "true";
     }
   }
 

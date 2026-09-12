@@ -392,8 +392,8 @@
     "annotation": "string",
     "depth": 1,
     "index": 3,
-    "leaf": "Code",
-    "stablePath": "table:ItemType/Code",
+    "leaf": "CodeName",
+    "stablePath": "table:ItemType/CodeName",
     "typeExpr": "string"
    }
   ],
@@ -429,17 +429,17 @@
    {
     "annotation": "string",
     "children": [],
-    "comment": "类型代码，程序引用用",
+    "comment": "类型代码名，程序引用用（唯一，codename 索引键）",
     "depth": 1,
-    "displayName": "Code",
+    "displayName": "CodeName",
     "kind": "field",
     "leafEnd": 3,
     "leafStart": 3,
     "slotIndex": null,
-    "stablePath": "table:ItemType/Code"
+    "stablePath": "table:ItemType/CodeName"
    }
   ],
-  "schema_hash": "fa8f9c777517d3c6",
+  "schema_hash": "b564c749f92fc50e",
   "slot_offsets": [
    [
     4,
@@ -565,7 +565,7 @@
     "stablePath": "table:UIConfig/Stack"
    }
   ],
-  "schema_hash": "9911f792f65799d2",
+  "schema_hash": "f3ee143b021489fb",
   "slot_offsets": [],
   "uniform": false
  }

@@ -4,136 +4,241 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-public static partial class ScalarsAccessor
+namespace GameFramework.ConfigGen
 {
-    private const string TableName = "Scalars";
-    private const int MaxSlot = 28;
-    private static ConfigTable _table;
-    private static int _tableVersion = -1;
-
-    /// <summary>解析并缓存表句柄；整套 bin 换代后 Runtime 会重建表对象。</summary>
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void Resolve()
+    public static partial class ScalarsAccessor
     {
-        _table = Runtime.Table(TableName);
-        _tableVersion = TableVersion.Current;
-    }
+        private const string TableName = "Scalars";
+        private const int MaxSlot = 28;
+        private static ConfigTable _table;
+        private static int _tableVersion = -1;
 
-    internal static ConfigTable Table
-    {
-        get
+        /// <summary>解析并缓存表句柄；整套 bin 换代后 Runtime 会重建表对象。</summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Resolve()
         {
-            ConfigTable t = _table;
-            // 世代守卫：整套 bin 换代（LoadBundle/Clear）后必须重新取句柄，
-            // 否则会继续用已被 Dispose 的旧表缓冲（悬垂指针）。
-            if (t != null && _tableVersion == TableVersion.Current)
+            _table = Runtime.Table(TableName);
+            _tableVersion = TableVersion.Current;
+        }
+
+        internal static ConfigTable Table
+        {
+            get
             {
-                return t;
+                ConfigTable t = _table;
+                // 世代守卫：整套 bin 换代（LoadBundle/Clear）后必须重新取句柄，
+                // 否则会继续用已被 Dispose 的旧表缓冲（悬垂指针）。
+                if (t != null && _tableVersion == TableVersion.Current)
+                {
+                    return t;
+                }
+                Resolve();
+                return _table;
             }
-            Resolve();
-            return _table;
         }
-    }
 
-    /// <summary>行数。</summary>
-    public static int Count => Table.Count;
+        /// <summary>行数。</summary>
+        public static int Count => Table.Count;
 
-    /// <summary>按主键查行；未找到返回 null。</summary>
-    public static ScalarsRow? ByID(int id)
-    {
-        ConfigTable t = Table;
-        int idx;
-        IntPtr p = t.ByID(id, out idx);
-        if (p == IntPtr.Zero)
+        /// <summary>按主键查行；未找到返回 null。</summary>
+        public static Scalars? ByID(int id)
         {
-            return null;
-        }
-        else
-        {
-            return new ScalarsRow(p, t.OffsetsFor(p, MaxSlot), t.Version, idx);
-        }
-    }
-
-    /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>
-    public static ScalarsRow? ByIndex(int i)
-    {
-        ConfigTable t = Table;
-        IntPtr p = t.RowAt(i);
-        if (p == IntPtr.Zero)
-        {
-            return null;
-        }
-        else
-        {
-            return new ScalarsRow(p, t.OffsetsFor(p, MaxSlot), t.Version, i);
-        }
-    }
-
-    // ---- per-field 字符串缓存（行下标索引，整套 bin 换代时整体重建）----
-    private static string[] _vstringCache;
-    private static int _strCacheVersion = -1;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void ResetStringCaches()
-    {
-        int n = Table.Count;
-        _vstringCache = new string[n];
-        _strCacheVersion = TableVersion.Current;
-    }
-
-    internal static string[] VstringCache
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get
-        {
-            string[] c = _vstringCache;
-            if (c != null && _strCacheVersion == TableVersion.Current)
+            ConfigTable t = Table;
+            int idx;
+            IntPtr p = t.ByID(id, out idx);
+            if (p == IntPtr.Zero)
             {
-                return c;
+                return null;
             }
-            ResetStringCaches();
-            return _vstringCache;
+            else
+            {
+                return new Scalars(p, t.OffsetsFor(p, MaxSlot), t.Version, idx);
+            }
+        }
+
+        /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>
+        public static Scalars? ByIndex(int i)
+        {
+            ConfigTable t = Table;
+            IntPtr p = t.RowAt(i);
+            if (p == IntPtr.Zero)
+            {
+                return null;
+            }
+            else
+            {
+                return new Scalars(p, t.OffsetsFor(p, MaxSlot), t.Version, i);
+            }
+        }
+
+        // ---- per-field 字符串缓存（行下标索引，整套 bin 换代时整体重建）----
+        private static string[] _vstringCache;
+        private static int _strCacheVersion = -1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ResetStringCaches()
+        {
+            int n = Table.Count;
+            _vstringCache = new string[n];
+            _strCacheVersion = TableVersion.Current;
+        }
+
+        internal static string[] VstringCache
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                string[] c = _vstringCache;
+                if (c != null && _strCacheVersion == TableVersion.Current)
+                {
+                    return c;
+                }
+                ResetStringCaches();
+                return _vstringCache;
+            }
         }
     }
-}
 
-public unsafe readonly struct ScalarsRow
-{
-    private readonly IntPtr _row;
-    private readonly int[] _off;
-    private readonly int _version;
-    private readonly int _index;
-    internal ScalarsRow(IntPtr row, int[] offsets, int version, int rowIndex)
+    public unsafe readonly struct Scalars
     {
-        _row = row;
-        _off = offsets;
-        _version = version;
-        _index = rowIndex;
-    }
-    public int Id => WireReader.I32At(_row, _off[4]);
-    public bool Vbool => WireReader.BoolAt(_row, _off[6]);
-    public double Vdouble => WireReader.F64At(_row, _off[8]);
-    public float Vfloat => WireReader.F32At(_row, _off[10]);
-    public short Vint16 => WireReader.I16At(_row, _off[12]);
-    public long Vint64 => WireReader.I64At(_row, _off[14]);
-    public sbyte Vint8 => WireReader.S8At(_row, _off[16]);
-    public string Vstring
-    {
-        get
+        private readonly IntPtr _row;
+        private readonly int[] _off;
+        private readonly int _version;
+        private readonly int _index;
+        internal Scalars(IntPtr row, int[] offsets, int version, int rowIndex)
         {
-            string[] c = ScalarsAccessor.VstringCache;
-            string s = c[_index];
-            if (s != null)
+            _row = row;
+            _off = offsets;
+            _version = version;
+            _index = rowIndex;
+        }
+        public int Id
+        {
+            get
             {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.I32At(_row, _off[4]);
+            }
+        }
+        public bool Vbool
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.BoolAt(_row, _off[6]);
+            }
+        }
+        public double Vdouble
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.F64At(_row, _off[8]);
+            }
+        }
+        public float Vfloat
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.F32At(_row, _off[10]);
+            }
+        }
+        public short Vint16
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.I16At(_row, _off[12]);
+            }
+        }
+        public long Vint64
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.I64At(_row, _off[14]);
+            }
+        }
+        public sbyte Vint8
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.S8At(_row, _off[16]);
+            }
+        }
+        public string Vstring
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                string[] c = ScalarsAccessor.VstringCache;
+                string s = c[_index];
+                if (s != null)
+                {
+                    return s;
+                }
+                s = NStringCache.Decode((byte*)WireReader.IndirectAt(_row, _off[18]));
+                c[_index] = s;
                 return s;
             }
-            s = NStringCache.Decode((byte*)WireReader.IndirectAt(_row, _off[18]));
-            c[_index] = s;
-            return s;
+        }
+        public ushort Vuint16
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.U16At(_row, _off[20]);
+            }
+        }
+        public uint Vuint32
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.U32At(_row, _off[22]);
+            }
+        }
+        public ulong Vuint64
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.U64At(_row, _off[24]);
+            }
+        }
+        public byte Vuint8
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.U8At(_row, _off[26]);
+            }
         }
     }
-    public ushort Vuint16 => WireReader.U16At(_row, _off[20]);
-    public uint Vuint32 => WireReader.U32At(_row, _off[22]);
-    public ulong Vuint64 => WireReader.U64At(_row, _off[24]);
-    public byte Vuint8 => WireReader.U8At(_row, _off[26]);
 }

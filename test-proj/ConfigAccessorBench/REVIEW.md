@@ -144,9 +144,10 @@
 - 问题（探针实证，3 次 clear）：Release 下版本检查被编译掉，stale reader 用**旧 pVersion** 调 `Get` → 触发 Clear 并把 `_lastVersion` **倒退写回旧值** → 后续合法的新版本 reader 再次 `!=` → 缓存被反复清空重建（每出现一次 stale 访问就抖动一次）。若 stale 指针地址恰好与新 buffer 地址相同（GC 地址复用，正是第二轮要防的）→ 命中旧缓存返回**陈旧字符串**，第二轮修复被这个窗口复活。
 - 修复方向：版本只能**前进**——`if (pVersion > _lastVersion)` 才 Clear+Write；`pVersion < _lastVersion`（stale）直接走查表/解码不写版本（或 key 带版本 `(version, addr)`）。
 
-**新 P1 —— `Runtime.ByCode` / `GroupKey` 是 stub（未接线）**
-- 位置：`Runtime.cs:195-196`（恒返回 `-1` / `Array.Empty<int>()`）。
-- 问题：生成器 `ByCode`/`ByGroupKey`（`canonical_accessor.py`）调用 `Runtime.ByCode`/`Runtime.GroupKey`；schema 一旦配 code/group 索引，生成的方法**永远返回 null / 空列表**，静默失效。当前 gd schema 未配索引所以未暴露，但属"生成器信任运行时能力"的契约缺口，应记录或实现。
+**P1（已解决）—— `Runtime.ByCode` / `GroupKey` 曾是 stub（未接线）**
+- 位置：`Runtime.cs`（曾恒返回 `-1` / `Array.Empty<int>()`）。
+- 问题：生成器 `ByCode`/`ByGroupKey`（`canonical_accessor.py`）调用它们；schema 一旦配索引，生成的方法**永远返回 null / 空列表**，静默失效。属"生成器信任运行时能力"的契约缺口。
+- **收尾**（2026-09-12）：CodeName 半边**已接线**（`Runtime.ByCode` → `ByCodeName`，走同一份 `CodeNameSearch`，导出级验证 127 字段 0 处不一致）；**Group 半边直接砍掉** —— 它从没有表声明过、Lua 侧始终是占位 stub，且导出器会静默丢掉「group 列留空」的行（读出来是默认值 0，却不在 key 0 的组里）。本工程里的 `GroupKey`（含二分实现）随之删除。
 
 **新 P2 —— test-proj `.g.cs` 与生成器不同步**
 - 位置：`test-proj/ConfigAccessorBench/*.g.cs` 仍是旧格式（头部 `()` 残留、单行构造函数、三元 `ByID`），而 `gd/output/generated/csharp/*` 已是 `a6e34ee` 新格式。

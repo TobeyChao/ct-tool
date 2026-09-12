@@ -88,58 +88,6 @@ table.ct-data tbody tr:hover { background: var(--ct-accent-softer); }
 .ct-input:is(select):hover { border-color: var(--ct-border-strong); background-color: var(--ct-surface-2); }
 .ct-input:is(select):focus-visible { outline: 0; border-color: var(--ct-accent); box-shadow: 0 0 0 3px var(--ct-accent-soft); }
 .ct-input:is(select):disabled { opacity: 0.55; cursor: not-allowed; }
-.ct-select { position: relative; }
-.ct-index-native { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.ct-select-trigger {
-  width: 100%;
-  min-height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 7px 10px;
-  border: 1px solid var(--ct-border);
-  border-radius: var(--ct-r);
-  background: var(--ct-surface);
-  color: var(--ct-ink);
-  font: 12.5px var(--ct-font-sans);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color var(--ct-motion), box-shadow var(--ct-motion), background-color var(--ct-motion);
-}
-.ct-select-trigger:hover, .ct-select.is-open .ct-select-trigger { border-color: var(--ct-border-strong); background: var(--ct-surface-2); }
-.ct-select-trigger:focus-visible { outline: 0; border-color: var(--ct-accent); box-shadow: 0 0 0 3px var(--ct-accent-soft); }
-.ct-select-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ct-select-chevron { width: 7px; height: 7px; flex: 0 0 auto; border-right: 1.5px solid var(--ct-ink-3); border-bottom: 1.5px solid var(--ct-ink-3); transform: rotate(45deg) translateY(-2px); transition: transform var(--ct-motion); }
-.ct-select.is-open .ct-select-chevron { transform: rotate(225deg) translate(-1px, -1px); }
-.ct-select-menu {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 5px);
-  left: 0;
-  right: 0;
-  max-height: 220px;
-  overflow: auto;
-  padding: 4px;
-  border: 1px solid var(--ct-border-strong);
-  border-radius: var(--ct-r);
-  background: var(--ct-surface);
-  box-shadow: var(--ct-shadow-panel);
-}
-.ct-select-option {
-  width: 100%;
-  display: block;
-  padding: 8px 9px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--ct-ink-2);
-  font: 12.5px var(--ct-font-sans);
-  text-align: left;
-  cursor: pointer;
-}
-.ct-select-option:hover, .ct-select-option:focus-visible { outline: 0; background: var(--ct-accent-softer); color: var(--ct-accent); }
-.ct-select-option.selected { background: var(--ct-accent-soft); color: var(--ct-primary); font-weight: 650; }
 
 /* Schema editor extras */
 .ct-btn-sm { padding: 5px 10px; font-size: 12px; }

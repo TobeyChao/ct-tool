@@ -478,15 +478,15 @@ def test_query_index_cards_emit_set_indexes(editor_url: str, chromium_browser: A
     page.get_by_role("button", name="查询索引").click()
     page.wait_for_selector("#page-schema .ct-index-card")
 
-    # codename 是开关（固定指向 CodeName 字段，没有字段选择器）
+    # codename 是开关（固定指向 CodeName 字段，没有字段选择器）；group 索引已砍，不再有第二张卡
     page.check("#page-schema [data-index-codename]")
     page.wait_for_timeout(200)
-    page.select_option("#page-schema [data-index-kind='group']", "Id")
-    page.wait_for_timeout(200)
 
-    assert "2 条未应用变更" in _draftbar_text(page)
+    assert "1 条未应用变更" in _draftbar_text(page)
+    assert page.locator("#page-schema .ct-index-card").count() == 1
     assert page.locator("#page-schema .ct-index-preview", has_text="ByCodeName").count() == 1
-    assert page.locator("#page-schema .ct-index-preview", has_text="ByGroupKey").count() == 1
+    assert page.locator("#page-schema .ct-index-preview", has_text="ByGroupKey").count() == 0
+    assert page.locator("#page-schema [data-index-kind]").count() == 0
 
     # review plan surfaces Accessor impact for the index change
     page.locator("#ct-draft-review").click()

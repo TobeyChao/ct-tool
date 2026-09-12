@@ -241,9 +241,10 @@ def test_export_wires_declared_indexes_into_accessors(tmp_path: Path) -> None:
     gen = workspace / "output" / "generated" / "csharp"
     item_type = (gen / "ItemTypeAccessor.cs").read_text(encoding="utf-8")
     uiconfig = (gen / "UIConfigAccessor.cs").read_text(encoding="utf-8")
-    # ItemType 声明了 Code 索引；UIConfig 声明了 Group 索引
+    # 只有 ItemType 声明了索引（codename）；UIConfig 没声明，且 Group 索引已砍
     assert "Runtime.ByCodeName(TableName" in item_type
-    assert "Runtime.GroupKey(TableName" in uiconfig
+    assert "Runtime.ByCodeName" not in uiconfig
+    assert "GroupKey" not in uiconfig
     # 没声明索引的表不应出现
     assert "Runtime.ByCodeName" not in (gen / "QuestAccessor.cs").read_text(encoding="utf-8")
 

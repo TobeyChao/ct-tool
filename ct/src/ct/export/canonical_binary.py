@@ -6,7 +6,8 @@ FlatBuffers buffer with the same container shape as the legacy writer:
 - row = FlatBuffers ``table``; field slots follow client-field order;
 - enum leaf -> ``byte``; named Record -> nested ``table`` (offset);
 - ``vector<T>`` -> FlatBuffers vector (scalar inline, string/record offsets);
-- container = ``items`` (Excel row order) + ``index`` (by-id IndexEntry).
+- container = ``items`` (Excel row order) + ``index`` (by-id IndexEntry)
+  + ``idHash`` (primary key buckets) + ``codeNameIndex`` (declared CodeName index only).
 
 ``server_only`` fields are excluded from the client buffer.
 """
@@ -20,6 +21,7 @@ import flatbuffers
 
 from ct.export.index_query import production_hash
 from ct.schema.resources import (
+    CODENAME_FIELD,
     EnumResource,
     RecordResource,
     TableResource,
@@ -281,9 +283,8 @@ class _Builder:
 
     # ---- 容器 slot 约定 ----
     # 0 = items / 1 = 主键有序索引 / 2 = 主键哈希 / 3 = CodeName 索引
-    # 4 = Group 排序对（行来源） / 5 = Group 区间哈希 (start, count)
+    # （4/5 曾用于 Group 排序对与区间哈希；该索引已砍，槽位空出）
     CONTAINER_SLOT_CODE = 3
-    CONTAINER_SLOT_GROUP = 4
 
     def _build_code_index(self, builder, rows: list[dict[str, Any]], field: str) -> int:
         """CodeName 索引：开放寻址桶表，桶里存 ``rowIndex + 1``（0 = 空）。
@@ -312,82 +313,6 @@ class _Builder:
         for v in reversed(buckets):
             builder.PrependInt32(v)
         return builder.EndVector()
-
-    def _build_group_index(
-        self, builder, rows: list[dict[str, Any]], field: str
-    ) -> tuple[int, int]:
-        """Group 索引：**排序对 + 区间哈希**（运行期全程 O(1) 定位，不再二分）。
-
-        两条向量（容器 slot 4 / slot 5）：
-
-        - ``groupIndex``：按 key 排序的 ``(key:int32, rowIndex:int32)``，stride 8。
-          **仍是行的来源** —— 同一 key 的行在这个数组里连续。
-        - ``groupHash``：开放寻址桶表，每桶 **两个 int32 = ``(start, count)``**，stride 8；
-          ``count == 0`` 表示空桶。桶下标用与主键哈希同一套 Knuth 乘法哈希
-          （``key * 2654435761`` 取低位），命中后按 ``groupIndex[start*2] == key`` 确认。
-
-        ⇒ 运行期「按 key 取全部行」是：一次哈希探测拿到 ``(start, count)``，再顺序拷 count 行。
-        原先的「排序对 + 两次二分（lower_bound/upper_bound）」被完全取代。
-
-        key 编码：int32/bool/enum 直接取 int 值（见 ``_group_key``）。
-        """
-        field_def = next((f for f in self.table.fields if f.name == field), None)
-        if field_def is None:
-            raise ValueError(f"表 {self.table.table}: Group 索引字段 '{field}' 不存在")
-        type_expr = field_def.type_expr
-        keys: list[tuple[int, int]] = []
-        for row_index, row in enumerate(rows):
-            value = row.get(field)
-            if value is None:
-                continue
-            keys.append((self._group_key(type_expr, value), row_index))
-        keys.sort()
-        # 扁平 int32 序列 key,row,key,row…（与 FBS 的 ``groupIndex: [int32]`` 一致；
-        # 运行期按 e[i*2] / e[i*2+1] 读）
-        builder.StartVector(4, len(keys) * 2, 4)
-        for key, row_index in reversed(keys):
-            builder.PrependInt32(row_index)
-            builder.PrependInt32(key)
-        pairs_vec = builder.EndVector()
-
-        # 每个 key 的连续区间（keys 已按 (key,row) 排序 ⇒ 同 key 天然相邻）
-        ranges: list[tuple[int, int, int]] = []          # (key, start, count)
-        for ordinal, (key, _row) in enumerate(keys):
-            if ranges and ranges[-1][0] == key:
-                k, start, count = ranges[-1]
-                ranges[-1] = (k, start, count + 1)
-            else:
-                ranges.append((key, ordinal, 1))
-
-        # 区间哈希：按**不同 key 数**定容量（负载因子 ≤ 0.7）
-        slots = 1
-        while slots < max(8, (len(ranges) * 10 + 6) // 7):
-            slots <<= 1
-        mask = slots - 1
-        buckets = [(0, 0)] * slots                      # (start, count)；count == 0 = 空
-        for key, start, count in ranges:
-            probe = ((key * 2654435761) & 0xFFFFFFFF) & mask
-            while buckets[probe][1] != 0:
-                probe = (probe + 1) & mask
-            buckets[probe] = (start, count)
-        builder.StartVector(4, slots * 2, 4)
-        for start, count in reversed(buckets):
-            builder.PrependInt32(count)
-            builder.PrependInt32(start)                 # 内存序 [start, count]
-        hash_vec = builder.EndVector()
-        return pairs_vec, hash_vec
-
-    def _group_key(self, type_expr, value: Any) -> int:
-        """Group 索引的 int32 key 编码（运行期必须用同一套规则）。"""
-        if isinstance(type_expr, NamedType) and self._named_kind(type_expr) == "enum":
-            return self._enum_index(type_expr, value)
-        if isinstance(type_expr, ScalarType):
-            if type_expr.name in ("int32", "bool"):
-                return int(value)
-        raise ValueError(
-            f"表 {self.table.table}: Group 索引不支持该字段类型"
-            "（首版以 int32 编码 key，仅支持 int32/bool/enum）"
-        )
 
     def build(self, rows: list[dict[str, Any]]) -> bytes:
         builder = flatbuffers.Builder(1024)
@@ -435,16 +360,11 @@ class _Builder:
 
         # 二级查询索引（表级声明，见 schema 的 indexes:）
         code_vec = None
-        group_vec = None
-        group_hash_vec = None
         for index in getattr(self.table, "indexes", ()) or ():
             if index.kind == "codename":
-                code_vec = self._build_code_index(builder, rows, index.field)
-            elif index.kind == "group":
-                # 排序对（行来源）+ 区间哈希（O(1) 定位）——见 _build_group_index
-                group_vec, group_hash_vec = self._build_group_index(builder, rows, index.field)
+                code_vec = self._build_code_index(builder, rows, CODENAME_FIELD)
 
-        # vtable 槽位数必须覆盖**最高**用到的 slot（只声明 Group 时也要有 5 个槽位）
+        # vtable 槽位数必须覆盖**最高**用到的 slot
         num_fields = 1
         if index_vec is not None:
             num_fields = 2
@@ -452,10 +372,6 @@ class _Builder:
             num_fields = 3
         if code_vec is not None:
             num_fields = 4
-        if group_vec is not None:
-            num_fields = 5
-        if group_hash_vec is not None:
-            num_fields = 6
         builder.StartObject(num_fields)
         builder.PrependUOffsetTRelativeSlot(0, items_vec, 0)
         if index_vec is not None:
@@ -464,10 +380,6 @@ class _Builder:
             builder.PrependUOffsetTRelativeSlot(2, hash_vec, 0)
         if code_vec is not None:
             builder.PrependUOffsetTRelativeSlot(3, code_vec, 0)
-        if group_vec is not None:
-            builder.PrependUOffsetTRelativeSlot(4, group_vec, 0)
-        if group_hash_vec is not None:
-            builder.PrependUOffsetTRelativeSlot(5, group_hash_vec, 0)
         container = builder.EndObject()
         builder.Finish(container)
         return bytes(builder.Output())

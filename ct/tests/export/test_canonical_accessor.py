@@ -1,4 +1,4 @@
-"""Canonical C#/Lua accessor + Code/Group API tests (ref-aligned, pointer-based row handle)."""
+"""Canonical C#/Lua accessor + CodeName API tests (ref-aligned, pointer-based row handle)."""
 
 from __future__ import annotations
 
@@ -109,16 +109,13 @@ def _chest_with_vector_records() -> tuple[TableResource, dict[str, RecordResourc
 
 
 def test_accessor_model_shared_shape() -> None:
-    model = build_accessor_model(
-        _table(),
-        (QueryIndex(kind="codename"), QueryIndex(kind="group", field="Category")),
-    )
+    model = build_accessor_model(_table(), (QueryIndex(kind="codename"),))
     assert [field.name for field in model.client_fields] == [
         "Id", "CodeName", "Category", "Note",
     ]
     assert model.primary.slot == 0
     assert model.indexes[0].kind == "codename"
-    assert model.indexes[0].field == "CodeName"
+    # codename 的槽位 = 约定字段 CodeName 在 client_fields 里的序号（不是索引上的字段名）
     assert model.indexes[0].slot == 1
     assert model.has_i18n is True
 
@@ -148,31 +145,26 @@ def test_csharp_pointer_row_and_query_api() -> None:
     assert "Secret" not in text  # server_only excluded
 
 
-def test_csharp_exposes_bycode_and_bygroupkey() -> None:
+def test_csharp_exposes_bycodename() -> None:
     text = golden_csharp()
     assert "public static Item? ByCodeName(string codeName)" in text
-    assert "IReadOnlyList<Item> ByGroupKey(int value)" in text
     assert "Runtime.ByCodeName(TableName" in text
-    assert "Runtime.GroupKey(TableName" in text
-    # ByGroupKey 也必须把行下标传给行句柄（per-field 字符串缓存按行下标索引）
-    assert "result.Add(new Item(p, t.OffsetsFor(p, MaxSlot), t.Version, row));" in text
+    # 行下标必须传给行句柄（per-field 字符串缓存按行下标索引）
+    assert "return new Item(p, t.OffsetsFor(p, MaxSlot), t.Version, row);" in text
+    # group 查询已砍：生成物里不该再出现
+    assert "ByGroupKey" not in text
+    assert "GroupKey" not in text
 
 
-def test_lua_index_api_codename_is_real_group_is_stub() -> None:
-    """codename 查询发**真实调用**（原生已有 `GD.ByCodeName` 绑定）；
-    group 查询仍是**明确报错**的 stub（原生尚无绑定）。
+def test_lua_index_api_emits_real_codename_call() -> None:
+    """codename 查询发**真实调用**（原生已有 `GD.ByCodeName` 绑定）。
 
-    不做成「静默不生成」：调用方会拿到 `attempt to call a nil value`，
-    比显式错误难排查。group 补上绑定后（计划 G2）应同样改回真实调用。
+    不做成「静默不生成」：调用方会拿到 `attempt to call a nil value`，比显式错误难排查。
     """
     text = golden_lua()
-    # codename：真实调用（第 2 参 = CodeName 字段在行表里的序号）
-    # 第 2 参 = CodeName 在**客户端字段序**里的下标（golden 表里 CodeName 排第 2 个，0-based=1）
+    # codename：真实调用（第 2 参 = CodeName 在**客户端字段序**里的下标，golden 表里 0-based=1）
     assert "function M.ByCodeName(codeName) return GD.ByCodeName(_tbl, 1, codeName, RowMeta) end" in text
-    # group：仍是 stub
-    assert "function M.ByGroupKey(value)" in text
-    assert "原生 gd 模块缺 IndexGroup 绑定" in text
-    assert "GD.IndexGroup" not in text, "不应直接调用不存在的绑定"
+    assert "ByGroupKey" not in text, "group 查询已砍"
     assert "function M.Count()" in text
     assert "function M.ByIndex(i)" in text
     assert "function M.ByID(id)" in text
@@ -188,7 +180,6 @@ def test_no_indexes_still_emits_query_api() -> None:
     csharp = golden_csharp(indexes=())
     lua = golden_lua(indexes=())
     assert "ByCodeName" not in csharp
-    assert "ByGroupKey" not in csharp
     assert "function M.ByCodeName" not in lua
     assert "ByID" in csharp
     assert "ByID" in lua

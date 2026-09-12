@@ -10,7 +10,6 @@ from pydantic import (
     Field,
     field_serializer,
     field_validator,
-    model_serializer,
     model_validator,
 )
 
@@ -116,11 +115,10 @@ CODENAME_FIELD = "CodeName"
 
 
 class QueryIndex(BaseModel):
-    """表级查询索引声明（CodeName 唯一字符串查找 / Group 分组查找）。
+    """表级查询索引声明（目前只有 CodeName 唯一字符串查找）。
 
-    - ``kind: codename`` —— **不写 field**，固定指向名为 :data:`CODENAME_FIELD` 的 string 字段。
-      构造后 ``field`` 会被归一化成该常量，下游（导出器 / 运行时）继续按 ``.field`` 读。
-    - ``kind: group`` —— 必须给 ``field``（int32 / bool / Enum）。
+    ``kind: codename`` **不写 field**，固定指向名为 :data:`CODENAME_FIELD` 的 string 字段。
+    模型里因此**没有** ``field`` 属性：字段名是约定，不是配置项。
 
     定义在这里（而不是 ``schema/indexes.py``）是为了让它成为 **Table 资源的一部分**，
     从而能随 YAML 持久化、被仓库加载、并一路到达导出器 ——
@@ -129,36 +127,7 @@ class QueryIndex(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    kind: Literal["codename", "group"]
-    field: str | None = None
-
-    @model_validator(mode="after")
-    def _validate_kind_field(self) -> QueryIndex:
-        if self.kind == "codename":
-            # 幂等：允许省略（推荐）或正好写成 CodeName —— pydantic 对嵌套模型会重新校验，
-            # 归一化后的实例必须能再次通过本校验。写别的字段名才是真错误。
-            if self.field is not None and self.field != CODENAME_FIELD:
-                raise ValueError(
-                    f"codename 索引固定指向 {CODENAME_FIELD} 字段；不要写 field，"
-                    f"或只能写 {CODENAME_FIELD}（收到 field={self.field!r}）"
-                )
-            object.__setattr__(self, "field", CODENAME_FIELD)
-        elif not self.field:
-            raise ValueError("group 索引必须指定 field")
-        return self
-
-    @model_serializer
-    def _serialize(self) -> dict[str, Any]:
-        """落盘形状由本模型显式决定。
-
-        codename **不写 field** —— 归一化出来的 ``CodeName`` 若被写进 YAML，回读时又会被
-        「codename 只能指向 CodeName」接受，看似无害，但会让「固定字段」这件事在 YAML 里
-        显得可配置。注意不能靠 ``field_serializer`` 返回 None：``exclude_none`` 判的是
-        **归一化后的原值**（非 None），结果会落成 ``field: None``。
-        """
-        if self.kind == "codename":
-            return {"kind": self.kind}
-        return {"kind": self.kind, "field": self.field}
+    kind: Literal["codename"]
 
 
 class TableResource(BaseModel):
@@ -169,7 +138,7 @@ class TableResource(BaseModel):
     fields: list[FieldDef]
     json_key: str | None = None
     excel_file: str | None = None
-    # 表级查询索引（最多各一个 codename / group）
+    # 表级查询索引（每种 kind 最多一个；当前只有 codename）
     indexes: tuple[QueryIndex, ...] = ()
 
     @model_validator(mode="after")

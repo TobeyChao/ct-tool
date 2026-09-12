@@ -254,12 +254,8 @@ public static unsafe class Runtime
     public static ConfigTable TryTable(string tableName) =>
         _tables.TryGetValue(tableName, out var table) ? table : null;
 
-    // 可选 Code/Group 索引（生成器仅在表声明了 indexes 时调用）
-    /// <summary>按 Code 精确查找，返回行下标；未找到返回 -1。slot = 客户端字段序（0-based）。</summary>
-    public static int ByCode(string tableName, int slot, string code) =>
-        _tables[tableName].CodeSearch(slot, code);
-
-    /// <summary>按 Group 键取一组行下标（行序确定）。slot 仅用于契约对齐，Group 不需要确认。</summary>
-    public static int[] GroupKey(string tableName, int slot, int value) =>
-        _tables[tableName].GroupKey(value);
+    // 可选 CodeName 索引（生成器仅在表声明了 indexes 时调用）
+    /// <summary>按 CodeName 精确查找，返回行下标；未找到返回 -1。slot = 客户端字段序（0-based）。</summary>
+    public static int ByCodeName(string tableName, int slot, string codeName) =>
+        _tables[tableName].CodeNameSearch(slot, codeName);
 }

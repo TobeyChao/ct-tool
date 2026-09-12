@@ -4,107 +4,334 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-public static partial class QuestAccessor
+namespace GameFramework.ConfigGen
 {
-    private const string TableName = "Quest";
-    private static ConfigTable _table;
-    private static int _tableVersion = -1;
-
-    /// <summary>解析并缓存表句柄；整套 bin 换代后 Runtime 会重建表对象。</summary>
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void Resolve()
+    public static partial class QuestAccessor
     {
-        _table = Runtime.Table(TableName);
-        _tableVersion = TableVersion.Current;
-    }
+        private const string TableName = "Quest";
+        private static ConfigTable _table;
+        private static int _tableVersion = -1;
 
-    internal static ConfigTable Table
-    {
-        get
+        /// <summary>解析并缓存表句柄；整套 bin 换代后 Runtime 会重建表对象。</summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Resolve()
         {
-            ConfigTable t = _table;
-            // 世代守卫：整套 bin 换代（LoadBundle/Clear）后必须重新取句柄，
-            // 否则会继续用已被 Dispose 的旧表缓冲（悬垂指针）。
-            if (t != null && _tableVersion == TableVersion.Current)
+            _table = Runtime.Table(TableName);
+            _tableVersion = TableVersion.Current;
+        }
+
+        internal static ConfigTable Table
+        {
+            get
             {
-                return t;
+                ConfigTable t = _table;
+                // 世代守卫：整套 bin 换代（LoadBundle/Clear）后必须重新取句柄，
+                // 否则会继续用已被 Dispose 的旧表缓冲（悬垂指针）。
+                if (t != null && _tableVersion == TableVersion.Current)
+                {
+                    return t;
+                }
+                Resolve();
+                return _table;
             }
-            Resolve();
-            return _table;
         }
-    }
 
-    /// <summary>行数。</summary>
-    public static int Count => Table.Count;
+        /// <summary>行数。</summary>
+        public static int Count => Table.Count;
 
-    /// <summary>按主键查行；未找到返回 null。</summary>
-    public static QuestRow? ByID(int id)
-    {
-        ConfigTable t = Table;
-        int idx;
-        IntPtr p = t.ByID(id, out idx);
-        if (p == IntPtr.Zero)
+        /// <summary>按主键查行；未找到返回 null。</summary>
+        public static Quest? ByID(int id)
         {
-            return null;
-        }
-        else
-        {
-            return new QuestRow(p, t.Version, idx);
-        }
-    }
-
-    /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>
-    public static QuestRow? ByIndex(int i)
-    {
-        ConfigTable t = Table;
-        IntPtr p = t.RowAt(i);
-        if (p == IntPtr.Zero)
-        {
-            return null;
-        }
-        else
-        {
-            return new QuestRow(p, t.Version, i);
-        }
-    }
-}
-
-public unsafe readonly struct QuestRow
-{
-    private readonly IntPtr _row;
-    private readonly int _version;
-    private readonly int _index;
-    internal QuestRow(IntPtr row, int version, int rowIndex)
-    {
-        _row = row;
-        _version = version;
-        _index = rowIndex;
-    }
-    public int Id => WireReader.I32At(_row, 20);
-    public string Title
-    {
-        get
-        {
-            var i18n = Quest_i18nAccessor.ByIndex(_index);
-            if (i18n.HasValue)
+            ConfigTable t = Table;
+            int idx;
+            IntPtr p = t.ByID(id, out idx);
+            if (p == IntPtr.Zero)
             {
-                return i18n.Value.Title;
+                return null;
             }
-            return NStringCache.Decode((byte*)WireReader.IndirectAt(_row, 16));
-        }
-    }
-    public string Description
-    {
-        get
-        {
-            var i18n = Quest_i18nAccessor.ByIndex(_index);
-            if (i18n.HasValue)
+            else
             {
-                return i18n.Value.Description;
+                return new Quest(p, t.Version, idx);
             }
-            return NStringCache.Decode((byte*)WireReader.IndirectAt(_row, 12));
+        }
+
+        /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>
+        public static Quest? ByIndex(int i)
+        {
+            ConfigTable t = Table;
+            IntPtr p = t.RowAt(i);
+            if (p == IntPtr.Zero)
+            {
+                return null;
+            }
+            else
+            {
+                return new Quest(p, t.Version, i);
+            }
+        }
+
+        // ---- per-field 字符串缓存（行下标索引，整套 bin 换代时整体重建）----
+        private static string[] _titleCache;
+        private static string[] _descriptionCache;
+        private static int _strCacheVersion = -1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ResetStringCaches()
+        {
+            int n = Table.Count;
+            _titleCache = new string[n];
+            _descriptionCache = new string[n];
+            _strCacheVersion = TableVersion.Current;
+        }
+
+        internal static string[] TitleCache
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                string[] c = _titleCache;
+                if (c != null && _strCacheVersion == TableVersion.Current)
+                {
+                    return c;
+                }
+                ResetStringCaches();
+                return _titleCache;
+            }
+        }
+
+        internal static string[] DescriptionCache
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                string[] c = _descriptionCache;
+                if (c != null && _strCacheVersion == TableVersion.Current)
+                {
+                    return c;
+                }
+                ResetStringCaches();
+                return _descriptionCache;
+            }
+        }
+
+        // ---- 多语言字段：当前语言的稀疏 i18n 表（按行下标读，与主表同序）----
+        // 该表只在加载了对应语言包时存在；缺席时读回 null，由字段 getter 回退主表原文。
+        private const string I18nTableName = "Quest_i18n";
+        private static ConfigTable _i18nTable;
+        private static int _i18nTableVersion = -1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ResolveI18nTable()
+        {
+            _i18nTable = Runtime.TryTable(I18nTableName);
+            _i18nTableVersion = TableVersion.I18nCurrent;
+        }
+
+        internal static ConfigTable I18nTable
+        {
+            get
+            {
+                ConfigTable t = _i18nTable;
+                // ⚠️ 表**缺席**时也要认这个世代。只判 `t != null` 的话，主语言
+                //    （＝默认发布形态，根本不加载 i18n 包）每读一个多语言字段都要重走
+                //    一遍 TryTable（字典查找 + 字符串哈希）。
+                if (_i18nTableVersion == TableVersion.I18nCurrent)
+                {
+                    return t;
+                }
+                ResolveI18nTable();
+                return _i18nTable;
+            }
+        }
+
+        // 译文缓存：按 **i18n 世代**整体重建（切语言即失效）
+        private static string[] _titleI18nCache;
+        private static string[] _descriptionI18nCache;
+        private static int _i18nStrCacheVersion = -1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ResetI18nStringCaches()
+        {
+            ConfigTable t = I18nTable;
+            int n = t == null ? 0 : t.Count;
+            _titleI18nCache = new string[n];
+            _descriptionI18nCache = new string[n];
+            _i18nStrCacheVersion = TableVersion.I18nCurrent;
+        }
+
+        private static string[] TitleI18nCache
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                string[] c = _titleI18nCache;
+                if (c != null && _i18nStrCacheVersion == TableVersion.I18nCurrent)
+                {
+                    return c;
+                }
+                ResetI18nStringCaches();
+                return _titleI18nCache;
+            }
+        }
+
+        /// <summary>Title：当前语言译文；表/行缺失或该字段无译文时返回 null。</summary>
+        internal static unsafe string I18nTitle(int index)
+        {
+            ConfigTable t = I18nTable;
+            if (t == null)
+            {
+                return null;
+            }
+            string[] c = TitleI18nCache;
+            if (index < 0 || index >= c.Length)
+            {
+                return null;
+            }
+            IntPtr p = t.RowAt(index);
+            if (p == IntPtr.Zero)
+            {
+                return null;
+            }
+            string s = c[index];
+            if (s != null)
+            {
+                return s;
+            }
+            s = NStringCache.Decode((byte*)WireReader.IndirectAt(p, 8));
+            c[index] = s;
+            return s;
+        }
+
+        private static string[] DescriptionI18nCache
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                string[] c = _descriptionI18nCache;
+                if (c != null && _i18nStrCacheVersion == TableVersion.I18nCurrent)
+                {
+                    return c;
+                }
+                ResetI18nStringCaches();
+                return _descriptionI18nCache;
+            }
+        }
+
+        /// <summary>Description：当前语言译文；表/行缺失或该字段无译文时返回 null。</summary>
+        internal static unsafe string I18nDescription(int index)
+        {
+            ConfigTable t = I18nTable;
+            if (t == null)
+            {
+                return null;
+            }
+            string[] c = DescriptionI18nCache;
+            if (index < 0 || index >= c.Length)
+            {
+                return null;
+            }
+            IntPtr p = t.RowAt(index);
+            if (p == IntPtr.Zero)
+            {
+                return null;
+            }
+            string s = c[index];
+            if (s != null)
+            {
+                return s;
+            }
+            s = NStringCache.Decode((byte*)WireReader.IndirectAt(p, 4));
+            c[index] = s;
+            return s;
         }
     }
-    public int RewardItemId => WireReader.I32At(_row, 8);
-    public int RequiredLevel => WireReader.I32At(_row, 4);
+
+    public unsafe readonly struct Quest
+    {
+        private readonly IntPtr _row;
+        private readonly int _version;
+        private readonly int _index;
+        internal Quest(IntPtr row, int version, int rowIndex)
+        {
+            _row = row;
+            _version = version;
+            _index = rowIndex;
+        }
+        public int Id
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.I32At(_row, 20);
+            }
+        }
+        public string Title
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                string v = QuestAccessor.I18nTitle(_index);
+                if (v != null)
+                {
+                    return v;
+                }
+                string[] c = QuestAccessor.TitleCache;
+                string s = c[_index];
+                if (s != null)
+                {
+                    return s;
+                }
+                s = NStringCache.Decode((byte*)WireReader.IndirectAt(_row, 16));
+                c[_index] = s;
+                return s;
+            }
+        }
+        public string Description
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                string v = QuestAccessor.I18nDescription(_index);
+                if (v != null)
+                {
+                    return v;
+                }
+                string[] c = QuestAccessor.DescriptionCache;
+                string s = c[_index];
+                if (s != null)
+                {
+                    return s;
+                }
+                s = NStringCache.Decode((byte*)WireReader.IndirectAt(_row, 12));
+                c[_index] = s;
+                return s;
+            }
+        }
+        public int RewardItemId
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.I32At(_row, 8);
+            }
+        }
+        public int RequiredLevel
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.I32At(_row, 4);
+            }
+        }
+    }
 }

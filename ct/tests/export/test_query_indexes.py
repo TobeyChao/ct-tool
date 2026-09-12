@@ -24,32 +24,32 @@ def _table() -> TableResource:
 
 
 def test_parse_indexes_max_one_per_kind() -> None:
-    # codename 不写 field（固定指向 CodeName）；显式写 CodeName 也接受（幂等）
+    # codename 不写 field（固定指向 CodeName）
     assert parse_indexes([{"kind": "codename"}]) == (QueryIndex(kind="codename"),)
-    assert parse_indexes([{"kind": "codename", "field": "CodeName"}]) == (
-        QueryIndex(kind="codename"),
-    )
-    assert parse_indexes([{"kind": "group", "field": "Category"}]) == (
-        QueryIndex(kind="group", field="Category"),
-    )
     with pytest.raises(ValueError, match="最多一个 codename"):
         parse_indexes([{"kind": "codename"}, {"kind": "codename"}])
-    # 旧的 kind: code 一律拒绝（不给兼容别名，避免两套名字并存）
+    # 旧写法一律拒绝（不给兼容别名，避免两套名字并存）：
+    # kind: code 是改名前的旧名；kind: group 是已砍掉的分组索引
     with pytest.raises(ValueError, match="codename"):
         parse_indexes([{"kind": "code", "field": "CodeName"}])
+    with pytest.raises(ValueError, match="codename"):
+        parse_indexes([{"kind": "group", "field": "Category"}])
+    # 多余的 field 一律拒绝（静默忽略会让人以为字段名可配）
+    with pytest.raises(ValueError, match="只接受 kind 一个键"):
+        parse_indexes([{"kind": "codename", "field": "CodeName"}])
 
 
 def test_codename_requires_fixed_named_non_i18n_string_field() -> None:
     """codename 索引**固定**指向名为 ``CodeName`` 的 string 字段 —— 不是「随便指一个 string 字段」。
 
     所以「指错字段」这类错误现在分成两处：
-    - 构造期：写了别的字段名 ⇒ QueryIndex 直接拒绝；
+    - 构造期：模型里根本没有 field 属性（extra=forbid）⇒ 写不进去；
     - 校验期：表里没有 CodeName / 类型不是 string / 带 i18n ⇒ validate_indexes 拒绝。
     """
     table = _table()
     validate_indexes(table, (QueryIndex(kind="codename"),))
 
-    with pytest.raises(ValueError, match="固定指向 CodeName"):
+    with pytest.raises(ValueError):
         QueryIndex(kind="codename", field="DisplayName")
 
     no_field = TableResource(
@@ -78,22 +78,32 @@ def test_codename_requires_fixed_named_non_i18n_string_field() -> None:
         validate_indexes(i18n_field, (QueryIndex(kind="codename"),))
 
 
-def test_validate_group_allows_scalar_and_enum_rejects_i18n_and_vector() -> None:
+def test_validate_index_rejects_i18n_vector_and_server_only_CodeName() -> None:
+    """校验期只认「表里有个合格的 CodeName」：带 i18n / 是 vector / 是 server_only 都拒。"""
     table = _table()
-    validate_indexes(table, (QueryIndex(kind="group", field="Category"),))
-    validate_indexes(table, (QueryIndex(kind="group", field="Rarity"),))
-    with pytest.raises(ValueError, match="i18n"):
-        validate_indexes(table, (QueryIndex(kind="group", field="DisplayName"),))
-    vector_table = table.model_copy(
-        update={
-            "fields": [
-                *table.fields,
-                FieldDef(name="Tags", type="vector<int32>"),
-            ]
-        }
+    validate_indexes(table, (QueryIndex(kind="codename"),))
+
+    i18n_table = TableResource(
+        table="Item",
+        primary="Id",
+        fields=[
+            FieldDef(name="Id", type="int32"),
+            FieldDef(name="CodeName", type="string", i18n=True),
+        ],
     )
-    with pytest.raises(ValueError, match="vector"):
-        validate_indexes(vector_table, (QueryIndex(kind="group", field="Tags"),))
+    with pytest.raises(ValueError, match="i18n"):
+        validate_indexes(i18n_table, (QueryIndex(kind="codename"),))
+
+    server_only_table = TableResource(
+        table="Item",
+        primary="Id",
+        fields=[
+            FieldDef(name="Id", type="int32"),
+            FieldDef(name="CodeName", type="string", server_only=True),
+        ],
+    )
+    with pytest.raises(ValueError, match="server_only"):
+        validate_indexes(server_only_table, (QueryIndex(kind="codename"),))
 
 
 def _collision_hash(text: str) -> int:
@@ -138,18 +148,6 @@ def test_normal_bucket_query_is_bucket_local() -> None:
     assert len(index.buckets[hit]) == 1
     assert index.lookup("V500") == [500]
     assert index.lookup("missing") == []
-
-
-def test_group_repeats_allowed_and_query_returns_all() -> None:
-    rows = [
-        {"Id": 1, "Category": 1},
-        {"Id": 2, "Category": 2},
-        {"Id": 3, "Category": 1},
-        {"Id": 4, "Category": 3},
-    ]
-    index = StringIndex.build(rows, "Category")
-    assert index.lookup("1") == [0, 2]
-    assert index.lookup("3") == [3]
 
 
 # ---------------------------------------------------------------------------

@@ -4,7 +4,14 @@
 > **时效提醒**：本文主体核实于 **2026-09-09/10**。此后 ct-tool 与 fabulous-game 两侧都大幅推进，
 > 最关键的是 **§七 的「ByID 仍走二分」已不成立** —— 2026-09-12 两侧都已落哈希（原生 `gd_index_hash`），
 > **二分查找已从读路径彻底移除**。**现状以 fabulous-game 侧《开工方案.md》为准**（其 §〇.1 为已完成清单）。
-> Code/Group 二级索引仍是 stub（fabulous-game 侧编号 **W1**）。
+> 二级索引：**CodeName 半边已接线**（2026-09-12 完成）；**Group 半边已砍掉**（同日决定，见下）。
+>
+> ⚠️ 本文正文里凡出现 `ByCode` / `ByGroupKey` / `codeIndex` / `groupIndex` / `groupHash` 的段落，
+> 都是 **2026-09-09/10 的历史快照**，不代表当前状态。当前状态：
+> - 主键 `ByID` 与 CodeName 索引**都走哈希**，读路径无二分；
+> - **Group 索引整个删除**——它从未被任何表声明、Lua 侧始终是占位 stub，且导出器会静默丢掉
+>   「group 列留空」的行（它们读出来是默认值 `0`，却不在 key `0` 的组里）。容器 slot 4/5 随之空出。
+>   重新引入的计划记在 fabulous-game 侧 `Docs/TODO/开工方案.md`。
 
 > 日期：2026-09-09（现状核实）
 > 来源：fabulous-game `Docs/TODO/` 的分析与设计 + ct-tool 当前仓库核实
@@ -134,7 +141,7 @@ fabulous-game 侧在 2026-08 做了一轮配置系统性能优化设计（8 个�
 | C1 | ✅ **已完成（2026-09-11）** ~~补标量类型~~（12 种标量；Lua 侧绑定待原生补，见 N9） | `type_expression.py` 的 `ScalarName` 仍只有 `int32/int64/float/double/bool/string`。flatbuffers 原生支持这些标量，补齐对齐。影响：`type_expression.py`、`canonical_binary.py`（slot/vector writers）、`canonical_accessor*.py`（C#/Lua 类型映射）、reader 侧（跨到 fabulous-game） |
 | ~~C2~~ | ~~确认 `index_query.py` / `indexes.py` 是否已完整覆盖「主键 / Code / Group 三类查询」~~ | ✅ **已核实完毕（2026-09-10）→ 结论：未覆盖！** 见 **§七**。运行期 ByID 走二分、ByCode/ByGroupKey 是 stub、`index_query.py` 只在测试里。**实际待办已升格为 C4** |
 | C3 | ✅ **已完成（2026-09-11）** ~~明确 i18n 稀疏表架构下的语言切换与缓存语义~~ | spec 新增 3 条 Requirement（同序等长 / 切语言只换 i18n 包 / 按下标读+原文回退）；运行时落地独立 i18n 世代（`TableVersion.I18nCurrent`）——切语言只失效 i18n 表缓存，主表行句柄保持有效 |
-| **C4** | ✅ **已完成（2026-09-11）** | 主键哈希（patch OPT-7）+ **Code/Group 二级索引**全部落地：`QueryIndex` 移入 resources 使索引可持久化（原先在 `stage_candidate_yaml` 被丢弃）→ `TableResource.indexes` → `canonical_export` 用真实索引 → 二进制容器 slot 3(Code 桶表)/slot 4(Group 扁平对) → `ConfigTable.CodeSearch/GroupKey` + `Runtime.ByCode/GroupKey` 实测可用（3 次命中 + 1 次未命中 + 4 个分组全对） |
+| **C4** | ✅ **已完成（2026-09-11；Group 部分已于 2026-09-12 砍掉）** | 主键哈希（patch OPT-7）+ **CodeName 二级索引**落地（Group 已砍，见文首时效提醒）：`QueryIndex` 移入 resources 使索引可持久化（原先在 `stage_candidate_yaml` 被丢弃）→ `TableResource.indexes` → `canonical_export` 用真实索引 → 二进制容器 slot 3(Code 桶表)/slot 4(Group 扁平对) → `ConfigTable.CodeSearch/GroupKey` + `Runtime.ByCode/GroupKey` 实测可用（3 次命中 + 1 次未命中 + 4 个分组全对） |
 | **C5** | ✅ **已完成（2026-09-11）** ~~逐表按填充率开（决策 B）~~：枚举 bug 已修 + A1~A5 接线全部落地（填充率统计 / 逐表决策 / probe 落盘 / 生成器二选一 / 导出期单 vtable 硬断言） | **决策（2026-09-10）**：`fill_rate >= 0.75` 的表开 `uniform=True` + 字面量访问器，否则保持变长 + 偏移表。**⚠️ 前置 bug（本地实测，2026-09-11）**：patch 的 uniform **只给标量加了无条件写槽位，枚举分支没加**（仍是 `PrependInt8Slot(..., 0)`，值为第 0 项时省略槽位）⇒ ① 含枚举的表定宽后**仍是 2 种 vtable**（`Item`/`UIConfig` 实测）；② `probe_row_layout` 给枚举槽位推出 **offset=0** ⇒ 字面量访问器读 `row+0`（vtable soffset）⇒ **静默读错**（`Item` 定宽字段 6/16 处不一致，连 `Id`/`Price` 都错——缺槽位错位整行）。**patch 的基准表一个枚举字段都没有**（`build_item_bench` 的 `enums={}`），所以它的等价性校验漏掉了。**修法已验证并已落地（2026-09-11）**：`canonical_binary.py` 新增 `_prepend_enum()`（uniform 走 `PrependInt8` + `Slot(index)`），`_build_row`/`_build_record` 两处改用；新增 **6 个回归测试**（已验证「回退修复则 4 红」）；**patch 已合入本仓库**（`git apply` 干净），全量 **337 passed**，真实代码复验 G1/G2/G3 全过。**填充率实测**（fixture，与本项目表结构相同）：`Item` 92.9%（1.08×）、`ItemType` 100%、`Quest` 100% → ✅ 开；`UIConfig` **63.3%（1.58×）→ ❌ 不开**（被 `BlocksRaycast` 16.7% / `Stack` 33.3% / `Layer` 66.7% 拉低）。**完整方案见 fabulous-game `Docs/TODO/定宽布局落地方案.md`**；**分批见 `Docs/TODO/开工方案.md` 批次 A**。**✅ 批次 A 已全部落地（2026-09-11）**：`written_slot_ratio`/`count_vtables`（从真实字节统计）+ `UNIFORM_FILL_THRESHOLD=0.75` 逐表决策 + manifest 落 `uniform`/`fill_rate`/`slot_offsets` + 生成器 `ROW_MODE_{SLOT,OFFSETS,LITERAL}` 三态（定宽行句柄不带 `_off[]`）+ **导出期单 vtable 硬断言**。验收：**352 passed**；导出级逐字段比对 **93 个字段值 0 处不一致** |
 | **C6** | ✅ **已完成（2026-09-11）** ~~产出枚举类型声明~~ | 生成物已有 `(ItemRarity)WireReader.I8(_row, 10)` 的 cast，但 `output/generated/csharp/` **不产出 `enum X : byte { ... }` 声明** → 业务侧仍要手写才能编译，**盲 cast 错位风险照旧**。信息在 `config/types/*.yaml` 的 `values` 里是完备的，成本低（Lua 同理） |
 | **C7** | ✅ **已完成（2026-09-11）** ~~清理 `output/` 陈旧产物~~ | `gd/output/fbs/` 里 `Item_i18n.fbs` / `ItemType_i18n.fbs` / `Quest_i18n.fbs`（mtime **2026/8/14**）与其余（2026/9/10）并存，而**全仓已无代码生成 `*_i18n.fbs`**。风险：消费方扫 `output/` 会拿到**描述已废弃 i18n 侧表格式**的 schema，**正好与「保留 i18n 稀疏表」决策撞车**。建议 `ct export` 写出前清理，或校验目录内无未知文件 |
