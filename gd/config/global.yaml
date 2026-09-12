@@ -10,3 +10,18 @@ excel_dir: excel
 output_dir: output
 cache_dir: cache
 i18n_dir: i18n
+
+# ---- 部署到 Unity（示例；默认整段注释掉 ⇒ 与没有 deploy 时行为完全一致）----
+# 用法与路径语义详见 ct-tool 手册 ct/docs/README.md「部署到 Unity」。
+# deploy:
+#   enabled: true
+#   # Unity 工程根目录：相对**工作区根**（project_root，即 --root）解析，或写绝对路径。
+#   unity_project: ../../Client
+#   # 常规目标：source 相对**工作区根**解析；dest 相对 **unity_project**（Unity 工程根）解析。
+#   targets:
+#     - {source: output/binary,           dest: Assets/Content/Config}
+#     - {source: output/generated/csharp, dest: Assets/Scripts/Config/Gen}
+#     - {source: output/generated/lua,    dest: Assets/Scripts/Lua/Config/Gen}
+#   # 构建目标：仅在 ct export --for-build / ct deploy --for-build 时追加，裸跑不生效。
+#   build_targets:
+#     - {source: output/binary,           dest: Assets/StreamingAssets/Config}

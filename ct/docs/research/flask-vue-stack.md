@@ -4,6 +4,10 @@
 > 目的：为 ct 配表工具的「网页面板」（策划在本机浏览器操作：导出 / 校验 / i18n 进度 / 表格管理）确定 Flask + Vue 3 组合的具体使用方式。
 > 背景约束：本地单用户、Windows/macOS 双平台、轻量方便、尽量少让策划碰命令行；已倾向 Flask（后端，只出 JSON）+ Vue 3（前端，不用 npm/vite 构建链，用全局构建/ESM 单文件）。
 > 方法：以一手来源为主（官方文档、官方源码、标准库文档），社区教程/真实项目为补充。检索量见文末附录。
+>
+> **时效（2026-09-12 追加）**：本报告以下结论已过期，正文保留原样：
+> 1. **已做打包**：launcher 现在随包内置 PyInstaller 冻结的 ct 运行时（`ct/packaging/ct.spec`），用户无需 Python 或 `ct/.venv`；§5.3 的「我们目前不做打包（基于 venv 运行）」不再成立（venv 仅作为开发者回退路径保留）。
+> 2. **目录与入口拼写**：工具目录是 `ct/`（不是 `tool/`），面板命令是 `ct panel`（不是 `python -m ct.cli panel`）。
 
 ---
 
@@ -408,11 +412,11 @@ Python 写的小工具：本地起 server 渲染 Markdown 预览，`open_browser
 @echo off
 cd /d "%~dp0"
 if not exist .venv\Scripts\activate (
-  echo 首次使用请先安装: py -3 -m venv .venv ^&^& .venv\Scripts\pip install -e tool
+  echo 首次使用请先安装: py -3 -m venv .venv ^&^& .venv\Scripts\pip install -e ct
   pause & exit /b 1
 )
 call .venv\Scripts\activate
-python -m ct.cli panel
+ct panel
 pause
 ```
 
@@ -422,7 +426,7 @@ pause
 #!/bin/zsh
 cd "$(dirname "$0")"
 source .venv/bin/activate
-python -m ct.cli panel
+ct panel
 ```
 
 （macOS `.command` 双击会开 Terminal 执行；如需退到 Finder 可加 `osascript -e 'tell application "Terminal" to close front window'`，非必需。）

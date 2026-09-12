@@ -8,8 +8,8 @@
 工具 SHALL 从 `config/schemas/` 目录加载所有 `*.yaml` 文件，使用 Pydantic 模型校验结构完整性。加载失败时报告具体文件名和错误原因。
 
 #### Scenario: Valid schema loaded
-- **WHEN** `config/schemas/item.yaml` 包含合法的 table/primary/fields 定义
-- **THEN** 工具成功解析并构建对应的 TableSchema 对象
+- **WHEN** `config/schemas/Item.yaml` 包含合法的 table/primary/fields 定义
+- **THEN** 工具成功解析并构建对应的 TableResource 对象
 
 #### Scenario: Schema missing required field
 - **WHEN** YAML 文件缺少 `primary` 或 `fields` 字段
@@ -23,8 +23,8 @@
 工具 SHALL 分析所有 schema 中的 `ref` 字段，构建有向依赖图，用于确定导出和校验顺序。
 
 #### Scenario: Valid reference graph
-- **WHEN** item 的 `item_type_id` 字段引用 `item_type.id`
-- **THEN** 依赖图中 item → item_type 存在边，item_type 先于 item 处理
+- **WHEN** Item 的 `ItemTypeId` 字段引用 `ItemType.Id`
+- **THEN** 依赖图中 Item → ItemType 存在边，ItemType 先于 Item 处理
 
 #### Scenario: Circular reference detected
 - **WHEN** 表 A 引用表 B，表 B 引用表 A
@@ -34,15 +34,19 @@
 工具 SHALL 对依赖图进行拓扑排序，输出确定性的表处理顺序，被引用表始终先于引用方处理。
 
 #### Scenario: Correct ordering
-- **WHEN** 存在 category → item_type → item 的引用链
-- **THEN** 处理顺序为 category, item_type, item（或等价的合法顺序）
+- **WHEN** 存在 ItemType → Item 的引用链
+- **THEN** 处理顺序为 ItemType, Item（或等价的合法顺序）
 
 ### Requirement: Validate field type definitions
-Schema 中每个字段 SHALL 声明合法的类型（`int32`, `int64`, `float`, `double`, `bool`, `string`, `enum`, `struct`, `array`）及可选标记（`i18n`, `ref`, `server_only`）。
+Schema 中每个字段 SHALL 声明恰好一个类型表达式（canonical 文法）：12 种标量 `int8` / `uint8` / `int16` / `uint16` / `int32` / `uint32` / `int64` / `uint64` / `float` / `double` / `bool` / `string`；`config/types/*.yaml` 中声明的具名 `enum` / `record`；或 `vector<T>`（元素为标量或具名 Enum/Record，不支持 `vector<vector<T>>`）。字段 SHALL 可带可选标记 `i18n`、`ref`、`server_only`、`comment`，以及仅对 vector 有效的 `excel_columns`。已废弃的拼写 `type: struct` / `type: array` / `type: enum` 与旧字段键（`values` / `fields` / `element` / `element_values`）SHALL 在加载阶段被显式拒绝，不提供兼容迁移。
 
 #### Scenario: Invalid field type
-- **WHEN** schema 字段 type 为 `integer`（非法值）
-- **THEN** 工具报错指明文件名、字段名和合法类型列表
+- **WHEN** schema 字段 type 为 `integer`（既不是标量，也不是首字符大写的具名资源）
+- **THEN** 工具在加载阶段报错，指明来源文件名与字段名，并说明该类型表达式非法（具名类型必须 PascalCase，或改用 `config/types/` 下已声明的 Enum/Record）
+
+#### Scenario: Retired struct/array spelling rejected
+- **WHEN** schema 字段写成 `type: struct` 或 `type: array`
+- **THEN** 工具在加载阶段报错，提示改用具名 Enum/Record 与 `vector<T>`，且不自动迁移或写回
 
 ### Requirement: Validate enum field definitions
 每个 Enum 资源 SHALL 包含 1 至 256 个按序声明的结构化枚举项；每项 SHALL 含唯一、非空且合法标识符的 `name` 以及可为空的 `comment`。声明顺序 SHALL 确定 byte wire ordinal，首项的 `name` SHALL 为 canonical 类型默认值且 Binary SHALL 将其映射为 ordinal 0。旧的字符串 `values` 列表 SHALL 被拒绝。
@@ -100,11 +104,11 @@ Schema 中每个字段 SHALL 声明合法的类型（`int32`, `int64`, `float`, 
 - **WHEN** 所有字段均为顶层叶子或无展开单格 vector
 - **THEN** `D=1` 且表头行数为 2
 
-#### Scenario: Single level struct depth
+#### Scenario: Single level Record depth
 - **WHEN** DropRange Record 直接包含 Min/Max 叶子
 - **THEN** `D=2` 且表头行数为 4
 
-#### Scenario: Nested struct depth
+#### Scenario: Nested Record depth
 - **WHEN** Position 含 Area.{X,Y} 与 Z
 - **THEN** `D=3` 且表头行数为 6
 
@@ -162,6 +166,33 @@ Python traceback。
 - **WHEN** schema 定义 `primary: Name` 且 `Name` 字段 `type: bool`
   （或 `float`、`enum` 等其他非整数类型）
 - **THEN** 工具在加载阶段报错，指明表名、主键字段名与当前类型
+
+### Requirement: Load and validate table-level query indexes
+Table 资源 SHALL 从 YAML 的 `indexes` 列表加载表级查询索引。当前 SHALL 只支持 `kind: codename`，且该条目**只接受 `kind` 一个键**：附带 `field`（或其他键）SHALL 在加载阶段被拒绝（codename 固定指向名为 `CodeName` 的字段，字段名不是配置项）。`kind: code`（改名前的旧名）与已删除的 `kind: group` SHALL 同样被拒绝，不提供兼容别名。
+
+声明了 codename 索引的表 SHALL 在加载阶段校验该固定字段（`ct/schema/indexes.py` 的 `validate_indexes`）：字段列表中 SHALL 存在名为 `CodeName` 的字段，其类型 SHALL 是非 `vector` 的标量 `string`，且 SHALL NOT 带 `i18n` / `server_only`；任一条件不满足 SHALL 报错并指明表名、字段名与缺失/冲突的条件。未声明 `indexes` 的表不受这些约束——此时 `CodeName` 只是一个普通字段。
+
+数据层的**非空 + 唯一**约束不在加载期：它由 `schema-editor/query-indexes` 规格负责（导出「解析校验」阶段与 `ct validate` 对声明了索引的表报 `IssueCode.DUPLICATE_CODENAME`，空值报 `type`）。
+
+#### Scenario: Declare the codename index
+- **WHEN** 表声明 `indexes: - kind: codename`，且字段列表里有非 i18n 的 `CodeName` string 字段
+- **THEN** 加载成功，Table 资源带上该索引，后续导出会生成 `ByCodeName(string)` API
+
+#### Scenario: field key is rejected
+- **WHEN** `indexes` 条目写成 `kind: codename` 加 `field: DisplayName`
+- **THEN** 加载阶段报错，指出条目只接受 `kind` 一个键（codename 固定指向 `CodeName`）
+
+#### Scenario: Legacy and removed kinds rejected
+- **WHEN** `indexes` 条目写成 `kind: code` 或 `kind: group`
+- **THEN** 加载阶段报错；两者都不被识别，也没有兼容别名
+
+#### Scenario: Missing or illegal CodeName field rejected
+- **WHEN** 表声明了 codename 索引，但表里没有 `CodeName` 字段，或它不是 `string`，或是 `vector`，或带 `i18n` / `server_only`
+- **THEN** 加载阶段报错并指明表名与该条件（例如 `CodeName` 不能带 i18n，查询键不能随导出语言改变）
+
+#### Scenario: Tables without the index are unaffected
+- **WHEN** 表没有声明 `indexes`，即使 `CodeName` 字段有重复或空值
+- **THEN** 加载与导出都不因该字段报错
 
 ### Requirement: Load named schema resources
 工具 SHALL 从配置仓库加载 Table、Record、Enum 资源并构建一个 WorkspaceSnapshot；资源 ID、名称、来源文件和类型 SHALL 可稳定定位，重复名称或缺失来源 SHALL 在加载时报告。

@@ -119,7 +119,7 @@ Schema 工作台 SHALL 在同一工作区提供 Tables、Records、Enums 三类�
 - **THEN** 覆盖 1600×900、1360×768、1280×720、960×640、720×460、390×844 及 100%/125%/150% 缩放，并验证无错位、遮挡和状态重置
 
 ### Requirement: Add-field role and constraint mutual exclusion
-添加字段流程 SHALL 依据真实 schema 功能联动「角色」「约束」与「类型修饰」，禁止产出非法或客户端不可用的字段配置；主键字段 `Id` 为固定必有不通过添加字段指派，代号字段 `Code` 为可选固定名字段，`vector` 为可选类型修饰符；变长 scalar/Enum/string vector 使用内置 `[...]` 逗号文法且不提供 separator，定长形态使用 `excel_columns` 表示最大槽位数，Record vector 仅允许定长展开，ref 不允许 vector；无真实语义的约束只作信息提示，不进入草稿命令。
+添加字段流程 SHALL 依据真实 schema 功能联动「角色」「约束」与「类型修饰」，禁止产出非法或客户端不可用的字段配置；主键字段 `Id` 为固定必有不通过添加字段指派，代号字段 `CodeName` 为可选固定名字段，`vector` 为可选类型修饰符；变长 scalar/Enum/string vector 使用内置 `[...]` 逗号文法且不提供 separator，定长形态使用 `excel_columns` 表示最大槽位数，Record vector 仅允许定长展开，ref 不允许 vector；无真实语义的约束只作信息提示，不进入草稿命令。
 
 #### Scenario: Primary key field is fixed and not offered in add-field
 - **WHEN** 用户打开添加字段流程
@@ -129,9 +129,11 @@ Schema 工作台 SHALL 在同一工作区提供 Tables、Records、Enums 三类�
 - **WHEN** 角色选择 I18N 后选择非 `string` 类型（含勾选 vector）
 - **THEN** 类型选择对 I18N 角色仅允许 `string`，或提交时给出校验错误
 
-#### Scenario: Codename (Code) is optional with a fixed name and role
+#### Scenario: Codename (CodeName) is optional with a fixed name and role
 - **WHEN** 用户选择添加代号字段
-- **THEN** 弹窗固定字段名为 `Code`、类型为 `string`、角色仅为「无」（非 `i18n`、非 `server_only`），并提示「Code 索引要求：非空 · 表内唯一 · 非 i18n string」；一表至多一个 `Code`，已存在时阻止并提示
+- **THEN** 弹窗固定字段名为 `CodeName`、类型为 `string`、角色仅为「无」（非 `i18n`、非 `server_only`）；一表至多一个 `CodeName`，已存在时阻止并提示
+- **AND WHEN** 用户为该表声明 codename 索引
+- **THEN** 提示「CodeName 索引要求：非空 · 表内唯一 · 非 i18n string」；该约束只作用于**声明了索引的表**，未声明索引时 `CodeName` 是可选、可重复的普通字段
 
 #### Scenario: Vector is a modifier with built-in separator
 - **WHEN** 用户勾选「vector」修饰符
@@ -152,5 +154,5 @@ Schema 工作台 SHALL 在同一工作区提供 Tables、Records、Enums 三类�
 - **THEN** Record vector 只允许配置 excel_columns 的展开形态，ref 禁止 vector
 
 #### Scenario: Informational constraints only
-- **WHEN** 字段涉及工具强制的约束（ref 外键有效性、Code 索引非空唯一等）
+- **WHEN** 字段涉及工具强制的约束（ref 外键有效性、声明了 codename 索引的表的 `CodeName` 非空唯一等）
 - **THEN** 弹窗以只读提示呈现，不提供无真实语义的勾选（如「必填」、可配置分隔符），且提示不进入草稿命令

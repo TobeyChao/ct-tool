@@ -34,7 +34,7 @@
 │   ├── docs/             #   工具文档与设计稿
 │   ├── pyproject.toml    #   打包配置（src layout + package-data）
 │   └── .venv/            #   虚拟环境
-├── launcher/             # Flutter 桌面启动器（独立构建单元，运行时经设置指向 ct/.venv）
+├── launcher/             # Flutter 桌面启动器（独立构建单元；运行时优先用包内冻结 ct，开发者可回退配置 ct/.venv）
 │   ├── lib/              #   Dart 源码（壳 + 概览/日志/设置三页签）
 │   ├── macos|windows/    #   平台工程（macOS Swift 集成 / Windows 构建）
 │   └── docs/design/      #   启动器设计稿
@@ -47,9 +47,7 @@
 │   │   ├── binary/       #     Binary Bundle (.bin)
 │   │   └── generated/    #     C# / Lua Accessor
 │   ├── cache/            #   增量缓存 (自动维护)
-│   ├── i18n/             #   翻译文件 (source/ 原文 + {lang}/ 译文)
-│   ├── tools/            #   外部工具（flatc 已退役）
-│   └── scripts/          #   辅助脚本
+│   └── i18n/             #   翻译文件 (source/ 原文 + {lang}/ 译文)
 ├── openspec/             # 设计文档和任务列表
 └── test-proj/            # .NET 二进制读取测试工程
 ```
@@ -143,19 +141,19 @@ launcher 启动优先级：内置运行时 → 设置中的工具目录（venv�
 # 导出（canonical 恒全量重建；--all 等同 default，--table/--lang 缩小范围）
 ct export
 ct export --all
-ct export --table item
+ct export --table Item
 ct export --lang en
 
 # 只校验，不输出产物（含跨表 ref 外键校验；适合 CI）
 ct validate
-ct validate --table quest
+ct validate --table Quest
 
 # 查看数据变更 / 模板漂移 / 缺失文件
 ct status
 
 # 根据 schema 生成 Excel 模板 + layout manifest
 ct gen-template --all
-ct gen-template --table item
+ct gen-template --table Item
 
 # 任意命令加 --verbose 显示详细日志
 ct export --verbose
@@ -165,7 +163,7 @@ ct deploy [--for-build]
 
 # i18n 翻译骨架与状态管理
 ct i18n sync                          # 刷新 source + 为每语言生成/更新 lang 骨架
-ct i18n sync --lang en --table item   # 缩小处理范围
+ct i18n sync --lang en --table Item   # 缩小处理范围
 ct i18n status                        # 翻译进度（每语言一行）
 ct i18n compact --dry-run             # 预览将被清理的 orphan 条目
 ct i18n compact                       # 物理删除所有 orphan 条目
@@ -245,7 +243,7 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 | `ct/schema/commands.py` | 可逆 rename 命令（资源/字段） |
 | `ct/schema/hashing.py` | canonical schema 稳定 hash（检测模板漂移） |
 | `ct/schema/naming.py` / `name_validation.py` | 命名校验（首字符大写、不以 `_` 开头/结尾；WYSIWYG 恒等域） |
-| `ct/schema/indexes.py` / `identity.py` | 查询索引（Code/Group）/ 字段稳定身份 |
+| `ct/schema/indexes.py` / `identity.py` | 查询索引（仅 `kind: codename`，固定指向字段 `CodeName`）/ 字段稳定身份 |
 | `ct/excel/layout.py` | `Layout`：字段→Excel 列的唯一映射真源（stable_path/group/depth/annotation） |
 | `ct/excel/layout_manifest.py` | Layout manifest 落 cache（schema_hash + 列布局） |
 | `ct/excel/canonical_reader.py` | 按 Layout 读 Excel，重建 canonical 行（record→dict、展开 vector<Record>→按组读） |
@@ -255,7 +253,7 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 | `ct/export/canonical_binary.py` | 手写 FlatBuffers bytes + `DataBundle` |
 | `ct/export/canonical_json.py` | `{json_key: rows}` JSON 序列化 |
 | `ct/export/canonical_accessor.py` / `_model.py` | C#/Lua 共享 `AccessorModel` + 生成 |
-| `ct/export/index_query.py` | Code/Group 查询 API 生成 |
+| `ct/export/index_query.py` | FNV-1a 64 哈希 + 精确字符串 bucket 查询助手（不生成 Code/Group 查询 API） |
 | `ct/export/deploy.py` | 同步产物到 Unity Assets（`deploy(config, for_build, reporter)`） |
 | `ct/export/i18n/state.py` | 翻译状态机（纯函数） |
 | `ct/export/i18n/merger.py` | `load_translation`（读 lang 文件） |
@@ -278,7 +276,7 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 
 **Schema 依赖排序**：`ref` 字段定义跨表外键（`ref: 目标表.字段`）、命名类型引用定义 named 依赖；`resource_graph` 做拓扑排序（命名类型先于依赖它的 Table，被引用表先于引用表），并提供反向引用与删除保护。
 
-**Excel 表头布局**：表头行数 = `max_nesting_depth + 1`。前 `max_nesting_depth` 行是"字段名+类型"行——每个单元格用富文本堆：上面字段名（12pt 粗体白）、下面类型注解（9pt 斜体浅绿 `D8F3DC`）；最后一行是注释行。`vector<Record>` 按 `excel_columns` 展开为连续列组。
+**Excel 表头布局**：表头共 **2 × 嵌套深度** 行——每个深度一层「注释行 + 字段行」：第 `2d-1` 行是注释行（默认 30pt，按换行估算增长、上限 60pt），第 `2d` 行是字段行（固定 38pt）。每个字段格用富文本堆两段：字段名 Aptos 11pt 加粗 `172033`，类型注解 Consolas 9pt 节点强调色。`vector<Record>` 按 `excel_columns` 展开为连续列组。权威描述见 `openspec/specs/excel-template-styling/spec.md`。
 
 **FlatBuffers Binary 格式**：所有命名 Record/Enum 一次性、确定性依赖序发射进共享 `types.fbs`；每张表 `include "types.fbs"` 只定义自身 + `IndexEntry` 容器。每张表独立序列化为 bytes，随后打包为 `DataBundle`。`server_only` 字段在客户端 Binary 中排除；次语言 Bundle 只含主键 + i18n 字段变体。
 
@@ -295,7 +293,7 @@ canonical 资源分两类目录：
 - `config/schemas/*.yaml` — 每文件一张 `Table`
 - `config/types/*.yaml` — 每文件一个具名 `Record`（`kind: record`）或 `Enum`（`kind: enum`），可被多张表复用
 
-字段类型使用**统一类型表达式**：`int32`/`int64`/`float`/`double`/`bool`/`string` 标量、具名类型（`ItemRarity`、`DropReward`）、`vector<DropReward>`。`ref: Table.Field` 定义跨表外键。`i18n` 与 `server_only` 不可同时标记，`i18n` 仅限 Table 顶层 `string` 字段，`server_only` 仅限 Table 顶层字段。
+字段类型使用**统一类型表达式**：12 种标量 `int8`/`uint8`/`int16`/`uint16`/`int32`/`uint32`/`int64`/`uint64`/`float`/`double`/`bool`/`string`、具名类型（`ItemRarity`、`DropReward`）、`vector<DropReward>`。`ref: Table.Field` 定义跨表外键。`i18n` 与 `server_only` 不可同时标记，`i18n` 仅限 Table 顶层 `string` 字段，`server_only` 仅限 Table 顶层字段。字段不写 `separator`（已移除且会被解析器拒绝）。
 
 ```yaml
 # config/schemas/Item.yaml
@@ -318,7 +316,6 @@ fields:
     type: DropReward         # 具名 Record（config/types/DropReward.yaml）
   - name: Tags
     type: vector<int32>
-    separator: ","
   - name: IsActive
     type: bool
     server_only: true        # 排除出客户端 FlatBuffers binary
@@ -326,7 +323,13 @@ fields:
 # config/types/ItemRarity.yaml
 kind: enum
 name: ItemRarity
-values: [Common, Rare, Epic]
+values:                      # 必须是 {name, comment} 对象列表；扁平字符串列表会被拒绝
+  - name: Common
+    comment: 普通
+  - name: Rare
+    comment: 稀有
+  - name: Epic
+    comment: 史诗
 
 # config/types/DropReward.yaml
 kind: record

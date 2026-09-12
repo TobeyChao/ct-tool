@@ -9,7 +9,7 @@
 
 #### Scenario: gd/ 下不存在工具文件
 - **WHEN** 查看 `gd/` 目录
-- **THEN** 不存在 `ct/`、`pyproject.toml`、`requirements.txt`、`ct_tool.egg-info/`，仅包含 `config/`、`excel/`、`output/`、`cache/`、`i18n/`、`tools/`
+- **THEN** 不存在 `ct/`、`pyproject.toml`、`requirements.txt`、`ct_tool.egg-info/`，仅包含 `config/`（含 `global.yaml`）、`excel/`、`output/`、`cache/`、`i18n/`；`gd/tools/` 与 `gd/scripts/` 均不存在
 
 ### Requirement: ct export 仍在 gd/ 下执行
 工作空间操作（`ct export`、`ct validate` 等）SHALL 在 `gd/` 目录下执行（或通过 `--root gd/` 指定），行为与迁移前完全一致。

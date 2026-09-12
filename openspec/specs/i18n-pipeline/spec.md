@@ -5,55 +5,67 @@
 ## Requirements
 
 ### Requirement: Extract i18n strings to source file
-导出和 sync 时工具 SHALL 收集所有标记为 `i18n: true` 字段的主语言原文，按表写入 `i18n/source/{table}.json`。文件格式为扁平对象 `{ "{id}.{field}": "原文" }`，**不含**状态字段（状态完全由 lang 文件承载）。
+`i18n/source/` SHALL **只由 `ct i18n sync` 写入**（`canonical_i18n_sync` → `write_source_file`）：收集所有标记为 `i18n: true` 字段的主语言原文，按表写入 `i18n/source/{table}.json`。文件格式为扁平对象 `{ "{id}.{field}": "原文" }`，**不含**状态字段（状态完全由 lang 文件承载）。
+
+`ct export` SHALL NOT 调用 sync、也 SHALL NOT 写任何 `i18n/source/` 文件；导出只读取既有的 `i18n/{lang}/{table}.json`。
 
 key 排序规则：先按 id 升序，再按 schema 中 i18n 字段的出现顺序。文件 SHALL 使用紧凑 JSON 写出格式（每个 key 占一行）。
 
 #### Scenario: New string extracted to per-table source
-- **WHEN** item 表新增一行 id=1003，name="法杖"，运行 `ct i18n sync` 或 `ct export`
-- **THEN** `i18n/source/item.json` 包含一行 `"1003.name": "法杖"`，文件中无 status 字段
+- **WHEN** Item 表新增一行 id=1003，name="法杖"，运行 `ct i18n sync`
+- **THEN** `i18n/source/Item.json` 包含一行 `"1003.name": "法杖"`，文件中无 status 字段
+
+#### Scenario: Export never writes source
+- **WHEN** 运行 `ct export`（即使 Excel 有变化）
+- **THEN** `i18n/source/` 内容不变，新增的 i18n 字段不会出现在 source 文件中（须另行运行 `ct i18n sync`）
 
 #### Scenario: Source file rewritten on table change
-- **WHEN** item id=1001 的 name 从 "宝剑" 改为 "神剑"
-- **THEN** `i18n/source/item.json` 中 `"1001.name"` 的值更新为 "神剑"，其他条目不变
+- **WHEN** Item id=1001 的 name 从 "宝剑" 改为 "神剑"，运行 `ct i18n sync`
+- **THEN** `i18n/source/Item.json` 中 `"1001.name"` 的值更新为 "神剑"，其他条目不变
 
 #### Scenario: Deleted row removed from source
-- **WHEN** item id=1002 的行从 Excel 中删除，再运行 sync
-- **THEN** `i18n/source/item.json` 不再包含以 `1002.` 开头的任何 key
+- **WHEN** Item id=1002 的行从 Excel 中删除，再运行 sync
+- **THEN** `i18n/source/Item.json` 不再包含以 `1002.` 开头的任何 key
 
 #### Scenario: Empty source file when no i18n
 - **WHEN** 一张表没有任何 i18n 字段
 - **THEN** 工具不为该表生成 source 文件（已存在则保留不动，由 compact 处理）
 
 ### Requirement: Merge translations for export
-导出次语言时工具 SHALL 读取 `i18n/{lang}/{table}.json`，将 `text` 字段非空且 `confirmed=true` 的译文合并到对应行。其他状态（missing/stale/orphan）SHALL 回退主语言原文并输出 warning。
+导出时工具 SHALL 读取 `i18n/{lang}/{table}.json`（`load_translation`），**仅**把 `text` 非空且 `confirmed=true` 的译文合并到对应行（`_merge_i18n`）；其余状态（missing/stale/orphan、`confirmed=false`、`text` 为空）保留主语言原文。
+
+回退 SHALL 是**静默**的：不输出 warning、不计入汇总，导出日志中没有任何「缺少/未确认译文」提示。
+
+（本能力未实现）原始意图：回退时输出 warning（如 `[Item] 第1001行 name: en 译文未确认（stale），使用 zh 原文`）。该 warning 在实现中不存在。
 
 #### Scenario: Confirmed translation merged
-- **WHEN** `i18n/en/item.json` 中 `"1001.name": {"text": "Holy Sword", "confirmed": true, ...}` 存在
-- **THEN** `output/json/item_en.json` 和 `output/binary/data_en.bin` 中该条目 name 字段值为 "Holy Sword"
+- **WHEN** `i18n/en/Item.json` 中 `"1001.name": {"text": "Holy Sword", "confirmed": true, ...}` 存在
+- **THEN** `output/json/Item_en.json` 和 `output/binary/data_en.bin` 中该条目 name 字段值为 "Holy Sword"
 
-#### Scenario: Stale translation falls back to source
-- **WHEN** `i18n/en/item.json` 中 `"1001.name"` 的 `confirmed=false`（status 为 stale）
-- **THEN** 该条目 name 回退为主语言原文，输出 warning `[item] 第1001行 name: en 译文未确认（stale），使用 zh 原文`
+#### Scenario: Stale translation falls back silently
+- **WHEN** `i18n/en/Item.json` 中 `"1001.name"` 的 `confirmed=false`（status 为 stale）
+- **THEN** 该条目 name 回退为主语言原文，且**不输出任何 warning**
 
-#### Scenario: Missing translation falls back to source
-- **WHEN** `i18n/en/item.json` 中 `"1003.name"` 的 `text` 为空
-- **THEN** 该条目 name 回退为主语言原文，输出 warning `[item] 第1003行 name: 缺少 en 翻译，使用 zh 原文`
+#### Scenario: Missing translation falls back silently
+- **WHEN** `i18n/en/Item.json` 中 `"1003.name"` 的 `text` 为空
+- **THEN** 该条目 name 回退为主语言原文，且**不输出任何 warning**
 
-#### Scenario: Lang file not found falls back to source
-- **WHEN** `i18n/en/item.json` 文件不存在但 en 在 secondary_langs 中
-- **THEN** 该表所有 i18n 字段使用主语言原文，输出 warning，不报错终止
+#### Scenario: Lang file not found falls back silently
+- **WHEN** `i18n/en/Item.json` 文件不存在但 en 在 secondary_langs 中
+- **THEN** 该表所有 i18n 字段使用主语言原文，静默回退，不报错终止
 
-### Requirement: Report stale translations
-导出结束后工具 SHALL 汇总所有非 translated 状态条目（missing/stale/orphan），按 `语言 → 表 → 状态` 输出统计。
+### Requirement: Report stale translations（未实现）
+（本能力未实现）原始意图：导出结束后汇总所有非 translated 状态条目（missing/stale/orphan），按 `语言 → 表 → 状态` 输出统计。
 
-#### Scenario: Stale and missing summary shown
-- **WHEN** 有 3 条 stale 的 en 翻译（item 2 条 + quest 1 条）和 5 条 missing 的 en 翻译
-- **THEN** 导出完成后输出按语言 + 表分组的统计，包含 stale/missing/orphan 计数
+现状：`ct export` 不做任何译文状态汇总。逐语言的 translated/missing/stale/orphan 计数只能由 `ct i18n status`（`canonical_i18n_status`）查询。
 
-#### Scenario: All translated reports clean
-- **WHEN** 所有次语言所有 i18n 字段都是 translated 状态
-- **THEN** 不输出 stale 摘要
+#### Scenario: Export prints no translation summary
+- **WHEN** 存在 3 条 stale 的 en 译文和 5 条 missing 的 en 译文，运行 `ct export`
+- **THEN** 导出输出中不包含任何按语言/表分组的 stale/missing/orphan 统计
+
+#### Scenario: Status command is the only report
+- **WHEN** 用户需要翻译进度
+- **THEN** 只能运行 `ct i18n status`（`--by-table` / `--json` 由该命令提供）
 
 ### Requirement: Generate language skeleton files
 sync 流程 SHALL 为每个 `secondary_langs` 中的语言、每张含 i18n 字段的表生成或更新 `i18n/{lang}/{table}.json` 骨架。
@@ -71,12 +83,12 @@ sync 流程 SHALL 为每个 `secondary_langs` 中的语言、每张含 i18n 字�
 - **THEN** 工具为每张含 i18n 字段的表生成 `i18n/ja/{table}.json`，所有条目 `text=""`、`confirmed=false`、`status="missing"`
 
 #### Scenario: Existing entries preserved across sync
-- **WHEN** `i18n/en/item.json` 已有 `"1001.name"` 的译文（confirmed=true），运行 sync 且 source 未变
+- **WHEN** `i18n/en/Item.json` 已有 `"1001.name"` 的译文（confirmed=true），运行 sync 且 source 未变
 - **THEN** 该条目 source/text/confirmed 完全不变，status 仍为 translated
 
 #### Scenario: New row creates missing entry in lang file
-- **WHEN** item 表新增 id=1004 后运行 sync
-- **THEN** `i18n/en/item.json` 新增 `"1004.name": {"source": "<原文>", "text": "", "confirmed": false, "status": "missing"}`
+- **WHEN** Item 表新增 id=1004 后运行 sync
+- **THEN** `i18n/en/Item.json` 新增 `"1004.name": {"source": "<原文>", "text": "", "confirmed": false, "status": "missing"}`
 
 #### Scenario: Skip table without i18n fields
 - **WHEN** 某张表没有任何 i18n 字段
@@ -123,8 +135,8 @@ sync 流程 SHALL 按以下规则计算并写入每个 lang 条目的 `status` �
 - `--dry-run`：仅打印将被删除的条目，不修改文件
 
 #### Scenario: Compact removes orphan entries
-- **WHEN** `i18n/en/item.json` 包含 2 个 `status: orphan` 条目和 5 个其他状态条目，执行 `ct i18n compact --lang en`
-- **THEN** 文件保留 5 个非 orphan 条目，2 个 orphan 条目被移除，输出 `[compact] en/item: 移除 2 条 orphan`
+- **WHEN** `i18n/en/Item.json` 包含 2 个 `status: orphan` 条目和 5 个其他状态条目，执行 `ct i18n compact --lang en`
+- **THEN** 文件保留 5 个非 orphan 条目，2 个 orphan 条目被移除，输出 `[compact] en/Item: 移除 2 条 orphan`
 
 #### Scenario: Dry run shows planned deletions without writing
 - **WHEN** 执行 `ct i18n compact --lang en --dry-run`
@@ -197,50 +209,52 @@ key 排序规则：先按 id 升序（数值排序，非字典序），再按 sc
 - **THEN** source 文件全量更新，但 lang 文件只更新 `i18n/en/`
 
 #### Scenario: Filter by table
-- **WHEN** 执行 `ct i18n sync --table item`
-- **THEN** 只更新 `i18n/source/item.json` 与每个 lang 的 `item.json`
+- **WHEN** 执行 `ct i18n sync --table Item`
+- **THEN** 只更新 `i18n/source/Item.json` 与每个 lang 的 `Item.json`
 
-#### Scenario: Sync invoked internally by export
+#### Scenario: Sync is never invoked by export
 - **WHEN** 执行 `ct export`
-- **THEN** 在解析完成后、生成产物前自动运行 sync 流程，确保 lang 骨架与最新 source 一致
+- **THEN** 不运行 sync 流程、不写 `i18n/source/`、不更新任何 lang 骨架；导出只读既有的 `i18n/{lang}/{table}.json`。骨架刷新必须由用户显式运行 `ct i18n sync`
 
-### Requirement: Semantic per-language i18n fingerprint
-工具 SHALL 为每张含 i18n 字段的 Table 和每个 secondary language 计算确定性的语义 fingerprint。输入 SHALL 包含当前有效 source key 集合、每个有效 key 的存在性、`text` 与 `confirmed`、primary/target language、启用语言配置、data fingerprint 和 merge policy version。派生 `source`、派生 `status`、orphan 条目、JSON 空白与 key 排列 SHALL NOT 改变导出 fingerprint。
+### Requirement: Semantic per-language i18n fingerprint（未实现）
+（本能力未实现）原始意图：为每张含 i18n 字段的 Table 和每个 secondary language 计算确定性的语义 fingerprint（输入含有效 source key 集合、`text` / `confirmed`、primary/target language、启用语言配置、data fingerprint 与 merge policy version），并据其复用/失效语言产物。
 
-#### Scenario: Confirmed translation changes output fingerprint
+现状：`ct/cache/fingerprints.py` 提供 `effective_translation_semantics` / `i18n_fingerprint` / `synced_i18n_fingerprint`，但 `ct/src` 中无调用方。导出只在阶段末尾用 `bundle_fingerprint` 把语言级 Bundle 指纹写进 `cache/state.json` 的 `bundles`，该字段无读取方，不触发任何失效或重建。
+
+#### Scenario: Fingerprint changes do not invalidate anything
 - **WHEN** `Item/en` 的有效条目 `text` 改变或 `confirmed` 从 false 变为 true
-- **THEN** Item/en i18n fingerprint 改变并使对应语言 JSON、i18n bytes 与 Bundle 失效
+- **THEN** 导出仍全量重写所有语言产物（`decide_artifact_reuse` 未被调用），语言级「失效/复用」不发生
 
-#### Scenario: Derived metadata does not rebuild output
-- **WHEN** 仅 lang 文件的派生 `source`、`status`、orphan 条目、缩进或 key 排列改变，而当前有效 key 的 text/confirmed 语义不变
-- **THEN** i18n fingerprint 保持不变，工具不重建语言产物
+#### Scenario: Only the bundle fingerprint is persisted
+- **WHEN** 导出成功
+- **THEN** `cache/state.json` 的 `bundles` 记录每语言 `bundle_fingerprint`，但没有任何代码读取它来决定重建范围
 
-#### Scenario: Translation file appears or disappears
-- **WHEN** 一个曾产生已确认译文的 Table/lang 文件删除，或缺失文件中新建了有效已确认译文
-- **THEN** 语义 fingerprint 改变，导出按当前文件状态生成主语言 fallback 或新译文，不复用旧 i18n bytes
+### Requirement: Compute i18n fingerprint after canonical sync（未实现）
+（本能力未实现）原始意图：data fingerprint 改变时，export 先解析 Excel、刷新 source 并跑 sync 状态机，再从同步后的有效 key 与 lang 条目计算最终 i18n fingerprint；成功 export 保存的 fingerprint 对应实际写出的 JSON/i18n bytes。
 
-### Requirement: Compute i18n fingerprint after canonical sync
-当 Table 的 data fingerprint 改变时，export SHALL 先解析 Excel、刷新 source 并运行既有 sync 状态机，再从同步后的有效 key 与 lang 条目计算最终 i18n fingerprint；当 data fingerprint 未变化时，工具 MAY 从可信 source/cache key 集合与当前 lang 文件计算 fingerprint。成功 export 后保存的 fingerprint SHALL 对应实际写出的 JSON/i18n bytes，不能因本次 sync 自身写文件而立即过期。
+现状：export 不调 `canonical_i18n_sync`、不刷新 source、不跑 sync 状态机（`synced_i18n_fingerprint` 无调用方），直接按 lang 文件现有内容合并。
 
-#### Scenario: Source change invalidates confirmation before hashing
-- **WHEN** 主语言原文改变且旧译文此前 confirmed=true
-- **THEN** sync 先把译文变为 stale/confirmed=false，随后计算的 fingerprint 与 fallback 输出一致
+#### Scenario: Export reads lang files as-is
+- **WHEN** 主语言原文改变、旧译文 `confirmed` 仍为 `true`，且未运行 `ct i18n sync`
+- **THEN** export 直接采用该旧译文（不先跑 sync 把它置为 stale/`confirmed=false`）
 
-#### Scenario: Corrupt translation file never reuses old bytes
-- **WHEN** 当前 Table/lang JSON 无法解析或结构不合法
-- **THEN** export 报告具体文件和条目错误，不提交新 fingerprint，也不以旧缓存 bytes 假装成功
+#### Scenario: Corrupt translation file aborts the export
+- **WHEN** 某个 `i18n/{lang}/{table}.json` 无法解析
+- **THEN** `json.JSONDecodeError`（`ValueError` 子类）被 CLI 捕获，导出以 `[export error] ...` 中止、退出码非 0，且不提交缓存指纹
 
-### Requirement: Language-scoped incremental export
-翻译语义变化 SHALL 只失效对应 Table 和 language 的 JSON、i18n bytes 与 language Bundle。主语言 data、FBS、Accessor 和其他 secondary language 产物 SHALL 在各自 fingerprint 匹配时复用；新增或删除 secondary language SHALL 被视为语言产物集合变化，即使 Excel 未改变也必须生成或清理对应产物。
+### Requirement: Language-scoped incremental export（未实现）
+（本能力未实现）原始意图：翻译语义变化只失效对应 Table 和 language 的 JSON、i18n bytes 与 language Bundle；主语言 data、FBS、Accessor 与其他 secondary language 产物在 fingerprint 匹配时复用。
 
-#### Scenario: Only English translation changes
-- **WHEN** Item/en 有效译文变化，zh 主语言与 ja 译文未变
-- **THEN** export 更新 Item_en JSON、Item/en i18n bytes 和 en Bundle，不重写 zh/ja Bundle、FBS 或 Accessor
+现状：export 恒为全量重建 —— 所有 `config.all_langs` 的 JSON 与 `data_{lang}.bin` 全部重写，FBS/Accessor 全部重写。（`ct export --lang <lang>` 只缩小本次导出的语言集合，不做指纹比较或产物复用。）
 
-#### Scenario: Add a secondary language without Excel change
+#### Scenario: Changing one translation rewrites everything
+- **WHEN** 仅 `Item/en` 的有效译文变化
+- **THEN** 导出仍重写全部语言的 JSON、Bundle 与 FBS/Accessor，不复用 zh/ja 产物
+
+#### Scenario: Adding a secondary language
 - **WHEN** global config 新增 `ja` 且所有 Excel/Schema 未变化
-- **THEN** 所有含 i18n 字段的 Table 进入 ja 语言导出路径并生成缺失 fallback/skeleton 对应的 ja JSON 与 Bundle
+- **THEN** 全量导出会为 ja 生成 JSON 与 `data_ja.bin`（因为本就全量），但这不是「语言集合变化检测」的结果
 
 #### Scenario: Filter one language
-- **WHEN** 用户执行 `ct export --lang en` 且只有 en fingerprint 改变
-- **THEN** 工具只比较和发布 en 语言产物状态，不改写其他语言的成功 fingerprint 或产物
+- **WHEN** 用户执行 `ct export --lang en`
+- **THEN** 只写出 en 的产物（`languages = [lang for lang in config.all_langs if lang == lang_filter]`）；其他语言产物保持上一次导出的内容，谈不上「fingerprint 比较与发布」

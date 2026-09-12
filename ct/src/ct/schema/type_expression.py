@@ -48,7 +48,7 @@ SCALAR_TYPE_NAMES = frozenset(
     }
 )
 
-#: 整数标量（可作主键 / Group 索引键）。
+#: 整数标量（可作主键；Group 索引已删除，见 openspec/specs/schema-editor/query-indexes）。
 INTEGER_SCALAR_NAMES = frozenset(
     {"int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64"}
 )

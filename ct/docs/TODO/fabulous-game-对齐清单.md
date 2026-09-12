@@ -52,11 +52,11 @@ ct-tool 侧出现一份 patch（`~/Downloads/config-runtime-perf.patch`，34 文
 
 | 本节 | 影响 |
 |---|---|
-| §二「哈希索引 → 部分/未落地」 | ⚠️ **本地仓库仍成立**；但 patch 已实现（OPT-7），**合入后即失效** |
-| §七「运行期查询走二分」 | ⚠️ **本地仓库仍成立**；patch 已把 `ByID` 改为哈希（6.02 ns），**合入后失效** |
-| **C4（O(1) 哈希索引）** | ✅ **patch 已完成主键部分**；**Code/Group 仍未接线**（见下） |
+| §二「哈希索引 → 部分/未落地」 | ✅ **已解决**：patch 已合入（OPT-7），主键哈希已落地（容器 slot 2 `idHash`），不再是「测试期工具」 |
+| §七「运行期查询走二分」 | ✅ **已解决**：`ByID` 已改为哈希（6.02 ns），**二分查找已从读路径彻底移除**（无 `IndexSearch` / `lower_bound` / `gd_index_bsearch`） |
+| **C4（O(1) 哈希索引）** | ✅ **已全部落地**：主键哈希 + **CodeName 二级索引**（2026-09-12 接线，API `ByCodeName`）；**Group 索引已整体删除**（容器 slot 4/5 空出） |
 | §六「record 用 table 的影响」 | ✅ 结论不变（table 只值 1.4–1.5× 常数因子）；但**「查询索引差一个数量级」那一行已被 patch 修掉** |
-| §四 C0（恢复 i18n 稀疏表） | ✅ **仍然最高优先，且论据更强**（patch 实测出 4.4× 膨胀，见下） |
+| §四 C0（恢复 i18n 稀疏表） | ✅ **已解决（2026-09-11）**：C0 已落地，当前就是「main + i18n 稀疏表」；当年「最高优先」的论据（patch 实测 4.4× 膨胀）见下 |
 | §五「改动 8 不在 WireReader 重建之列」 | ⚠️ **部分失效**：patch 把 reader 重建与索引实现一并做了，落点是 OPT-1/3/5/9 |
 
 **patch 暴露的两个 i18n 论据**（直接支持「保留 i18n 稀疏表」决策）：
@@ -65,8 +65,8 @@ ct-tool 侧出现一份 patch（`~/Downloads/config-runtime-perf.patch`，34 文
 - 换算到 参考实现 规模（1 主包 + 9 语言包 ≈ 153 MB）：canonical 式 10 份全量 ≈ **680 MB ≈ 4.4×**。
 
 **patch 新发现的两个待办**（本清单此前没有）：
-- `canonical_export.py:211` **硬编码 `indexes=()`** → 二级索引（Code/Group）能力写好了、出口没接（与 C4 余项、P6 同一处）。
-- **枚举只 cast 不产出声明**：生成物是 `(ItemRarity)WireReader.I8(_row, 10)`，但 `output/generated/csharp/`
+- ~~`canonical_export.py:211` **硬编码 `indexes=()`** → 二级索引（Code/Group）能力写好了、出口没接~~ ✅ **已解决（2026-09-12）**：`canonical_export.py` 现在从 schema 的 `TableResource.indexes` 取真实索引（原硬编码那行已移位，不再写死 `()`）；CodeName 索引已端到端接线。
+- ~~**枚举只 cast 不产出声明**~~ ✅ **已解决（C6，2026-09-11）**：生成物仍有 `(ItemRarity)WireReader.I8(_row, 10)` 的 cast，**且现在会产出枚举声明** —— `Enums.cs` / `Enums.lua` 已发出，业务侧不必再手写 `enum X : byte`。原文如下（历史快照）：生成物是 `(ItemRarity)WireReader.I8(_row, 10)`，但 `output/generated/csharp/`
   **没有产出 `enum` 声明** → 业务侧仍要手写 `enum X : byte` 才能编译，盲 cast 错位风险照旧。
 
 **patch 顺带发现的隐患**：`gd/output/fbs/` 里留有 2026/8/14 的陈旧 `*_i18n.fbs`，
@@ -91,9 +91,9 @@ fabulous-game 侧在 2026-08 做了一轮配置系统性能优化设计（8 个�
 |---|---|---|
 | **目标架构（已定）** | **「main(zh 全量) + i18n 稀疏表」** | `data_zh.bin` = 主表全量字段；`data_{lang}.bin` = 独立 `_i18n` 稀疏表（`ItemType_i18n / Item_i18n / Quest_i18n`，只含主键 + i18n 字段） |
 | **当前资产产物** | 同目标架构 | `fabulous-game/Client/Assets/Content/Config/` 即此形态（Aug 23-24 产物） |
-| **ct-tool 新版代码（现状）** | ❌ **不符**：已改为「每语言一份完整 bundle」 | `ct/src/ct/app/canonical_export.py:194-202`：`_merge_i18n` 把翻译合并进全量行数据 → `data_{lang}.bin` 是该语言完整表，**不产 `_i18n` 表**；旧路径 `app/export.py` / `export/binary_writer.py` **已删除**，CLI 只走 `run_canonical_export` |
+| **ct-tool 新版代码（现状）** | ✅ **已解决（2026-09-11，C0）** —— **当前就是「main + i18n 稀疏表」** | 下表是 2026-09-09 的历史快照：~~❌ **不符**：已改为「每语言一份完整 bundle」~~ `ct/src/ct/app/canonical_export.py:194-202` 的 `_merge_i18n` 把翻译合并进全量行数据 → `data_{lang}.bin` 是该语言完整表，**不产 `_i18n` 表**。**当前实情**：稀疏 `{Table}_i18n` 表**确实产出**（行序与主表 1:1，读端按行下标读）；主语言 `data_zh.bin` 为主表全量，其余语言为 i18n-only 包。旧路径 `app/export.py` / `export/binary_writer.py` **已删除**，CLI 只走 `run_canonical_export` |
 
-**→ 由此产生 ct-tool 侧的**最高优先待办 C0：恢复 i18n 稀疏表的产出**（见第四节）。
+**→ 由此产生 ct-tool 侧的**最高优先待办 C0：恢复 i18n 稀疏表的产出**（见第四节）。✅ **C0 已于 2026-09-11 完成**（见下）。
 
 **影响**：fabulous-game 侧的改动 1（i18n 与主表同序）/ 5（切语言只换 i18n）/ 7（Lua 按下标读 i18n）**全部有效**，按原设计实施（前置是 C0 完成）。
 
@@ -109,7 +109,7 @@ fabulous-game 侧在 2026-08 做了一轮配置系统性能优化设计（8 个�
 | 类型名 `array` → `vector` | ✅ `type_expression.py`：`vector<T>` 文本表达式；`RESERVED_TYPE_NAMES` 含 vector | 且引入 `record`/`enum` 具名资源（类型从「字段内联」变「具名引用」） |
 | 定长数组展开（早期命名 `fixed_length`） | ✅ 字段名 **`excel_columns`**（展开组数，仅 `vector<T>`）；`separator` 已移除 | **命名不同**，语义更准 |
 | `array<struct>`（真数组可遍历） | ✅ `vector<Record>`，必须配 `excel_columns` | 与设计一致（定长才允许） |
-| 字符串零分配（早期：按行 `string[]` 缓存） | ✅ **`NStringCache` 字符串驻留**（`openspec/specs/flatbuffers-export/spec.md:98` 独立 Requirement「Reader runs standalone and String fields are interned」） | **方案不同**：内容驻留（全局去重）vs 按行缓存；更通用 |
+| 字符串零分配（早期：按行 `string[]` 缓存） | ✅ **`NStringCache` 字符串驻留**（`openspec/specs/flatbuffers-export/spec.md:116` 独立 Requirement「Reader runs standalone and String fields are interned」） | **方案不同**：内容驻留（全局去重）vs 按行缓存；更通用 |
 | 哈希索引（早期：idHash/nameHash/groupHash） | ⚠️ **本地仓库：部分/未落地**（2026-09-10 核实修正，详见 §七）；**patch 已修主键部分**（OPT-7，见 §〇）：<br>• **ByID = 二分查找**，非哈希——`ConfigReader.ByID` → `WireReader.IndexSearch`（stride 8 的 `(id, 原行下标)` 有序数组）；二进制只带这一个 `index` 向量（`canonical_binary.py:218-227`）<br>• **ByCode / ByGroupKey = stub**——`Runtime.cs:195-196` `ByCode→-1`、`GroupKey→Array.Empty<int>()`；`canonical_binary.py` **完全不导出** code/group 索引数据<br>• `export/index_query.py`（FNV-1a 64-bit）**只被 `ct/tests/export/test_query_indexes.py` 使用**，**未接入导出流水线、未进入二进制、运行期无人调用** | ❌ **不是「已实施」**：哈希只是**测试期工具**；运行期主键走 O(log N) 二分（5万行实测 41.9–77.6ns vs 哈希 0.79–1.51ns，**43–66× 差距 = 一个数量级**）；Code/Group 运行期**未实现** |
 | 数组遍历 API | ✅ `NArray<T>`（`Tags.Length`/`Tags[i]`/`foreach`）、`vector<Record>`→`NStructArray<T>`、`vector<string>`→`NStructArray<NString>`（`spec.md:63`） | 已实现，O(1) 直读（构造时捕获 `VecBase`） |
 | 类型化枚举 / 跨表 ref | ✅ `spec.md:55/59`：enum 返回 `(EnumType)`；跨表 ref 类型化访问（id→行缓存，避免每字段 P/Invoke） | 已实现 |
@@ -126,7 +126,7 @@ fabulous-game 侧在 2026-08 做了一轮配置系统性能优化设计（8 个�
 | **i18n 与主表同序** | ✅ **有效**（ct-tool 侧改动：`_i18n` 表导出时保持与主表 items 同序） |
 | **bin 产物目标：main(zh) + i18n 稀疏表** | ✅ **有效**（已拍板）；**ct-tool 新版导出需恢复该形态**（待办 C0） |
 | **切语言只换 i18n（main 不动）** | ✅ **有效**（切语言只替换 `data_{lang}.bin` 稀疏外挂） |
-| **Lua 按下标读 i18n（`GD_UD` + idx + `I18nMeta`）** | ✅ **有效**；⚠️ 需按 ct-tool 新 Lua Accessor 形态（基址捕获 + 惰性表，`spec.md:66`）对齐 |
+| **Lua 按下标读 i18n（`GD_UD` + idx + `I18nMeta`）** | ✅ **有效**；⚠️ 需按 ct-tool 新 Lua Accessor 形态（基址捕获 + 惰性表，`spec.md:83-84` Requirement「Generate canonical Lua Accessor with query API and typed fields」）对齐 |
 | **字符串缓存的两类失效边界（i18n / 普通）** | ✅ **有效**（i18n 字符串随稀疏表切换失效，普通字符串不失效） |
 | **`InvalidateI18n`（只清多语言缓存）** | ✅ **有效** |
 | **按行 `string[]` 缓存数组** | ⚠️ **建议不做**：与 `NStringCache` 驻留功能重复，应统一到 `NStringCache`（避免两套机制并存） |
@@ -137,12 +137,12 @@ fabulous-game 侧在 2026-08 做了一轮配置系统性能优化设计（8 个�
 
 | # | 待办 | 说明 |
 |---|---|---|
-| **C0** | ✅ **已完成（2026-09-11）** ~~恢复 i18n 稀疏表的产出~~ | **spec 本就要求 i18n 稀疏表**：`openspec/specs/flatbuffers-export/spec.md:30-32`「item.fbs 额外包含 `table ItemI18nEntry { id: int32; name: string; }` 和 `table ItemI18nTable { entries: [ItemI18nEntry]; }`」。但当前**实现里完全没有 `I18nTable`/`I18nEntry`**（`canonical_binary.py` / `canonical_fbs.py` 均无），而是 `canonical_export.py:194-202` 改为「每语言完整 bundle」。**这是实现偏离 spec，不是架构回退**。需：① 按 spec 构建 `_i18n` 表（主键 + i18n 字段，**与主表同序**）；② bundle 分离为 `data_{zh}.bin`(主表全量) + `data_{lang}.bin`(稀疏 i18n)；③ 导出/JSON/accessor/校验全链路适配。**这是 fabulous-game 侧改动 1/5/7 的前置**。 |
+| **C0** | ✅ **已完成（2026-09-11）** ~~恢复 i18n 稀疏表的产出~~ | **spec 本就要求 i18n 稀疏表**：`openspec/specs/flatbuffers-export/spec.md:30-32`「item.fbs 额外包含 `table ItemI18nEntry { id: int32; name: string; }` 和 `table ItemI18nTable { entries: [ItemI18nEntry]; }`」。但当时（2026-09-09）**实现里完全没有 `I18nTable`/`I18nEntry`**（`canonical_binary.py` / `canonical_fbs.py` 均无），而是 `canonical_export.py:194-202` 改为「每语言完整 bundle」。**这是实现偏离 spec，不是架构回退**。需：① 按 spec 构建 `_i18n` 表（主键 + i18n 字段，**与主表同序**）；② bundle 分离为 `data_{zh}.bin`(主表全量) + `data_{lang}.bin`(稀疏 i18n)；③ 导出/JSON/accessor/校验全链路适配。**这是 fabulous-game 侧改动 1/5/7 的前置**。 |
 | C1 | ✅ **已完成（2026-09-11）** ~~补标量类型~~（12 种标量；Lua 侧绑定待原生补，见 N9） | `type_expression.py` 的 `ScalarName` 仍只有 `int32/int64/float/double/bool/string`。flatbuffers 原生支持这些标量，补齐对齐。影响：`type_expression.py`、`canonical_binary.py`（slot/vector writers）、`canonical_accessor*.py`（C#/Lua 类型映射）、reader 侧（跨到 fabulous-game） |
 | ~~C2~~ | ~~确认 `index_query.py` / `indexes.py` 是否已完整覆盖「主键 / Code / Group 三类查询」~~ | ✅ **已核实完毕（2026-09-10）→ 结论：未覆盖！** 见 **§七**。运行期 ByID 走二分、ByCode/ByGroupKey 是 stub、`index_query.py` 只在测试里。**实际待办已升格为 C4** |
 | C3 | ✅ **已完成（2026-09-11）** ~~明确 i18n 稀疏表架构下的语言切换与缓存语义~~ | spec 新增 3 条 Requirement（同序等长 / 切语言只换 i18n 包 / 按下标读+原文回退）；运行时落地独立 i18n 世代（`TableVersion.I18nCurrent`）——切语言只失效 i18n 表缓存，主表行句柄保持有效 |
-| **C4** | ✅ **已完成（2026-09-11；Group 部分已于 2026-09-12 砍掉）** | 主键哈希（patch OPT-7）+ **CodeName 二级索引**落地（Group 已砍，见文首时效提醒）：`QueryIndex` 移入 resources 使索引可持久化（原先在 `stage_candidate_yaml` 被丢弃）→ `TableResource.indexes` → `canonical_export` 用真实索引 → 二进制容器 slot 3(Code 桶表)/slot 4(Group 扁平对) → `ConfigTable.CodeSearch/GroupKey` + `Runtime.ByCode/GroupKey` 实测可用（3 次命中 + 1 次未命中 + 4 个分组全对） |
-| **C5** | ✅ **已完成（2026-09-11）** ~~逐表按填充率开（决策 B）~~：枚举 bug 已修 + A1~A5 接线全部落地（填充率统计 / 逐表决策 / probe 落盘 / 生成器二选一 / 导出期单 vtable 硬断言） | **决策（2026-09-10）**：`fill_rate >= 0.75` 的表开 `uniform=True` + 字面量访问器，否则保持变长 + 偏移表。**⚠️ 前置 bug（本地实测，2026-09-11）**：patch 的 uniform **只给标量加了无条件写槽位，枚举分支没加**（仍是 `PrependInt8Slot(..., 0)`，值为第 0 项时省略槽位）⇒ ① 含枚举的表定宽后**仍是 2 种 vtable**（`Item`/`UIConfig` 实测）；② `probe_row_layout` 给枚举槽位推出 **offset=0** ⇒ 字面量访问器读 `row+0`（vtable soffset）⇒ **静默读错**（`Item` 定宽字段 6/16 处不一致，连 `Id`/`Price` 都错——缺槽位错位整行）。**patch 的基准表一个枚举字段都没有**（`build_item_bench` 的 `enums={}`），所以它的等价性校验漏掉了。**修法已验证并已落地（2026-09-11）**：`canonical_binary.py` 新增 `_prepend_enum()`（uniform 走 `PrependInt8` + `Slot(index)`），`_build_row`/`_build_record` 两处改用；新增 **6 个回归测试**（已验证「回退修复则 4 红」）；**patch 已合入本仓库**（`git apply` 干净），全量 **337 passed**，真实代码复验 G1/G2/G3 全过。**填充率实测**（fixture，与本项目表结构相同）：`Item` 92.9%（1.08×）、`ItemType` 100%、`Quest` 100% → ✅ 开；`UIConfig` **63.3%（1.58×）→ ❌ 不开**（被 `BlocksRaycast` 16.7% / `Stack` 33.3% / `Layer` 66.7% 拉低）。**完整方案见 fabulous-game `Docs/TODO/定宽布局落地方案.md`**；**分批见 `Docs/TODO/开工方案.md` 批次 A**。**✅ 批次 A 已全部落地（2026-09-11）**：`written_slot_ratio`/`count_vtables`（从真实字节统计）+ `UNIFORM_FILL_THRESHOLD=0.75` 逐表决策 + manifest 落 `uniform`/`fill_rate`/`slot_offsets` + 生成器 `ROW_MODE_{SLOT,OFFSETS,LITERAL}` 三态（定宽行句柄不带 `_off[]`）+ **导出期单 vtable 硬断言**。验收：**352 passed**；导出级逐字段比对 **93 个字段值 0 处不一致** |
+| **C4** | ✅ **已完成（2026-09-11；Group 部分已于 2026-09-12 砍掉）** | 主键哈希（patch OPT-7）+ **CodeName 二级索引**落地（Group 已砍，见文首时效提醒）：`QueryIndex` 移入 resources 使索引可持久化（原先在 `stage_candidate_yaml` 被丢弃）→ `TableResource.indexes` → `canonical_export` 用真实索引。⚠️ **下面这半句是 2026-09-11 的实现快照，命名与槽位均已被后续重构取代**：~~二进制容器 slot 3(Code 桶表)/slot 4(Group 扁平对) → `ConfigTable.CodeSearch/GroupKey` + `Runtime.ByCode/GroupKey` 实测可用（3 次命中 + 1 次未命中 + 4 个分组全对）~~。**当前实情**：容器 slot 3 是 `codeNameIndex`（存 `rowIndex + 1`，key = FNV-1a 64），**slot 4/5 随 Group 索引删除而空出**；运行时符号是 `CodeNameSearch` / `Runtime.ByCodeName`（生成 API 为 `ByCodeName(codeName)`）；**`CodeSearch` / `GroupKey` / `ByCode` / `ByGroupKey` / `groupHash` 均已不存在**（`groupIndex` 一名仍在 Excel 列布局 manifest 里表示「列分组序号」，与查询索引无关） |
+| **C5** | ✅ **已完成（2026-09-11）** ~~逐表按填充率开（决策 B）~~：枚举 bug 已修 + A1~A5 接线全部落地（填充率统计 / 逐表决策 / probe 落盘 / 生成器二选一 / 导出期单 vtable 硬断言） | **决策（2026-09-10）**：`fill_rate >= 0.75` 的表开 `uniform=True` + 字面量访问器，否则保持变长 + 偏移表。**⚠️ 前置 bug（本地实测，2026-09-11）**：patch 的 uniform **只给标量加了无条件写槽位，枚举分支没加**（仍是 `PrependInt8Slot(..., 0)`，值为第 0 项时省略槽位）⇒ ① 含枚举的表定宽后**仍是 2 种 vtable**（`Item`/`UIConfig` 实测）；② `probe_row_layout` 给枚举槽位推出 **offset=0** ⇒ 字面量访问器读 `row+0`（vtable soffset）⇒ **静默读错**（`Item` 定宽字段 6/16 处不一致，连 `Id`/`Price` 都错——缺槽位错位整行）。**patch 的基准表一个枚举字段都没有**（`build_item_bench` 的 `enums={}`），所以它的等价性校验漏掉了。**修法已验证并已落地（2026-09-11）**：`canonical_binary.py` 新增 `_prepend_enum()`（uniform 走 `PrependInt8` + `Slot(index)`），`_build_row`/`_build_record` 两处改用；新增 **6 个回归测试**（已验证「回退修复则 4 红」）；**patch 已合入本仓库**（`git apply` 干净），全量 **337 passed**（**2026-09-11 快照**；**当前为 403 passed**），真实代码复验 G1/G2/G3 全过。**填充率实测**（fixture，与本项目表结构相同）：`Item` 92.9%（1.08×）、`ItemType` 100%、`Quest` 100% → ✅ 开；`UIConfig` **63.3%（1.58×）→ ❌ 不开**（被 `BlocksRaycast` 16.7% / `Stack` 33.3% / `Layer` 66.7% 拉低）。**完整方案见 fabulous-game `Docs/TODO/定宽布局落地方案.md`**；**分批见 `Docs/TODO/开工方案.md` 批次 A**。**✅ 批次 A 已全部落地（2026-09-11）**：`written_slot_ratio`/`count_vtables`（从真实字节统计）+ `UNIFORM_FILL_THRESHOLD=0.75` 逐表决策 + manifest 落 `uniform`/`fill_rate`/`slot_offsets` + 生成器 `ROW_MODE_{SLOT,OFFSETS,LITERAL}` 三态（定宽行句柄不带 `_off[]`）+ **导出期单 vtable 硬断言**。验收（**2026-09-11 快照**）：**352 passed**；导出级逐字段比对 **93 个字段值 0 处不一致**。**当前值：403 passed / `test-proj/ExportAccessorVerify/` 127 个字段值 0 处不一致** |
 | **C6** | ✅ **已完成（2026-09-11）** ~~产出枚举类型声明~~ | 生成物已有 `(ItemRarity)WireReader.I8(_row, 10)` 的 cast，但 `output/generated/csharp/` **不产出 `enum X : byte { ... }` 声明** → 业务侧仍要手写才能编译，**盲 cast 错位风险照旧**。信息在 `config/types/*.yaml` 的 `values` 里是完备的，成本低（Lua 同理） |
 | **C7** | ✅ **已完成（2026-09-11）** ~~清理 `output/` 陈旧产物~~ | `gd/output/fbs/` 里 `Item_i18n.fbs` / `ItemType_i18n.fbs` / `Quest_i18n.fbs`（mtime **2026/8/14**）与其余（2026/9/10）并存，而**全仓已无代码生成 `*_i18n.fbs`**。风险：消费方扫 `output/` 会拿到**描述已废弃 i18n 侧表格式**的 schema，**正好与「保留 i18n 稀疏表」决策撞车**。建议 `ct export` 写出前清理，或校验目录内无未知文件 |
 | — | **（已确认不做）** 字符串冷扫 / 解码（1.45× / 1.36×） | 托管 `Encoding.UTF8.GetString` 相对原生 `memcpy` 的**固有开销**，OPT-8 后成本已回到解码本身（冷扫 66.7 vs 绕缓存解码 46.6），**接近地板，不改** |
@@ -201,7 +201,7 @@ ct-tool 的 `openspec/specs/flatbuffers-export/spec.md` 已把 **C#/Lua accessor
 
 ### 附：一处 spec 措辞需澄清（2026-09-10 核实，实现 `WireReader.cs` 前必读）
 
-`spec.md:85-86` 写：
+`spec.md:101-103` 写（Requirement「Vector container captures the vector base once」的 scenario）：
 > - **WHEN** 访问 `row.Tags[i]`
 > - **THEN** 容器持有基址，`[i]` 直接按 `base + i*stride` 读取；**不逐元素调用 `WireReader.Indirect`**
 
@@ -219,7 +219,7 @@ public static IntPtr RowAt(IntPtr itemsBase, int idx)
 ```
 注释也自述「按行下标解析行对象指针（**items 向量 uoffset 元素**）」。
 
-**所以要澄清的是**：`不逐元素调用 Indirect` 的**本意是「不在索引时重复解析 vtable / 不重复 `FieldOffset`」**（容器构造时已捕获基址，索引沿 stride 走），**不是「零解引用」**。`vector<Record>` 每元素一次 uoffset 解引用是 FlatBuffers 偏移式布局的**固有成本**，无法通过 reader 设计消除——只有把 record 改成真 struct（内联）才能消除，而 spec 已明确否决（`spec.md:18-20`）。**建议把 spec:85-86 改为按元素类型分别陈述**，避免实现者误以为可以零解引用。
+**所以要澄清的是**：`不逐元素调用 Indirect` 的**本意是「不在索引时重复解析 vtable / 不重复 `FieldOffset`」**（容器构造时已捕获基址，索引沿 stride 走），**不是「零解引用」**。`vector<Record>` 每元素一次 uoffset 解引用是 FlatBuffers 偏移式布局的**固有成本**，无法通过 reader 设计消除——只有把 record 改成真 struct（内联）才能消除，而 spec 已明确否决（`spec.md:18-20`）。**建议把 spec `Vector container captures the vector base once` 的该 scenario（`spec.md:101-103`）改为按元素类型分别陈述**，避免实现者误以为可以零解引用。
 
 
 ## 七、⚠️ 重大修正：运行期查询路径实际是「二分」，哈希索引未落地（2026-09-10 核实）

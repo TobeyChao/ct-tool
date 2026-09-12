@@ -1,6 +1,6 @@
 ## Purpose
 
-在导出前对工作空间数据做完整校验（字段类型强转、主键唯一、跨表 ref 外键存在性），任一问题即中止落盘，避免脏数据进入产物。
+在导出前对工作空间数据做完整校验（字段类型强转、主键唯一、**CodeName 索引键非空且唯一**、跨表 ref 外键存在性），任一问题即中止落盘，避免脏数据进入产物。
 
 ## Requirements
 
@@ -19,6 +19,28 @@
 #### Scenario: Primary key uniqueness
 - **WHEN** 同一张表中存在重复的主键值
 - **THEN** 报错：`[Item.xlsx] Excel 第6行 · 列A (Id) · 当前值 1001 → 主键值 1001 重复（首次出现在第5行）`
+
+### Requirement: Validate the CodeName index key
+**声明了 codename 索引**的表，其每行的 `CodeName` SHALL 非空且按精确原字符串唯一；违反时校验 SHALL
+报错并给出带 Excel 定位的 issue（重复值另附首次出现的行号），错误码 `duplicate_codename`
+（空值/字段缺失报 `type`）。**导出与 `ct validate` 两条路径 SHALL 都执行该校验。**
+
+> 为什么这条必须在数据校验层落地：导出器建桶表时对空串跳过、也**不判重**，所以没有这道闸门时，
+> 重复的 CodeName 会**静默**导出成功，而运行期 `ByCodeName()` 只命中探测序更靠前的那个 ——
+> 另一行永远查不到且毫无提示。语义上 CodeName 就是「这张表按它唯一索引」。
+> （约束本身定义在 `schema-editor/query-indexes`，此处负责在数据层执行。）
+
+#### Scenario: Duplicate CodeName detected with exact locations
+- **WHEN** 声明了 codename 索引的表里两行 `CodeName` 相同（第 4、5 行）
+- **THEN** 报错：表名 + Excel 行号 + 列 + 原始值，并指出首次出现在第几行
+
+#### Scenario: Blank CodeName detected
+- **WHEN** 声明了 codename 索引的表里某行 `CodeName` 为空
+- **THEN** 报错（该行永远查不到）
+
+#### Scenario: Tables without the index are unaffected
+- **WHEN** 表没有声明 codename 索引
+- **THEN** 不对 `CodeName` 施加非空/唯一约束（它只是一个普通字段）
 
 ### Requirement: Validate cross-table references
 工具 SHALL 按拓扑顺序处理，校验 `ref` 字段的值在目标表的主键集合中存在。

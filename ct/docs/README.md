@@ -215,7 +215,7 @@ fields:
 
 含 `i18n: true` 字段的表维护两类文件：
 
-- `i18n/source/{Table}.json` —— 主语言原文快照，扁平 `{"Id.字段": "文本"}`，由 `ct export` / `ct i18n sync` 自动写出
+- `i18n/source/{Table}.json` —— 主语言原文快照，扁平 `{"Id.字段": "文本"}`，**只由 `ct i18n sync` 写出**（`ct export` 从不写 source）
 - `i18n/{lang}/{Table}.json` —— 次语言骨架，每条四字段：
 
 ```json
@@ -321,19 +321,32 @@ output/
 
 ## 部署到 Unity
 
-`config/global.yaml` 里配 `deploy:` 后，`ct export` 完成即自动同步：
+`config/global.yaml` 里配 `deploy:` 后，CLI 的 `ct export` 在导出完成后自动同步
+（由 `ct/src/ct/cli.py` 的 `_run_deploy()` 在导出之后单独触发；**web 面板的导出不会部署**，
+它只导出产物到 `output/`）：
 
 ```yaml
-deploy:
+deploy:                            # 可选；整段不配 或 enabled: false ⇒ 导表行为与没有 deploy 时完全一致
   enabled: true
-  unity_project: ../../Client          # 相对工作区，或绝对路径
-  targets:
-    - {source: output/binary,           dest: Assets/Content/Config}
+  unity_project: ../../Client      # Unity 工程根目录：相对**工作区根**（project_root，即 --root）解析，或写绝对路径
+  targets:                         # 常规目标：source 相对工作区根解析；dest 相对 unity_project 解析
+    - {source: output/binary,           dest: Assets/Content/Config}          # → <unity_project>/Assets/Content/Config
     - {source: output/generated/csharp, dest: Assets/Scripts/Config/Gen}
     - {source: output/generated/lua,    dest: Assets/Scripts/Lua/Config/Gen}
-  build_targets:                       # ct export --for-build / ct deploy --for-build 时追加
+  build_targets:                   # 仅在 --for-build 时追加；裸跑 ct export / ct deploy 不部署这些目标
     - {source: output/binary,           dest: Assets/StreamingAssets/Config}
 ```
+
+**路径语义（写错必踩坑）**：
+
+| 配置项 | 解析基准 | 说明 |
+|---|---|---|
+| `unity_project` | **工作区根**（`project_root`） | 相对路径 ⇒ `<工作区>/<unity_project>`；绝对路径按原样使用。留空 ⇒ 不部署 |
+| `source` | **工作区根** | 与 `schemas_dir` / `output_dir` 等同一基准，例如 `output/binary` ⇒ `<工作区>/output/binary` |
+| `dest` | **`unity_project`**（Unity 工程根） | 例如 `Assets/Content/Config` ⇒ `<unity_project>/Assets/Content/Config` |
+
+- `enabled: false` 或整段 `deploy:` 缺失 ⇒ `ct export` / `ct deploy` 都不做任何部署动作，行为与引入 deploy 前一致。
+- `build_targets` **只在** `ct export --for-build` / `ct deploy --for-build` 时追加到 `targets` 之后；不带该 flag 时被忽略。
 
 同步语义：目标目录被同步为与源**完全一致** —— 新增写入、变化覆盖、**多余删除**
 （代码产物同步时保留已存在文件的 `.meta`；产物被删则连带删同名 `.meta`）。
@@ -351,7 +364,7 @@ deploy:
 | `ct deploy` | 只把**当前产物**同步到 Unity，不触发导出 |
 | `ct validate` | 只解析校验，不产出 |
 | `ct gen-template` | 按 schema 生成 Excel 模板表头 |
-| `ct status` | 列出数据变更 / 模板漂移 / 缺失 / 未跟踪元数据 |
+| `ct status` | 列出数据变更 / 模板漂移 / 缺失（三类） |
 | `ct panel` | 启本地面板（浏览器打开即用） |
 | `ct i18n sync` | 刷新 source + 生成/更新各语言骨架 |
 | `ct i18n status` | 报告翻译进度 |
@@ -382,7 +395,7 @@ ct i18n compact [--lang L] [--table T] [--dry-run] [--root DIR]
 - `--table T` / `--lang L` **限制处理范围并跳过上述清理**，但不改变「全量重建所选部分」这一点
   （其它表的产物保持原样）。
 
-`ct status` 的真实输出（四类，只在非空时打印；全新鲜时只有一行）：
+`ct status` 的真实输出（三类，只在非空时打印；全新鲜时只有一行）：
 
 ```
 缺失文件:
@@ -392,7 +405,7 @@ ct i18n compact [--lang L] [--table T] [--dry-run] [--root DIR]
 模板已过时（schema 修改后未重建）:
   [template-stale] Quest  (建议: ct gen-template --table Quest)
 
-[OK] 所有表已是最新（数据 + 模板）      ← 四类都空时
+[OK] 所有表已是最新（数据 + 模板）      ← 三类都空时
 ```
 
 ---

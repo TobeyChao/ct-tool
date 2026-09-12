@@ -16,11 +16,17 @@
 - **THEN** 面板显示明确的错误信息与修复指引，不崩溃、不显示空白页
 
 ### Requirement: 导出操作
-面板 SHALL 提供全量导出（全部表 × 全语言），支持强制重建；导出进行中 SHALL 展示主要步骤名称与当前状态，任何错误 SHALL 中止导出并在全局错误横幅中提示、指向日志页。
+面板 SHALL 提供全量导出（全部表 × 全语言）。导出步骤即 `CANONICAL_STEPS` 五步（`解析校验 / JSON / Accessor / FBS / Bundle`），进度面板按该序列展示步骤名与当前状态；`forced` 参数被接受并透传给 `run_canonical_export`，但导出本就全量重建，不存在增量或复用路径。任何错误 SHALL 中止导出并在全局错误横幅中提示、指向日志页。
+
+面板导出 SHALL NOT 执行部署：web 导出路径不调用 `ct/export/deploy.py` 的 `deploy()`，只有 CLI `ct export` 在导出成功后部署；`GET /api/workspace` 返回的 `deploy.targets` 恒为 `[]`（`ct/web/app.py`）。因此「面板展示部署状态 / 目标路径」未实现，面板也不提供部署入口。
 
 #### Scenario: 全量导出成功
 - **WHEN** 策划点击"开始导出"且校验通过
-- **THEN** 依次完成解析 / 校验 / i18n / JSON / FBS / Accessor / Bundle 七个步骤，完成后显示导出表数、语言与耗时
+- **THEN** 依次完成 `解析校验 / JSON / Accessor / FBS / Bundle` 五个步骤，完成后显示导出表数与耗时（`成功 · N 张表 · Ns`）；进度中不出现 i18n、flatc 或 deploy 步骤
+
+#### Scenario: 面板导出不部署
+- **WHEN** 面板导出成功
+- **THEN** 只写入工作区 `output/` 并提交缓存指纹，不调用 `deploy()`、不写 Unity `Assets/`；产物同步仍须由 CLI `ct export` / `ct deploy` 完成
 
 #### Scenario: 校验失败中止
 - **WHEN** 数据校验存在错误

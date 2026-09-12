@@ -9,6 +9,25 @@
 
 ---
 
+## ⏱ 时效（2026-09-12 追加）
+
+本文核实于 **2026-09-09/10**。此后 ct-tool 侧的若干**核心前提被反向改变**，正文**保持原样不改写**，
+请按下表勘误阅读（正文出现与之冲突的表述时，以本表为准）：
+
+| 本文原前提（已失效） | 当前实情（2026-09-12） |
+|---|---|
+| ~~canonical 没有 i18n 侧表；每种语言发一份完整 bundle~~ | **稀疏 `{Table}_i18n` 表就是当前设计**：行序与主表 1:1、按行下标读；主语言 `data_zh.bin` 为主表全量，其余语言为 i18n-only 包。§3.1 的「C8 已被结构性解决」与 §3.4 的「每语言整包 / 包体 4.4×」**均不再成立** |
+| ~~P6 二级索引未接线；`Runtime.ByCode` 是 stub（恒返回 `-1`）~~ | 索引**来自 schema**（`TableResource.indexes` → `canonical_export`）；API 是 **`ByCodeName(codeName)`** / 运行时 `CodeNameSearch`；**`Runtime.ByCode` 已不存在**；**Group 查询索引已整体删除**（容器 slot 4/5 空出） |
+| ~~`output/generated/csharp/` 没有产出枚举声明~~ | **`Enums.cs` / `Enums.lua` 现已产出**，业务侧不必再手写 `enum X : byte` |
+| ~~偏移预取「写了没接线」~~ | **定宽（uniform）表的字面量偏移生成已接线**：填充率 ≥ 0.75 的表直接发射字面量偏移（§4 结尾的 P8 结论仅对非定宽表成立） |
+| ~~`ct export` 不清理 `output/`~~ | **无 `--table` / `--lang` 过滤时，`ct export` 会先清空 `output/{fbs,generated,json,binary}`**（在解析校验通过之后执行） |
+| ~~查询走二分（`IndexSearch` 等）~~ | **所有查询走哈希，读路径无二分**：主键走 `idHash`、CodeName 走 FNV-1a 64 桶；`IndexSearch` / `lower_bound` / `upper_bound` / `gd_index_bsearch` 均已从代码中移除 |
+
+> 数字口径也已更新：`ct` 全量测试 **403 passed**，导出级逐字段校验 **127 个字段值 / 0 处不一致**
+> （本文正文的 246.7 ns 等**性能测量值保持原样**，未重测）。
+
+---
+
 ## 一、新方案是什么
 
 `config-native-zero-copy`（2026-08-25，tasks 全部 `[x]`）已经把运行时改成：

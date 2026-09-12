@@ -8,28 +8,28 @@
 工具 SHALL 从 `schemas/*.yaml` 自动生成对应的 `.fbs` 文件，输出至 `output/fbs/`。每张有 i18n 字段的表额外生成 I18n 变体结构。同时生成 `container.fbs` 定义 Bundle 容器。
 
 #### Scenario: Basic table fbs generation
-- **WHEN** schema 定义 item 表含 id(int32)、name(string)、price(float) 字段
-- **THEN** 生成 `item.fbs`，包含 `table Item` 和 `table ItemTable { items: [Item]; }` 定义
+- **WHEN** schema 定义 Item 表含 Id(int32)、Name(string)、Price(float) 字段
+- **THEN** 生成 `Item.fbs`，包含 `table Item` 和 `table ItemTable { items: [Item]; }` 定义
 
 #### Scenario: Enum field fbs generation
 - **WHEN** schema 含 `Rarity: ItemRarity` 枚举字段（`config/types/ItemRarity.yaml`，values `[common, rare, epic]`）
-- **THEN** `item.fbs` 包含 `enum ItemRarity: byte { common = 0, rare = 1, epic = 2 }`，Item 表中字段类型为 `ItemRarity`
+- **THEN** `types.fbs` 包含 `enum ItemRarity : byte { common = 0, rare = 1, epic = 2 }`，`Item.fbs` include 它并在 Item 表中把该字段声明为 `ItemRarity`
 
 #### Scenario: Nested record generated as FlatBuffers table
-- **WHEN** schema 含 `DropRange: ItemDropRange` 记录字段（`config/types/ItemDropRange.yaml`，字段 `min/max` 均为 int32）
-- **THEN** `item.fbs` 包含 `table ItemDropRange { min: int32; max: int32; }`，Item 中字段类型为 `ItemDropRange`（使用 FlatBuffers table，而非 struct）
+- **WHEN** schema 含 `DropRange: ItemDropRange` 记录字段（`config/types/ItemDropRange.yaml`，字段 `Min` / `Max` 均为 int32）
+- **THEN** `types.fbs` 包含 `table ItemDropRange { Min: int32; Max: int32; }`，Item 中字段类型为 `ItemDropRange`（使用 FlatBuffers table，而非 struct）
 
 #### Scenario: Vector of primitives generated as vector
 - **WHEN** schema 含 `Tags: vector<int32>` 字段
-- **THEN** Item 中该字段生成为 `tags: [int32]`
+- **THEN** Item 中该字段生成为 `Tags: [int32]`
 
 #### Scenario: Vector of enum generated as vector of enum
 - **WHEN** schema 含 `vector<ItemRarity>` 字段
 - **THEN** 生成对应 enum 类型，字段为 `[ItemRarity]` vector
 
 #### Scenario: i18n variant generation
-- **WHEN** item schema 中 name 字段标记 `i18n: true`
-- **THEN** `item.fbs` 额外包含 `table ItemI18nEntry { id: int32; name: string; }` 和 `table ItemI18nTable { entries: [ItemI18nEntry]; }`
+- **WHEN** Item schema 中 `Name` 字段标记 `i18n: true`
+- **THEN** `Item_i18n.fbs` 包含 `table ItemI18nEntry { Id: int32; Name: string; }` 和 `table ItemI18nTable { entries: [ItemI18nEntry]; }`
 
 #### Scenario: server_only field excluded from fbs
 - **WHEN** 字段标记 `server_only: true`
@@ -51,15 +51,15 @@
 - **THEN** `Item` 持有行对象指针，字段读取用 `WireReader.I32(_row, slot)`（`slot = 4 + 2*字段序`）
 
 #### Scenario: C# enum field typed
-- **WHEN** item 表有 `Rarity: ItemRarity` 枚举字段
+- **WHEN** Item 表有 `Rarity: ItemRarity` 枚举字段
 - **THEN** 生成 `public ItemRarity Rarity => (ItemRarity)WireReader.I8(_row, slot);`（返回类型化枚举，而非裸 int）
 
 #### Scenario: C# cross-table ref typed accessor
-- **WHEN** item 表有 `ItemTypeId: int32` 且 `ref: ItemType.Id`
+- **WHEN** Item 表有 `ItemTypeId: int32` 且 `ref: ItemType.Id`
 - **THEN** 保留裸 id 快路径 `public int ItemTypeId => WireReader.I32(_row, slot)`，并生成类型化访问 `public ItemType ItemType => ItemTypeAccessor.ByID(ItemTypeId);`（底层用 id→行缓存，避免每字段 P/Invoke）
 
 #### Scenario: C# vector field as single container
-- **WHEN** item 表有 `Tags: vector<int32>`
+- **WHEN** Item 表有 `Tags: vector<int32>`
 - **THEN** 生成 `public NArray<int> Tags => new NArray<int>(WireReader.VecBase(_row, slot), count);`，支持 `Tags.Length`、`Tags[i]`、`foreach`；`vector<Record>` 生成 `NStructArray<T>`；`vector<string>` 生成 `NStructArray<NString>`
 
 ### Requirement: Generated C# files live in a dedicated namespace and name row types after the table
@@ -88,11 +88,11 @@ SHALL NOT 把类型撒在全局命名空间里。
 - **THEN** 包含 `M.Count`、`M.ByID(id)`、`M.ByIndex(i)`；若配置 CodeName 索引还包含 `M.ByCodeName`
 
 #### Scenario: Lua enum field typed
-- **WHEN** item 表有 `Rarity: ItemRarity` 枚举字段
+- **WHEN** Item 表有 `Rarity: ItemRarity` 枚举字段
 - **THEN** 生成返回类型化值（数字或字符串映射，按 Lua 消费约定）的 `Rarity` 访问器，而非裸数字
 
 #### Scenario: Lua cross-table ref typed accessor
-- **WHEN** item 表有 `ref: ItemType.Id`
+- **WHEN** Item 表有 `ref: ItemType.Id`
 - **THEN** 生成 `M.ItemType()` 类型化访问，底层用 id→行缓存；保留裸 id 快路径
 
 ### Requirement: Vector container captures the vector base once
@@ -110,7 +110,7 @@ SHALL NOT 把类型撒在全局命名空间里。
 工具 SHALL 为跨表 `ref` 生成类型化访问，其底层用**一次建立的 id→行缓存**，避免每个字段访问都触发原生 P/Invoke（对齐 参考实现 的 `{RefType}.ByID(id)`，但不牺牲性能）。
 
 #### Scenario: ref typed lookup uses cached id→row
-- **WHEN** 首次调用 `item.ItemType` 访问目标表
+- **WHEN** 首次调用 `Item.ItemType` 访问目标表
 - **THEN** 通过目标表 `ByID` 的 id→行缓存返回目标行；后续命中缓存，不重复 P/Invoke
 
 ### Requirement: Reader runs standalone and String fields are interned
@@ -128,15 +128,15 @@ reader SHALL 作为独立运行时（纯 C# + unsafe 读 FlatBuffers），不依
 工具 SHALL 为主语言构建包含所有表完整数据的 FlatBuffers Bundle，输出 `output/binary/data_{primary}.bin`。Bundle 结构为 `DataBundle { tables: [BundledTable] }`，每个 BundledTable 的 `data` 为对应表的原始 FlatBuffers bytes。
 
 #### Scenario: Full bundle written
-- **WHEN** 导出 zh（主语言），item 和 item_type 两张表
-- **THEN** `data_zh.bin` 包含两个 BundledTable，name 分别为 "item" 和 "item_type"
+- **WHEN** 导出 zh（主语言），Item 和 ItemType 两张表
+- **THEN** `data_zh.bin` 包含两个 BundledTable，name 分别为 "Item" 和 "ItemType"
 
 ### Requirement: Write secondary language i18n-only Binary Bundle
 工具 SHALL 为次语言只构建包含 i18n 变体表的 Bundle，输出 `output/binary/data_{lang}.bin`，只包含有 i18n 字段的表的 I18n 变体。
 
 #### Scenario: i18n-only bundle written
-- **WHEN** 导出 en（次语言），item 有 i18n 字段，item_type 无 i18n 字段
-- **THEN** `data_en.bin` 只包含 BundledTable name="item_i18n"，不含 item_type
+- **WHEN** 导出 en（次语言），Item 有 i18n 字段，ItemType 无 i18n 字段
+- **THEN** `data_en.bin` 只包含 BundledTable name="Item_i18n"，不含 ItemType
 
 #### Scenario: No i18n tables
 - **WHEN** 所有表均无 i18n 字段，请求导出次语言
@@ -147,7 +147,7 @@ reader SHALL 作为独立运行时（纯 C# + unsafe 读 FlatBuffers），不依
 否则多语言字段只能按主键二分查找，无法按下标定位。
 
 #### Scenario: i18n row order matches main table
-- **WHEN** 导出次语言，且 item 有 i18n 字段
+- **WHEN** 导出次语言，且 Item 有 i18n 字段
 - **THEN** `Item_i18n` 的第 i 行对应主表 `Item` 的第 i 行，两表行数相等
 - **AND** 若行数不等，导出 SHALL 失败并报错（不得静默产出错位数据）
 
@@ -286,6 +286,9 @@ C# 与 Lua 两个目标语言的语义 SHALL 一致——SHALL NOT 出现「行�
   SHALL 在**加载/建表期硬报错**（C#）或**首次查询时报错**（Lua/原生），SHALL NOT 静默返回空。
 - **CodeName**：容器 slot 3 = `codeNameIndex`，开放寻址桶存 `rowIndex + 1`，key 用 FNV-1a 64 取低位；
   **固定**指向名为 `CodeName` 的 string 字段（schema 只写 `kind: codename`，不写 `field`）。
+  桶表本身不判重，所以写入前 SHALL 由数据校验兜住「非空 + 唯一」——声明了该索引的表里每行
+  `CodeName` 必须非空且唯一，否则导出「解析校验」阶段与 `ct validate` 以 `IssueCode.DUPLICATE_CODENAME`
+  失败（空值报 `type`），详见 `schema-editor/query-indexes`。
 容器 slot 4 / 5 曾用于 Group 索引（`groupIndex` + `groupHash`）。该索引**已砍**：没有任何表
 声明过它，Lua 侧始终是占位 stub，且导出器会静默丢掉「group 列留空」的行（它们读出来是默认值 0，
 却不在 key 0 的组里）。两个槽位因此空出，等待未来重新设计；重新引入时 SHALL 一并解决上面这条

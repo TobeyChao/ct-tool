@@ -86,7 +86,8 @@
 
 ## 设计耦合（脆弱性，非 bug）
 
-- `VectorBase` / `Count` / `IndexSearch`（`WireReader.cs:36-77`）硬编码 root table 的 **slot 4（items）/ slot 6（index）** 布局，与 ct 导出器强耦合 —— root 表结构一旦加字段即静默错读或崩溃。建议生成器把槽位作为参数/常量注入，而非 reader 内写死。
+- `VectorBase` / `Count`（另有当时的 `IndexSearch`）（`WireReader.cs:36-77`）硬编码 root table 的字段位置 —— 这里用的是 **FlatBuffers vtable 槽位编号**（`slot = 4 + 2*字段序`），即 **vtable slot 4 = `items`、vtable slot 6 = `index`**。与 ct 导出器强耦合 —— root 表结构一旦加字段即静默错读或崩溃。建议生成器把字段位置作为参数/常量注入，而非 reader 内写死。
+  - ⚠️ 2026-09-12：当前容器是 **4 个字段** —— `items` / `index` / `idHash` / `codeNameIndex`（按 **vtable 槽位**依次为 slot 4/6/8/10；若按**字段序**则记作容器 slot 0/1/2/3）。`IndexSearch` 已从 reader 删除，**Group 查询索引整体砍掉**（其占用的字段序 slot 4/5 空出）。
 
 ---
 
@@ -121,10 +122,10 @@
 - `TableVersion` 用 `Interlocked.Increment` / `Volatile.Read`（Bump 仅整套边界，热路径零成本）。
 - 契约（文件头 NOTE）：**只支持只读并发**；世代推进不得与读取并发；单表重载（不经 `LoadBundle`）不受支持。
 
-**仍未修（记录在案）**：`ByIndex` 越界 Release 无兜底且无"未找到"语义；`NArray<T>` 非对齐直读（T 对齐 >4）；root 表槽位（slot 4/6）硬编码耦合；未注册表访问抛 `KeyNotFoundException`；`FieldOffset` slot 0–3 无防护；构造中途异常泄漏 pin。
+**仍未修（记录在案）**：`ByIndex` 越界 Release 无兜底且无"未找到"语义；`NArray<T>` 非对齐直读（T 对齐 >4）；root 表字段位置硬编码耦合（按 **vtable 编号**：slot 4 = `items`、slot 6 = `index`）；未注册表访问抛 `KeyNotFoundException`；`FieldOffset` 的 vtable 元数据槽位（vtable slot 0–3）无防护；构造中途异常泄漏 pin。
 
 ### 第三轮（本文件对应提交）—— 只吃 ct bin 契约 + ByIndex 越界兜底
-**数据信任契约（已定）**：reader **只消费 ct 导出的 bin**。据此关闭数据信任类条目 —— 非对齐直读（ct `StartVector` 按元素大小对齐，8 字节元素亦 8 对齐）、root 表槽位（slot 4/6）硬编码（ct root 布局固定）、`FieldOffset` slot 0–3 / 损坏 bundle（数据永远来自 ct）。仍保留：构造中途异常泄漏 pin（极小）。
+**数据信任契约（已定）**：reader **只消费 ct 导出的 bin**。据此关闭数据信任类条目 —— 非对齐直读（ct `StartVector` 按元素大小对齐，8 字节元素亦 8 对齐）、root 表字段位置硬编码（按 **vtable 编号** slot 4 = `items` / slot 6 = `index`；ct root 布局固定）、`FieldOffset` 的 vtable 元数据槽位（vtable slot 0–3）/ 损坏 bundle（数据永远来自 ct）。仍保留：构造中途异常泄漏 pin（极小）。
 
 **ByIndex 越界（动态实锤后修复）**：实测 `RowAt(rows)`（越界一格）在 Release 下即 `AccessViolationException` 崩溃（无兜底、且无"未找到"语义）。
 - reader：`ConfigTable.RowAt` 加**无条件**边界检查（`(uint)index >= Count → IntPtr.Zero`），Release 亦生效。
@@ -150,11 +151,12 @@
 - **收尾**（2026-09-12）：CodeName 半边**已接线**（`Runtime.ByCode` → `ByCodeName`，走同一份 `CodeNameSearch`，导出级验证 127 字段 0 处不一致）；**Group 半边直接砍掉** —— 它从没有表声明过、Lua 侧始终是占位 stub，且导出器会静默丢掉「group 列留空」的行（读出来是默认值 0，却不在 key 0 的组里）。本工程里的 `GroupKey`（含二分实现）随之删除。
 
 **新 P2 —— test-proj `.g.cs` 与生成器不同步**
-- 位置：`test-proj/ConfigAccessorBench/*.g.cs` 仍是旧格式（头部 `()` 残留、单行构造函数、三元 `ByID`），而 `gd/output/generated/csharp/*` 已是 `a6e34ee` 新格式。
+- 位置：`test-proj/ConfigAccessorBench/*.g.cs` 仍是旧格式（头部 `()` 残留、单行构造函数、三元 `ByID`）。
+- ⚠️ 2026-09-12 更正：`gd/output/generated/csharp/*` **并不是**「新格式」—— 它同样是**过期产物**：**没有 `GameFramework.ConfigGen` 命名空间，行类型仍叫 `ItemRow`**，与当前生成器契约（固定命名空间 + 以表名命名行类型、无 `Row` 后缀）不符。两处都需要按当前契约重新生成。
 - 原因：上一轮只重生成 gd/output，漏了 test-proj。功能等价（旧格式也能编译运行），但违反"格式契约由 golden 测试验证"的一致性，应重生成对齐。
 
 **新 P2 —— `NArray<T>` / `NStructArray<T>` 的 `GetEnumerator` 用 `yield`**
 - 位置：`Runtime.cs:81-82, 119-120`。每次 `foreach (var x in row.Tags)` **分配枚举器状态机**（堆分配）→ 热路径 GC 压力。
 - 修复方向：手写 struct enumerator（零分配），或文档提示用 `for` 下标直读（benchmark 的 `SumAfter` 正是 `for`，已验证零分配路径）。
 
-**复核未发现新问题（与前三轮结论一致）**：`ByID` 二分与 ct `index` 排序一致（`canonical_binary.py:217-225` 按主键升序 + 原始行下标）；`vector<Record>` 的 `NStructArray` uoffset 语义正确；`NString` 隐式转 string + 驻留正确；Lua 侧 enum 向量走 `GD.VecI8`（1 字节）无宽度问题；版本只在整套边界推进的语义已由第二轮确立并保持。
+**复核未发现新问题（与前三轮结论一致）**：`ByID` 走 ct `index` 向量的**哈希桶查找**（容器 slot 2 `idHash`，命中后按 `index` 中的 `(key, row)` 对核对）—— **已不是二分**，`canonical_binary.py` 仍按主键升序 + 原始行下标产出 `index`；`vector<Record>` 的 `NStructArray` uoffset 语义正确；`NString` 隐式转 string + 驻留正确；Lua 侧 enum 向量走 `GD.VecI8`（1 字节）无宽度问题；版本只在整套边界推进的语义已由第二轮确立并保持。

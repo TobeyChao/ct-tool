@@ -6,7 +6,7 @@
 
 ```bash
 # 安装
-cd tool
+cd ct
 pip install -e .
 
 # 切到数据工作空间，开始导出
@@ -21,11 +21,11 @@ ct --help
 
 | 命令 | 说明 |
 |------|------|
-| `ct export` | 增量导出（只导出有变化的表；配置 deploy 后自动同步到 Unity Assets） |
-| `ct export --all` | 强制全量导出 |
+| `ct export` | 全量导出（无增量模式；配置 deploy 后自动同步到 Unity Assets） |
+| `ct export --all` | no-op：导出恒全量重建，`--all` 仅为兼容旧流水线保留 |
 | `ct export --for-build` | 导出并追加构建目标（如 StreamingAssets/Config） |
 | `ct deploy` | 只部署当前产物到 Unity Assets，不触发导出 |
-| `ct export --table item --lang en` | 只导出指定表、指定语言 |
+| `ct export --table Item --lang en` | 只导出指定表（单个精确表名）、指定语言 |
 | `ct validate` | 只校验不产出（适合 CI） |
 | `ct status` | 查看哪些表有变更 / 模板漂移 |
 | `ct gen-template --all` | 根据 Schema 生成 Excel 模板 |
@@ -66,14 +66,14 @@ deploy:
 
 - 路径语义：`source` 相对 `gd/`（项目根），`dest` 相对 `unity_project`。
 - 未配置或 `enabled: false` 时导表行为不变（不部署）。
-- 部署失败会使导表以非 0 退出；`ct status` 会显示部署状态与目标路径。
+- 部署失败会使导表以非 0 退出；部署状态与目标路径的查询**未实现**（`ct status` 只报数据变更 / 模板漂移 / 缺失文件三类）。
 
 ## 依赖
 
-Python >= 3.10。二进制由 `binary_writer` 直接构建（无需 flatc）。
+Python >= 3.10。二进制由 `ct/export/canonical_binary.py` 直接构建（无需 flatc）。
 
 详细文档见 [`ct/docs/README.md`](ct/docs/README.md)。
 
 ## 待办（Known TODOs）
 
-- **AccessorStep 尊重导出过滤范围**：当前 `AccessorStep` 无条件遍历 `ctx.ws.order`（全部表）生成 accessor，`--table X` 单表导出时也会重新生成所有表的 accessor（过度生成，不误删但多余 IO）。改进方向：让 AccessorStep 尊重 `tables_to_export` 只生成变化的表，同时 `_prune_generated_dir` 改为只删除 schema 中已不存在的表（而非"本次未生成"），否则会误删未变化表的 accessor。取舍：现状简单、零误删风险，多生成几个文件对导出流程无实质开销。
+- **增量导出尚未接线**：`ct/cache/fingerprints.py` 的分层指纹（schema/data/i18n/bundle）与 `decide_artifact_reuse` 已实现，但没有接到 `ct/app/canonical_export.py` 的 `run_canonical_export`，所以导出**恒全量重建**（`--all` 是 no-op）。`cache/state.json` 目前只服务 `ct status` 的「待导出」判断，不参与跳过。

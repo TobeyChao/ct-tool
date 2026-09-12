@@ -20,21 +20,21 @@
 - **THEN** 工具报错指明文件路径，终止该表的处理
 
 ### Requirement: Generate Excel template headers from schema
-`ct gen-template` SHALL 将字段结构投影为以物理叶子列为底的节点树。设表内最深节点层级为 `D`，第 `d` 层注释行 SHALL 为 `2d-1`，字段行 SHALL 为 `2d`，表头总行数 SHALL 为 `2D`，数据 SHALL 从 `2D+1` 行开始。每个 Record、数组或数组槽位节点的注释格和字段格 SHALL 分别横向覆盖其全部后代叶子列；较浅叶子 SHALL 仅保留自身层的注释格，并将字段格纵向合并至第 `2D` 行。合并 SHALL 按节点身份与叶子跨度决定，不得按相邻文本是否相同决定。模板 SHALL 冻结全部表头行且 SHALL NOT 生成 AutoFilter。
+`ct gen-template` SHALL 将字段结构投影为以物理叶子列为底的节点树。设表内最深节点层级为 `D`，第 `d` 层注释行 SHALL 为 `2d-1`，字段行 SHALL 为 `2d`，表头总行数 SHALL 为 `2D`（即 `Layout.header_rows`），数据 SHALL 从 `2D+1` 行开始。每个 Record、vector 或 vector 槽位节点的注释格和字段格 SHALL 分别横向覆盖其全部后代叶子列；较浅叶子 SHALL 仅保留自身层的注释格，并将字段格纵向合并至第 `2D` 行。合并 SHALL 按节点身份与叶子跨度决定，不得按相邻文本是否相同决定。模板 SHALL 冻结全部表头行且 SHALL NOT 生成 AutoFilter。
 
-#### Scenario: Simple table header (no struct)
+#### Scenario: Simple table header (no Record)
 - **WHEN** 表中所有字段均为第 1 层叶子且 `D=1`
 - **THEN** 第 1 行逐列显示字段注释，第 2 行逐列显示字段名与类型，数据从第 3 行开始
 
-#### Scenario: Struct field expands to multiple columns
+#### Scenario: Record field expands to multiple columns
 - **WHEN** `DropRange: ItemDropRange` 含叶子 `Min` 与 `Max`
 - **THEN** 第 1、2 行分别横向合并显示 DropRange 注释与 `DropRange / ItemDropRange`，第 3、4 行分别逐列显示 Min/Max 的注释及字段与类型，数据从第 5 行开始
 
-#### Scenario: Two-level nested struct
+#### Scenario: Two-level nested Record
 - **WHEN** `Position` 含 `Area.{X,Y}` 与叶子 `Z`，全表 `D=3`
 - **THEN** Position 注释格和字段格横跨 X/Y/Z，Area 注释格和字段格只横跨 X/Y，Z 字段格从第 4 行纵向合并到第 6 行，X 与 Y 永不互相合并
 
-#### Scenario: Non-struct columns merged vertically
+#### Scenario: Non-Record columns merged vertically
 - **WHEN** 顶层 Id 与三级嵌套 Record 共存
 - **THEN** Id 注释只占第 1 行，Id 字段格从第 2 行纵向合并到第 6 行
 
@@ -48,11 +48,11 @@
 
 #### Scenario: Fixed scalar vector renders slots
 - **WHEN** `Weights: vector<float>` 配置 `excel_columns: 3`
-- **THEN** 数组节点横跨三个数据列，第 2 层绘制三个独立槽位节点 `#1/#2/#3`，注释分别显示 `数据项[1]`、`数据项[2]`、`数据项[3]`
+- **THEN** vector 节点横跨三个数据列，第 2 层绘制三个独立槽位节点 `#1/#2/#3`，注释分别显示 `数据项[1]`、`数据项[2]`、`数据项[3]`
 
 #### Scenario: Fixed Record vector renders slot subtrees
 - **WHEN** `Rewards: vector<DropReward>` 配置 `excel_columns: 2` 且 DropReward 含 ItemId/Count
-- **THEN** 数组节点横跨四列，第二层两个槽位各横跨自身 ItemId/Count，第三层逐列绘制对应叶子
+- **THEN** vector 节点横跨四列，第二层两个槽位各横跨自身 ItemId/Count，第三层逐列绘制对应叶子
 
 #### Scenario: i18n field header
 - **WHEN** string 字段标记 `i18n: true`
@@ -66,7 +66,7 @@
 - **WHEN** 字段引用具名 Enum `ItemRarity`
 - **THEN** 字段格第二行显示 `ItemRarity [enum]`，不把全部候选值挤入表头文字
 
-#### Scenario: array field annotation
+#### Scenario: vector field annotation
 - **WHEN** 字段类型为 `vector<int32>`
 - **THEN** 字段格显示 canonical vector 类型；无 `excel_columns` 时注释提示 `[...]` 文法，有 `excel_columns` 时显示最大槽位数
 
@@ -91,22 +91,24 @@
 
 | 字段 | 类型 | 含义 |
 |------|------|------|
-| `ct_tool_version` | string | 当前工具版本号 |
+| `ct_tool_version` | string | 固定写入 `ct`（当前不是版本号） |
 | `ct_table_name` | string | schema.table 表名 |
-| `ct_header_rows` | int | 表头行数（= schema.header_rows） |
+| `ct_header_rows` | int | 表头行数（= `Layout.header_rows`，即 `2D`） |
 | `ct_schema_hash` | string | schema 全字段哈希前 16 字符 |
 | `ct_generated_at` | string | ISO 8601 生成时间戳 |
 
+工具当前**只写入、不读回**这些 Custom Document Properties；模板漂移判定改读 `excel/layout_manifests/{Table}.json`（见下条 Requirement）。
+
 #### Scenario: New template carries metadata
 - **WHEN** 用户对一张新表运行 `ct gen-template`
-- **THEN** 生成的 Excel 文件中 Custom Document Properties 包含上述五个字段，值与当前工具版本、schema 一致
+- **THEN** 生成的 Excel 文件中 Custom Document Properties 包含上述五个字段，值与当前工具写入的固定值、`Layout` 一致
 
 #### Scenario: Metadata invisible to spreadsheet user
 - **WHEN** 策划在 Excel 中打开模板
 - **THEN** 元数据不出现在任何可见单元格、Sheet 列表或公式管理器中
 
 ### Requirement: Compute schema hash including all template-visible fields
-工具 SHALL 提供 `compute_schema_hash(schema)` 函数，对 `TableSchema` 的全部字段（包括字段注释、enum values、struct 嵌套子字段、ref / i18n / server_only 标记）做规范化 JSON 序列化（`sort_keys=True`），取 sha256 摘要的前 16 个十六进制字符。任何会写入表头的内容变更 MUST 导致哈希变化。
+工具 SHALL 提供 `compute_schema_hash(table, dependencies=())` 函数（`ct/schema/hashing.py`），对 `TableResource` 及其引用的 `RecordResource` / `EnumResource` 依赖（包括字段注释、Enum values、Record 嵌套子字段、ref / i18n / server_only 标记）做规范化 JSON 序列化（`sort_keys=True`），取 sha256 摘要的前 16 个十六进制字符。任何会写入表头的内容变更 MUST 导致哈希变化。
 
 #### Scenario: Field added changes hash
 - **WHEN** schema 新增一个字段
@@ -124,46 +126,46 @@
 - **WHEN** 同一个 schema 在不同进程中两次计算
 - **THEN** 两次返回的 hash 值完全相同
 
-### Requirement: Read template metadata robustly
-工具 SHALL 提供 `read_template_metadata(path)` 函数，读取 Excel 文件的 Custom Document Properties 并返回结构化对象。当文件不存在、无元数据、字段缺失或字段类型异常时，返回 `None`，不抛异常给上层调用。
+### Requirement: Read the layout manifest robustly
+工具 SHALL 提供 `load_manifest(manifest_dir, table)` 函数（`ct/excel/layout_manifest.py`），读取 `excel/layout_manifests/{Table}.json` 并返回 `LayoutManifest`。当文件不存在、无法读取、JSON 解析失败、`format` 不是 `template-layout/2`，或 `columns` / `nodes` 等字段类型异常时，SHALL 返回 `None`（视为不可信 manifest），不抛异常给上层调用。
 
-#### Scenario: File without metadata returns None
-- **WHEN** 文件存在但未写入 ct_* 元数据
-- **THEN** `read_template_metadata` 返回 None
+#### Scenario: Missing manifest returns None
+- **WHEN** 表没有对应的 layout manifest 文件
+- **THEN** `load_manifest` 返回 None
 
-#### Scenario: Partial metadata returns None
-- **WHEN** 文件只有 `ct_table_name` 而缺 `ct_schema_hash`
-- **THEN** 函数返回 None（视为不可信元数据）
+#### Scenario: Incompatible or malformed manifest returns None
+- **WHEN** manifest 是合法 JSON，但 `format` 不是 `template-layout/2`，或 `columns` / `nodes` 等字段类型异常
+- **THEN** 函数返回 None（视为不可信 manifest）
 
 #### Scenario: Corrupted file does not crash caller
-- **WHEN** 文件损坏导致 openpyxl 抛异常
+- **WHEN** manifest 无法读取或 JSON 解析失败
 - **THEN** 函数 catch 异常并返回 None
 
-### Requirement: Detect schema drift via metadata comparison
-工具 SHALL 在 `gen-template` 与 `status` 流程中，对每张表比较"当前 schema 计算出的 hash"与"模板元数据中的 ct_schema_hash"，识别以下三种状态：
+### Requirement: Detect template drift via layout manifest comparison
+`ct status` SHALL 为每张表计算并分别列出三个状态：`missing`（schema 引用的 Excel 文件不存在，该表不再参与其余判断）、`changed`（Excel 文件 sha256 与缓存台账不一致，或该表从未导出）、`drifted`（layout manifest 缺失/不可信，或其 `schema_hash` 与当前 schema 计算值不一致，或工作表列数与当前 `Layout.column_count` 不一致）。`drifted` 提示重建模板（`ct gen-template --table {Table}`）。
 
-| 状态 | 含义 |
-|------|------|
-| `matched` | 两个 hash 一致，模板与 schema 同步 |
-| `drifted` | 两个 hash 不一致，schema 修改后模板未重建 |
-| `untracked` | 模板无元数据（legacy 文件），无法跟踪 |
+不存在单独的 `untracked` 状态：manifest 缺失即 `drifted`；「无元数据的 legacy 模板」因此不再与「schema 改过」区分。
 
-#### Scenario: Hash matches reports matched
-- **WHEN** 模板元数据中的 hash 与当前 schema hash 相同
-- **THEN** 状态为 `matched`
+#### Scenario: Matching manifest is not reported as drifted
+- **WHEN** manifest 的 `schema_hash` 与当前 schema hash 相同，且工作表列数等于当前 `Layout.column_count`
+- **THEN** 该表不出现在 `drifted`
 
-#### Scenario: Hash differs reports drifted
-- **WHEN** schema 被修改（任何会进入 hash 的字段变更）
-- **THEN** 状态为 `drifted`
+#### Scenario: Schema change reports drifted
+- **WHEN** schema 被修改（任何会进入 hash 的字段变更）而 manifest 未更新
+- **THEN** 该表出现在 `drifted`
 
-#### Scenario: Missing metadata reports untracked
-- **WHEN** 模板文件存在但 `read_template_metadata` 返回 None
-- **THEN** 状态为 `untracked`
+#### Scenario: Missing manifest reports drifted
+- **WHEN** 表存在 Excel 文件但没有可信的 layout manifest
+- **THEN** 该表出现在 `drifted`（没有独立的 `untracked` 状态）
 
-### Requirement: Read Excel data with struct and array fields
-工具 SHALL 按 Layout 将具名 Record 的物理叶子列重组为嵌套对象。无 `excel_columns` 的 `vector<Scalar>`、`vector<Enum>` 和 `vector<string>` SHALL 从单元格读取括号数组文法；有 `excel_columns: N` 的 vector SHALL 将 N 个物理槽位读取为运行时变长 vector，最后一个显式填写槽位决定长度，其前方全空槽位及已填写 Record 槽位中的空叶子递归补类型默认值，末尾全空槽位不生成元素。
+#### Scenario: Missing workbook reports missing
+- **WHEN** schema 引用的 Excel 文件不存在
+- **THEN** 该表出现在 `missing`，不进入 `changed` / `drifted`
 
-#### Scenario: Struct columns reassembled
+### Requirement: Read Excel data with Record and vector fields
+工具 SHALL 按 Layout 将具名 Record 的物理叶子列重组为嵌套对象。无 `excel_columns` 的 `vector<Scalar>`、`vector<Enum>` 和 `vector<string>` SHALL 从单元格读取括号 `[...]` 文法；有 `excel_columns: N` 的 vector SHALL 将 N 个物理槽位读取为运行时变长 vector，最后一个显式填写槽位决定长度，其前方全空槽位及已填写 Record 槽位中的空叶子递归补类型默认值，末尾全空槽位不生成元素。
+
+#### Scenario: Record columns reassembled
 - **WHEN** Excel 中 `DropRange.Min=10`、`DropRange.Max=20`
 - **THEN** 解析结果包含 `{"DropRange": {"Min": 10, "Max": 20}}`
 
@@ -171,7 +173,7 @@
 - **WHEN** Excel 中填写 `Position.Area.X=1`、`Position.Area.Y=2`、`Position.Z=3`
 - **THEN** 解析结果包含 `{"Position": {"Area": {"X": 1, "Y": 2}, "Z": 3}}`，同名但不同父路径的叶子不会互相覆盖
 
-#### Scenario: Array parsed with separator
+#### Scenario: Vector parsed with separator
 - **WHEN** `Tags: vector<int32>` 单元格填写 `[1, 2, 5]`
 - **THEN** 内置英文逗号作为 canonical token 分隔符，解析结果为 `{"Tags": [1, 2, 5]}`，Schema 不再配置 separator
 
@@ -179,11 +181,11 @@
 - **WHEN** 变长 vector 单元格为空、`[]` 或 `[   ]`
 - **THEN** 解析结果均为空数组
 
-#### Scenario: Array with custom separator
+#### Scenario: Vector with custom separator
 - **WHEN** Schema 声明自定义 `separator: "|"` 或单元格填写 `[1|2|5]`
 - **THEN** 工具拒绝自定义分隔符并提示使用内置 `[...]` 英文逗号文法
 
-#### Scenario: Array element type validated
+#### Scenario: Vector element type validated
 - **WHEN** `vector<int32>` 单元格填写 `[1,abc,5]`
 - **THEN** 工具报错定位第 2 个元素 `abc` 无法转换为 int32
 
@@ -208,15 +210,19 @@
 - **THEN** 该 Slot 计入长度且 Count 使用 int32 默认值 0
 
 ### Requirement: Detect changes via file hash
-工具 SHALL 对每个 Excel 文件计算 MD5 hash，与缓存中的上次 hash 比对，确定是否需要重新导出。
+工具 SHALL 对每个 Excel 文件计算 sha256（`_file_sha256`），与缓存 `excel_hashes` 台账中的上次 hash 比对，把「hash 不一致或缓存无记录（从未导出）」的表列为 `changed`，供 `ct status` 报告。该状态只用于报告：`ct export` SHALL NOT 因「文件未变更」跳过任何表的导出工作；不带过滤的导出会先清空 `output/{fbs,generated,json,binary}` 再重建全部产物，导出步骤为 `CANONICAL_STEPS = ("解析校验", "JSON", "Accessor", "FBS", "Bundle")`。
 
-#### Scenario: File unchanged
-- **WHEN** Excel 文件内容与缓存 hash 一致
-- **THEN** 跳过该表的导出，输出 "unchanged: item" 提示
+#### Scenario: Unchanged file is not reported as changed
+- **WHEN** Excel 文件的 sha256 与缓存台账一致
+- **THEN** 该表不出现在 `changed`（不存在「跳过该表导出」的分支，`ct export` 仍照常重建该表产物）
 
 #### Scenario: File changed
 - **WHEN** Excel 文件 hash 与缓存不一致
-- **THEN** 将该表加入待导出队列
+- **THEN** 将该表列为 `changed`
+
+#### Scenario: Never exported table
+- **WHEN** 缓存中没有该表的 `excel_hashes` 记录
+- **THEN** 该表列为 `changed`
 
 ### Requirement: Plan Excel data changes by stable paths
 Workspace Change Plan SHALL 比较旧/新列路径和显式 rename command，生成可审查映射，并扫描删除、收缩和类型转换位置的非空数据；无法无损处理的数据 SHALL 阻止 Apply。

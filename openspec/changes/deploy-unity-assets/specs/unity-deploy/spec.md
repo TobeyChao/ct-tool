@@ -4,6 +4,12 @@
 
 ## ADDED Requirements
 
+> ⚠️ **实现状态（2026-09-12 复核）**：以下 requirement 中，**「部署状态可见」整条未实现**
+> （`ct status` 无 deploy 输出；`/api/workspace` 的 `deploy.targets` 恒为 `[]`；web 前端无「部署目录」行；
+> 导出进度 steps 无 "Deploy"），**「无变化时仍可部署」的前提不存在**（`ct export` 每次都全量重建）。
+> 这两条**不得按已落地归档**；其余条目的部署动作只发生在 **CLI 路径**（`ct export` 之后的 `_run_deploy()`），
+> web 面板从不部署。对应 `tasks.md` 条目已重新置为 `[ ]`。
+
 ### Requirement: deploy 配置可声明且可降级
 系统 SHALL 通过项目配置声明 deploy 目标：启用开关、Unity 工程路径（相对项目根或绝对）、targets（source→dest 映射）与构建目标列表。未配置或未启用时，导表行为 MUST 与未引入 deploy 前完全一致。
 
@@ -34,6 +40,11 @@
 - **THEN** 命令以非 0 退出，输出明确错误，且缓存状态未更新
 
 ### Requirement: 无变化时仍可部署
+
+> ⚠️ **未实现 / 前提不存在（2026-09-12）**：`ct export` **每次都全量重建**，CLI 里没有"所有表均无变化"的
+> 提前返回分支，也就不存在"跳过导出但仍部署"这条路径。CLI 每次导出后都会执行 `_run_deploy()`，
+> fresh 环境场景因此自然被覆盖 —— 但**不是**本节描述的行为。归档前需重写本条或删除。
+
 系统 SHALL 在增量导出判定"所有表均无变化"时跳过导出，但仍执行部署（日志注明仅部署）。
 
 #### Scenario: fresh 环境无变化表时补齐产物
@@ -55,6 +66,13 @@
 - **THEN** 常规目标与构建目标都被部署
 
 ### Requirement: 部署状态可见
+
+> ⚠️ **未实现（2026-09-12 复核）—— 不得按已落地归档**：
+> `ct status` 只打印 `missing` / `changed` / `drifted` 三类，**不含任何 deploy 信息、也不含目标路径**；
+> `/api/workspace` 的 `config.deploy` 只回 `enabled` 与 `unity_project`，**`targets` 恒为 `[]`**；
+> web 前端**没有**「部署目录」行；`CanonicalExportTask.export_steps`（即 `CANONICAL_STEPS`）**不含 "Deploy"**。
+> 下方两个 scenario 均无对应实现。
+
 系统 SHALL 在 Web 面板工作区信息与 `ct status` 输出中展示部署配置状态与目标绝对路径；Web 导出进度 SHALL 包含部署步骤。
 
 #### Scenario: Web 面板显示部署配置

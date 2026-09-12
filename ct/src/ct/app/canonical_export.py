@@ -8,9 +8,10 @@ then writes JSON, shared ``types.fbs`` + per-table FBS, a real FlatBuffers
 Progress reporting is phase-based (``CANONICAL_STEPS``): each phase covers
 the full table set so the step index only moves forward, which keeps the
 web progress cells stable during an export. ``forced`` is accepted and
-recorded for parity with the legacy pipeline; the current  pipeline
-always rebuilds every artifact (incremental reuse via the layered
-fingerprints is not wired up yet).
+recorded for parity with the legacy pipeline, but it does **not** change
+behaviour: this pipeline always rebuilds every artifact (incremental reuse
+via the layered fingerprints in ``ct.cache.fingerprints`` is not wired up
+yet).
 """
 
 from __future__ import annotations
@@ -248,7 +249,8 @@ def run_canonical_export(
     # ---- B4：校验**通过后**清理「纯生成物」目录 ----
     # 陈旧的 output/fbs、output/generated 会让消费方看到**已废弃格式**的 schema
     # （实例：2026/8/14 的 *_i18n.fbs 与 9/10 的产物并存，而全仓已无代码生成它们）。
-    # 只在**全量导出**时清理：带 table/lang 过滤的导出是增量的，不能删别的表。
+    # 只在**不过滤**时清理：带 table/lang 过滤的导出只**重写**被选中的部分
+    # （产物目录仍是整目录重写，所以清理会误删未选中表的产物）。
     # ⚠️ 必须放在校验通过之后：校验失败（重复主键/悬空 ref 等）时，output/ 里的
     #    仍是上次成功导出的完整产物 —— 前置校验闸门承诺失败导出不落脏数据，
     #    更不能反过来把上次的成功产物删掉。
