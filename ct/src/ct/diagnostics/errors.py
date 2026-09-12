@@ -20,6 +20,7 @@ class IssueCode(str, Enum):
     TYPE = "type"
     REF = "ref"
     DUPLICATE_PK = "duplicate_pk"
+    DUPLICATE_CODENAME = "duplicate_codename"
     SCHEMA = "schema"
     TEMPLATE = "template"
     WORKSPACE = "workspace"

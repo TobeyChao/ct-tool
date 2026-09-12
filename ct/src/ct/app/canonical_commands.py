@@ -28,7 +28,7 @@ from ct.excel.layout import Column, Layout, build_layout
 from ct.excel.layout_manifest import LayoutManifest, save_manifest
 from ct.excel.planning import plan_excel_migration
 from ct.schema.hashing import compute_schema_hash
-from ct.schema.resources import RecordResource
+from ct.schema.resources import CODENAME_FIELD, RecordResource
 
 
 def _records_map(ws: CanonicalWorkspace) -> dict[str, RecordResource]:
@@ -78,6 +78,57 @@ def _primary_issues(
             )
         else:
             seen.add(pk)
+    return issues
+
+
+def _codename_issues(table, parsed) -> list[Issue]:
+    """CodeName 索引的数据闸门：**声明了索引的表，每行必须有一个非空且唯一的 CodeName**。
+
+    为什么必须有这道闸门（实测）：导出器建桶表时对空串 `continue`，桶里也**不判重**
+    —— 于是两行写同一个 CodeName 时导出**不报错**，运行期 `ByCodeName()` 只命中探测序
+    更靠前的那一行，另一行**永远查不到**，且全程没有任何提示。CodeName 的语义就是
+    「这张表按它唯一索引」，静默少一行属于最难查的那类缺陷。
+
+    只对**声明了 codename 索引**的表校验：没声明索引的表里 CodeName 就是个普通字段。
+    """
+    if not any(index.kind == "codename" for index in table.indexes):
+        return []
+    issues: list[Issue] = []
+    seen: dict[str, int] = {}
+    for index, row in enumerate(parsed.rows, start=1):
+        excel_row = (
+            parsed.excel_rows[index - 1] if index - 1 < len(parsed.excel_rows) else None
+        )
+        value = row.get(CODENAME_FIELD)
+        text = "" if value is None else str(value)
+        if text == "":
+            issues.append(
+                ValidationIssue(
+                    table.table,
+                    IssueCode.TYPE,
+                    f"{CODENAME_FIELD} 为空（该表声明了 codename 索引，"
+                    "空值这一行永远查不到）",
+                    row_index=index,
+                    excel_row=excel_row,
+                    field=CODENAME_FIELD,
+                    value=value,
+                )
+            )
+        elif text in seen:
+            issues.append(
+                ValidationIssue(
+                    table.table,
+                    IssueCode.DUPLICATE_CODENAME,
+                    f"{CODENAME_FIELD} 重复: {text!r}"
+                    f"（首次出现在第 {seen[text]} 行）",
+                    row_index=index,
+                    excel_row=excel_row,
+                    field=CODENAME_FIELD,
+                    value=text,
+                )
+            )
+        else:
+            seen[text] = index
     return issues
 
 
@@ -172,6 +223,7 @@ def canonical_validate(
         issues.extend(parsed.issues)
         seen: set = set()
         issues.extend(_primary_issues(table, parsed, seen))
+        issues.extend(_codename_issues(table, parsed))
         parsed_by_table[table.table] = parsed
         id_sets[table.table] = seen
 

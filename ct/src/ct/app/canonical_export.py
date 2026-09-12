@@ -22,6 +22,7 @@ from typing import Any
 
 from ct.app.canonical_commands import (
     CanonicalValidationError,
+    _codename_issues,
     _primary_issues,
     _ref_issues,
 )
@@ -231,6 +232,7 @@ def run_canonical_export(
             validation_issues.extend(parsed.issues)
             seen: set = set()
             validation_issues.extend(_primary_issues(table, parsed, seen))
+            validation_issues.extend(_codename_issues(table, parsed))
             prepared.append((table, layout, excel_path, parsed))
             parsed_by_table[table.table] = parsed
             id_sets[table.table] = seen

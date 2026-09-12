@@ -10,8 +10,6 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from ct.schema.resources import CODENAME_FIELD, QueryIndex
-
 _FNV_OFFSET = 0xCBF29CE484222325
 _FNV_PRIME = 0x100000001B3
 _MASK = 0xFFFFFFFFFFFFFFFF
@@ -69,32 +67,3 @@ class StringIndex:
 
     def exact_strings(self, value: str) -> list[str]:
         return [text for text, _ in self.buckets.get(self.hash_provider(value), ())]
-
-
-def validate_code_index(
-    rows: list[dict[str, Any]],
-    index: QueryIndex,
-    *,
-    hash_provider: HashProvider = production_hash,
-) -> list[tuple[int, str]]:
-    """Return (row_index, duplicate) for every duplicated exact CodeName value.
-
-    键的字段名是**约定**（:data:`CODENAME_FIELD`），不从索引上读 —— ``index`` 只用来确认
-    调用方确实声明的是 codename 索引（传别的 kind 直接报错，免得静默按 CodeName 查）。
-    """
-    if index.kind != "codename":
-        raise ValueError(
-            f"validate_code_index 只处理 codename 索引，收到 kind={index.kind!r}"
-        )
-    seen: dict[str, int] = {}
-    duplicates: list[tuple[int, str]] = []
-    for row_index, row in enumerate(rows):
-        value = row.get(CODENAME_FIELD)
-        if value is None or str(value) == "":
-            continue
-        text = str(value)
-        if text in seen:
-            duplicates.append((row_index, text))
-        else:
-            seen[text] = row_index
-    return duplicates

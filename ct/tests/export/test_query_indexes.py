@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from ct.export.index_query import StringIndex, production_hash, validate_code_index
+from ct.export.index_query import StringIndex, production_hash
 from ct.schema.indexes import QueryIndex, parse_indexes, validate_indexes
 from ct.schema.resources import FieldDef, TableResource
 
@@ -128,16 +128,6 @@ def test_hash_collision_returns_only_exact_match() -> None:
 def test_hash_is_case_sensitive_and_exact() -> None:
     assert production_hash("Code") != production_hash("code")
     assert production_hash("Ａ") != production_hash("A")  # full-width distinct
-
-
-def test_code_duplicate_validation_reports_exact_rows() -> None:
-    rows = [
-        {"Id": 1, "CodeName": "Sword"},
-        {"Id": 2, "CodeName": "Sword"},
-        {"Id": 3, "CodeName": "Shield"},
-    ]
-    duplicates = validate_code_index(rows, QueryIndex(kind="codename"))
-    assert (1, "Sword") in duplicates
 
 
 def test_normal_bucket_query_is_bucket_local() -> None:
