@@ -5,37 +5,44 @@
 ## Requirements
 
 ### Requirement: ct export command
-`ct export` SHALL 全量重跑 canonical 导出管道，步骤序列即 `CANONICAL_STEPS`：`解析校验 → JSON → Accessor → FBS → Bundle`（`ct/app/canonical_export.py`）。管道内**无 i18n sync、无 flatc 调用、无 deploy stage**；`ct export` 不调用 `canonical_i18n_sync`，因此不写 `i18n/source/`（只有 `ct i18n sync` 会写）。
 
-管道没有任何复用路径：每次都是全量重建，不读 `cache/state.json`。`--all` 只是把 `forced=True` 记录进返回值，不是「强制全量」开关（导出本就全量）。缓存（`excel_hashes` / `bundles`）只供 `ct status` 报告变更，不跳过导出工作。
+`ct export` SHALL 执行 canonical 解析校验并默认增量复用生成产物，`--all` SHALL 强制生成及写出所有选中产物。对外步骤 SHALL 保持 `解析校验 → JSON → Accessor → FBS → Bundle`，不新增 Deploy 步骤。导出 SHALL 不执行 i18n sync、不写 i18n/source、不调用 flatc。
 
-部署不在步骤序列内：CLI 在管道成功后打印 `导出完成: N 张表`，随后调用 `ct/export/deploy.py` 的 `deploy()` 把产物同步到 Unity Assets（`[deploy] 完成：N 个文件已同步` / `[deploy] 无文件变更`），最后才调用 `persist_export_state` 提交缓存指纹。
+全部生成及结构检查成功后 SHALL 可恢复地发布本地产物。本地发布成功时 CLI SHALL 输出 `导出完成: N 张表`，随后执行配置的 Unity 部署并输出 `[deploy] 完成：N 个文件已同步` 或 `[deploy] 无文件变更`，最后提交成功账本。部署失败 SHALL 非零退出并保留旧账本。缓存全命中 SHALL 不省略部署。Web 导出不属于 CLI 自动部署策略。
 
-`--table` / `--lang` 指向不存在的表或语言时 SHALL 以友好错误失败退出（`表 'X' 不存在` / `语言 'X' 不在可导出语言中（可用: ...）`，退出码非 0），SHALL NOT 静默产出空结果。
+`--table` / `--lang` SHALL 只接受单个精确值；不存在时 SHALL 友好失败（`表 'X' 不存在` / `语言 'X' 不在可导出语言中（可用: ...）`），不发布产物或提交账本。语言过滤 SHALL 保留当前兼容行为：只构建所选语言 Bundle 和次语言 JSON，但始终生成选中表的主语言 JSON，共享 FBS/Accessor/manifest 仍参与导出。表过滤的 Bundle SHALL 仅含选中表的相应内容。
 
 #### Scenario: Default full export
 - **WHEN** 用户执行 `ct export`
-- **THEN** 全部表 × 全部语言重新解析并重写 JSON / FBS / Accessor / Bundle，依次输出 `导出完成: N 张表` 与 deploy 结果；不出现 `[skip]` 式跳过提示，`cache/state.json` 中的历史 hash 不影响本次导出范围
+- **THEN** 全部表被解析校验，全部语言生成或复用 JSON/FBS/Accessor/Bundle，未变内容保留 mtime；依次输出导出完成和部署结果
 
 #### Scenario: Export specific table
 - **WHEN** 用户执行 `ct export --table Item`
-- **THEN** 只处理表名**精确等于** `Item` 的表（`table.table == table_filter`）；`--table` 只接受单个值，不接受逗号列表，表名须为 PascalCase（`item` 会被 schema 校验拒绝）
+- **THEN** 只选择精确匹配 Item 的表，不接受逗号列表或大小写不匹配，保持当前 ref 校验范围
 
 #### Scenario: Export with specific language
-- **WHEN** 用户执行 `ct export --lang en`
-- **THEN** 只导出 `en` 一种语言的产物（`lang == lang_filter`，单个精确值，不接受逗号列表）
+- **WHEN** 主语言为 zh，用户执行 `ct export --lang en`
+- **THEN** 生成 en Bundle 与 en JSON，同时保留主语言 zh JSON 的生成行为，不重建 zh Bundle
 
 #### Scenario: Validation failure aborts the whole export
-- **WHEN** 任一张表校验失败（类型、主键、CodeName 闸门或跨表 ref）
-- **THEN** 整个导出中止，任何表都不生成产物，`output/` 保持上一次成功导出的内容，退出码非 0
+- **WHEN** 选中表出现类型、主键、CodeName 或跨表 ref 校验失败
+- **THEN** 整个导出中止，output 与 layout manifest 保持发布前内容，退出码非零
 
 #### Scenario: Verbose export shows debug log
 - **WHEN** 执行 `ct export --verbose`
-- **THEN** 日志级别降为 DEBUG（`_setup_logging`），不输出任何 i18n sync 汇总（导出不触发 sync）
+- **THEN** 启用 DEBUG 日志，不输出 i18n sync 汇总
 
 #### Scenario: Unknown table or language fails
-- **WHEN** 用户执行 `ct export --lang zz`（`zz` 不在 `all_langs` 中），或 `ct export --table Nope`
-- **THEN** 命令以非 0 退出码失败并输出可用取值（`语言 'zz' 不在可导出语言中（可用: zh, en, ja）` / `表 'Nope' 不存在`），不写任何产物、不提交缓存指纹
+- **WHEN** 指定不存在的语言 zz 或表 Nope
+- **THEN** 友好报错并非零退出，语言错误含可用取值，不发布产物或提交账本
+
+#### Scenario: Forced export
+- **WHEN** 执行 `ct export --all`
+- **THEN** 强制生成与写出选中产物，保留原有部署流程及参数组合语义
+
+#### Scenario: Deploy failure keeps the old ledger
+- **WHEN** 本地发布成功但 Unity 同步失败
+- **THEN** CLI 非零退出并输出 `[deploy error]`，完整本地产物保留，`cache/state.json` 不推进
 
 ### Requirement: ct i18n subcommand group
 CLI SHALL 提供 `ct i18n` 子命令组，承载所有翻译骨架与状态管理操作。子命令组下 SHALL 包含 `sync`、`status`、`compact` 三个子命令。

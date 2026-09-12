@@ -1,0 +1,389 @@
+{
+  "files": {
+    "excel/layout_manifests/Item.json": {
+      "mtime_ns": 1789237069814642923,
+      "sha256": "630a217127115629b63bc4d31c38dfe915fe6d5fe794a129dfa9f10bc9e69ec5",
+      "size": 6238
+    },
+    "excel/layout_manifests/ItemType.json": {
+      "mtime_ns": 1789237069815857926,
+      "sha256": "47fd58c99d7b3e247648b3963ab5cf953342f36254df94b2a0359e7f46b7f42e",
+      "size": 2110
+    },
+    "excel/layout_manifests/Quest.json": {
+      "mtime_ns": 1789237069817247471,
+      "sha256": "d886a126f1523ca6491d01ea6d5cd5f12e8edbbf4a5bfdf9c8c825e4cdff04b1",
+      "size": 5730
+    },
+    "excel/layout_manifests/UIConfig.json": {
+      "mtime_ns": 1789237069818412891,
+      "sha256": "ac8d487f235bd8fe924208f12d4f6bd33bf2e6e4474a836aa1de765d33e2ce75",
+      "size": 3377
+    },
+    "output/binary/data_en.bin": {
+      "mtime_ns": 1789237069822879736,
+      "sha256": "8ac7f5d31d7c6d2c8000c64c014f82c9a2736d2cc8a427122ad29e2a4413da7a",
+      "size": 1340
+    },
+    "output/binary/data_ja.bin": {
+      "mtime_ns": 1789237069823292029,
+      "sha256": "ba20d4cfa3ed4a4ad1a2ab06288d23693da7e7573ab19b7cc3765c8247cc2041",
+      "size": 1468
+    },
+    "output/binary/data_zh.bin": {
+      "mtime_ns": 1789237069822457610,
+      "sha256": "e00d42a60c202085c7ece3eb9d6c5bb3cf258614d5e99765f6ac10b7a82da8d0",
+      "size": 1796
+    },
+    "output/fbs/Item.fbs": {
+      "mtime_ns": 1789237069821294274,
+      "sha256": "e3c4b7691e8dba3fa59fdef6002b8f741ec0e7dd9386d0cc0aee8a607041127a",
+      "size": 484
+    },
+    "output/fbs/ItemType.fbs": {
+      "mtime_ns": 1789237069821457899,
+      "sha256": "6f9ed7255f241edf8d819f3575dfba7549eb060812879ba18cb08b914814749e",
+      "size": 426
+    },
+    "output/fbs/Quest.fbs": {
+      "mtime_ns": 1789237069821618358,
+      "sha256": "7bd934a410bb7bae914d73a7fa6d9a3f18a73d0b3bb4a15f17d838b307d769d4",
+      "size": 499
+    },
+    "output/fbs/UIConfig.fbs": {
+      "mtime_ns": 1789237069821778817,
+      "sha256": "bc7b8b2e885898b79db0d447d49c73797186d6a8a53af287e8c280fa49454ccf",
+      "size": 362
+    },
+    "output/fbs/container.fbs": {
+      "mtime_ns": 1789237069821937900,
+      "sha256": "845e753f158cf4eae30066759503eb8fed84ef2f40290f60e55671f7fd4e7084",
+      "size": 126
+    },
+    "output/fbs/types.fbs": {
+      "mtime_ns": 1789237069820078104,
+      "sha256": "4606e30e82b30ff4a8cdaae02d70bbfab8a028061482f5109888d3b79155e4bc",
+      "size": 708
+    },
+    "output/generated/csharp/Enums.cs": {
+      "mtime_ns": 1789237069818849892,
+      "sha256": "c37afc58b7160de238985846486f5eb64a8193ec2f2728704723364f7d26b59b",
+      "size": 1284
+    },
+    "output/generated/csharp/ItemAccessor.cs": {
+      "mtime_ns": 1789237069813713545,
+      "sha256": "697399fbda214da9f1c745e4608efee7c4daba0148122f5df0009a2b70465279",
+      "size": 9863
+    },
+    "output/generated/csharp/ItemTypeAccessor.cs": {
+      "mtime_ns": 1789237069815219466,
+      "sha256": "12eb6ccb1a8a8b7d08afaa1b2ebe82781d18abf62c9a1fc877ed2050c9e3b302",
+      "size": 8492
+    },
+    "output/generated/csharp/QuestAccessor.cs": {
+      "mtime_ns": 1789237069816513886,
+      "sha256": "2c8efbc3f618626942851d88ddab1bebbcb5a3a62760ef967b1f2f8631ec1bb0",
+      "size": 11004
+    },
+    "output/generated/csharp/UIConfigAccessor.cs": {
+      "mtime_ns": 1789237069817741639,
+      "sha256": "84ae567c45d97e504cf6c7733410c7f35c2c9990e79e7c6da011cff82987f32f",
+      "size": 5337
+    },
+    "output/generated/lua/Enums.lua": {
+      "mtime_ns": 1789237069819347852,
+      "sha256": "867e8d44335bbb5c12489d6009e0ad835246a71da9c22ff698ef439fe784bab4",
+      "size": 953
+    },
+    "output/generated/lua/ItemAccessor.lua": {
+      "mtime_ns": 1789237069814325797,
+      "sha256": "1389b5048c942379772fab13b3d2247f1d6e523af185e71f740467f28aa52a48",
+      "size": 2424
+    },
+    "output/generated/lua/ItemTypeAccessor.lua": {
+      "mtime_ns": 1789237069815649217,
+      "sha256": "beb48807c851e51280a497086abfac971de1ebd54ed9ce81cdb2c1bfb91a7900",
+      "size": 1961
+    },
+    "output/generated/lua/QuestAccessor.lua": {
+      "mtime_ns": 1789237069816998346,
+      "sha256": "8fc81ed173e0ed8fc12e1cee302cdd6d21c65e4f301195f8521162d5ba0f5051",
+      "size": 2280
+    },
+    "output/generated/lua/UIConfigAccessor.lua": {
+      "mtime_ns": 1789237069818194849,
+      "sha256": "0e8819a5f107246b2d79ad8b81158cbfed524d203114ad8676f2ad385165d88e",
+      "size": 1336
+    },
+    "output/json/ItemType_en.json": {
+      "mtime_ns": 1789237069807067403,
+      "sha256": "83315840fe852c159b2b47a8b3811cc40e92a74bd8cacc6729e59984503a3f9c",
+      "size": 180
+    },
+    "output/json/ItemType_ja.json": {
+      "mtime_ns": 1789237069807793196,
+      "sha256": "f18cac40f1b5546f4a21663ebf36d06a35393ccdf54b203d1030f2eae771ea0a",
+      "size": 174
+    },
+    "output/json/ItemType_zh.json": {
+      "mtime_ns": 1789237069806266151,
+      "sha256": "6f28e70b94d7603501a92437adfffee5616bd5e31100eb1793c5ad847c7fca24",
+      "size": 174
+    },
+    "output/json/Item_en.json": {
+      "mtime_ns": 1789237069804320312,
+      "sha256": "2f743160406edaef2883265ce120e11c01a1054058ca6e79967b607147ba32f6",
+      "size": 579
+    },
+    "output/json/Item_ja.json": {
+      "mtime_ns": 1789237069805166523,
+      "sha256": "9d02a9b9d9a6008955e7b0b27dc9a4718dded02ec54814638dc0705078fc6e1d",
+      "size": 586
+    },
+    "output/json/Item_zh.json": {
+      "mtime_ns": 1789237069803276809,
+      "sha256": "719a8a9612b351bad0a3bcbb8d7fa5bfe2a511ff14769af91416297268330ed5",
+      "size": 574
+    },
+    "output/json/Quest_en.json": {
+      "mtime_ns": 1789237069809804785,
+      "sha256": "7e0943563a6703a4a337bff250706ce5d4fa2102c794bde4bffc895b893594c7",
+      "size": 842
+    },
+    "output/json/Quest_ja.json": {
+      "mtime_ns": 1789237069810581287,
+      "sha256": "e21e2044cdb9d304d8c850c1fa2041a4f1e458e831ce3866ac2d500c1b5222a0",
+      "size": 969
+    },
+    "output/json/Quest_zh.json": {
+      "mtime_ns": 1789237069808931074,
+      "sha256": "f81733808a9a8cc087a1f1cfa9c2ea99d04e9d0a9a4bd3658dc4580a0ac7b66e",
+      "size": 374
+    },
+    "output/json/UIConfig_en.json": {
+      "mtime_ns": 1789237069812212958,
+      "sha256": "0addc6b67e8f1ce80d7c9c72c6915b4fba38abafadcb8549effbd5b5a85d0cef",
+      "size": 779
+    },
+    "output/json/UIConfig_ja.json": {
+      "mtime_ns": 1789237069812666501,
+      "sha256": "0addc6b67e8f1ce80d7c9c72c6915b4fba38abafadcb8549effbd5b5a85d0cef",
+      "size": 779
+    },
+    "output/json/UIConfig_zh.json": {
+      "mtime_ns": 1789237069811735040,
+      "sha256": "0addc6b67e8f1ce80d7c9c72c6915b4fba38abafadcb8549effbd5b5a85d0cef",
+      "size": 779
+    }
+  },
+  "mode": "forced",
+  "runs": [
+    {
+      "argv": [
+        "ct",
+        "export",
+        "--all",
+        "--root",
+        "<tmp>"
+      ],
+      "returncode": 0,
+      "stderr": "[deploy] 未配置或未启用，跳过\n",
+      "stdout": "解析 Item（4 行）\n解析 ItemType（3 行）\n解析 Quest（3 行）\n解析 UIConfig（7 行）\nItem：填充率 92.9% → 定宽（436 B → 424 B，0.972x）\nItemType：填充率 100.0% → 定宽（248 B → 248 B，1.000x）\nQuest：填充率 100.0% → 定宽（360 B → 360 B，1.000x）\nUIConfig：填充率 60.0% → 变长\n枚举声明 5 个 → Enums.cs / Enums.lua\n强制重建：写入 31，复用 0；生成缓存命中 0\n\n导出完成: 4 张表\n[deploy] 无文件变更\n"
+    }
+  ],
+  "snapshots": [
+    {
+      "excel/layout_manifests/Item.json": {
+        "mtime_ns": 1789237069814642923,
+        "sha256": "630a217127115629b63bc4d31c38dfe915fe6d5fe794a129dfa9f10bc9e69ec5",
+        "size": 6238
+      },
+      "excel/layout_manifests/ItemType.json": {
+        "mtime_ns": 1789237069815857926,
+        "sha256": "47fd58c99d7b3e247648b3963ab5cf953342f36254df94b2a0359e7f46b7f42e",
+        "size": 2110
+      },
+      "excel/layout_manifests/Quest.json": {
+        "mtime_ns": 1789237069817247471,
+        "sha256": "d886a126f1523ca6491d01ea6d5cd5f12e8edbbf4a5bfdf9c8c825e4cdff04b1",
+        "size": 5730
+      },
+      "excel/layout_manifests/UIConfig.json": {
+        "mtime_ns": 1789237069818412891,
+        "sha256": "ac8d487f235bd8fe924208f12d4f6bd33bf2e6e4474a836aa1de765d33e2ce75",
+        "size": 3377
+      },
+      "output/binary/data_en.bin": {
+        "mtime_ns": 1789237069822879736,
+        "sha256": "8ac7f5d31d7c6d2c8000c64c014f82c9a2736d2cc8a427122ad29e2a4413da7a",
+        "size": 1340
+      },
+      "output/binary/data_ja.bin": {
+        "mtime_ns": 1789237069823292029,
+        "sha256": "ba20d4cfa3ed4a4ad1a2ab06288d23693da7e7573ab19b7cc3765c8247cc2041",
+        "size": 1468
+      },
+      "output/binary/data_zh.bin": {
+        "mtime_ns": 1789237069822457610,
+        "sha256": "e00d42a60c202085c7ece3eb9d6c5bb3cf258614d5e99765f6ac10b7a82da8d0",
+        "size": 1796
+      },
+      "output/fbs/Item.fbs": {
+        "mtime_ns": 1789237069821294274,
+        "sha256": "e3c4b7691e8dba3fa59fdef6002b8f741ec0e7dd9386d0cc0aee8a607041127a",
+        "size": 484
+      },
+      "output/fbs/ItemType.fbs": {
+        "mtime_ns": 1789237069821457899,
+        "sha256": "6f9ed7255f241edf8d819f3575dfba7549eb060812879ba18cb08b914814749e",
+        "size": 426
+      },
+      "output/fbs/Quest.fbs": {
+        "mtime_ns": 1789237069821618358,
+        "sha256": "7bd934a410bb7bae914d73a7fa6d9a3f18a73d0b3bb4a15f17d838b307d769d4",
+        "size": 499
+      },
+      "output/fbs/UIConfig.fbs": {
+        "mtime_ns": 1789237069821778817,
+        "sha256": "bc7b8b2e885898b79db0d447d49c73797186d6a8a53af287e8c280fa49454ccf",
+        "size": 362
+      },
+      "output/fbs/container.fbs": {
+        "mtime_ns": 1789237069821937900,
+        "sha256": "845e753f158cf4eae30066759503eb8fed84ef2f40290f60e55671f7fd4e7084",
+        "size": 126
+      },
+      "output/fbs/types.fbs": {
+        "mtime_ns": 1789237069820078104,
+        "sha256": "4606e30e82b30ff4a8cdaae02d70bbfab8a028061482f5109888d3b79155e4bc",
+        "size": 708
+      },
+      "output/generated/csharp/Enums.cs": {
+        "mtime_ns": 1789237069818849892,
+        "sha256": "c37afc58b7160de238985846486f5eb64a8193ec2f2728704723364f7d26b59b",
+        "size": 1284
+      },
+      "output/generated/csharp/ItemAccessor.cs": {
+        "mtime_ns": 1789237069813713545,
+        "sha256": "697399fbda214da9f1c745e4608efee7c4daba0148122f5df0009a2b70465279",
+        "size": 9863
+      },
+      "output/generated/csharp/ItemTypeAccessor.cs": {
+        "mtime_ns": 1789237069815219466,
+        "sha256": "12eb6ccb1a8a8b7d08afaa1b2ebe82781d18abf62c9a1fc877ed2050c9e3b302",
+        "size": 8492
+      },
+      "output/generated/csharp/QuestAccessor.cs": {
+        "mtime_ns": 1789237069816513886,
+        "sha256": "2c8efbc3f618626942851d88ddab1bebbcb5a3a62760ef967b1f2f8631ec1bb0",
+        "size": 11004
+      },
+      "output/generated/csharp/UIConfigAccessor.cs": {
+        "mtime_ns": 1789237069817741639,
+        "sha256": "84ae567c45d97e504cf6c7733410c7f35c2c9990e79e7c6da011cff82987f32f",
+        "size": 5337
+      },
+      "output/generated/lua/Enums.lua": {
+        "mtime_ns": 1789237069819347852,
+        "sha256": "867e8d44335bbb5c12489d6009e0ad835246a71da9c22ff698ef439fe784bab4",
+        "size": 953
+      },
+      "output/generated/lua/ItemAccessor.lua": {
+        "mtime_ns": 1789237069814325797,
+        "sha256": "1389b5048c942379772fab13b3d2247f1d6e523af185e71f740467f28aa52a48",
+        "size": 2424
+      },
+      "output/generated/lua/ItemTypeAccessor.lua": {
+        "mtime_ns": 1789237069815649217,
+        "sha256": "beb48807c851e51280a497086abfac971de1ebd54ed9ce81cdb2c1bfb91a7900",
+        "size": 1961
+      },
+      "output/generated/lua/QuestAccessor.lua": {
+        "mtime_ns": 1789237069816998346,
+        "sha256": "8fc81ed173e0ed8fc12e1cee302cdd6d21c65e4f301195f8521162d5ba0f5051",
+        "size": 2280
+      },
+      "output/generated/lua/UIConfigAccessor.lua": {
+        "mtime_ns": 1789237069818194849,
+        "sha256": "0e8819a5f107246b2d79ad8b81158cbfed524d203114ad8676f2ad385165d88e",
+        "size": 1336
+      },
+      "output/json/ItemType_en.json": {
+        "mtime_ns": 1789237069807067403,
+        "sha256": "83315840fe852c159b2b47a8b3811cc40e92a74bd8cacc6729e59984503a3f9c",
+        "size": 180
+      },
+      "output/json/ItemType_ja.json": {
+        "mtime_ns": 1789237069807793196,
+        "sha256": "f18cac40f1b5546f4a21663ebf36d06a35393ccdf54b203d1030f2eae771ea0a",
+        "size": 174
+      },
+      "output/json/ItemType_zh.json": {
+        "mtime_ns": 1789237069806266151,
+        "sha256": "6f28e70b94d7603501a92437adfffee5616bd5e31100eb1793c5ad847c7fca24",
+        "size": 174
+      },
+      "output/json/Item_en.json": {
+        "mtime_ns": 1789237069804320312,
+        "sha256": "2f743160406edaef2883265ce120e11c01a1054058ca6e79967b607147ba32f6",
+        "size": 579
+      },
+      "output/json/Item_ja.json": {
+        "mtime_ns": 1789237069805166523,
+        "sha256": "9d02a9b9d9a6008955e7b0b27dc9a4718dded02ec54814638dc0705078fc6e1d",
+        "size": 586
+      },
+      "output/json/Item_zh.json": {
+        "mtime_ns": 1789237069803276809,
+        "sha256": "719a8a9612b351bad0a3bcbb8d7fa5bfe2a511ff14769af91416297268330ed5",
+        "size": 574
+      },
+      "output/json/Quest_en.json": {
+        "mtime_ns": 1789237069809804785,
+        "sha256": "7e0943563a6703a4a337bff250706ce5d4fa2102c794bde4bffc895b893594c7",
+        "size": 842
+      },
+      "output/json/Quest_ja.json": {
+        "mtime_ns": 1789237069810581287,
+        "sha256": "e21e2044cdb9d304d8c850c1fa2041a4f1e458e831ce3866ac2d500c1b5222a0",
+        "size": 969
+      },
+      "output/json/Quest_zh.json": {
+        "mtime_ns": 1789237069808931074,
+        "sha256": "f81733808a9a8cc087a1f1cfa9c2ea99d04e9d0a9a4bd3658dc4580a0ac7b66e",
+        "size": 374
+      },
+      "output/json/UIConfig_en.json": {
+        "mtime_ns": 1789237069812212958,
+        "sha256": "0addc6b67e8f1ce80d7c9c72c6915b4fba38abafadcb8549effbd5b5a85d0cef",
+        "size": 779
+      },
+      "output/json/UIConfig_ja.json": {
+        "mtime_ns": 1789237069812666501,
+        "sha256": "0addc6b67e8f1ce80d7c9c72c6915b4fba38abafadcb8549effbd5b5a85d0cef",
+        "size": 779
+      },
+      "output/json/UIConfig_zh.json": {
+        "mtime_ns": 1789237069811735040,
+        "sha256": "0addc6b67e8f1ce80d7c9c72c6915b4fba38abafadcb8549effbd5b5a85d0cef",
+        "size": 779
+      }
+    }
+  ],
+  "state_json": {
+    "bundles": {
+      "en": "bea7972663c9dab1e823101031d0888f5314605272d8818900c991f794dcd59d",
+      "ja": "e2aac25c7da08f98384277a041685ebe4bd5766fe44374738c713b945e86aeee",
+      "zh": "800ec1fbe1f42f3fca2e60bce84278186b55ed5aadeedb3c6d0c8494e7539e83"
+    },
+    "excel_hashes": {
+      "Item": "71651ee1c15859c7b1af23ccd86f7108708b5cf4f968572688a1b0bd81ce6eaa",
+      "ItemType": "7c73b1b7b00e3b474579877723660e0365e613eb17e62f46c0949758e3616b3f",
+      "Quest": "2702f96837fa2b4d8fd5d24a93e7923ef9e399001934dff655e82bdfac80be1f",
+      "UIConfig": "e6ce3c477318d7c89bd62440d3a733ca88dbcc219a23220cd4a6376ae15445f8"
+    },
+    "format": "canonical-cache/1",
+    "layout_revisions": {},
+    "tables": {}
+  }
+}

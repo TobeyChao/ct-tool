@@ -1,0 +1,177 @@
+{
+  "files": {
+    "excel/layout_manifests/ItemType.json": {
+      "mtime_ns": 1789237069203523141,
+      "sha256": "47fd58c99d7b3e247648b3963ab5cf953342f36254df94b2a0359e7f46b7f42e",
+      "size": 2110
+    },
+    "output/binary/data_en.bin": {
+      "mtime_ns": 1789237069207680443,
+      "sha256": "cb385412b7ac4d0f801e537930e6992236c8f0de0935c74465bc752bbca07d39",
+      "size": 276
+    },
+    "output/binary/data_ja.bin": {
+      "mtime_ns": 1789237069208152736,
+      "sha256": "b3a919c025b796742f77a3fbab1ebb09b6a5c32c42322c348acbee27e0773bfa",
+      "size": 268
+    },
+    "output/binary/data_zh.bin": {
+      "mtime_ns": 1789237069206932025,
+      "sha256": "b9a4e6b278b6a5774f16b3edabfa48aca20dc284aaa9f30f116ef161d5a9bf8a",
+      "size": 316
+    },
+    "output/fbs/ItemType.fbs": {
+      "mtime_ns": 1789237069206112856,
+      "sha256": "6f9ed7255f241edf8d819f3575dfba7549eb060812879ba18cb08b914814749e",
+      "size": 426
+    },
+    "output/fbs/container.fbs": {
+      "mtime_ns": 1789237069206325898,
+      "sha256": "845e753f158cf4eae30066759503eb8fed84ef2f40290f60e55671f7fd4e7084",
+      "size": 126
+    },
+    "output/fbs/types.fbs": {
+      "mtime_ns": 1789237069205454312,
+      "sha256": "4606e30e82b30ff4a8cdaae02d70bbfab8a028061482f5109888d3b79155e4bc",
+      "size": 708
+    },
+    "output/generated/csharp/Enums.cs": {
+      "mtime_ns": 1789237069204060725,
+      "sha256": "c37afc58b7160de238985846486f5eb64a8193ec2f2728704723364f7d26b59b",
+      "size": 1284
+    },
+    "output/generated/csharp/ItemTypeAccessor.cs": {
+      "mtime_ns": 1789237069202607222,
+      "sha256": "12eb6ccb1a8a8b7d08afaa1b2ebe82781d18abf62c9a1fc877ed2050c9e3b302",
+      "size": 8492
+    },
+    "output/generated/lua/Enums.lua": {
+      "mtime_ns": 1789237069204607810,
+      "sha256": "867e8d44335bbb5c12489d6009e0ad835246a71da9c22ff698ef439fe784bab4",
+      "size": 953
+    },
+    "output/generated/lua/ItemTypeAccessor.lua": {
+      "mtime_ns": 1789237069203200390,
+      "sha256": "beb48807c851e51280a497086abfac971de1ebd54ed9ce81cdb2c1bfb91a7900",
+      "size": 1961
+    },
+    "output/json/ItemType_en.json": {
+      "mtime_ns": 1789237069200478924,
+      "sha256": "83315840fe852c159b2b47a8b3811cc40e92a74bd8cacc6729e59984503a3f9c",
+      "size": 180
+    },
+    "output/json/ItemType_ja.json": {
+      "mtime_ns": 1789237069201300093,
+      "sha256": "f18cac40f1b5546f4a21663ebf36d06a35393ccdf54b203d1030f2eae771ea0a",
+      "size": 174
+    },
+    "output/json/ItemType_zh.json": {
+      "mtime_ns": 1789237069199546630,
+      "sha256": "6f28e70b94d7603501a92437adfffee5616bd5e31100eb1793c5ad847c7fca24",
+      "size": 174
+    }
+  },
+  "mode": "filtered",
+  "runs": [
+    {
+      "argv": [
+        "ct",
+        "export",
+        "--table",
+        "ItemType",
+        "--root",
+        "<tmp>"
+      ],
+      "returncode": 0,
+      "stderr": "[deploy] 未配置或未启用，跳过\n",
+      "stdout": "解析 ItemType（3 行）\nItemType：填充率 100.0% → 定宽（248 B → 248 B，1.000x）\n枚举声明 5 个 → Enums.cs / Enums.lua\n增量导出：写入 13，复用 0；生成缓存命中 0\n\n导出完成: 1 张表\n[deploy] 无文件变更\n"
+    }
+  ],
+  "snapshots": [
+    {
+      "excel/layout_manifests/ItemType.json": {
+        "mtime_ns": 1789237069203523141,
+        "sha256": "47fd58c99d7b3e247648b3963ab5cf953342f36254df94b2a0359e7f46b7f42e",
+        "size": 2110
+      },
+      "output/binary/data_en.bin": {
+        "mtime_ns": 1789237069207680443,
+        "sha256": "cb385412b7ac4d0f801e537930e6992236c8f0de0935c74465bc752bbca07d39",
+        "size": 276
+      },
+      "output/binary/data_ja.bin": {
+        "mtime_ns": 1789237069208152736,
+        "sha256": "b3a919c025b796742f77a3fbab1ebb09b6a5c32c42322c348acbee27e0773bfa",
+        "size": 268
+      },
+      "output/binary/data_zh.bin": {
+        "mtime_ns": 1789237069206932025,
+        "sha256": "b9a4e6b278b6a5774f16b3edabfa48aca20dc284aaa9f30f116ef161d5a9bf8a",
+        "size": 316
+      },
+      "output/fbs/ItemType.fbs": {
+        "mtime_ns": 1789237069206112856,
+        "sha256": "6f9ed7255f241edf8d819f3575dfba7549eb060812879ba18cb08b914814749e",
+        "size": 426
+      },
+      "output/fbs/container.fbs": {
+        "mtime_ns": 1789237069206325898,
+        "sha256": "845e753f158cf4eae30066759503eb8fed84ef2f40290f60e55671f7fd4e7084",
+        "size": 126
+      },
+      "output/fbs/types.fbs": {
+        "mtime_ns": 1789237069205454312,
+        "sha256": "4606e30e82b30ff4a8cdaae02d70bbfab8a028061482f5109888d3b79155e4bc",
+        "size": 708
+      },
+      "output/generated/csharp/Enums.cs": {
+        "mtime_ns": 1789237069204060725,
+        "sha256": "c37afc58b7160de238985846486f5eb64a8193ec2f2728704723364f7d26b59b",
+        "size": 1284
+      },
+      "output/generated/csharp/ItemTypeAccessor.cs": {
+        "mtime_ns": 1789237069202607222,
+        "sha256": "12eb6ccb1a8a8b7d08afaa1b2ebe82781d18abf62c9a1fc877ed2050c9e3b302",
+        "size": 8492
+      },
+      "output/generated/lua/Enums.lua": {
+        "mtime_ns": 1789237069204607810,
+        "sha256": "867e8d44335bbb5c12489d6009e0ad835246a71da9c22ff698ef439fe784bab4",
+        "size": 953
+      },
+      "output/generated/lua/ItemTypeAccessor.lua": {
+        "mtime_ns": 1789237069203200390,
+        "sha256": "beb48807c851e51280a497086abfac971de1ebd54ed9ce81cdb2c1bfb91a7900",
+        "size": 1961
+      },
+      "output/json/ItemType_en.json": {
+        "mtime_ns": 1789237069200478924,
+        "sha256": "83315840fe852c159b2b47a8b3811cc40e92a74bd8cacc6729e59984503a3f9c",
+        "size": 180
+      },
+      "output/json/ItemType_ja.json": {
+        "mtime_ns": 1789237069201300093,
+        "sha256": "f18cac40f1b5546f4a21663ebf36d06a35393ccdf54b203d1030f2eae771ea0a",
+        "size": 174
+      },
+      "output/json/ItemType_zh.json": {
+        "mtime_ns": 1789237069199546630,
+        "sha256": "6f28e70b94d7603501a92437adfffee5616bd5e31100eb1793c5ad847c7fca24",
+        "size": 174
+      }
+    }
+  ],
+  "state_json": {
+    "bundles": {
+      "en": "0ffc0d3b5805308483ea67e0aa92644342c78344e6bcfe1c7c1d357808ca65c1",
+      "ja": "b38f73a9cdfb06705daed500c212acd4c6bed2b75dbf3c43406f744601ccc0d1",
+      "zh": "0819a7f4027eab37488ddf3095dd31b31591b066ddef900d444ccfcf5ba1cb19"
+    },
+    "excel_hashes": {
+      "ItemType": "7c73b1b7b00e3b474579877723660e0365e613eb17e62f46c0949758e3616b3f"
+    },
+    "format": "canonical-cache/1",
+    "layout_revisions": {},
+    "tables": {}
+  }
+}

@@ -5,10 +5,11 @@
 
 ## Requirements
 
-> ⚠️ **实现范围（2026-09-12 复核）**：部署只发生在 **CLI 路径**（`ct export` / `ct deploy` 完成后的
-> `_run_deploy()`），**web 面板导出从不部署**；`/api/workspace` 的 `deploy.targets` 恒为 `[]`，
-> `CANONICAL_STEPS` 不含 "Deploy"。另有两条 requirement 的正文里标了 **未实现**
-> （「无变化时仍可部署」前提不存在、「部署状态可见」整条未做）—— 归档 change 时它们**不是**已落地项。
+> ⚠️ **实现范围（2026-09-13 复核）**：部署只发生在 **CLI 路径**（`ct export` 的完成策略
+> `export_then_deploy` / `ct deploy`），**web 面板导出恒为 `export_only`，从不部署**；
+> `/api/workspace` 的 `deploy.targets` 恒为 `[]`，`CANONICAL_STEPS` 不含 "Deploy"。
+> 「无变化时仍可部署」的前提已成立（默认增量复用），条目已按实际行为重写；
+> 「部署状态可见」仍然**整条未做**，不是已落地项。
 
 
 ### Requirement: deploy 配置可声明且可降级
@@ -42,15 +43,15 @@
 
 ### Requirement: 无变化时仍可部署
 
-> ⚠️ **未实现 / 前提不存在（2026-09-12）**：`ct export` **每次都全量重建**，CLI 里没有"所有表均无变化"的
-> 提前返回分支，也就不存在"跳过导出但仍部署"这条路径。CLI 每次导出后都会执行 `_run_deploy()`，
-> fresh 环境场景因此自然被覆盖 —— 但**不是**本节描述的行为。归档前需重写本条或删除。
-
-系统 SHALL 在增量导出判定"所有表均无变化"时跳过导出，但仍执行部署（日志注明仅部署）。
+CLI export SHALL 在每次成功的本地导出之后执行已配置部署，即使生成缓存全部命中且正式产物没有任何写入。缓存命中 SHALL NOT 跳过完整数据校验。Web export SHALL 保持不执行部署。
 
 #### Scenario: fresh 环境无变化表时补齐产物
-- **WHEN** 工作区无 schema 变化但目标目录缺少产物，执行 `ct export`
-- **THEN** 跳过导出步骤，但产物仍被部署到目标目录
+- **WHEN** 输入未变化、缓存和本地产物完整，但配置的 Unity 目标缺少产物，执行 CLI export
+- **THEN** 校验执行，生成产物被复用，本地未变文件 mtime 保留，Unity 缺失文件被同步
+
+#### Scenario: Web does not deploy warm outputs
+- **WHEN** 配置启用 deploy，Web 导出全部命中缓存
+- **THEN** Web 正常完成本地导出和记账，Unity 目录不被同步
 
 ### Requirement: 独立部署命令
 系统 SHALL 提供 `ct deploy` 命令，只执行部署不执行导出，行为与导出流程中的部署步骤一致。

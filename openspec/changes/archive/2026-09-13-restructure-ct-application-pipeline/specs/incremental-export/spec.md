@@ -1,13 +1,11 @@
-# incremental-export Specification
+## RENAMED Requirements
 
-## Purpose
+- FROM: `### Requirement: 每次导出都是全量重建`
+- TO: `### Requirement: 默认增量复用与强制重建`
+- FROM: `### Requirement: 分层 fingerprint 代码存在但未接线（本能力未实现）`
+- TO: `### Requirement: 生成缓存按有效输入失效`
 
-本文件记录「默认增量复用 + 内容寻址生成缓存」的**正式契约**：`ct export` 每次都完整
-解析并校验选中表，随后按生成器版本与实际输入复用未失效的生成产物；`--all` 绕过生成
-缓存并重写选中产物。生成缓存（`cache/artifacts/`）是可丢弃的中间物，成功账本
-（`cache/state.json`）只在本地发布（CLI 下还包括部署）成功后推进 —— 二者不可混为一谈。
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: 默认增量复用与强制重建
 
@@ -78,33 +76,3 @@ CLI export SHALL 仅在本地导出和配置的部署成功后提交账本；Web
 #### Scenario: 账本原子写入失败
 - **WHEN** 成功账本替换失败且旧文件仍可读
 - **THEN** 旧账本不被部分 JSON 覆盖，操作失败，已完整发布的产物保留
-
-### Requirement: ct status 只报 missing / changed / drifted
-
-`canonical_status` SHALL 返回且仅返回三个类别：`missing`（Excel 不存在）、`changed`（Excel 当前 sha256 与 `excel_hashes` 记录不一致，或无记录）、`drifted`（`excel/layout_manifests/{table}.json` 缺失、其 `schema_hash` 与当前 schema 不一致，或工作簿实际列数与 layout 列数不一致）。
-
-不存在「untracked metadata」类别，也不输出 deploy 行。未完成或损坏的**发布恢复记录**由 `ct status` 另行以 `[publication]` 行报出（只读检测，不执行恢复），其契约见 `export-publication` 能力；它不属于 `canonical_status` 的三个类别。
-
-#### Scenario: 只报三类
-- **WHEN** 用户执行 `ct status` 且不存在未完成的发布
-- **THEN** 输出只含 `[missing]` / `[changed]` / `[template-stale]` 三种条目，全部为空时输出 `[OK] 所有表已是最新（数据 + 模板）`
-
-#### Scenario: 模板漂移的提示命令
-- **WHEN** `Item` 的 schema 已改但 manifest 未重建
-- **THEN** 输出 `[template-stale] Item  (建议: ct gen-template --table Item)`，提示中不含 `--update-header`
-
-### Requirement: 事务化 Apply 只发布 schema YAML（fingerprint/cache 发布未实现）
-
-`ct/app/schema_workspace/apply.py` 已实现事务语义：`WorkspaceApplyLock`、staging 目录、`cache/apply.journal.json`、backup、逐步 `os.replace` 发布与 `recover()` 恢复。但其发布范围只有 `config/schemas/*.yaml` 与 `config/types/*.yaml`（`stage_candidate_yaml`）。
-
-（本能力未实现）原始意图：Workspace Apply 在 staging 中计算候选 revision 的 layout manifests、schema/data/i18n/bundle fingerprints、ids 与缓存 bytes，并与 Schema、Excel 和生成产物一起纳入事务，成功后发布 cache，使下一次 export 可按分层 fingerprints 判断复用。
-
-现状：`prepare-apply` 调用 `create_plan(..., table_fingerprints={})` 恒传空字典；Apply 不写 `cache/state.json`，也不生成或发布 Excel、FBS、Binary 与 Accessor。
-
-#### Scenario: Apply 只替换 YAML
-- **WHEN** 候选通过校验并 commit
-- **THEN** 只有 `config/schemas|types/*.yaml` 被替换，`cache/state.json` 与 `output/` 下产物不变
-
-#### Scenario: 中断的 Apply 恢复到完整旧/新 revision
-- **WHEN** journal 的 `phase` 为 `backup` / `publish`
-- **THEN** `recover()` 用 backup 回滚旧 revision 并清理 journal；`phase` 为 `committed` 时改为把 staging 中未发布的文件补齐

@@ -1,0 +1,23 @@
+{
+  "files": {},
+  "mode": "filtered_ref_blocked",
+  "runs": [
+    {
+      "argv": [
+        "ct",
+        "export",
+        "--table",
+        "Item",
+        "--root",
+        "<tmp>"
+      ],
+      "returncode": 1,
+      "stderr": "\n验证发现 4 个错误：\n  ✗ [Item.xlsx] 第1行 ItemTypeId：引用表 ItemType 的数据未加载，无法校验\n  ✗ [Item.xlsx] 第2行 ItemTypeId：引用表 ItemType 的数据未加载，无法校验\n  ✗ [Item.xlsx] 第3行 ItemTypeId：引用表 ItemType 的数据未加载，无法校验\n  ✗ [Item.xlsx] 第4行 ItemTypeId：引用表 ItemType 的数据未加载，无法校验\n\n",
+      "stdout": "解析 Item（4 行）\n"
+    }
+  ],
+  "snapshots": [
+    {}
+  ],
+  "state_json": null
+}
