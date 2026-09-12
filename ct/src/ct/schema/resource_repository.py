@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 import pydantic
 import yaml
@@ -78,10 +78,13 @@ def _validation_text(exc: Exception) -> str:
     return "; ".join(messages)
 
 
-def _read_yaml(path: Path) -> dict[str, Any] | None:
+def _read_yaml(path: Path, contents: Mapping[Path, bytes] | None = None) -> dict[str, Any] | None:
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError) as exc:
+        if contents is not None and path in contents:
+            data = yaml.safe_load(contents[path].decode("utf-8"))
+        else:
+            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError, UnicodeDecodeError) as exc:
         raise ValueError(f"加载 Schema 资源失败 [{path}]: {exc}") from exc
     if data is None:
         return None
@@ -169,12 +172,29 @@ def _resolve_fields(
 
 
 class YamlResourceRepository:
-    def __init__(self, schemas_dir: Path, types_dir: Path) -> None:
+    def __init__(
+        self,
+        schemas_dir: Path,
+        types_dir: Path,
+        contents: Mapping[Path, bytes] | None = None,
+    ) -> None:
         self.schemas_dir = schemas_dir
         self.types_dir = types_dir
+        #: 捕获到的输入字节；给定时**只**从这些内容解析（不再 glob/读盘），
+        #: 从而保证导出使用的资源集合与实际复核的内容完全一致。
+        self.contents = contents
+
+    def _paths(self, directory: Path) -> list[Path]:
+        if self.contents is None:
+            return sorted(directory.glob("*.yaml"))
+        return sorted(
+            path
+            for path in self.contents
+            if path.parent == directory and path.name.endswith(".yaml")
+        )
 
     def load(self) -> ResourceWorkspace:
-        if not self.schemas_dir.exists():
+        if self.contents is None and not self.schemas_dir.exists():
             raise FileNotFoundError(f"Schema 目录不存在: {self.schemas_dir}")
 
         tables: list[TableResource] = []
@@ -182,8 +202,8 @@ class YamlResourceRepository:
         enums: list[EnumResource] = []
         sources: dict[str, Path] = {}
 
-        for path in sorted(self.schemas_dir.glob("*.yaml")):
-            data = _read_yaml(path)
+        for path in self._paths(self.schemas_dir):
+            data = _read_yaml(path, self.contents)
             if data is None:
                 continue
             _reject_old_field_shape(data, path)
@@ -196,9 +216,9 @@ class YamlResourceRepository:
             tables.append(resource)
             sources[resource.resource_id] = path
 
-        if self.types_dir.exists():
-            for path in sorted(self.types_dir.glob("*.yaml")):
-                data = _read_yaml(path)
+        if self.contents is not None or self.types_dir.exists():
+            for path in self._paths(self.types_dir):
+                data = _read_yaml(path, self.contents)
                 if data is None:
                     continue
                 _reject_old_field_shape(data, path)

@@ -15,24 +15,21 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from ct.app.canonical_workspace import CanonicalWorkspace
+from ct.app.data_preparation import prepare_tables, records_map
 from ct.cache.canonical_state import (
     CanonicalCacheState,
     load_state,
     record_excel_hashes,
     save_state,
 )
-from ct.diagnostics.errors import Issue, IssueCode, ValidationIssue, WorkspaceIssue
+from ct.diagnostics.errors import Issue, IssueCode, WorkspaceIssue
 from ct.excel.canonical_reader import read_canonical_excel
 from ct.excel.canonical_template import generate_canonical_template
 from ct.excel.layout import Column, Layout, build_layout
 from ct.excel.layout_manifest import LayoutManifest, save_manifest
 from ct.excel.planning import plan_excel_migration
 from ct.schema.hashing import compute_schema_hash
-from ct.schema.resources import CODENAME_FIELD, RecordResource
-
-
-def _records_map(ws: CanonicalWorkspace) -> dict[str, RecordResource]:
-    return {r.name: r for r in ws.records}
+from ct.storage.publication import FilePublisher, PublicationError
 
 
 class CanonicalValidationError(ValueError):
@@ -43,142 +40,23 @@ class CanonicalValidationError(ValueError):
         self.issues = issues
 
 
-def _primary_issues(
-    table, parsed, seen: set
-) -> list[Issue]:
-    """主键为空 / 重复校验，填充 seen（该表主键集合）。"""
-    issues: list[Issue] = []
-    for index, row in enumerate(parsed.rows, start=1):
-        pk = row.get(table.primary)
-        excel_row = (
-            parsed.excel_rows[index - 1] if index - 1 < len(parsed.excel_rows) else None
-        )
-        if pk is None:
-            issues.append(
-                ValidationIssue(
-                    table.table,
-                    IssueCode.TYPE,
-                    "主键为空",
-                    row_index=index,
-                    excel_row=excel_row,
-                    field=table.primary,
-                )
-            )
-        elif pk in seen:
-            issues.append(
-                ValidationIssue(
-                    table.table,
-                    IssueCode.DUPLICATE_PK,
-                    f"主键重复: {pk!r}",
-                    row_index=index,
-                    excel_row=excel_row,
-                    field=table.primary,
-                    value=pk,
-                )
-            )
-        else:
-            seen.add(pk)
-    return issues
+def canonical_publication_state(root: Path) -> str | None:
+    """未完成或损坏的发布恢复记录描述；没有则返回 ``None``。
 
-
-def _codename_issues(table, parsed) -> list[Issue]:
-    """CodeName 索引的数据闸门：**声明了索引的表，每行必须有一个非空且唯一的 CodeName**。
-
-    为什么必须有这道闸门（实测）：导出器建桶表时对空串 `continue`，桶里也**不判重**
-    —— 于是两行写同一个 CodeName 时导出**不报错**，运行期 `ByCodeName()` 只命中探测序
-    更靠前的那一行，另一行**永远查不到**，且全程没有任何提示。CodeName 的语义就是
-    「这张表按它唯一索引」，静默少一行属于最难查的那类缺陷。
-
-    只对**声明了 codename 索引**的表校验：没声明索引的表里 CodeName 就是个普通字段。
+    **只读**：不执行恢复、不写任何文件。损坏记录返回错误描述而不是抛错，
+    让 validate/status 能把它当作一个问题报出来（而不是静默报告「正常」）。
     """
-    if not any(index.kind == "codename" for index in table.indexes):
-        return []
-    issues: list[Issue] = []
-    seen: dict[str, int] = {}
-    for index, row in enumerate(parsed.rows, start=1):
-        excel_row = (
-            parsed.excel_rows[index - 1] if index - 1 < len(parsed.excel_rows) else None
-        )
-        value = row.get(CODENAME_FIELD)
-        text = "" if value is None else str(value)
-        if text == "":
-            issues.append(
-                ValidationIssue(
-                    table.table,
-                    IssueCode.TYPE,
-                    f"{CODENAME_FIELD} 为空（该表声明了 codename 索引，"
-                    "空值这一行永远查不到）",
-                    row_index=index,
-                    excel_row=excel_row,
-                    field=CODENAME_FIELD,
-                    value=value,
-                )
-            )
-        elif text in seen:
-            issues.append(
-                ValidationIssue(
-                    table.table,
-                    IssueCode.DUPLICATE_CODENAME,
-                    f"{CODENAME_FIELD} 重复: {text!r}"
-                    f"（首次出现在第 {seen[text]} 行）",
-                    row_index=index,
-                    excel_row=excel_row,
-                    field=CODENAME_FIELD,
-                    value=text,
-                )
-            )
-        else:
-            seen[text] = index
-    return issues
-
-
-def _ref_issues(
-    table, parsed, id_sets: dict[str, set]
-) -> list[Issue]:
-    """跨表 ref 外键值校验：field.ref 的值必须存在于引用表主键集。"""
-    ref_fields = [field for field in table.fields if field.ref]
-    if not ref_fields:
-        return []
-    issues: list[Issue] = []
-    for row_index, row in enumerate(parsed.rows, start=1):
-        excel_row = (
-            parsed.excel_rows[row_index - 1] if row_index - 1 < len(parsed.excel_rows) else None
-        )
-        for field in ref_fields:
-            target_table = field.ref.partition(".")[0]
-            target_field = field.ref.partition(".")[2] or "id"
-            value = row.get(field.name)
-            values = value if isinstance(value, list) else [value]
-            target_ids = id_sets.get(target_table)
-            if target_ids is None:
-                issues.append(
-                    ValidationIssue(
-                        table.table,
-                        IssueCode.REF,
-                        f"引用表 {target_table} 的数据未加载，无法校验",
-                        row_index=row_index,
-                        excel_row=excel_row,
-                        field=field.name,
-                        value=value,
-                    )
-                )
-                continue
-            for v in values:
-                if v is None:
-                    continue
-                if v not in target_ids:
-                    issues.append(
-                        ValidationIssue(
-                            table.table,
-                            IssueCode.REF,
-                            f"值 {v!r} 在引用表 {target_table}.{target_field} 中不存在",
-                            row_index=row_index,
-                            excel_row=excel_row,
-                            field=field.name,
-                            value=v,
-                        )
-                    )
-    return issues
+    publisher = FilePublisher(root)
+    try:
+        journal = publisher.read_journal()
+    except PublicationError as exc:
+        return str(exc)
+    if journal is None:
+        return None
+    return (
+        f"存在未完成的发布（operation {journal.operation_id}，阶段 {journal.phase}）"
+        f"——下一次 export/deploy 会先恢复，或人工检查 {publisher.journal_path}"
+    )
 
 
 def canonical_validate(
@@ -188,49 +66,28 @@ def canonical_validate(
 ) -> list[Issue]:
     """Read + validate a canonical workspace; returns structured issues.
 
-    Full validation: Excel read (type coercion), primary empty/duplicate and
-    cross-table ``ref`` foreign-key values (must exist in the target table's
-    primary-key set). The legacy path no longer exists.
+    Full validation: Excel read (type coercion), primary empty/duplicate,
+    CodeName index data gate and cross-table ``ref`` foreign-key values (must
+    exist in the target table's primary-key set). The reads and the validation
+    rules come from the shared kernel in :mod:`ct.app.data_preparation`; this
+    wrapper keeps only the ``list[Issue]`` shape and the unknown-table
+    diagnostic. The legacy path no longer exists.
+
+    未完成/损坏的发布记录也会作为工作区级问题报出（只读检测，不做恢复），
+    避免校验通过的同时 export 因未恢复的现场被拒。
     """
-    ws = CanonicalWorkspace.load(root)
-    records = _records_map(ws)
-    excel_dir = ws.resolve("excel_dir")
-    issues: list[Issue] = []
-    tables = [t for t in ws.tables if table_filter is None or t.table == table_filter]
-    if table_filter is not None and not tables:
-        issues.append(
-            WorkspaceIssue("", IssueCode.WORKSPACE, f"表 '{table_filter}' 不存在")
-        )
-        return issues
-
-    parsed_by_table: dict[str, object] = {}
-    id_sets: dict[str, set] = {}
-    for table in tables:
-        excel_path = excel_dir / (table.excel_file or f"{table.table}.xlsx")
-        if not excel_path.exists():
-            issues.append(
-                WorkspaceIssue(
-                    table.table, IssueCode.WORKSPACE, f"Excel 文件不存在: {excel_path}"
-                )
+    workspace = CanonicalWorkspace.load(root)
+    result = prepare_tables(workspace, table_filter=table_filter)
+    if result.unknown_table is not None:
+        return [
+            WorkspaceIssue(
+                "", IssueCode.WORKSPACE, f"表 '{result.unknown_table}' 不存在"
             )
-            continue
-        layout = build_layout(
-            table,
-            schema_hash=compute_schema_hash(table, (*ws.records, *ws.enums)),
-            records=records,
-        )
-        parsed = read_canonical_excel(excel_path, layout, table, records=records, enums={e.name: e for e in ws.enums})
-        issues.extend(parsed.issues)
-        seen: set = set()
-        issues.extend(_primary_issues(table, parsed, seen))
-        issues.extend(_codename_issues(table, parsed))
-        parsed_by_table[table.table] = parsed
-        id_sets[table.table] = seen
-
-    for table in tables:
-        parsed = parsed_by_table.get(table.table)
-        if parsed is not None:
-            issues.extend(_ref_issues(table, parsed, id_sets))
+        ]
+    issues = list(result.issues)
+    publication = canonical_publication_state(root)
+    if publication is not None:
+        issues.append(WorkspaceIssue("", IssueCode.WORKSPACE, publication))
     return issues
 
 
@@ -250,7 +107,7 @@ def canonical_status(root: Path) -> dict[str, list[str]]:
     `schema_hash` no longer matches the current schema.
     """
     ws = CanonicalWorkspace.load(root)
-    records = _records_map(ws)
+    records = records_map(ws)
     excel_dir = ws.resolve("excel_dir")
     cache_dir = ws.resolve("cache_dir")
     manifest_dir = ws.resolve("excel_dir") / "layout_manifests"
@@ -477,7 +334,7 @@ def canonical_gen_template(
 ) -> list[str]:
     """Generate canonical Excel templates + layout manifests."""
     ws = CanonicalWorkspace.load(root)
-    records = _records_map(ws)
+    records = records_map(ws)
     excel_dir = ws.resolve("excel_dir")
     excel_dir.mkdir(parents=True, exist_ok=True)
     cache_dir = ws.resolve("cache_dir")
@@ -625,7 +482,7 @@ def canonical_i18n_sync(
     from ct.export.i18n.state import sync_lang_table
 
     ws = CanonicalWorkspace.load(root)
-    records = _records_map(ws)
+    records = records_map(ws)
     config = ws.config
     excel_dir = config.resolve("excel_dir")
     i18n_dir = config.resolve("i18n_dir")

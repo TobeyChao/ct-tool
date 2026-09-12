@@ -13,6 +13,7 @@ Parse errors carry the Excel row, column and canonical field path.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import io
 import json
 import re
 from pathlib import Path
@@ -391,9 +392,16 @@ def read_canonical_excel(
     *,
     records: dict[str, object] | None = None,
     enums: dict[str, EnumResource] | None = None,
+    data: bytes | None = None,
 ) -> CanonicalParsedRows:
-    """Read Excel rows against a canonical layout; returns canonical values."""
-    wb = load_workbook(str(excel_path), read_only=True, data_only=True)
+    """Read Excel rows against a canonical layout; returns canonical values.
+
+    ``data``（若给）是**已捕获的源文件字节**：读取它而不是再从磁盘读，
+    这样成功账本记录的 hash 与实际解析的内容必然一致。错误定位仍按
+    ``excel_path`` 的表名与行号呈现。
+    """
+    source: Any = io.BytesIO(data) if data is not None else str(excel_path)
+    wb = load_workbook(source, read_only=True, data_only=True)
     try:
         ws = wb.active
         if ws is None:

@@ -24,6 +24,7 @@ Vector element readers:
 from __future__ import annotations
 
 from ct.export.canonical_accessor_model import (
+    CSHARP_SCALAR_TYPES,
     AccessorField,
     CanonicalAccessorModel,
     build_accessor_model,
@@ -768,21 +769,8 @@ def generate_csharp_accessor(model: CanonicalAccessorModel) -> str:
 # ---------------------------------------------------------------- Lua helpers
 
 
-#: C# 标量类型：type_text → C# 类型（**唯一来源**，`canonical_accessor_model` 也用它）。
-CSHARP_SCALAR_TYPES = {
-    "int8": "sbyte",
-    "uint8": "byte",
-    "int16": "short",
-    "uint16": "ushort",
-    "int32": "int",
-    "uint32": "uint",
-    "int64": "long",
-    "uint64": "ulong",
-    "float": "float",
-    "double": "double",
-    "bool": "bool",
-}
-
+#: C# 标量类型：type_text → C# 类型（**唯一来源**在 `canonical_accessor_model`，
+#: 生成器与 model 共用；此处只做重导出，避免形成 import 环）。
 #: C# 标量读取器（槽位版）：type_text → WireReader 方法。
 _CSHARP_SCALAR_READERS = {
     "int8": "WireReader.S8",

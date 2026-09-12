@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ct.app.events import ProgressReporter
+from ct.contracts import ProgressReporter
 
 
 def sync_dir(src: Path, dst: Path, reporter: ProgressReporter) -> int:

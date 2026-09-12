@@ -97,6 +97,20 @@ def generate_canonical_template(
     primary: str = "",
 ) -> Path:
     """Write a  template workbook for *layout* and return its path."""
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_bytes(build_canonical_template(layout, enums=enums, primary=primary))
+    return out_path
+
+
+def build_canonical_template(
+    layout: Layout,
+    *,
+    enums: dict[str, EnumResource],
+    primary: str = "",
+) -> bytes:
+    """生成模板工作簿字节（不落盘），供发布阶段统一收集 payload。"""
+    import io
+
     wb = Workbook()
     ws = wb.active
     ws.title = layout.table_id.partition(":")[2]
@@ -126,9 +140,9 @@ def generate_canonical_template(
     # background; validation and Notes provide the non-visual assistance.
 
     _write_metadata(wb, layout, table_name)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    wb.save(str(out_path))
-    return out_path
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    return buffer.getvalue()
 
 
 def _column_ranges(

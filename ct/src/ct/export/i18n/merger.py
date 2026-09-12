@@ -5,8 +5,22 @@ from pathlib import Path
 from typing import Any
 
 
-def load_translation(i18n_dir: Path, lang: str, table: str) -> dict[str, dict[str, Any]]:
-    """读取 i18n/{lang}/{table}.json，文件不存在返回空 dict。"""
+def load_translation(
+    i18n_dir: Path,
+    lang: str,
+    table: str,
+    *,
+    data: bytes | None = None,
+) -> dict[str, dict[str, Any]]:
+    """读取 i18n/{lang}/{table}.json，文件不存在返回空 dict。
+
+    ``data`` 给定时从**捕获到的字节**解析，不再读盘 —— 保证产物使用的译文与
+    导出前复核的内容是同一份。
+    """
+    if data is not None:
+        if not data:
+            return {}
+        return json.loads(data.decode("utf-8"))
     path = i18n_dir / lang / f"{table}.json"
     if not path.exists():
         return {}

@@ -15,6 +15,8 @@ FlatBuffers buffer with the same container shape as the legacy writer:
 from __future__ import annotations
 
 import struct
+from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Any
 
 import flatbuffers
@@ -23,6 +25,7 @@ from ct.export.index_query import production_hash
 from ct.schema.resources import (
     CODENAME_FIELD,
     EnumResource,
+    FieldDef,
     RecordResource,
     TableResource,
 )
@@ -70,6 +73,53 @@ _SCALAR_PREPENDS = {
 }
 
 
+class UniformLayoutError(ValueError):
+    """Serialized object violates its schema-derived layout."""
+
+
+@dataclass(frozen=True)
+class ObjectLayout:
+    """Schema-derived FlatBuffers table body; offsets follow schema slot order."""
+
+    offsets: tuple[int, ...]
+    widths: tuple[int, ...]
+    alignment: int
+    size: int
+
+    @property
+    def slot_offsets(self) -> dict[int, int]:
+        return {_slot(i): offset for i, offset in enumerate(self.offsets)}
+
+
+def plan_object_layout(
+    fields: Sequence[FieldDef], records: dict[str, RecordResource]
+) -> ObjectLayout:
+    widths = []
+    offsets = []
+    cursor = 4  # signed vtable reference
+    alignment = 4
+    for field in fields:
+        expr = field.type_expr
+        if isinstance(expr, ScalarType) and expr.name != "string":
+            width = _SCALAR_PREPENDS[expr.name][1]
+        elif isinstance(expr, NamedType) and (
+            expr.expected_kind == "enum"
+            or (expr.expected_kind is None and expr.name not in records)
+        ):
+            width = 1
+        else:
+            width = 4  # string/vector/record uoffset
+        alignment = max(alignment, width)
+        cursor = (cursor + width - 1) & -width
+        offsets.append(cursor)
+        widths.append(width)
+        cursor += width
+    size = (cursor + alignment - 1) & -alignment
+    if size > 65535 or 4 + 2 * len(fields) > 65535:
+        raise ValueError("FlatBuffers object/vtable exceeds uint16 layout limit")
+    return ObjectLayout(tuple(offsets), tuple(widths), alignment, size)
+
+
 def _coerce_scalar_value(name: str, value: Any) -> Any:
     """把值强制成该标量在 Python 侧的表示（None → 默认值）。"""
     entry = _SCALAR_SLOTS.get(name)
@@ -97,6 +147,39 @@ class _Builder:
         # uniform=True：每个槽位无条件写出（含默认值），使同一张表的所有行共享同一 vtable，
         # 从而「字段在行内的偏移」成为表级常量 —— 生成器可据此发射字面量偏移。
         self.uniform = uniform
+
+    def _build_uniform_object(self, builder, fields, data, offsets) -> int:
+        layout = plan_object_layout(fields, self.records)
+        # Align the END before StartObject: external padding must not contribute
+        # to the vtable's object size. Body size is a multiple of max alignment.
+        builder.Prep(layout.alignment, layout.size)
+        builder.StartObject(len(fields))
+        cursor = layout.size
+        for index in reversed(range(len(fields))):
+            field = fields[index]
+            position = layout.offsets[index]
+            builder.Pad(cursor - position - layout.widths[index])
+            if self._is_offset_type(field.type_expr):
+                builder.PrependUOffsetTRelative(offsets[index])
+                builder.Slot(index)
+            elif isinstance(field.type_expr, ScalarType):
+                self._prepend_scalar_slot(builder, field.type_expr, data.get(field.name), index)
+            else:
+                self._prepend_enum(builder, field.type_expr, data.get(field.name), index)
+            cursor = position
+        builder.Pad(cursor - 4)
+        result = builder.EndObject()
+        # Validate actual bytes for EVERY object, including nested records.
+        row = len(builder.Bytes) - result
+        vt = row - struct.unpack_from("<i", builder.Bytes, row)[0]
+        actual_size = struct.unpack_from("<H", builder.Bytes, vt + 2)[0]
+        actual_offsets = tuple(
+            struct.unpack_from("<H", builder.Bytes, vt + _slot(i))[0]
+            for i in range(len(fields))
+        )
+        if result % layout.alignment or actual_size != layout.size or actual_offsets != layout.offsets:
+            raise UniformLayoutError("uniform vtable/object does not match schema layout")
+        return result
 
     def _prepend_scalar_slot(self, builder, type_expr: ScalarType, value: Any, index: int) -> None:
         """无条件写槽位（uniform 布局用；默认值也占位）。"""
@@ -162,6 +245,8 @@ class _Builder:
                 offsets[index] = self._build_offset(
                     builder, field.type_expr, data.get(field.name), required=self.uniform
                 )
+        if self.uniform:
+            return self._build_uniform_object(builder, fields, data, offsets)
         builder.StartObject(len(fields))
         for index, field in enumerate(fields):
             if index in offsets and offsets[index] is not None:
@@ -259,6 +344,8 @@ class _Builder:
                 )
                 if offset is not None:
                     offsets[index] = offset
+        if self.uniform:
+            return self._build_uniform_object(builder, fields, row, offsets)
         builder.StartObject(len(fields))
         for index, field in enumerate(fields):
             if index in offsets:
@@ -460,31 +547,10 @@ def probe_row_layout(
     records: dict[str, RecordResource],
     enums: dict[str, EnumResource],
 ) -> dict[int, int]:
-    """返回 uniform 布局下该表的 slot → 行内偏移映射。
+    """Compatibility API: derive literal offsets from schema, without probe data."""
+    fields = [field for field in table.fields if not field.server_only]
+    return plan_object_layout(fields, records).slot_offsets
 
-    与 ``uniform=True`` 导出配套：所有行共享同一 vtable，因此该映射是表级常量，
-    生成器可据此发射字面量偏移（``*(int*)(row + 36)``），彻底去掉偏移表间接层。
-    """
-    blank = {field.name: None for field in table.fields if not field.server_only}
-    data = _Builder(table, records, enums, uniform=True).build([blank])
-    client_fields = [f for f in table.fields if not f.server_only]
-
-    # buffer 根是 container 表：slot 4 = items 向量；行对象在向量元素里（不是根表本身）
-    container = struct.unpack_from("<i", data, 0)[0]
-    cvt = container - struct.unpack_from("<i", data, container)[0]
-    cvt_len = struct.unpack_from("<H", data, cvt)[0]
-    items_off = struct.unpack_from("<H", data, cvt + 4)[0] if 4 < cvt_len else 0
-    items = container + items_off + struct.unpack_from("<i", data, container + items_off)[0]
-    first = items + 4
-    row = first + struct.unpack_from("<i", data, first)[0]
-
-    vt = row - struct.unpack_from("<i", data, row)[0]
-    vt_len = struct.unpack_from("<H", data, vt)[0]
-    out: dict[int, int] = {}
-    for index in range(len(client_fields)):
-        slot = 4 + 2 * index
-        out[slot] = struct.unpack_from("<H", data, vt + slot)[0] if slot < vt_len else 0
-    return out
 
 def build_canonical_bundle(
     table_name_to_bytes: dict[str, bytes],

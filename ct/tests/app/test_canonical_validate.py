@@ -61,7 +61,7 @@ def test_ref_issues_detect_dangling_and_pass_valid() -> None:
         rows=[{"Id": 1, "ItemTypeId": 100}, {"Id": 2, "ItemTypeId": 2}],
         excel_rows=[3, 4],
     )
-    from ct.app.canonical_commands import _ref_issues
+    from ct.app.data_preparation import ref_issues as _ref_issues
 
     issues = _ref_issues(table, parsed, {"ItemType": {1, 2}})
     assert len(issues) == 1
@@ -116,7 +116,7 @@ def _parsed(rows: list[dict], excel_rows: list[int]) -> CanonicalParsedRows:
 
 def test_codename_issues_reject_blank_and_duplicate() -> None:
     """空 CodeName 与重复 CodeName 都要报，且带 Excel 定位。"""
-    from ct.app.canonical_commands import _codename_issues
+    from ct.app.data_preparation import codename_issues as _codename_issues
 
     issues = _codename_issues(
         _codename_table(),
@@ -142,7 +142,7 @@ def test_codename_issues_reject_blank_and_duplicate() -> None:
 
 def test_codename_issues_ignore_tables_without_the_index() -> None:
     """没声明索引的表里 CodeName 只是普通字段 —— 不该被这道闸门拦。"""
-    from ct.app.canonical_commands import _codename_issues
+    from ct.app.data_preparation import codename_issues as _codename_issues
 
     assert _codename_issues(
         _codename_table(indexed=False),
@@ -209,3 +209,50 @@ def test_unique_codename_exports_clean(tmp_path: Path) -> None:
     result = run_canonical_export(root)
     assert result is not None
     assert any((root / "output" / "json").glob("*.json"))
+
+
+# ---------------------------------------------------------------------------
+# 两入口共用同一 preparation 内核：同输入必须报同一组 issues
+
+
+def test_both_entries_report_the_same_ref_issues(tmp_path: Path) -> None:
+    """validate 与 export 的 issues 必须逐条一致（同一内核，无第二套算法）。"""
+    root = _workspace_with_dangling_ref(tmp_path)
+    issues = canonical_validate(root)
+    with pytest.raises(CanonicalValidationError) as excinfo:
+        run_canonical_export(root)
+    assert [i.render() for i in excinfo.value.issues] == [i.render() for i in issues]
+
+
+def test_both_entries_report_the_same_codename_issues(tmp_path: Path) -> None:
+    root = _workspace_with_codename(tmp_path, [[1, "sword"], [2, "sword"], [3, None]])
+    issues = canonical_validate(root)
+    with pytest.raises(CanonicalValidationError) as excinfo:
+        run_canonical_export(root)
+    assert [i.render() for i in excinfo.value.issues] == [i.render() for i in issues]
+
+
+def test_validate_writes_nothing(tmp_path: Path) -> None:
+    """validate 是只读入口：不产出 output/，也不创建 cache 文件。"""
+    root = _workspace_with_dangling_ref(tmp_path)
+    before = {p.relative_to(root) for p in root.rglob("*") if p.is_file()}
+    canonical_validate(root)
+    after = {p.relative_to(root) for p in root.rglob("*") if p.is_file()}
+    assert after == before
+
+
+def test_validate_reports_unknown_table(tmp_path: Path) -> None:
+    root = _workspace_with_codename(tmp_path, [[1, "sword"]])
+    issues = canonical_validate(root, table_filter="Nope")
+    assert [i.message for i in issues] == ["表 'Nope' 不存在"]
+
+
+def test_missing_excel_is_reported_by_both_entries(tmp_path: Path) -> None:
+    """缺 Excel：validate 报 WorkspaceIssue（并继续处理其他表），export 直接失败。"""
+    root = _workspace_with_codename(tmp_path, [[1, "sword"]])
+    (root / "excel" / "ItemType.xlsx").unlink()
+    issues = canonical_validate(root)
+    assert [i.code.value for i in issues] == ["workspace"]
+    assert "Excel 文件不存在" in issues[0].message
+    with pytest.raises(FileNotFoundError):
+        run_canonical_export(root)

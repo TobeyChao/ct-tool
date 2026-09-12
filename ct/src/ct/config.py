@@ -88,11 +88,19 @@ class GlobalConfig(BaseModel):
         return [self.primary_lang] + self.secondary_langs
 
 
-def load_config(project_root: Path | None = None) -> GlobalConfig:
+def load_config(
+    project_root: Path | None = None, *, text: str | None = None
+) -> GlobalConfig:
+    """加载配置。
+
+    ``text`` 给定时从**捕获到的内容**解析，不再读磁盘 —— 这让导出期间使用
+    的配置与实际复核的内容是同一份字节。
+    """
     root = (project_root or Path(".")).resolve()
     config_path = root / "config" / "global.yaml"
-    if not config_path.exists():
-        raise FileNotFoundError(f"配置文件不存在: {config_path}")
-    with open(config_path, encoding="utf-8") as f:
-        data = yaml.safe_load(f)
-    return GlobalConfig(project_root=root, **data)
+    if text is None:
+        if not config_path.exists():
+            raise FileNotFoundError(f"配置文件不存在: {config_path}")
+        text = config_path.read_text(encoding="utf-8")
+    data = yaml.safe_load(text)
+    return GlobalConfig(project_root=root, **(data or {}))

@@ -1,8 +1,8 @@
 """导出后台任务（canonical ）：单任务互斥，进度可查询、可取消。
 
-``CanonicalExportTask`` 服务 canonical 工作区（``run_canonical_export``），
-复用 :class:`_BaseTask` 的状态机（start/cancel/progress/step 上报）；legacy
-导出任务已随 cutover 移除。
+``CanonicalExportTask`` 服务 canonical 工作区（``run_export``，Web 策略恒为
+``export_only``），复用 :class:`_BaseTask` 的状态机（start/cancel/progress/step
+上报）；legacy 导出任务已随 cutover 移除。成功记账由统一服务完成，适配器不再编排。
 """
 
 from __future__ import annotations
@@ -12,8 +12,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from ct.app.canonical_commands import CanonicalValidationError
-from ct.app.canonical_export import CANONICAL_STEPS, persist_export_state, run_canonical_export
-from ct.app.events import CancelledError, CancelToken, ProgressReporter
+from ct.app.canonical_export import CANONICAL_STEPS
+from ct.app.exporting.models import CompletionPolicy, ExportRequest
+from ct.app.exporting.service import run_export
+from ct.contracts import CancelledError, CancelToken, ProgressReporter
 from ct.config import load_config
 from ct.web.history import append_history, make_entry
 from ct.web.logs import log_buffer
@@ -154,7 +156,7 @@ class _BaseTask:
 
 @dataclass
 class CanonicalExportTask(_BaseTask):
-    """Canonical 导出任务（run_canonical_export，阶段化上报）。"""
+    """Canonical 导出任务（run_export / export_only，阶段化上报）。"""
 
     @property
     def export_steps(self) -> list[str]:
@@ -163,24 +165,22 @@ class CanonicalExportTask(_BaseTask):
     def _run(self, root: Path, forced: bool) -> None:
         try:
             try:
-                result = run_canonical_export(
-                    root,
-                    forced=forced,
+                # Web 策略恒为 export_only：即使配置启用了 deploy 也不部署，
+                # 成功账本由统一服务在本地发布后提交（Web 不再自己编排记账）。
+                result = run_export(
+                    ExportRequest(root=root, forced=forced),
+                    policy=CompletionPolicy.export_only(),
                     reporter=PanelProgressReporter(self),
                     cancel_token=self._token,
                 )
             except CancelledError:
                 self._finish_cancelled()
                 return
-            # 导出整体成功后才提交缓存指纹（供 ct status / 面板“待导出”判断）
-            persist_export_state(
-                root, result.get("excel_hashes", {}), result.get("bundle_hashes", {})
-            )
             self._finish_ok(
                 cache_dir=load_config(root).resolve("cache_dir"),
                 scope="全部表 × 全量语言",
-                tables=result["tables"],
-                elapsed=result["elapsed"],
+                tables=result.tables,
+                elapsed=result.elapsed,
             )
         except FileNotFoundError as e:
             log_buffer.add("系统", "ERROR", f"导出异常: {e}")

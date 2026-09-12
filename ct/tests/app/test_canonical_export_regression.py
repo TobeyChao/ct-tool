@@ -109,3 +109,27 @@ def test_export_empty_table(tmp_path: Path) -> None:
     assert (root / "output" / "generated" / "lua" / "ItemAccessor.lua").exists()
     assert (root / "output" / "generated" / "csharp" / "ItemAccessor.cs").exists()
     assert (root / "output" / "json" / "Item_zh.json").exists()
+
+
+def test_export_uniform_double_with_i18n_and_reuse(tmp_path: Path) -> None:
+    root = build_project(tmp_path / 'gd', schemas=[{
+        'table': 'Item', 'primary': 'Id', 'fields': [
+            {'name': 'Id', 'type': 'int32'},
+            {'name': 'Value', 'type': 'double'},
+            {'name': 'Name', 'type': 'string', 'i18n': True},
+        ],
+    }])
+    (root / 'excel').mkdir()
+    wb = Workbook()
+    ws = wb.active
+    ws.append(['主键', '数值', '名称'])
+    ws.append(['Id', 'Value', 'Name'])
+    for i in range(1, 20):
+        ws.append([i, i + .125, '字' * i])
+    wb.save(root / 'excel' / 'Item.xlsx')
+    run_canonical_export(root)
+    outputs = {p: p.read_bytes() for p in (root / 'output').rglob('*') if p.is_file()}
+    assert (root / 'output' / 'binary' / 'data_zh.bin') in outputs
+    assert (root / 'output' / 'binary' / 'data_en.bin') in outputs
+    run_canonical_export(root)
+    assert all(p.read_bytes() == value for p, value in outputs.items())

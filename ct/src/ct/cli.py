@@ -13,14 +13,18 @@ from ct.app.canonical_commands import (
     canonical_i18n_compact,
     canonical_i18n_status,
     canonical_i18n_sync,
+    canonical_publication_state,
     canonical_status,
     canonical_validate,
 )
-from ct.app.canonical_export import persist_export_state, run_canonical_export
 from ct.app.canonical_workspace import CanonicalWorkspace
+from ct.app.exporting.models import CompletionPolicy, ExportRequest
+from ct.app.exporting.service import run_export
 from ct.config import load_config
 from ct.diagnostics.errors import report_errors
 from ct.export.deploy import deploy
+from ct.storage.publication import FilePublisher, PublicationError
+from ct.storage.workspace_lock import WorkspaceBusyError
 
 app = typer.Typer(help="配表导出工具")
 i18n_app = typer.Typer(help="i18n 翻译骨架与状态管理")
@@ -75,11 +79,41 @@ def _load_workspace(root: Path) -> CanonicalWorkspace:
         _friendly_exit("[error]", e)
 
 
+def _echo_deploy_result(changed: int) -> None:
+    """部署结果的 CLI 呈现（业务层不打印文本）。"""
+    if changed:
+        typer.echo(f"[deploy] 完成：{changed} 个文件已同步")
+    else:
+        typer.echo("[deploy] 无文件变更")
+
+
+def _deploy_for_service(root: Path, for_build: bool):
+    """服务用的部署回调：失败仍渲染成既有的 `[deploy error]` 并非零退出。"""
+
+    def run(received_for_build: bool, reporter) -> int:
+        try:
+            return deploy(load_config(root), received_for_build, reporter)
+        except (FileNotFoundError, OSError) as e:
+            typer.echo(f"[deploy error] {e}", err=True)
+            raise typer.Exit(1)
+
+    return run
+
+
 def _run_deploy(root: Path, for_build: bool) -> None:
-    """执行部署并渲染结果；失败以友好提示退出。"""
+    """执行部署并渲染结果；失败以友好提示退出。
+
+    部署前先恢复未完成的本地发布，保证部署读到的是一份完整版本。
+    """
     try:
+        recovery = FilePublisher(root).recover()
+        if recovery:
+            typer.echo(f"[发布恢复] {recovery}", err=True)
         config = load_config(root)
         n = deploy(config, for_build, CLIProgressReporter())
+    except PublicationError as e:
+        typer.echo(f"[publish error] {e}", err=True)
+        raise typer.Exit(1)
     except (FileNotFoundError, OSError) as e:
         typer.echo(f"[deploy error] {e}", err=True)
         raise typer.Exit(1)
@@ -104,25 +138,32 @@ def export(
     _setup_logging(verbose)
     root = _root(project_root)
     try:
-        result = run_canonical_export(
-            root,
-            table_filter=table,
-            lang_filter=lang,
-            forced=all_tables,
+        # 完整应用用例：持锁 → 恢复 → 发布 → 通知 → 部署 → 记账，全在一个服务里
+        run_export(
+            ExportRequest(
+                root=root,
+                table_filter=table,
+                lang_filter=lang,
+                forced=all_tables,
+            ),
+            policy=CompletionPolicy.export_then_deploy(for_build=for_build),
             reporter=CLIProgressReporter(),
+            notify=lambda result: typer.echo(f"\n导出完成: {result.tables} 张表"),
+            on_deploy=_echo_deploy_result,
+            deployer=_deploy_for_service(root, for_build),
         )
     except CanonicalValidationError as e:
         report_errors(e.issues, verbose)
         raise typer.Exit(1)
-    except (FileNotFoundError, ValueError) as e:
+    except WorkspaceBusyError as e:
         typer.echo(f"[export error] {e}", err=True)
         raise typer.Exit(1)
-    typer.echo(f"\n导出完成: {result['tables']} 张表")
-    _run_deploy(root, for_build)
-    # 导出+部署整体成功后才提交缓存指纹（失败时不污染 status 的“待导出”判断）
-    persist_export_state(
-        root, result.get("excel_hashes", {}), result.get("bundle_hashes", {})
-    )
+    except PublicationError as e:
+        typer.echo(f"[publish error] {e}", err=True)
+        raise typer.Exit(1)
+    except (FileNotFoundError, ValueError, OSError) as e:
+        typer.echo(f"[export error] {e}", err=True)
+        raise typer.Exit(1)
 
 
 @app.command("deploy")
@@ -207,7 +248,16 @@ def status(
                 f"  [template-stale] {name}  "
                 f"(建议: ct gen-template --table {name})"
             )
-    if not report["missing"] and not report["changed"] and not report["drifted"]:
+    publication = canonical_publication_state(root)
+    if publication:
+        typer.echo("未完成的发布:")
+        typer.echo(f"  [publication] {publication}")
+    if (
+        not report["missing"]
+        and not report["changed"]
+        and not report["drifted"]
+        and not publication
+    ):
         typer.echo("[OK] 所有表已是最新（数据 + 模板）")
 
 

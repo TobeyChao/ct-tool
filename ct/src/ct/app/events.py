@@ -1,37 +1,17 @@
-"""导出管道的事件与取消原语。"""
+"""兼容重导出：事件与取消原语已移至无 ct 依赖的 :mod:`ct.contracts`。
+
+新代码应直接从 ``ct.contracts`` 导入。此处保留同名符号（含 ``NullReporter``），
+避免已有内部调用方与测试断裂；下层模块（``ct.export`` 等）不得从这里导入，
+否则会重新引入 export → app 的反向依赖。
+"""
 
 from __future__ import annotations
 
-from typing import Protocol
+from ct.contracts import (
+    CancelToken,
+    CancelledError,
+    NullReporter,
+    ProgressReporter,
+)
 
-
-class CancelledError(Exception):
-    """导出被取消时由 CancelToken 抛出，由管道捕获转为结果。"""
-
-
-class CancelToken:
-    """协作式取消标记：只在步与步/表与表之间检查。"""
-
-    def __init__(self) -> None:
-        self._cancelled = False
-
-    def cancel(self) -> None:
-        self._cancelled = True
-
-    @property
-    def cancelled(self) -> bool:
-        return self._cancelled
-
-    def raise_if_cancelled(self) -> None:
-        if self._cancelled:
-            raise CancelledError()
-
-
-class ProgressReporter(Protocol):
-    """进度事件的接收方：CLI 打印文本，Web 侧记录到 job 日志。"""
-
-    def step_started(self, step: str) -> None: ...
-
-    def step_finished(self, step: str) -> None: ...
-
-    def log(self, line: str, *, err: bool = False) -> None: ...
+__all__ = ["CancelToken", "CancelledError", "NullReporter", "ProgressReporter"]

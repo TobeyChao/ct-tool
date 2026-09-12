@@ -9,13 +9,13 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-import os
-import tempfile
 from dataclasses import fields, is_dataclass
 from pathlib import Path
 from typing import Any, Callable, TypeVar
 
 from pydantic import BaseModel
+
+from ct.storage.files import atomic_write
 
 T = TypeVar("T", str, bytes)
 
@@ -32,17 +32,6 @@ def _input(value: Any) -> Any:
     if isinstance(value, (tuple, list)):
         return [_input(v) for v in value]
     return value
-
-
-def atomic_write(path: Path, payload: bytes) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, temporary = tempfile.mkstemp(dir=path.parent, prefix=".ct-")
-    try:
-        with os.fdopen(fd, "wb") as stream:
-            stream.write(payload)
-        os.replace(temporary, path)
-    finally:
-        Path(temporary).unlink(missing_ok=True)
 
 
 class ArtifactCache:

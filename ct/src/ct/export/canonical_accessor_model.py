@@ -21,6 +21,23 @@ from ct.schema.type_expression import (
     serialize_type_expression,
 )
 
+#: C# 标量类型：type_text → C# 类型（**唯一来源**）。
+#: 放在 model 而不是生成器里：model 自己也要把标量映射成 C# 类型文本；若反过来
+#: 从 ``canonical_accessor`` 取，就会形成 model → accessor → model 的 import 环。
+CSHARP_SCALAR_TYPES = {
+    "int8": "sbyte",
+    "uint8": "byte",
+    "int16": "short",
+    "uint16": "ushort",
+    "int32": "int",
+    "uint32": "uint",
+    "int64": "long",
+    "uint64": "ulong",
+    "float": "float",
+    "double": "double",
+    "bool": "bool",
+}
+
 
 @dataclass(frozen=True)
 class AccessorField:
@@ -50,9 +67,7 @@ class AccessorField:
             return "NStructArray<NString>"
         if self.element_kind == "enum":
             return f"NArray<{self.element_type}>"
-        # 复用生成器的 C# 类型映射（单一来源，避免新增标量时漏改这里）
-        from ct.export.canonical_accessor import CSHARP_SCALAR_TYPES
-
+        # 复用**唯一来源**的 C# 类型映射（避免新增标量时漏改这里）
         return f"NArray<{CSHARP_SCALAR_TYPES[self.element_type]}>"
 
 

@@ -110,27 +110,38 @@ def _manifest_path(manifest_dir: Path, table: str) -> Path:
     return manifest_dir / f"{table}.json"
 
 
-def load_manifest(manifest_dir: Path, table: str) -> LayoutManifest | None:
-    """Return the manifest, or ``None`` for missing/corrupt/incompatible files."""
+def load_manifest(
+    manifest_dir: Path, table: str, *, data: bytes | None = None
+) -> LayoutManifest | None:
+    """Return the manifest, or ``None`` for missing/corrupt/incompatible files.
+
+    ``data`` 给定时从**捕获到的字节**解析，不再读盘。
+    """
     path = _manifest_path(manifest_dir, table)
-    if not path.exists():
-        return None
+    if data is None:
+        if not path.exists():
+            return None
+        try:
+            raw = path.read_text(encoding="utf-8")
+        except OSError:
+            return None
+    else:
+        raw = data.decode("utf-8", errors="replace")
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data_obj = json.loads(raw)
     except (OSError, json.JSONDecodeError):
         return None
-    if not isinstance(data, dict) or data.get("format") != MANIFEST_FORMAT:
+    if not isinstance(data_obj, dict) or data_obj.get("format") != MANIFEST_FORMAT:
         return None
     try:
-        return LayoutManifest.parse(data)
+        return LayoutManifest.parse(data_obj)
     except (TypeError, ValueError, KeyError):
         return None
 
 
-def save_manifest(manifest_dir: Path, table: str, manifest: LayoutManifest) -> Path:
-    path = _manifest_path(manifest_dir, table)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
+def manifest_payload(manifest: LayoutManifest) -> str:
+    """序列化 manifest（发布阶段据此收集 payload，不再直接落盘）。"""
+    return (
         json.dumps(
             {
                 "format": manifest.format,
@@ -147,7 +158,12 @@ def save_manifest(manifest_dir: Path, table: str, manifest: LayoutManifest) -> P
             sort_keys=True,
             indent=4,
         )
-        + "\n",
-        encoding="utf-8",
+        + "\n"
     )
+
+
+def save_manifest(manifest_dir: Path, table: str, manifest: LayoutManifest) -> Path:
+    path = _manifest_path(manifest_dir, table)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(manifest_payload(manifest), encoding="utf-8")
     return path
