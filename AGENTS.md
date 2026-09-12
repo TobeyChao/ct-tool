@@ -28,7 +28,7 @@
 ```
 仓库根目录/
 ├── ct/                   # 配表工具（自包含 Python 项目）
-│   ├── src/ct/           #   Python 包 (cli, config, app, schema, excel, export, cache, diagnostics, web)
+│   ├── src/ct/           #   Python 包 (cli, config, contracts, app, schema, excel, export, cache, storage, diagnostics, web)
 │   │   └── web/static/   #     面板前端资源（Vue 无构建，随包分发，扁平 static/）
 │   ├── tests/            #   pytest 测试
 │   ├── docs/             #   工具文档与设计稿
@@ -42,12 +42,13 @@
 │   ├── config/           #   global.yaml + schemas/*.yaml + types/*.yaml
 │   ├── excel/            #   策划填写的 Excel 数据表
 │   ├── output/           #   导出产物
-│   │   ├── json/         #     JSON (按语言分目录)
+│   │   ├── json/         #     JSON，文件名 `{Table}_{lang}.json`（**不按语言分目录**）
 │   │   ├── fbs/          #     FlatBuffers Schema (含共享 types.fbs)
 │   │   ├── binary/       #     Binary Bundle (.bin)
 │   │   └── generated/    #     C# / Lua Accessor
-│   ├── cache/            #   增量缓存 (自动维护)
-│   └── i18n/             #   翻译文件 (source/ 原文 + {lang}/ 译文)
+│   ├── cache/            #   生成缓存 cache/artifacts/ + 成功账本 cache/state.json
+│   ├── i18n/             #   翻译文件 (source/ 原文 + {lang}/ 译文)
+│   └── .ct/              #   工具私有状态（建议 gitignore）：export.lock + 发布恢复记录
 ├── openspec/             # 设计文档和任务列表
 └── test-proj/            # .NET 二进制读取测试工程
 ```
@@ -192,7 +193,7 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
         │                              canonical_validate：类型/主键/跨表 ref 外键
         │                                          │
         ▼                                          ▼
-  canonical_export 五阶段 ──► export/canonical_{json,fbs,binary,accessor} + deploy
+  exporting/build 五阶段 ──► exporting/service（锁→恢复→发布→deploy→账本）
         │
         └─► cache/fingerprints 分层指纹 + schema_workspace 的 Draft→Plan→Apply 守卫
 ```
@@ -232,10 +233,19 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 | `ct/cli.py` | Typer CLI 薄壳：参数解析 + 结果渲染；全部命令走 canonical 用例 |
 | `ct/config.py` | 加载 `config/global.yaml` 为 `GlobalConfig`；所有路径相对项目根目录解析 |
 | `ct/app/canonical_workspace.py` | 组合根 `CanonicalWorkspace`：config + 资源图 + `table_order` + `reverse_refs`，CLI/Web/Excel/校验/生成器统一消费 |
-| `ct/app/canonical_export.py` | 五阶段导出（解析校验 → JSON/各语言 bytes → Accessor/模板/manifest → FBS → Bundle）；前置校验闸门，有读取/主键/外键问题即中止 |
+| `ct/app/exporting/build.py` | **唯一的 pipeline**：五阶段导出内核（解析校验 → JSON/各语言 bytes → Accessor/模板/manifest → FBS → Bundle → 本地发布）；读取/主键/外键有问题即中止 |
+| `ct/app/exporting/service.py` | 统一完成服务：工作区锁 → 发布恢复 → pipeline → 完成通知 → 按 `CompletionPolicy` 部署 → 原子成功账本 |
+| `ct/app/exporting/models.py` | `ExportRequest` / `CompletionPolicy` / `PreparedExport` / `TableBuild` / `ArtifactSet` / `ExportResult` / `InputChangedError` |
+| `ct/app/exporting/prepare.py` | 输入快照 `InputRevision` + 捕获前后与发布前的输入/目录成员复核 |
+| `ct/app/canonical_export.py` | **兼容层**：`run_canonical_export`（只导出、原 dict 形状）与历史名字重导出 |
+| `ct/app/data_preparation.py` | 共享 preparation 内核：选中表读取 / layout / 主键 / CodeName / 跨表 ref 校验，validate 与 export 共用一套 |
+| `ct/contracts.py` | 事件与取消原语（`ProgressReporter` / `CancelToken` / `CancelledError` / `NullReporter`），不依赖 ct 其他部分 |
+| `ct/storage/files.py` | 单文件原子写、sha256、路径规范化（cache 层复用同一实现） |
+| `ct/storage/publication.py` | 可恢复的多文件发布：版本化 journal、同卷暂存、备份预检、幂等恢复 |
+| `ct/storage/workspace_lock.py` | 同一规范化 root 的 export/deploy 排他锁（POSIX `flock` / Windows 文件区间锁 + 进程内互斥） |
 | `ct/app/canonical_commands.py` | canonical `validate/status/gen-template/i18n` 用例 + `canonical_validate`（类型/主键/跨表 ref 外键校验）+ `CanonicalValidationError` |
 | `ct/app/schema_workspace/` | Draft → Change Plan → 原子 apply（`snapshot`/`candidate`/`plan`/`apply`/`commands_reducer`） |
-| `ct/app/events.py` | 导出原语：`ProgressReporter` / `CancelToken` / `CancelledError` |
+| `ct/app/events.py` | 兼容重导出：事件原语已移到 `ct/contracts.py` |
 | `ct/schema/resources.py` | `Table`/`Record`/`Enum` + `FieldDef`；`TableResource` 提供派生属性（`i18n_fields`/`has_i18n`/`primary_field`/`resolved_json_key`/`resolved_excel_file`） |
 | `ct/schema/type_expression.py` | 类型表达式（`scalar`/`named`/`vector<T>`）+ YAML 文本解析/序列化 |
 | `ct/schema/resource_repository.py` | YAML 持久化（`config/schemas/` + `config/types/`）+ 类型解析 + 旧格式拒绝 |
@@ -270,9 +280,11 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 
 **canonical-only**：`_looks_canonical` 双路由已移除；CLI/Web 一律走 canonical workspace。旧 legacy 模块（`schema/models.py`、`excel/reader.py`、`export/*.py` legacy 生成器、`validate/*`、`cache/state.py`、`app/export.py` 等）已删除，不再提供旧格式迁移/兼容。
 
-**导出校验闸门**：`run_canonical_export` 在写出产物前做完整校验（Excel 读取类型强转、主键空/重复、跨表 `ref` 外键值须存在于引用表主键集），任一问题即抛 `CanonicalValidationError`，避免脏数据落盘；CLI 渲染并退出 1，Web 任务置为 error 并记日志。
+**导出校验闸门**：`exporting/build.run_pipeline` 在写出产物前做完整校验（Excel 读取类型强转、主键空/重复、跨表 `ref` 外键值须存在于引用表主键集），任一问题即抛 `CanonicalValidationError`，避免脏数据落盘；CLI 渲染并退出 1，Web 任务置为 error 并记日志。
 
-**增量 vs 全量**：canonical 默认完整校验后增量复用。`cache/artifacts.py` 按生成器版本及实际输入缓存 JSON、表级 bytes、Accessor、FBS、Bundle，包含数据决定的定宽布局；输出内容未变时保留 mtime，缓存损坏或输出缺失自动恢复。`--all` 强制生成并写出。`cache/state.json` 仍只在成功导出/部署后记录状态；修改生成器行为需更新 `canonical_export.CODEGEN_VERSION`。
+**增量 vs 全量**：canonical 默认完整校验后增量复用。`cache/artifacts.py` 按生成器版本及实际输入缓存 JSON、表级 bytes、Accessor、FBS、Bundle，包含数据决定的定宽布局；输出内容未变时保留 mtime，缓存损坏或输出缺失自动恢复。`--all` 强制生成并写出。`cache/state.json` 仍只在成功导出/部署后记录状态；修改生成器行为需更新 `exporting/build.CODEGEN_VERSION`。
+
+**可恢复发布与工作区锁**：全部生成与 FBS/定宽检查通过后，才在**一个可恢复事务**里改写正式输出与 `excel/layout_manifests/`（含全量导出的陈旧文件删除）；``.ct/export-publication.json`` 记录 prepared→backed_up→publishing→committed 四阶段，备份完成前不改写正式目标，中断后下次 export/deploy 先幂等恢复。同一规范化 root 的 export/deploy 由 `.ct/export.lock` 排他（系统 advisory lock，进程死亡自动释放；文件存在 ≠ 已加锁）。生成缓存 `cache/artifacts/` 可丢弃，成功账本 `cache/state.json` 只在发布（CLI 下还包括部署）成功后推进 —— 二者不可混为一谈。
 
 **Schema 依赖排序**：`ref` 字段定义跨表外键（`ref: 目标表.字段`）、命名类型引用定义 named 依赖；`resource_graph` 做拓扑排序（命名类型先于依赖它的 Table，被引用表先于引用表），并提供反向引用与删除保护。
 
