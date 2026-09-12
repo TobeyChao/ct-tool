@@ -68,9 +68,10 @@
             "typeExpr": "double"
         }
     ],
+    "fill_rate": 1.0,
     "format": "template-layout/2",
     "header_rows": 4,
-    "layout_revision": 2,
+    "layout_revision": 3,
     "nodes": [
         {
             "annotation": "int32",
@@ -185,5 +186,32 @@
             "stablePath": "table:Quest/Test[3]"
         }
     ],
-    "schema_hash": "d9f7624dd77fe5ba"
+    "schema_hash": "83826658d22af543",
+    "slot_offsets": [
+        [
+            4,
+            4
+        ],
+        [
+            6,
+            8
+        ],
+        [
+            8,
+            12
+        ],
+        [
+            10,
+            16
+        ],
+        [
+            12,
+            20
+        ],
+        [
+            14,
+            24
+        ]
+    ],
+    "uniform": true
 }

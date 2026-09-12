@@ -73,9 +73,10 @@
             "typeExpr": "bool"
         }
     ],
+    "fill_rate": 0.928571,
     "format": "template-layout/2",
     "header_rows": 4,
-    "layout_revision": 2,
+    "layout_revision": 3,
     "nodes": [
         {
             "annotation": "int32",
@@ -201,5 +202,36 @@
             "stablePath": "table:Item/IsActive"
         }
     ],
-    "schema_hash": "96343225c88cc8b8"
+    "schema_hash": "0938c46201439145",
+    "slot_offsets": [
+        [
+            4,
+            4
+        ],
+        [
+            6,
+            8
+        ],
+        [
+            8,
+            12
+        ],
+        [
+            10,
+            16
+        ],
+        [
+            12,
+            20
+        ],
+        [
+            14,
+            24
+        ],
+        [
+            16,
+            28
+        ]
+    ],
+    "uniform": true
 }

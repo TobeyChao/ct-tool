@@ -2,13 +2,13 @@
 include "types.fbs";
 
 table Item {
-  Id: int32;
+  Id: int;
   Name: string;
   Price: float32;
   Rarity: ItemRarity;
-  ItemTypeId: int32;
+  ItemTypeId: int;
   DropRange: ItemDropRange;
-  Tags: [int32];
+  Tags: [int];
 }
 
 struct IndexEntry {
@@ -16,9 +16,19 @@ struct IndexEntry {
   row: int32;
 }
 
+table ItemI18nEntry {
+  Id: int32;
+  Name: string;
+}
+
+table ItemI18nTable {
+  items: [ItemI18nEntry];
+}
+
 table ItemTable {
   items: [Item];
   index: [IndexEntry];
+  idHash: [int32];
 }
 
 root_type ItemTable;

@@ -2,8 +2,8 @@ table: ComplexShowcase
 primary: Id
 fields:
   - name: Id
-    type: int64
-    comment: 示例主键，覆盖 64 位整数
+    type: int32
+    comment: 示例主键（主键固定 int32；64 位整数覆盖见 SecretSeed 与 LongValues）
   - name: Code
     type: int32
     comment: 客户端使用的短整型代码

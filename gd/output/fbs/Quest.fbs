@@ -2,11 +2,11 @@
 include "types.fbs";
 
 table Quest {
-  Id: int32;
+  Id: int;
   Title: string;
   Description: string;
-  RewardItemId: int32;
-  RequiredLevel: int32;
+  RewardItemId: int;
+  RequiredLevel: int;
   Test: [float64];
 }
 
@@ -15,9 +15,20 @@ struct IndexEntry {
   row: int32;
 }
 
+table QuestI18nEntry {
+  Id: int32;
+  Title: string;
+  Description: string;
+}
+
+table QuestI18nTable {
+  items: [QuestI18nEntry];
+}
+
 table QuestTable {
   items: [Quest];
   index: [IndexEntry];
+  idHash: [int32];
 }
 
 root_type QuestTable;

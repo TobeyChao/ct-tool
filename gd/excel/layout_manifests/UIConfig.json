@@ -41,9 +41,10 @@
             "typeExpr": "bool"
         }
     ],
+    "fill_rate": 0.6,
     "format": "template-layout/2",
     "header_rows": 2,
-    "layout_revision": 2,
+    "layout_revision": 3,
     "nodes": [
         {
             "annotation": "int32",
@@ -106,5 +107,7 @@
             "stablePath": "table:UIConfig/Stack"
         }
     ],
-    "schema_hash": "4ba180d36a9c9981"
+    "schema_hash": "19d52f7f29abccfb",
+    "slot_offsets": [],
+    "uniform": false
 }

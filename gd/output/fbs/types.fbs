@@ -9,20 +9,20 @@ enum ShowcaseRarity : byte { Common = 0, Rare = 1, Epic = 2, Legendary = 3 }
 enum UIConfigLayer : byte { Page = 0, Modal = 1, Panel = 2, Overlay = 3 }
 
 table ItemDropRange {
-  Min: int32;
-  Max: int32;
+  Min: int;
+  Max: int;
 }
 
 table RewardBounds {
-  Min: int32;
-  Max: int32;
+  Min: int;
+  Max: int;
   Guaranteed: bool;
 }
 
 table RewardDefinition {
   Kind: RewardKind;
-  ItemIds: [int32];
-  Amounts: [int32];
+  ItemIds: [int];
+  Amounts: [int];
   Chance: float32;
   Bounds: RewardBounds;
 }

@@ -2,7 +2,7 @@
 include "types.fbs";
 
 table UIConfig {
-  Id: int32;
+  Id: int;
   Layer: UIConfigLayer;
   ResourceKey: string;
   BlocksRaycast: bool;
@@ -17,6 +17,7 @@ struct IndexEntry {
 table UIConfigTable {
   items: [UIConfig];
   index: [IndexEntry];
+  idHash: [int32];
 }
 
 root_type UIConfigTable;

@@ -1,12 +1,12 @@
 {
     "columns": [
         {
-            "annotation": "int64",
+            "annotation": "int32",
             "depth": 1,
             "index": 1,
             "leaf": "Id",
             "stablePath": "table:ComplexShowcase/Id",
-            "typeExpr": "int64"
+            "typeExpr": "int32"
         },
         {
             "annotation": "int32",
@@ -507,14 +507,15 @@
             "typeExpr": "bool"
         }
     ],
+    "fill_rate": 0.973684,
     "format": "template-layout/2",
     "header_rows": 8,
-    "layout_revision": 2,
+    "layout_revision": 3,
     "nodes": [
         {
-            "annotation": "int64",
+            "annotation": "int32",
             "children": [],
-            "comment": "示例主键，覆盖 64 位整数",
+            "comment": "示例主键（主键固定 int32；64 位整数覆盖见 SecretSeed 与 LongValues）",
             "depth": 1,
             "displayName": "Id",
             "kind": "field",
@@ -1455,5 +1456,84 @@
             "stablePath": "table:ComplexShowcase/RewardTiers[2]/Bounds/Guaranteed"
         }
     ],
-    "schema_hash": "c1d64a7fa047fbb0"
+    "schema_hash": "8418c62547d7af23",
+    "slot_offsets": [
+        [
+            4,
+            4
+        ],
+        [
+            6,
+            8
+        ],
+        [
+            8,
+            12
+        ],
+        [
+            10,
+            16
+        ],
+        [
+            12,
+            24
+        ],
+        [
+            14,
+            28
+        ],
+        [
+            16,
+            32
+        ],
+        [
+            18,
+            36
+        ],
+        [
+            20,
+            40
+        ],
+        [
+            22,
+            44
+        ],
+        [
+            24,
+            48
+        ],
+        [
+            26,
+            52
+        ],
+        [
+            28,
+            56
+        ],
+        [
+            30,
+            60
+        ],
+        [
+            32,
+            64
+        ],
+        [
+            34,
+            68
+        ],
+        [
+            36,
+            72
+        ],
+        [
+            38,
+            76
+        ],
+        [
+            40,
+            80
+        ]
+    ],
+    "uniform": true
 }

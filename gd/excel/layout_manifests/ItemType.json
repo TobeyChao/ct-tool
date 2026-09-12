@@ -25,9 +25,10 @@
             "typeExpr": "string"
         }
     ],
+    "fill_rate": 1.0,
     "format": "template-layout/2",
     "header_rows": 2,
-    "layout_revision": 2,
+    "layout_revision": 3,
     "nodes": [
         {
             "annotation": "int32",
@@ -66,5 +67,20 @@
             "stablePath": "table:ItemType/Code"
         }
     ],
-    "schema_hash": "f6fdb73245af7d34"
+    "schema_hash": "309d26fdbbcba4a2",
+    "slot_offsets": [
+        [
+            4,
+            4
+        ],
+        [
+            6,
+            8
+        ],
+        [
+            8,
+            12
+        ]
+    ],
+    "uniform": true
 }

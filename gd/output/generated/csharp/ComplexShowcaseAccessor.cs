@@ -2,146 +2,565 @@
 // Canonical C# accessor for ComplexShowcase
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
-public static partial class ComplexShowcaseAccessor
+namespace GameFramework.ConfigGen
 {
-    private const string TableName = "ComplexShowcase";
-    /// <summary>行数。</summary>
-    public static int Count => Runtime.Count(TableName);
-
-    /// <summary>按主键查行；未找到返回 null。</summary>
-    public static ComplexShowcaseRow? ByID(int id)
+    public static partial class ComplexShowcaseAccessor
     {
-        IntPtr p = Runtime.ByID(TableName, id);
-        if (p == IntPtr.Zero)
-        {
-            return null;
-        }
-        else
-        {
-            return new ComplexShowcaseRow(p, Runtime.Version(TableName));
-        }
-    }
+        private const string TableName = "ComplexShowcase";
+        private static ConfigTable _table;
+        private static int _tableVersion = -1;
 
-    /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>
-    public static ComplexShowcaseRow? ByIndex(int i)
-    {
-        IntPtr p = Runtime.RowAt(TableName, i);
-        if (p == IntPtr.Zero)
+        /// <summary>解析并缓存表句柄；整套 bin 换代后 Runtime 会重建表对象。</summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Resolve()
         {
-            return null;
+            _table = Runtime.Table(TableName);
+            _tableVersion = TableVersion.Current;
         }
-        else
-        {
-            return new ComplexShowcaseRow(p, Runtime.Version(TableName));
-        }
-    }
 
-    public unsafe readonly struct WorldPositionRow
-    {
-        private readonly IntPtr _row;
-        private readonly int _version;
-        internal WorldPositionRow(IntPtr row, int version)
-        {
-            _row = row;
-            _version = version;
-        }
-        public double X => WireReader.F64(_row, 4);
-        public double Y => WireReader.F64(_row, 6);
-        public double Z => WireReader.F64(_row, 8);
-        public CoordinateSpace Space => (CoordinateSpace)WireReader.I8(_row, 10);
-        public bool IsPrecise => WireReader.Bool(_row, 12);
-    }
-
-    public unsafe readonly struct RewardDefinitionRow
-    {
-        private readonly IntPtr _row;
-        private readonly int _version;
-        internal RewardDefinitionRow(IntPtr row, int version)
-        {
-            _row = row;
-            _version = version;
-        }
-        public RewardKind Kind => (RewardKind)WireReader.I8(_row, 4);
-        public NArray<int> ItemIds => new NArray<int>(_row, 6, _version);
-        public NArray<int> Amounts => new NArray<int>(_row, 8, _version);
-        public float Chance => WireReader.F32(_row, 10);
-        public RewardBoundsRow Bounds
+        internal static ConfigTable Table
         {
             get
             {
-                return new RewardBoundsRow(WireReader.Indirect(_row, 12), _version);
+                ConfigTable t = _table;
+                // 世代守卫：整套 bin 换代（LoadBundle/Clear）后必须重新取句柄，
+                // 否则会继续用已被 Dispose 的旧表缓冲（悬垂指针）。
+                if (t != null && _tableVersion == TableVersion.Current)
+                {
+                    return t;
+                }
+                Resolve();
+                return _table;
             }
         }
+
+        /// <summary>行数。</summary>
+        public static int Count => Table.Count;
+
+        /// <summary>按主键查行；未找到返回 null。</summary>
+        public static ComplexShowcase? ByID(int id)
+        {
+            ConfigTable t = Table;
+            int idx;
+            IntPtr p = t.ByID(id, out idx);
+            if (p == IntPtr.Zero)
+            {
+                return null;
+            }
+            else
+            {
+                return new ComplexShowcase(p, t.Version, idx);
+            }
+        }
+
+        /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>
+        public static ComplexShowcase? ByIndex(int i)
+        {
+            ConfigTable t = Table;
+            IntPtr p = t.RowAt(i);
+            if (p == IntPtr.Zero)
+            {
+                return null;
+            }
+            else
+            {
+                return new ComplexShowcase(p, t.Version, i);
+            }
+        }
+
+        // ---- per-field 字符串缓存（行下标索引，整套 bin 换代时整体重建）----
+        private static string[] _displayNameCache;
+        private static int _strCacheVersion = -1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ResetStringCaches()
+        {
+            int n = Table.Count;
+            _displayNameCache = new string[n];
+            _strCacheVersion = TableVersion.Current;
+        }
+
+        internal static string[] DisplayNameCache
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                string[] c = _displayNameCache;
+                if (c != null && _strCacheVersion == TableVersion.Current)
+                {
+                    return c;
+                }
+                ResetStringCaches();
+                return _displayNameCache;
+            }
+        }
+
+        // ---- 多语言字段：当前语言的稀疏 i18n 表（按行下标读，与主表同序）----
+        // 该表只在加载了对应语言包时存在；缺席时读回 null，由字段 getter 回退主表原文。
+        private const string I18nTableName = "ComplexShowcase_i18n";
+        private static ConfigTable _i18nTable;
+        private static int _i18nTableVersion = -1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ResolveI18nTable()
+        {
+            _i18nTable = Runtime.TryTable(I18nTableName);
+            _i18nTableVersion = TableVersion.I18nCurrent;
+        }
+
+        internal static ConfigTable I18nTable
+        {
+            get
+            {
+                ConfigTable t = _i18nTable;
+                // ⚠️ 表**缺席**时也要认这个世代。只判 `t != null` 的话，主语言
+                //    （＝默认发布形态，根本不加载 i18n 包）每读一个多语言字段都要重走
+                //    一遍 TryTable（字典查找 + 字符串哈希）。
+                if (_i18nTableVersion == TableVersion.I18nCurrent)
+                {
+                    return t;
+                }
+                ResolveI18nTable();
+                return _i18nTable;
+            }
+        }
+
+        // 译文缓存：按 **i18n 世代**整体重建（切语言即失效）
+        private static string[] _displayNameI18nCache;
+        private static int _i18nStrCacheVersion = -1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ResetI18nStringCaches()
+        {
+            ConfigTable t = I18nTable;
+            int n = t == null ? 0 : t.Count;
+            _displayNameI18nCache = new string[n];
+            _i18nStrCacheVersion = TableVersion.I18nCurrent;
+        }
+
+        private static string[] DisplayNameI18nCache
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                string[] c = _displayNameI18nCache;
+                if (c != null && _i18nStrCacheVersion == TableVersion.I18nCurrent)
+                {
+                    return c;
+                }
+                ResetI18nStringCaches();
+                return _displayNameI18nCache;
+            }
+        }
+
+        /// <summary>DisplayName：当前语言译文；表/行缺失或该字段无译文时返回 null。</summary>
+        internal static unsafe string I18nDisplayName(int index)
+        {
+            ConfigTable t = I18nTable;
+            if (t == null)
+            {
+                return null;
+            }
+            string[] c = DisplayNameI18nCache;
+            if (index < 0 || index >= c.Length)
+            {
+                return null;
+            }
+            IntPtr p = t.RowAt(index);
+            if (p == IntPtr.Zero)
+            {
+                return null;
+            }
+            string s = c[index];
+            if (s != null)
+            {
+                return s;
+            }
+            s = NStringCache.Decode((byte*)WireReader.IndirectAt(p, 8));
+            c[index] = s;
+            return s;
+        }
+
+        public unsafe readonly struct WorldPosition
+        {
+            private readonly IntPtr _row;
+            private readonly int _version;
+            internal WorldPosition(IntPtr row, int version)
+            {
+                _row = row;
+                _version = version;
+            }
+            public double X
+            {
+                get
+                {
+                    #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                    TableVersion.Check(_version);
+                    #endif
+                    return WireReader.F64(_row, 4);
+                }
+            }
+            public double Y
+            {
+                get
+                {
+                    #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                    TableVersion.Check(_version);
+                    #endif
+                    return WireReader.F64(_row, 6);
+                }
+            }
+            public double Z
+            {
+                get
+                {
+                    #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                    TableVersion.Check(_version);
+                    #endif
+                    return WireReader.F64(_row, 8);
+                }
+            }
+            public CoordinateSpace Space
+            {
+                get
+                {
+                    #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                    TableVersion.Check(_version);
+                    #endif
+                    return (CoordinateSpace)WireReader.I8(_row, 10);
+                }
+            }
+            public bool IsPrecise
+            {
+                get
+                {
+                    #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                    TableVersion.Check(_version);
+                    #endif
+                    return WireReader.Bool(_row, 12);
+                }
+            }
+        }
+
+        public unsafe readonly struct RewardDefinition
+        {
+            private readonly IntPtr _row;
+            private readonly int _version;
+            internal RewardDefinition(IntPtr row, int version)
+            {
+                _row = row;
+                _version = version;
+            }
+            public RewardKind Kind
+            {
+                get
+                {
+                    #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                    TableVersion.Check(_version);
+                    #endif
+                    return (RewardKind)WireReader.I8(_row, 4);
+                }
+            }
+            public NArray<int> ItemIds
+            {
+                get
+                {
+                    #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                    TableVersion.Check(_version);
+                    #endif
+                    return new NArray<int>(_row, 6, _version);
+                }
+            }
+            public NArray<int> Amounts
+            {
+                get
+                {
+                    #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                    TableVersion.Check(_version);
+                    #endif
+                    return new NArray<int>(_row, 8, _version);
+                }
+            }
+            public float Chance
+            {
+                get
+                {
+                    #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                    TableVersion.Check(_version);
+                    #endif
+                    return WireReader.F32(_row, 10);
+                }
+            }
+            public RewardBounds Bounds
+            {
+                get
+                {
+                    #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                    TableVersion.Check(_version);
+                    #endif
+                    return new RewardBounds(WireReader.Indirect(_row, 12), _version);
+                }
+            }
+        }
+
+        public unsafe readonly struct RewardBounds
+        {
+            private readonly IntPtr _row;
+            private readonly int _version;
+            internal RewardBounds(IntPtr row, int version)
+            {
+                _row = row;
+                _version = version;
+            }
+            public int Min
+            {
+                get
+                {
+                    #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                    TableVersion.Check(_version);
+                    #endif
+                    return WireReader.I32(_row, 4);
+                }
+            }
+            public int Max
+            {
+                get
+                {
+                    #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                    TableVersion.Check(_version);
+                    #endif
+                    return WireReader.I32(_row, 6);
+                }
+            }
+            public bool Guaranteed
+            {
+                get
+                {
+                    #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                    TableVersion.Check(_version);
+                    #endif
+                    return WireReader.Bool(_row, 8);
+                }
+            }
+        }
+
     }
 
-    public unsafe readonly struct RewardBoundsRow
+    public unsafe readonly struct ComplexShowcase
     {
         private readonly IntPtr _row;
         private readonly int _version;
-        internal RewardBoundsRow(IntPtr row, int version)
+        private readonly int _index;
+        internal ComplexShowcase(IntPtr row, int version, int rowIndex)
         {
             _row = row;
             _version = version;
+            _index = rowIndex;
         }
-        public int Min => WireReader.I32(_row, 4);
-        public int Max => WireReader.I32(_row, 6);
-        public bool Guaranteed => WireReader.Bool(_row, 8);
-    }
-
-}
-
-public unsafe readonly struct ComplexShowcaseRow
-{
-    private readonly IntPtr _row;
-    private readonly int _version;
-    internal ComplexShowcaseRow(IntPtr row, int version)
-    {
-        _row = row;
-        _version = version;
-    }
-    public long Id => WireReader.I64(_row, 4);
-    public int Code => WireReader.I32(_row, 6);
-    public float Weight => WireReader.F32(_row, 8);
-    public double PreciseValue => WireReader.F64(_row, 10);
-    public bool IsEnabled => WireReader.Bool(_row, 12);
-    public string DisplayName => new NString((byte*)WireReader.Indirect(_row, 14), _version);
-    public ShowcaseRarity Rarity => (ShowcaseRarity)WireReader.I8(_row, 16);
-    public int ItemTypeId => WireReader.I32(_row, 18);
-    public ItemTypeRow? ItemType => ItemTypeAccessor.ByID(ItemTypeId);
-    public ComplexShowcaseAccessor.WorldPositionRow Position
-    {
-        get
+        public int Id
         {
-            return new ComplexShowcaseAccessor.WorldPositionRow(WireReader.Indirect(_row, 20), _version);
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.I32At(_row, 4);
+            }
         }
-    }
-    public ComplexShowcaseAccessor.RewardDefinitionRow Reward
-    {
-        get
+        public int Code
         {
-            return new ComplexShowcaseAccessor.RewardDefinitionRow(WireReader.Indirect(_row, 22), _version);
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.I32At(_row, 8);
+            }
         }
-    }
-    public NArray<int> IntValues => new NArray<int>(_row, 24, _version);
-    public NArray<long> LongValues => new NArray<long>(_row, 26, _version);
-    public NArray<float> Ratios => new NArray<float>(_row, 28, _version);
-    public NArray<double> Precisions => new NArray<double>(_row, 30, _version);
-    public NArray<bool> Flags => new NArray<bool>(_row, 32, _version);
-    public NStructArray<NString> Aliases => new NStructArray<NString>(_row, 34, _version);
-    public NArray<ShowcaseRarity> Rarities => new NArray<ShowcaseRarity>(_row, 36, _version);
-    public NStructArray<ComplexShowcaseAccessor.WorldPositionRow> SpawnPoints
-    {
-        get
+        public float Weight
         {
-            return new NStructArray<ComplexShowcaseAccessor.WorldPositionRow>(_row, 38, _version);
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.F32At(_row, 12);
+            }
         }
-    }
-    public NStructArray<ComplexShowcaseAccessor.RewardDefinitionRow> RewardTiers
-    {
-        get
+        public double PreciseValue
         {
-            return new NStructArray<ComplexShowcaseAccessor.RewardDefinitionRow>(_row, 40, _version);
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.F64At(_row, 16);
+            }
+        }
+        public bool IsEnabled
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.BoolAt(_row, 24);
+            }
+        }
+        public string DisplayName
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                string v = ComplexShowcaseAccessor.I18nDisplayName(_index);
+                if (v != null)
+                {
+                    return v;
+                }
+                string[] c = ComplexShowcaseAccessor.DisplayNameCache;
+                string s = c[_index];
+                if (s != null)
+                {
+                    return s;
+                }
+                s = NStringCache.Decode((byte*)WireReader.IndirectAt(_row, 28));
+                c[_index] = s;
+                return s;
+            }
+        }
+        public ShowcaseRarity Rarity
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return (ShowcaseRarity)WireReader.I8At(_row, 32);
+            }
+        }
+        public int ItemTypeId
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.I32At(_row, 36);
+            }
+        }
+        public ComplexShowcaseAccessor.WorldPosition Position
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return new ComplexShowcaseAccessor.WorldPosition((IntPtr)WireReader.IndirectAt(_row, 40), _version);
+            }
+        }
+        public ComplexShowcaseAccessor.RewardDefinition Reward
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return new ComplexShowcaseAccessor.RewardDefinition((IntPtr)WireReader.IndirectAt(_row, 44), _version);
+            }
+        }
+        public NArray<int> IntValues
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return new NArray<int>((byte*)WireReader.IndirectAt(_row, 48), _version);
+            }
+        }
+        public NArray<long> LongValues
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return new NArray<long>((byte*)WireReader.IndirectAt(_row, 52), _version);
+            }
+        }
+        public NArray<float> Ratios
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return new NArray<float>((byte*)WireReader.IndirectAt(_row, 56), _version);
+            }
+        }
+        public NArray<double> Precisions
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return new NArray<double>((byte*)WireReader.IndirectAt(_row, 60), _version);
+            }
+        }
+        public NArray<bool> Flags
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return new NArray<bool>((byte*)WireReader.IndirectAt(_row, 64), _version);
+            }
+        }
+        public NStructArray<NString> Aliases
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return new NStructArray<NString>((byte*)WireReader.IndirectAt(_row, 68), _version);
+            }
+        }
+        public NArray<ShowcaseRarity> Rarities
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return new NArray<ShowcaseRarity>((byte*)WireReader.IndirectAt(_row, 72), _version);
+            }
+        }
+        public NStructArray<ComplexShowcaseAccessor.WorldPosition> SpawnPoints
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return new NStructArray<ComplexShowcaseAccessor.WorldPosition>((byte*)WireReader.IndirectAt(_row, 76), _version);
+            }
+        }
+        public NStructArray<ComplexShowcaseAccessor.RewardDefinition> RewardTiers
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return new NStructArray<ComplexShowcaseAccessor.RewardDefinition>((byte*)WireReader.IndirectAt(_row, 80), _version);
+            }
         }
     }
 }

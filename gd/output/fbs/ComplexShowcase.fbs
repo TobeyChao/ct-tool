@@ -2,18 +2,18 @@
 include "types.fbs";
 
 table ComplexShowcase {
-  Id: int64;
-  Code: int32;
+  Id: int;
+  Code: int;
   Weight: float32;
   PreciseValue: float64;
   IsEnabled: bool;
   DisplayName: string;
   Rarity: ShowcaseRarity;
-  ItemTypeId: int32;
+  ItemTypeId: int;
   Position: WorldPosition;
   Reward: RewardDefinition;
-  IntValues: [int32];
-  LongValues: [int64];
+  IntValues: [int];
+  LongValues: [long];
   Ratios: [float32];
   Precisions: [float64];
   Flags: [bool];
@@ -28,9 +28,19 @@ struct IndexEntry {
   row: int32;
 }
 
+table ComplexShowcaseI18nEntry {
+  Id: int32;
+  DisplayName: string;
+}
+
+table ComplexShowcaseI18nTable {
+  items: [ComplexShowcaseI18nEntry];
+}
+
 table ComplexShowcaseTable {
   items: [ComplexShowcase];
   index: [IndexEntry];
+  idHash: [int32];
 }
 
 root_type ComplexShowcaseTable;

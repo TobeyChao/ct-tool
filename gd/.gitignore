@@ -1,2 +1,5 @@
 # 运行产物（增量导出缓存，由工具自动维护，不入库）
 cache/
+
+# ct 私有状态：export/deploy 工作区锁 + 发布恢复记录（见 ct/docs/README.md）
+.ct/

@@ -2,77 +2,313 @@
 // Canonical C# accessor for Item
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
-public static partial class ItemAccessor
+namespace GameFramework.ConfigGen
 {
-    private const string TableName = "Item";
-    /// <summary>行数。</summary>
-    public static int Count => Runtime.Count(TableName);
-
-    /// <summary>按主键查行；未找到返回 null。</summary>
-    public static ItemRow? ByID(int id)
+    public static partial class ItemAccessor
     {
-        IntPtr p = Runtime.ByID(TableName, id);
-        if (p == IntPtr.Zero)
+        private const string TableName = "Item";
+        private static ConfigTable _table;
+        private static int _tableVersion = -1;
+
+        /// <summary>解析并缓存表句柄；整套 bin 换代后 Runtime 会重建表对象。</summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Resolve()
         {
-            return null;
+            _table = Runtime.Table(TableName);
+            _tableVersion = TableVersion.Current;
         }
-        else
+
+        internal static ConfigTable Table
         {
-            return new ItemRow(p, Runtime.Version(TableName));
+            get
+            {
+                ConfigTable t = _table;
+                // 世代守卫：整套 bin 换代（LoadBundle/Clear）后必须重新取句柄，
+                // 否则会继续用已被 Dispose 的旧表缓冲（悬垂指针）。
+                if (t != null && _tableVersion == TableVersion.Current)
+                {
+                    return t;
+                }
+                Resolve();
+                return _table;
+            }
         }
+
+        /// <summary>行数。</summary>
+        public static int Count => Table.Count;
+
+        /// <summary>按主键查行；未找到返回 null。</summary>
+        public static Item? ByID(int id)
+        {
+            ConfigTable t = Table;
+            int idx;
+            IntPtr p = t.ByID(id, out idx);
+            if (p == IntPtr.Zero)
+            {
+                return null;
+            }
+            else
+            {
+                return new Item(p, t.Version, idx);
+            }
+        }
+
+        /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>
+        public static Item? ByIndex(int i)
+        {
+            ConfigTable t = Table;
+            IntPtr p = t.RowAt(i);
+            if (p == IntPtr.Zero)
+            {
+                return null;
+            }
+            else
+            {
+                return new Item(p, t.Version, i);
+            }
+        }
+
+        // ---- per-field 字符串缓存（行下标索引，整套 bin 换代时整体重建）----
+        private static string[] _nameCache;
+        private static int _strCacheVersion = -1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ResetStringCaches()
+        {
+            int n = Table.Count;
+            _nameCache = new string[n];
+            _strCacheVersion = TableVersion.Current;
+        }
+
+        internal static string[] NameCache
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                string[] c = _nameCache;
+                if (c != null && _strCacheVersion == TableVersion.Current)
+                {
+                    return c;
+                }
+                ResetStringCaches();
+                return _nameCache;
+            }
+        }
+
+        // ---- 多语言字段：当前语言的稀疏 i18n 表（按行下标读，与主表同序）----
+        // 该表只在加载了对应语言包时存在；缺席时读回 null，由字段 getter 回退主表原文。
+        private const string I18nTableName = "Item_i18n";
+        private static ConfigTable _i18nTable;
+        private static int _i18nTableVersion = -1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ResolveI18nTable()
+        {
+            _i18nTable = Runtime.TryTable(I18nTableName);
+            _i18nTableVersion = TableVersion.I18nCurrent;
+        }
+
+        internal static ConfigTable I18nTable
+        {
+            get
+            {
+                ConfigTable t = _i18nTable;
+                // ⚠️ 表**缺席**时也要认这个世代。只判 `t != null` 的话，主语言
+                //    （＝默认发布形态，根本不加载 i18n 包）每读一个多语言字段都要重走
+                //    一遍 TryTable（字典查找 + 字符串哈希）。
+                if (_i18nTableVersion == TableVersion.I18nCurrent)
+                {
+                    return t;
+                }
+                ResolveI18nTable();
+                return _i18nTable;
+            }
+        }
+
+        // 译文缓存：按 **i18n 世代**整体重建（切语言即失效）
+        private static string[] _nameI18nCache;
+        private static int _i18nStrCacheVersion = -1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ResetI18nStringCaches()
+        {
+            ConfigTable t = I18nTable;
+            int n = t == null ? 0 : t.Count;
+            _nameI18nCache = new string[n];
+            _i18nStrCacheVersion = TableVersion.I18nCurrent;
+        }
+
+        private static string[] NameI18nCache
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                string[] c = _nameI18nCache;
+                if (c != null && _i18nStrCacheVersion == TableVersion.I18nCurrent)
+                {
+                    return c;
+                }
+                ResetI18nStringCaches();
+                return _nameI18nCache;
+            }
+        }
+
+        /// <summary>Name：当前语言译文；表/行缺失或该字段无译文时返回 null。</summary>
+        internal static unsafe string I18nName(int index)
+        {
+            ConfigTable t = I18nTable;
+            if (t == null)
+            {
+                return null;
+            }
+            string[] c = NameI18nCache;
+            if (index < 0 || index >= c.Length)
+            {
+                return null;
+            }
+            IntPtr p = t.RowAt(index);
+            if (p == IntPtr.Zero)
+            {
+                return null;
+            }
+            string s = c[index];
+            if (s != null)
+            {
+                return s;
+            }
+            s = NStringCache.Decode((byte*)WireReader.IndirectAt(p, 8));
+            c[index] = s;
+            return s;
+        }
+
+        public unsafe readonly struct ItemDropRange
+        {
+            private readonly IntPtr _row;
+            private readonly int _version;
+            internal ItemDropRange(IntPtr row, int version)
+            {
+                _row = row;
+                _version = version;
+            }
+            public int Min
+            {
+                get
+                {
+                    #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                    TableVersion.Check(_version);
+                    #endif
+                    return WireReader.I32(_row, 4);
+                }
+            }
+            public int Max
+            {
+                get
+                {
+                    #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                    TableVersion.Check(_version);
+                    #endif
+                    return WireReader.I32(_row, 6);
+                }
+            }
+        }
+
     }
 
-    /// <summary>按 Excel 序行下标取行；越界返回 null。</summary>
-    public static ItemRow? ByIndex(int i)
-    {
-        IntPtr p = Runtime.RowAt(TableName, i);
-        if (p == IntPtr.Zero)
-        {
-            return null;
-        }
-        else
-        {
-            return new ItemRow(p, Runtime.Version(TableName));
-        }
-    }
-
-    public unsafe readonly struct ItemDropRangeRow
+    public unsafe readonly struct Item
     {
         private readonly IntPtr _row;
         private readonly int _version;
-        internal ItemDropRangeRow(IntPtr row, int version)
+        private readonly int _index;
+        internal Item(IntPtr row, int version, int rowIndex)
         {
             _row = row;
             _version = version;
+            _index = rowIndex;
         }
-        public int Min => WireReader.I32(_row, 4);
-        public int Max => WireReader.I32(_row, 6);
-    }
-
-}
-
-public unsafe readonly struct ItemRow
-{
-    private readonly IntPtr _row;
-    private readonly int _version;
-    internal ItemRow(IntPtr row, int version)
-    {
-        _row = row;
-        _version = version;
-    }
-    public int Id => WireReader.I32(_row, 4);
-    public string Name => new NString((byte*)WireReader.Indirect(_row, 6), _version);
-    public float Price => WireReader.F32(_row, 8);
-    public ItemRarity Rarity => (ItemRarity)WireReader.I8(_row, 10);
-    public int ItemTypeId => WireReader.I32(_row, 12);
-    public ItemTypeRow? ItemType => ItemTypeAccessor.ByID(ItemTypeId);
-    public ItemAccessor.ItemDropRangeRow DropRange
-    {
-        get
+        public int Id
         {
-            return new ItemAccessor.ItemDropRangeRow(WireReader.Indirect(_row, 14), _version);
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.I32At(_row, 4);
+            }
+        }
+        public string Name
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                string v = ItemAccessor.I18nName(_index);
+                if (v != null)
+                {
+                    return v;
+                }
+                string[] c = ItemAccessor.NameCache;
+                string s = c[_index];
+                if (s != null)
+                {
+                    return s;
+                }
+                s = NStringCache.Decode((byte*)WireReader.IndirectAt(_row, 8));
+                c[_index] = s;
+                return s;
+            }
+        }
+        public float Price
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.F32At(_row, 12);
+            }
+        }
+        public ItemRarity Rarity
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return (ItemRarity)WireReader.I8At(_row, 16);
+            }
+        }
+        public int ItemTypeId
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return WireReader.I32At(_row, 20);
+            }
+        }
+        public ItemAccessor.ItemDropRange DropRange
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return new ItemAccessor.ItemDropRange((IntPtr)WireReader.IndirectAt(_row, 24), _version);
+            }
+        }
+        public NArray<int> Tags
+        {
+            get
+            {
+                #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
+                TableVersion.Check(_version);
+                #endif
+                return new NArray<int>((byte*)WireReader.IndirectAt(_row, 28), _version);
+            }
         }
     }
-    public NArray<int> Tags => new NArray<int>(_row, 16, _version);
 }
