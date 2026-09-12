@@ -63,11 +63,12 @@ class PreparedExport:
 
 @dataclass
 class TableBuild:
-    """阶段 2 的单表产物：定宽决策、偏移常量与各语言字节。
+    """阶段 2 的单表产物：定宽声明、偏移常量与各语言字节。
 
-    ``slot_offsets`` 只在 ``uniform`` 为真时有意义（表级常量，供生成器发射
-    字面量偏移）；``primary_bytes`` 是主表字节，``i18n_bytes`` 是稀疏 i18n 表
-    字节（仅次级语言）。
+    ``uniform`` 来自表 schema 的声明（缺省 true）；``fill_rate`` 只用于诊断报告，
+    不参与布局决策。``slot_offsets`` 只在 ``uniform`` 为真时有意义（表级常量，
+    供生成器发射字面量偏移）；``primary_bytes`` 是主表字节，``i18n_bytes`` 是
+    稀疏 i18n 表字节（仅次级语言）。
     """
 
     table: str
@@ -78,17 +79,16 @@ class TableBuild:
     bytes_uniform: int | None = None
     primary_bytes: dict[str, bytes] = field(default_factory=dict)
     i18n_bytes: dict[str, bytes] = field(default_factory=dict)
-    #: 稀疏 i18n 表**自己**的 slot→offset 常量（沿用主表的 uniform 决策）
+    #: 稀疏 i18n 表**自己**的 slot→offset 常量（沿用主表的 uniform 声明）
     i18n_slot_offsets: dict[int, int] = field(default_factory=dict)
 
     def to_layout_info(self) -> dict[str, Any]:
-        """``LayoutManifest.from_layout`` 需要的形参形状。"""
-        return {
-            "uniform": self.uniform,
-            "fill_rate": self.fill_rate,
-            "bytes_normal": self.bytes_normal,
-            "slot_offsets": dict(self.slot_offsets),
-        }
+        """``LayoutManifest.from_layout`` 需要的形参形状。
+
+        只有 ``slot_offsets`` —— manifest 其余字段取自 layout 本身；
+        ``uniform`` / ``fill_rate`` 分别是声明与诊断，都不落盘。
+        """
+        return {"slot_offsets": dict(self.slot_offsets)}
 
 
 @dataclass

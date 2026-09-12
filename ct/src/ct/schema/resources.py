@@ -140,6 +140,11 @@ class TableResource(BaseModel):
     excel_file: str | None = None
     # 表级查询索引（每种 kind 最多一个；当前只有 codename）
     indexes: tuple[QueryIndex, ...] = ()
+    # 行内布局：True（缺省）= 定宽 —— 所有槽位无条件写出、全表共享一种 vtable，
+    # 访问器据此发射表级字面量偏移；False = 变长 —— 按 vtable 槽位读。
+    # 它是**声明**，不由填充率判定；不改变 Excel 模板布局，因此缺省值不进
+    # resource_to_data（exclude_defaults），默认表的 schema_hash 不因本键变化。
+    uniform: bool = True
 
     @model_validator(mode="after")
     def _validate_table(self) -> TableResource:

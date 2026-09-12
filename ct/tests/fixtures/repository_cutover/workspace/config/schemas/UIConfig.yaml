@@ -1,5 +1,8 @@
 table: UIConfig
 primary: Id
+# 显式关闭定宽：fixture 需要一张走 vtable 槽位读的表，让逃生门（uniform: false）
+# 持续被端到端覆盖 —— 否则默认全定宽会让这条路径失去测试。
+uniform: false
 fields:
   - name: Id
     type: int32

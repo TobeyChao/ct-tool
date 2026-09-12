@@ -282,7 +282,7 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 
 **导出校验闸门**：`exporting/build.run_pipeline` 在写出产物前做完整校验（Excel 读取类型强转、主键空/重复、跨表 `ref` 外键值须存在于引用表主键集），任一问题即抛 `CanonicalValidationError`，避免脏数据落盘；CLI 渲染并退出 1，Web 任务置为 error 并记日志。
 
-**增量 vs 全量**：canonical 默认完整校验后增量复用。`cache/artifacts.py` 按生成器版本及实际输入缓存 JSON、表级 bytes、Accessor、FBS、Bundle，包含数据决定的定宽布局；输出内容未变时保留 mtime，缓存损坏或输出缺失自动恢复。`--all` 强制生成并写出。`cache/state.json` 仍只在成功导出/部署后记录状态；修改生成器行为需更新 `exporting/build.CODEGEN_VERSION`。
+**增量 vs 全量**：canonical 默认完整校验后增量复用。`cache/artifacts.py` 按生成器版本及实际输入缓存 JSON、表级 bytes、Accessor、FBS、Bundle，包含 **schema 声明的**定宽布局（表级 `uniform`，缺省 true）；输出内容未变时保留 mtime，缓存损坏或输出缺失自动恢复。`--all` 强制生成并写出。`cache/state.json` 仍只在成功导出/部署后记录状态；修改生成器行为需更新 `exporting/build.CODEGEN_VERSION`。
 
 **可恢复发布与工作区锁**：全部生成与 FBS/定宽检查通过后，才在**一个可恢复事务**里改写正式输出与 `excel/layout_manifests/`（含全量导出的陈旧文件删除）；``.ct/export-publication.json`` 记录 prepared→backed_up→publishing→committed 四阶段，备份完成前不改写正式目标，中断后下次 export/deploy 先幂等恢复。同一规范化 root 的 export/deploy 由 `.ct/export.lock` 排他（系统 advisory lock，进程死亡自动释放；文件存在 ≠ 已加锁）。生成缓存 `cache/artifacts/` 可丢弃，成功账本 `cache/state.json` 只在发布（CLI 下还包括部署）成功后推进 —— 二者不可混为一谈。
 

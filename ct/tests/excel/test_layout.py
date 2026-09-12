@@ -150,6 +150,8 @@ def test_manifest_create_read_round_trip(tmp_path: Path) -> None:
     assert manifest_text.startswith('{\n    "columns": [\n        {\n')
     assert '\n    "format": "template-layout/2",\n' in manifest_text
     assert '\n    "layout_revision"' not in manifest_text
+    assert '\n    "uniform"' not in manifest_text
+    assert '\n    "fill_rate"' not in manifest_text
     assert manifest_text.endswith("\n")
     assert not manifest_text.endswith("\n\n")
     first = load_manifest(manifests, "Item")

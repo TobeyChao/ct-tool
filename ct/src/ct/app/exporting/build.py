@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import time
-from dataclasses import replace
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -38,7 +37,7 @@ from ct.contracts import CancelToken, CancelledError, NullReporter, ProgressRepo
 from ct.diagnostics.errors import Issue, IssueCode
 from ct.excel.canonical_template import build_canonical_template
 from ct.excel.layout import Layout
-from ct.excel.layout_manifest import LayoutManifest, load_manifest, manifest_payload
+from ct.excel.layout_manifest import LayoutManifest, manifest_payload
 from ct.export.canonical_accessor import (
     generate_csharp_accessor,
     generate_csharp_enums,
@@ -73,10 +72,10 @@ CODEGEN_VERSION = "incremental/2-schema-layout"
 
 CANONICAL_STEPS = ("解析校验", "JSON", "Accessor", "FBS", "Bundle")
 
-# 定宽布局（uniform）的启用阈值：字段填充率 >= 此值的表才开。
-# 依据：填充率 75% 时体积膨胀 <=1.18x（实测扫描），低于此值稀疏表会明显变大。
-# 收益：消除每行访问的 ConfigTable.OffsetsFor（2 种 vtable 约 2.9ns，16 种约 11.2ns）。
-UNIFORM_FILL_THRESHOLD = 0.75
+# 定宽体积提示阈值：定宽字节 >= 常规的此倍数时，在填充率行追加提示。
+# 取 1.25 的由来：旧的自动阈值（填充率 75%）当初就是按「该点体积膨胀 <=1.18x」选的，
+# 所以超过 1.25x 即「比原先自动判定允许的更贵」，值得让作者知道并考虑 uniform: false。
+UNIFORM_BLOAT_NOTICE = 1.25
 
 #: 本次导出在 output/ 下使用的私有暂存目录名（相对 output_dir）。
 #: 枚举陈旧产物时必须排除它，否则会把自身 staging 当旧产物删掉。
@@ -385,12 +384,13 @@ def run_pipeline(
             table_records, table_enums = _table_types(table, records, enums)
             base_rows = parsed.rows
             build = TableBuild(
-                table=table.table, uniform=False, fill_rate=0.0, bytes_normal=0
+                table=table.table, uniform=table.uniform, fill_rate=0.0, bytes_normal=0
             )
             builds[table.table] = build
 
-            # 逐表决定是否启用定宽布局：先用**非 uniform** 产出主语言字节，
-            # 直接从字节统计填充率（不复刻写入规则），>= 阈值才开。
+            # 定宽由 schema 声明（缺省 true），**不按填充率判定**。填充率仍用
+            # **非 uniform** 字节统计出来（不复刻写入规则），但只作为诊断数字，
+            # 以及定宽体积提示的依据。
             client_count = len([f for f in table.fields if not f.server_only])
             probe = cache.call(
                 "build_canonical_table_bytes", build_canonical_table_bytes,
@@ -398,8 +398,7 @@ def run_pipeline(
             )
             build.bytes_normal = len(probe)
             build.fill_rate = written_slot_ratio(probe, client_count)
-            build.uniform = build.fill_rate >= UNIFORM_FILL_THRESHOLD
-            use_uniform = build.uniform
+            use_uniform = table.uniform
             if use_uniform:
                 build.slot_offsets = probe_row_layout(
                     table, records=table_records, enums=table_enums
@@ -475,16 +474,26 @@ def run_pipeline(
                     _assert_single_vtable(f"{table.table}_i18n", lang, i18n_data, len(i18n_rows))
                 build.i18n_bytes[lang] = i18n_data
 
-            detail = f"填充率 {build.fill_rate:.1%} → {'定宽' if use_uniform else '变长'}"
+            # 布局形态在前、填充率在后：填充率只是诊断数字（决策取自 schema 的
+            # uniform 声明），写成「填充率 X% → 定宽」会被读成旧的数据派生规则。
+            detail = (
+                f"{'定宽' if use_uniform else '变长'}（schema 声明）"
+                f"｜填充率 {build.fill_rate:.1%}"
+            )
             if use_uniform:
                 # bytes_uniform 只在主语言被纳入本次导出时才有（--lang 次级语言时
                 # 主语言分支不产出字节），日志只报已计算的部分。
                 detail += f"（{build.bytes_normal:,} B"
                 if build.bytes_uniform is not None:
-                    detail += (
-                        f" → {build.bytes_uniform:,} B，"
-                        f"{build.bytes_uniform / build.bytes_normal:.3f}x"
-                    )
+                    ratio = build.bytes_uniform / build.bytes_normal
+                    detail += f" → {build.bytes_uniform:,} B，{ratio:.3f}x"
+                    if ratio > UNIFORM_BLOAT_NOTICE:
+                        # 定宽是 schema 声明（缺省开），稀疏表会因「所有槽位无条件写出」
+                        # 而变大；把账显式交给作者，不阻断导出。
+                        detail += (
+                            f" ⚠ 定宽比变长大 {ratio:.2f}x，"
+                            f"该表可在 schema 声明 uniform: false 退回变长布局"
+                        )
                 detail += "）"
             reporter.log(f"{table.table}：{detail}")
     finally:
@@ -528,25 +537,20 @@ def run_pipeline(
                     ),
                 )
             manifest_dir = excel_dir / "layout_manifests"
-            old_manifest = load_manifest(
-                manifest_dir,
-                table.table,
-                data=manifest_contents.get(manifest_dir / f"{table.table}.json"),
-            )
+            manifest_path = manifest_dir / f"{table.table}.json"
             candidate_manifest = LayoutManifest.from_layout(
                 layout,
-                # 定宽布局决策 + 表级 slot→offset 常量，供生成器读取
+                # 定宽表的表级 slot→offset 常量，供生成器与评审读取
                 layout_info=build.to_layout_info(),
             )
-            if request.forced or old_manifest is None or replace(
-                candidate_manifest,
-                fill_rate=round(candidate_manifest.fill_rate, 6),
-            ) != old_manifest:
-                emit(
-                    manifest_dir / f"{table.table}.json",
-                    manifest_payload(candidate_manifest),
-                    count=False,
-                )
+            # 用**规范序列化逐字节比较**，而不是解析后比语义：
+            # manifest 是生成物，其规范形式是已知的。按语义比会漏掉「磁盘上多了
+            # 已废弃的键」——那些键在 parse 时被忽略，于是旧文件永远不会被清理。
+            payload = manifest_payload(candidate_manifest)
+            captured = manifest_contents.get(manifest_path)
+            current = captured.decode("utf-8", errors="replace") if captured is not None else None
+            if request.forced or current != payload:
+                emit(manifest_path, payload, count=False)
 
         # 枚举类型声明：生成物里的 (Enum)WireReader.I8At(...) cast 需要它才能编译
         if enums:

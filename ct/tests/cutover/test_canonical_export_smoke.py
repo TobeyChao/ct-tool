@@ -102,23 +102,40 @@ def _export_fixture(tmp_path: Path) -> Path:
     return workspace
 
 
-def test_uniform_decision_is_recorded_in_manifest(tmp_path: Path) -> None:
-    """每张表的定宽决策、填充率、slot→offset 都要落盘，便于复查与生成器消费。"""
+def test_manifest_fields_are_schema_derived(tmp_path: Path) -> None:
+    """manifest 只含 schema 的纯函数字段：定宽是声明、填充率是诊断，两者都不落盘。"""
     workspace = _export_fixture(tmp_path)
     manifests = {
         p.stem: json.loads(p.read_text(encoding="utf-8"))
         for p in (workspace / "excel" / "layout_manifests").glob("*.json")
     }
-    # Item 填充率 92.9% → 开；UIConfig 63.3% → 不开（阈值 0.75）
-    assert manifests["Item"]["uniform"] is True
-    assert 0.9 < manifests["Item"]["fill_rate"] <= 1.0
-    assert manifests["UIConfig"]["uniform"] is False
-    assert 0.5 < manifests["UIConfig"]["fill_rate"] < 0.75
-    # 定宽表必须给出表级 slot→offset，且**没有 0 偏移**（0 表示槽位缺失）
+    for name, manifest in manifests.items():
+        assert set(manifest) == {
+            "format", "schema_hash", "header_rows", "columns", "nodes", "slot_offsets"
+        }, name
+    # 缺省即定宽 ⇒ 表级 slot→offset，且**没有 0 偏移**（0 表示槽位缺失）
     offsets = dict(manifests["Item"]["slot_offsets"])
     assert offsets and all(off != 0 for off in offsets.values())
-    # 未定宽的表不写偏移
+    # 显式 uniform: false 的表不写偏移
     assert manifests["UIConfig"]["slot_offsets"] == []
+
+
+def test_data_edit_does_not_touch_manifest(tmp_path: Path) -> None:
+    """manifest 是 schema 的纯函数：只改 Excel 数据，重导后逐字节不变。"""
+    workspace = _export_fixture(tmp_path)
+    manifest = workspace / "excel" / "layout_manifests" / "Item.json"
+    before = manifest.read_bytes()
+
+    excel = workspace / "excel" / "Item.xlsx"
+    import openpyxl
+
+    book = openpyxl.load_workbook(excel)
+    sheet = book.active
+    sheet.cell(row=5, column=3).value = 0  # 把 Price 填成类型默认值 ⇒ 填充率下降
+    book.save(excel)
+
+    run_canonical_export(workspace)
+    assert manifest.read_bytes() == before
 
 
 def test_uniform_table_accessor_has_no_offset_table(tmp_path: Path) -> None:
@@ -136,6 +153,7 @@ def test_uniform_tables_really_have_single_vtable(tmp_path: Path) -> None:
     """导出物层面复核：被判为定宽的表，其字节里只能有 1 种 vtable。"""
     import struct
 
+    from ct.app.canonical_workspace import CanonicalWorkspace
     from ct.export.canonical_binary import count_vtables
 
     workspace = _export_fixture(tmp_path)
@@ -143,6 +161,10 @@ def test_uniform_tables_really_have_single_vtable(tmp_path: Path) -> None:
     manifests = {
         p.stem: json.loads(p.read_text(encoding="utf-8"))
         for p in (workspace / "excel" / "layout_manifests").glob("*.json")
+    }
+    # 定宽由 schema 声明，不再从 manifest 读取（那里已没有 uniform 键）
+    uniform_by_table = {
+        table.table: table.uniform for table in CanonicalWorkspace.load(workspace).tables
     }
 
     def u16(b, o):
@@ -168,8 +190,8 @@ def test_uniform_tables_really_have_single_vtable(tmp_path: Path) -> None:
         dp += i32(bundle, dp)
         table = bundle[dp + 4:dp + 4 + i32(bundle, dp)]
         n = count_vtables(table)
-        if manifests[name]["uniform"]:
-            assert n == 1, f"{name} 被判为定宽，却有 {n} 种 vtable"
+        if uniform_by_table[name]:
+            assert n == 1, f"{name} 声明为定宽，却有 {n} 种 vtable"
         seen += 1
     assert seen == len(manifests)
 

@@ -100,14 +100,15 @@ def test_data_edit_keeps_other_table_and_schema_outputs(project):
     _assert_forced_equal(project)
 
 
-def test_uniform_transition_invalidates_accessor(project):
+def test_data_edit_does_not_change_layout(project):
+    """定宽由 schema 声明：改数据（含把字段填成类型默认值）不再翻转布局。"""
     run_canonical_export(project)
     manifest = project / "excel/layout_manifests/Item.json"
-    assert json.loads(manifest.read_text())["uniform"] is True
+    before = manifest.read_bytes()
     _excel(project, rows=[[1, "剑", 0], [2, "盾", 0]])
     result = run_canonical_export(project)
-    assert json.loads(manifest.read_text())["uniform"] is False
-    assert "ItemAccessor.cs" in {Path(p).name for p in result["written"]}
+    assert manifest.read_bytes() == before
+    assert "ItemAccessor.cs" not in {Path(p).name for p in result["written"]}
     _assert_forced_equal(project)
 
 

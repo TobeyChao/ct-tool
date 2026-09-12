@@ -3,6 +3,10 @@
 The Excel template keeps only lightweight Custom Document Properties; the
 full stable column-path mapping lives here so data migration never guesses
 from raw column positions.
+
+字段集合是 schema 的**纯函数**：``format`` / ``schema_hash`` / ``header_rows`` /
+``columns`` / ``nodes`` / ``slot_offsets``。定宽与否由 schema 的 ``uniform`` 声明，
+填充率只是导出期诊断数字 —— 两者都不落盘，因此改 Excel 数据不会让 manifest 变。
 """
 
 from __future__ import annotations
@@ -24,12 +28,8 @@ class LayoutManifest:
     header_rows: int = 2
     columns: tuple[dict[str, Any], ...] = ()
     nodes: tuple[dict[str, Any], ...] = ()
-    # ---- 定宽布局（uniform）----
-    # 导出期决定：字段填充率 >= 阈值的表开定宽，所有行共享同一 vtable，
-    # 于是 slot→offset 是表级常量，生成器可直接发射字面量偏移（无偏移表间接层）。
-    uniform: bool = False
-    fill_rate: float = 0.0
-    # slot -> 行内字节偏移（仅 uniform=True 时有意义）
+    # slot -> 行内字节偏移（仅定宽表有意义；变长表为空）。
+    # 由 plan_object_layout 按 schema 推导，与数据无关。
     slot_offsets: tuple[tuple[int, int], ...] = ()
 
     @classmethod
@@ -41,8 +41,6 @@ class LayoutManifest:
     ) -> LayoutManifest:
         info = layout_info or {}
         return cls(
-            uniform=bool(info.get("uniform", False)),
-            fill_rate=float(info.get("fill_rate", 0.0)),
             slot_offsets=tuple(
                 sorted((int(k), int(v)) for k, v in (info.get("slot_offsets") or {}).items())
             ),
@@ -87,8 +85,6 @@ class LayoutManifest:
                 dict(column) for column in data.get("columns", [])
             ),
             nodes=tuple(dict(node) for node in data.get("nodes", [])),
-            uniform=bool(data.get("uniform", False)),
-            fill_rate=float(data.get("fill_rate", 0.0)),
             slot_offsets=tuple(
                 (int(pair[0]), int(pair[1]))
                 for pair in data.get("slot_offsets", [])
@@ -98,7 +94,7 @@ class LayoutManifest:
 
     @property
     def slot_offset_map(self) -> dict[int, int]:
-        """slot -> 行内偏移（uniform 表专用）。"""
+        """slot -> 行内偏移（定宽表专用）。"""
         return dict(self.slot_offsets)
 
 
@@ -145,8 +141,6 @@ def manifest_payload(manifest: LayoutManifest) -> str:
                 "header_rows": manifest.header_rows,
                 "columns": list(manifest.columns),
                 "nodes": list(manifest.nodes),
-                "uniform": manifest.uniform,
-                "fill_rate": round(manifest.fill_rate, 6),
                 "slot_offsets": [list(pair) for pair in manifest.slot_offsets],
             },
             ensure_ascii=False,
