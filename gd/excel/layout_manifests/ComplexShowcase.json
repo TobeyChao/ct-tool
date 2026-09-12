@@ -510,7 +510,6 @@
     "fill_rate": 0.973684,
     "format": "template-layout/2",
     "header_rows": 8,
-    "layout_revision": 3,
     "nodes": [
         {
             "annotation": "int32",
