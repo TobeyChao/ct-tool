@@ -27,7 +27,10 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    # openpyxl 用 try/except 可选导入 PIL（只有写图片才用得上，ct 只读表），
+    # 开发 venv 里碰巧装着的 Pillow 会被静态分析拖进来，连带十几 MB 图像库。
+    # 明确排除，让冻结产物只由 pyproject 声明的依赖决定，且两平台一致。
+    excludes=["PIL"],
     noarchive=False,
     optimize=0,
 )
