@@ -49,9 +49,13 @@ def _commands(payload) -> list[Command]:
 
 def _draft_from_payload(payload):
     ws = _workspace()
+    # 索引不是纯草稿层概念：它是持久化 Table 资源的一部分（随 YAML 落盘）。
+    # base 必须带上工作区已声明的索引，否则
+    #   (a) validate/change-plan 看不见它们 —— 删/改/重类型 CodeName 不会被拦；
+    #   (b) prepare-apply 重写全部 YAML 时把它们静默抹成 ()（merge_indexes 缺省）。
     log = DraftLog(
         ws.resources.resources,
-        base_indexes={},
+        base_indexes=dict(ws.indexes),
     )
     for command in _commands(payload):
         log.execute(command)
@@ -182,7 +186,9 @@ def workspace_change_plan():
     plan = build_change_plan(
         ws.resources.resources,
         resources,
-        old_indexes={},
+        # old 侧同样要带持久化索引：否则「基线索引为空」会让没动过的、
+        # 声明了索引的表被虚报成 Schema/FBS/Accessor/Binary 全量 rebuild。
+        old_indexes=ws.indexes,
         new_indexes=indexes,
     )
     return jsonify(

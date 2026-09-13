@@ -61,10 +61,16 @@ def apply_command(state: DraftState, command: Command) -> DraftState:
     if command.type == "delete_resource":
         name = command.payload["name"]
         index = _resource_index(resources, name)
-        return (resources[:index] + resources[index + 1:], indexes)
+        new_indexes = dict(indexes)
+        new_indexes.pop(resources[index].resource_id, None)
+        return (resources[:index] + resources[index + 1:], new_indexes)
     if command.type == "rename_resource":
         result = rename_resource(resources, command.payload["old"], command.payload["new"])
-        return (result.resources, indexes)
+        new_indexes = {
+            result.mapping.get(resource_id, resource_id): declared
+            for resource_id, declared in indexes.items()
+        }
+        return (result.resources, new_indexes)
     if command.type == "rename_field":
         result = rename_field(
             resources,

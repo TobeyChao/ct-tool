@@ -14,6 +14,7 @@ from ct.app.schema_workspace.commands_reducer import (
 from ct.app.schema_workspace.plan import build_change_plan
 from ct.app.schema_workspace.snapshot import build_snapshot
 from ct.schema.resources import FieldDef, RecordResource, TableResource
+from ct.schema.indexes import QueryIndex
 
 from _helpers import build_project
 
@@ -109,6 +110,24 @@ def test_rename_command_updates_references() -> None:
     assert {resource.resource_id for resource in resources} == {
         "table:Goods", "table:Quest",
     }
+
+
+@pytest.mark.parametrize("command, expected", [
+    (Command("rename_resource", {"old": "Item", "new": "Goods"}), "table:Goods"),
+    (Command("delete_resource", {"name": "table:Item"}), None),
+])
+def test_resource_index_changes_support_undo_redo(command, expected) -> None:
+    declared = (QueryIndex(kind="codename"),)
+    base_indexes = {"table:Item": declared}
+    log = DraftLog(_base(), base_indexes=base_indexes)
+    log.execute(command)
+    changed_indexes = {expected: declared} if expected else {}
+    assert log.current()[1] == changed_indexes
+    assert base_indexes == {"table:Item": declared}
+    log.undo()
+    assert log.current()[1] == base_indexes
+    log.redo()
+    assert log.current()[1] == changed_indexes
 
 
 def test_candidate_validation_reports_role_violation() -> None:

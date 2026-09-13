@@ -100,7 +100,13 @@ def create_plan(
         candidate_hash = _stable_sha256(
             {
                 "resources": [r.model_dump(mode="json") for r in candidate_resources],
-                "indexes": candidate_indexes,
+                # 索引值是 pydantic 模型（QueryIndex），必须先归一化成 json-safe
+                # 形态 —— 裸 tuple 直接进 json.dumps 会在任何带索引声明的工作区
+                # 上炸掉 prepare-apply（TypeError: QueryIndex is not JSON serializable）。
+                "indexes": {
+                    resource_id: [index.model_dump(mode="json") for index in index_tuple]
+                    for resource_id, index_tuple in candidate_indexes.items()
+                },
             }
         )
         plan_id = uuid.uuid4().hex[:12]
