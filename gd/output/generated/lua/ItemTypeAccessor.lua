@@ -37,7 +37,7 @@ local ArrayMeta = {
 local RowMeta = make_meta({
     Id = function(s) return GD.I32Off(s, 4) end,
     Name = function(s) local v = GD.I18nStr(i18n_table(), s, 6) return v ~= nil and v or GD.StrOff(s, 8) end,
-    Code = function(s) return GD.StrOff(s, 12) end,
+    CodeName = function(s) return GD.StrOff(s, 12) end,
 })
 
 -- 公开 API（纯函数，无状态）
@@ -45,4 +45,6 @@ local M = {}
 function M.Count() return GD.Count(_tbl) end
 function M.ByID(id) return GD.ByID(_tbl, id, RowMeta) end
 function M.ByIndex(i) return GD.ByIndex(_tbl, i, RowMeta) end
+-- 原生 codeName 查询：FNV-1a 64 桶表 + 按字段精确字符串确认
+function M.ByCodeName(codeName) return GD.ByCodeName(_tbl, 2, codeName, RowMeta) end
 return M

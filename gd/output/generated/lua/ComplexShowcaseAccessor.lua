@@ -58,7 +58,7 @@ local RewardBoundsMeta = make_meta({
 -- 行访问器元表（self = 行 userdata）
 local RowMeta = make_meta({
     Id = function(s) return GD.I32Off(s, 4) end,
-    Code = function(s) return GD.I32Off(s, 8) end,
+    CodeName = function(s) return GD.StrOff(s, 8) end,
     Weight = function(s) return GD.F32Off(s, 12) end,
     PreciseValue = function(s) return GD.F64Off(s, 16) end,
     IsEnabled = function(s) return GD.I8Off(s, 24) ~= 0 end,
@@ -84,4 +84,6 @@ local M = {}
 function M.Count() return GD.Count(_tbl) end
 function M.ByID(id) return GD.ByID(_tbl, id, RowMeta) end
 function M.ByIndex(i) return GD.ByIndex(_tbl, i, RowMeta) end
+-- 原生 codeName 查询：FNV-1a 64 桶表 + 按字段精确字符串确认
+function M.ByCodeName(codeName) return GD.ByCodeName(_tbl, 1, codeName, RowMeta) end
 return M

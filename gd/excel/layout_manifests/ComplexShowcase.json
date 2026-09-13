@@ -9,12 +9,12 @@
             "typeExpr": "int32"
         },
         {
-            "annotation": "int32",
+            "annotation": "string",
             "depth": 1,
             "index": 2,
-            "leaf": "Code",
-            "stablePath": "table:ComplexShowcase/Code",
-            "typeExpr": "int32"
+            "leaf": "CodeName",
+            "stablePath": "table:ComplexShowcase/CodeName",
+            "typeExpr": "string"
         },
         {
             "annotation": "float",
@@ -523,16 +523,16 @@
             "stablePath": "table:ComplexShowcase/Id"
         },
         {
-            "annotation": "int32",
+            "annotation": "string",
             "children": [],
             "comment": "客户端使用的短整型代码",
             "depth": 1,
-            "displayName": "Code",
+            "displayName": "CodeName",
             "kind": "field",
             "leafEnd": 2,
             "leafStart": 2,
             "slotIndex": null,
-            "stablePath": "table:ComplexShowcase/Code"
+            "stablePath": "table:ComplexShowcase/CodeName"
         },
         {
             "annotation": "float",
@@ -1454,7 +1454,7 @@
             "stablePath": "table:ComplexShowcase/RewardTiers[2]/Bounds/Guaranteed"
         }
     ],
-    "schema_hash": "8418c62547d7af23",
+    "schema_hash": "ee655d06cee3691f",
     "slot_offsets": [
         [
             4,

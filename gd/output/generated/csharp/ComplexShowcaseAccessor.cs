@@ -70,7 +70,24 @@ namespace GameFramework.ConfigGen
             }
         }
 
+        /// <summary>Exact-string CodeName lookup; returns null when missing.</summary>
+        public static ComplexShowcase? ByCodeName(string codeName)
+        {
+            ConfigTable t = Table;
+            int row = Runtime.ByCodeName(TableName, 1, codeName);
+            if (row < 0)
+            {
+                return null;
+            }
+            else
+            {
+                IntPtr p = t.RowAt(row);
+                return new ComplexShowcase(p, t.Version, row);
+            }
+        }
+
         // ---- per-field 字符串缓存（行下标索引，整套 bin 换代时整体重建）----
+        private static string[] _codeNameCache;
         private static string[] _displayNameCache;
         private static int _strCacheVersion = -1;
 
@@ -78,8 +95,24 @@ namespace GameFramework.ConfigGen
         private static void ResetStringCaches()
         {
             int n = Table.Count;
+            _codeNameCache = new string[n];
             _displayNameCache = new string[n];
             _strCacheVersion = TableVersion.Current;
+        }
+
+        internal static string[] CodeNameCache
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                string[] c = _codeNameCache;
+                if (c != null && _strCacheVersion == TableVersion.Current)
+                {
+                    return c;
+                }
+                ResetStringCaches();
+                return _codeNameCache;
+            }
         }
 
         internal static string[] DisplayNameCache
@@ -369,14 +402,22 @@ namespace GameFramework.ConfigGen
                 return WireReader.I32At(_row, 4);
             }
         }
-        public int Code
+        public string CodeName
         {
             get
             {
                 #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
                 TableVersion.Check(_version);
                 #endif
-                return WireReader.I32At(_row, 8);
+                string[] c = ComplexShowcaseAccessor.CodeNameCache;
+                string s = c[_index];
+                if (s != null)
+                {
+                    return s;
+                }
+                s = NStringCache.Decode((byte*)WireReader.IndirectAt(_row, 8));
+                c[_index] = s;
+                return s;
             }
         }
         public float Weight

@@ -70,9 +70,25 @@ namespace GameFramework.ConfigGen
             }
         }
 
+        /// <summary>Exact-string CodeName lookup; returns null when missing.</summary>
+        public static ItemType? ByCodeName(string codeName)
+        {
+            ConfigTable t = Table;
+            int row = Runtime.ByCodeName(TableName, 2, codeName);
+            if (row < 0)
+            {
+                return null;
+            }
+            else
+            {
+                IntPtr p = t.RowAt(row);
+                return new ItemType(p, t.Version, row);
+            }
+        }
+
         // ---- per-field 字符串缓存（行下标索引，整套 bin 换代时整体重建）----
         private static string[] _nameCache;
-        private static string[] _codeCache;
+        private static string[] _codeNameCache;
         private static int _strCacheVersion = -1;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -80,7 +96,7 @@ namespace GameFramework.ConfigGen
         {
             int n = Table.Count;
             _nameCache = new string[n];
-            _codeCache = new string[n];
+            _codeNameCache = new string[n];
             _strCacheVersion = TableVersion.Current;
         }
 
@@ -99,18 +115,18 @@ namespace GameFramework.ConfigGen
             }
         }
 
-        internal static string[] CodeCache
+        internal static string[] CodeNameCache
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                string[] c = _codeCache;
+                string[] c = _codeNameCache;
                 if (c != null && _strCacheVersion == TableVersion.Current)
                 {
                     return c;
                 }
                 ResetStringCaches();
-                return _codeCache;
+                return _codeNameCache;
             }
         }
 
@@ -245,14 +261,14 @@ namespace GameFramework.ConfigGen
                 return s;
             }
         }
-        public string Code
+        public string CodeName
         {
             get
             {
                 #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
                 TableVersion.Check(_version);
                 #endif
-                string[] c = ItemTypeAccessor.CodeCache;
+                string[] c = ItemTypeAccessor.CodeNameCache;
                 string s = c[_index];
                 if (s != null)
                 {

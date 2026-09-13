@@ -3,7 +3,7 @@ include "types.fbs";
 
 table ComplexShowcase {
   Id: int;
-  Code: int;
+  CodeName: string;
   Weight: float32;
   PreciseValue: float64;
   IsEnabled: bool;
@@ -41,6 +41,7 @@ table ComplexShowcaseTable {
   items: [ComplexShowcase];
   index: [IndexEntry];
   idHash: [int32];
+  codeNameIndex: [int32];
 }
 
 root_type ComplexShowcaseTable;

@@ -20,8 +20,8 @@
             "annotation": "string",
             "depth": 1,
             "index": 3,
-            "leaf": "Code",
-            "stablePath": "table:ItemType/Code",
+            "leaf": "CodeName",
+            "stablePath": "table:ItemType/CodeName",
             "typeExpr": "string"
         }
     ],
@@ -57,15 +57,15 @@
             "children": [],
             "comment": "类型代码，程序引用用",
             "depth": 1,
-            "displayName": "Code",
+            "displayName": "CodeName",
             "kind": "field",
             "leafEnd": 3,
             "leafStart": 3,
             "slotIndex": null,
-            "stablePath": "table:ItemType/Code"
+            "stablePath": "table:ItemType/CodeName"
         }
     ],
-    "schema_hash": "309d26fdbbcba4a2",
+    "schema_hash": "189aea53e4789a6f",
     "slot_offsets": [
         [
             4,

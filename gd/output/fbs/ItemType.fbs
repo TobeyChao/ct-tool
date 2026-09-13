@@ -4,7 +4,7 @@ include "types.fbs";
 table ItemType {
   Id: int;
   Name: string;
-  Code: string;
+  CodeName: string;
 }
 
 struct IndexEntry {
@@ -25,6 +25,7 @@ table ItemTypeTable {
   items: [ItemType];
   index: [IndexEntry];
   idHash: [int32];
+  codeNameIndex: [int32];
 }
 
 root_type ItemTypeTable;
