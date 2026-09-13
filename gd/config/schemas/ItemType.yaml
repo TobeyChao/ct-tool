@@ -8,6 +8,8 @@ fields:
     type: string
     i18n: true
     comment: 类型名称（多语言）
-  - name: Code
+  - name: CodeName
     type: string
     comment: 类型代码，程序引用用
+indexes:
+  - kind: codename
