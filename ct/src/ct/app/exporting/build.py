@@ -362,9 +362,11 @@ def run_pipeline(
         if result.issues:
             raise CanonicalValidationError(result.issues)
         tables = list(result.selected)
+        # 只产出显式选中的表；ref 依赖表被读取（供外键校验）但不生成产物
         prepared: list[tuple[TableResource, Layout, Path, Any]] = [
             (item.table, item.layout, item.excel_path, item.parsed)
             for item in result.prepared
+            if item.explicit
         ]
     finally:
         reporter.step_finished(CANONICAL_STEPS[0])

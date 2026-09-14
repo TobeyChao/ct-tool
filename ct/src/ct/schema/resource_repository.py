@@ -93,7 +93,11 @@ def _read_yaml(path: Path, contents: Mapping[Path, bytes] | None = None) -> dict
     return data
 
 
-def _reject_old_field_shape(data: dict[str, Any], path: Path) -> None:
+def old_shape_message(data: dict[str, Any]) -> str | None:
+    """旧格式检测（纯函数）：返回诊断文本，或 ``None`` 表示形态合法。
+
+    落盘加载与结构化创建命令复用同一份判断，避免两处规则漂移。
+    """
     for index, field in enumerate(data.get("fields", [])):
         if not isinstance(field, dict):
             continue
@@ -101,14 +105,110 @@ def _reject_old_field_shape(data: dict[str, Any], path: Path) -> None:
         old_type = field.get("type") in _OLD_TYPE_NAMES
         if old_keys or old_type:
             name = field.get("name", f"#{index + 1}")
-            raise ValueError(
-                f"加载 Schema 资源失败 [{path}]: 字段 {name} 使用旧格式；"
-                "请改为具名 Enum/Record 与 vector<T>，产品不会自动迁移或写回"
+            return (
+                f"字段 {name} 使用旧格式；请改为具名 Enum/Record 与 vector<T>，"
+                "产品不会自动迁移或写回"
             )
-    if data.get("kind") == "enum" and any(isinstance(item, str) for item in data.get("values", [])):
-        raise ValueError(
-            f"加载 Schema 资源失败 [{path}]: Enum values 必须是 {{name, comment}} 结构，产品不会自动迁移"
+    if data.get("kind") == "enum" and any(
+        isinstance(item, str) for item in data.get("values", [])
+    ):
+        return "Enum values 必须是 {name, comment} 结构，产品不会自动迁移"
+    return None
+
+
+def _reject_old_field_shape(data: dict[str, Any], path: Path) -> None:
+    message = old_shape_message(data)
+    if message is not None:
+        raise ValueError(f"加载 Schema 资源失败 [{path}]: {message}")
+
+
+class ResourceDecodeError(ValueError):
+    """结构化创建资源无法解码：带字段位置，供 API/UI 定位。"""
+
+    def __init__(self, message: str, *, location: str = "") -> None:
+        super().__init__(message)
+        self.message = message
+        self.location = location
+
+
+CREATION_KINDS = ("table", "record", "enum")
+
+
+def _loc(job: str) -> str:
+    return f"resource.{job}" if job else "resource"
+
+
+def _field_location(location: tuple[Any, ...]) -> str:
+    """pydantic error loc → ``fields[0].type`` 形式。"""
+    parts: list[str] = []
+    for item in location:
+        if isinstance(item, int):
+            parts.append(f"[{item}]")
+        else:
+            parts.append(f".{item}" if parts else str(item))
+    return "".join(parts)
+
+
+def decode_resource_payload(kind: object, data: object) -> SchemaResource:
+    """把 ``add_resource`` 的结构化 payload 解码成领域模型（无文件 I/O）。
+
+    契约（见 add-schema-resource-creation 的 design 决策 2）：
+
+    - ``kind`` 必须是 ``table`` / ``record`` / ``enum``；
+    - Table 用 ``table``/``primary``/``fields``；Record/Enum 用 ``name`` 与
+      ``fields``/``values``，其 ``kind`` 必须与命令类别一致；
+    - 未知键、缺失内容、非法类型表达式、字符串形式的 Enum 值列表一律显式拒绝。
+    """
+    if kind not in CREATION_KINDS:
+        raise ResourceDecodeError(
+            f"未知的资源类别 {kind!r}；只支持 {'、'.join(CREATION_KINDS)}",
+            location="kind",
         )
+    if not isinstance(data, dict):
+        raise ResourceDecodeError("resource 必须是对象", location="resource")
+
+    declared = data.get("kind")
+    if declared is not None and declared != kind:
+        raise ResourceDecodeError(
+            f"resource.kind={declared!r} 与命令类别 {kind!r} 不一致",
+            location=_loc("kind"),
+        )
+    if kind == "table":
+        if "name" in data:
+            raise ResourceDecodeError(
+                "Table 使用 table/primary/fields，不接受 name", location=_loc("name")
+            )
+        if "table" not in data:
+            raise ResourceDecodeError("Table 缺少 table", location=_loc("table"))
+    else:
+        if declared is None:
+            data = {**data, "kind": kind}
+        if "name" not in data:
+            raise ResourceDecodeError(
+                f"{kind.capitalize()} 缺少 name", location=_loc("name")
+            )
+
+    old_shape = old_shape_message(data)
+    if old_shape is not None:
+        raise ResourceDecodeError(old_shape, location=_loc(""))
+
+    model = {"table": TableResource, "record": RecordResource, "enum": EnumResource}[kind]
+    try:
+        return model.model_validate(data)
+    except pydantic.ValidationError as exc:
+        errors = exc.errors()
+        first = errors[0]
+        location = _field_location(tuple(first.get("loc", ())))
+        messages = []
+        for error in errors:
+            original = (error.get("ctx") or {}).get("error")
+            messages.append(str(original) if original is not None else str(error.get("msg", "")))
+        raise ResourceDecodeError(
+            "；".join(message for message in messages if message),
+            location=_loc(location),
+        ) from exc
+    except (TypeError, ValueError) as exc:
+        raise ResourceDecodeError(str(exc), location=_loc("")) from exc
 
 
 def _resolve_type(

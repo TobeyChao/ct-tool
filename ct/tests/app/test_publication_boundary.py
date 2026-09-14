@@ -34,17 +34,10 @@ def _project(tmp_path: Path, tables: tuple[str, ...] = ("Item",)) -> Path:
             for name in tables
         ],
     )
-    excel = root / "excel"
-    excel.mkdir(parents=True, exist_ok=True)
+    from _helpers import make_workbook
+
     for name in tables:
-        wb = Workbook()
-        ws = wb.active
-        ws.append(["id", "name"])
-        ws.append(["主键", "名称"])
-        ws.append([1, "剑"])
-        buffer = io.BytesIO()
-        wb.save(buffer)
-        (excel / f"{name}.xlsx").write_bytes(buffer.getvalue())
+        make_workbook(root, name, [[1, "剑"]])
     return root
 
 
@@ -121,7 +114,9 @@ def test_first_export_failure_creates_no_output(tmp_path: Path, monkeypatch) -> 
     assert not (root / "output").exists() or not any(
         (root / "output").rglob("*.json")
     )
-    assert not (root / "excel" / "layout_manifests").exists()
+    # 模板 manifest 由 gen-template 预置；导出失败不得改动它
+    manifests = sorted(p.name for p in (root / "excel" / "layout_manifests").glob("*.json"))
+    assert manifests == ["Item.json"]
 
 
 def test_generation_failure_does_not_touch_manifests(tmp_path: Path, monkeypatch) -> None:
@@ -147,6 +142,9 @@ def test_generation_failure_does_not_touch_manifests(tmp_path: Path, monkeypatch
 def test_filtered_export_does_not_expand_scope(tmp_path: Path) -> None:
     """单表导出只产出选中表 + 共享产物，未选中表一个文件都不许出现。"""
     root = _project(tmp_path, tables=("Item", "Other"))
+    manifests_before = sorted(
+        p.name for p in (root / "excel" / "layout_manifests").glob("*.json")
+    )
     run_canonical_export(root, table_filter="Item")
 
     produced = {
@@ -156,7 +154,7 @@ def test_filtered_export_does_not_expand_scope(tmp_path: Path) -> None:
     }
     assert not any("Other" in name for name in produced), sorted(produced)
     manifests = sorted(p.name for p in (root / "excel" / "layout_manifests").glob("*.json"))
-    assert manifests == ["Item.json"]
+    assert manifests == manifests_before == ["Item.json", "Other.json"]
     json_files = sorted(p.name for p in (root / "output" / "json").glob("*.json"))
     assert json_files == ["Item_en.json", "Item_zh.json"]
     # 共享产物仍参与导出

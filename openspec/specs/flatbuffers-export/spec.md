@@ -335,7 +335,7 @@ Binary writer SHALL 按同一 canonical model 序列化单个 Record 与 `vector
 - **THEN** JSON 含两个对象，FlatBuffers vector 长度为 2，C#/Lua Accessor 读取到相同顺序与值
 
 ### Requirement: Preserve wire type across Excel layout changes
-仅修改 `excel_columns` 或 separator SHALL NOT 改变 FlatBuffers 字段类型；Change Plan SHALL 将其归类为 Excel 输入布局变化而非 Binary wire type 变化。
+仅修改 `excel_columns` 或 separator SHALL NOT 改变 FlatBuffers 字段类型；净差异摘要与读取兼容性检查 SHALL 将其归类为 Excel 输入布局变化而非 Binary wire type 变化。
 
 #### Scenario: Expand writable record groups
 - **WHEN** `excel_columns` 从 3 增加到 5 且 Type Expression 不变

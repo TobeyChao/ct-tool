@@ -1,4 +1,4 @@
-"""同一规范化工作区的进程间排他锁（export / deploy 互斥）。
+"""同一规范化工作区的进程间排他锁（schema save / export / deploy 互斥）。
 
 要点（design 决策 5）：
 
@@ -8,7 +8,8 @@
   互斥，而不是 ``exists → write``：文件存在不等于锁被占用，进程死亡由系统
   自动释放，不会留下永久阻塞的残余锁。
 - 冲突立即返回可呈现的 busy 错误，不静默排队。不同 root 各自独立、可以并行。
-- 本轮只协调 export/deploy；Schema Apply、模板、i18n 编辑与外部编辑不在此列。
+- 协调同一工作区内的 Schema 保存、导出与部署；模板生成、i18n 编辑与
+  外部编辑器写入不在此列（系统锁只能协调 ct 自身操作）。
 """
 
 from __future__ import annotations
@@ -33,7 +34,7 @@ PRIVATE_DIRNAME = ".ct"
 
 
 class WorkspaceBusyError(RuntimeError):
-    """同一工作区已有 export/deploy 在执行。
+    """同一工作区已有 save/export/deploy 在执行。
 
     继承 ``RuntimeError``；CLI 会把它渲染成友好错误并以非零状态退出。
     """
@@ -93,7 +94,7 @@ class WorkspaceLock:
     def acquire(self) -> "WorkspaceLock":
         if not self._inprocess.acquire(blocking=False):
             raise WorkspaceBusyError(
-                f"工作区正在导出/部署，请稍后重试：{self.root}"
+                f"工作区正在保存、导出或部署，请稍后重试：{self.root}"
             )
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -105,7 +106,7 @@ class WorkspaceLock:
             handle.close()
             self._inprocess.release()
             raise WorkspaceBusyError(
-                f"工作区正在导出/部署，请稍后重试：{self.root}"
+                f"工作区正在保存、导出或部署，请稍后重试：{self.root}"
             )
         self._handle = handle
         return self

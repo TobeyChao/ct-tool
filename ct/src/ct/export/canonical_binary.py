@@ -265,7 +265,15 @@ class _Builder:
     def _enum_index(self, named: NamedType, value: Any) -> int:
         enum = self.enums[named.name]
         names = [item.name for item in enum.values]
-        return names.index(value) if value in names else 0
+        if value is None or value == "":
+            # 空格子沿用默认（ordinal 0）语义；域校验由数据闸门负责
+            return 0
+        if value in names:
+            return names.index(value)
+        raise ValueError(
+            f"Enum {named.name}: 值 {value!r} 不在声明值中"
+            f"（可选：{', '.join(names)}）；数据闸门应在读取阶段拦截"
+        )
 
     def _is_offset_type(self, type_expr: TypeExpression) -> bool:
         if isinstance(type_expr, ScalarType):
@@ -324,11 +332,9 @@ class _Builder:
                 prepend(_coerce_scalar_value(name, v))
             return builder.EndVector()
         if named is not None and self._named_kind(named) == "enum":
-            enum = self.enums[named.name]
             builder.StartVector(1, len(values), 1)
             for v in reversed(values):
-                names = [item.name for item in enum.values]
-                builder.PrependByte(names.index(v) if v in names else 0)
+                builder.PrependByte(self._enum_index(named, v))
             return builder.EndVector()
         raise ValueError(f"不支持的 vector 元素: {element}")
 

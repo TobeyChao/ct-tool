@@ -1,10 +1,18 @@
-/* core/draft-store: IndexedDB persistence for the schema Draft command log.
-   Keyed by workspace path + base revision; restores only when the source
-   revision still matches. Quota/write failure keeps the in-memory draft and
-   surfaces a persistent warning instead of pretending to save. */
+/* core/draft-store: IndexedDB persistence for the schema Draft.
+
+   v2 persists the whole editing state the editor needs to restore faithfully:
+   the Schema baseline (schemaRevision), the command log **and** the undo
+   cursor. v1 records only stored commands, so replaying them would silently
+   resurrect steps the user had undone; they are loaded with `cursor: null` and
+   `legacy: true`, and the editor asks the user to check them instead of
+   treating every command as pending.
+
+   Quota/write failure keeps the in-memory draft and surfaces a persistent
+   warning instead of pretending to save. */
 const DB_NAME = "ct-drafts";
 const STORE = "drafts";
-const FORMAT = "ct-draft-v1";
+const FORMAT = "ct-draft-v2";
+const LEGACY_FORMATS = ["ct-draft-v1"];
 
 let dbPromise = null;
 
@@ -24,15 +32,16 @@ function openDb() {
   return dbPromise;
 }
 
-export async function saveDraft(workspacePath, baseRevision, commands) {
+export async function saveDraft(workspacePath, { schemaRevision, commands, cursor }) {
   const db = await openDb();
   await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, "readwrite");
     tx.objectStore(STORE).put({
       key: "draft:" + workspacePath,
       format: FORMAT,
-      revision: baseRevision,
+      schemaRevision,
       commands,
+      cursor,
       savedAt: Date.now(),
     });
     tx.oncomplete = resolve;
@@ -48,8 +57,34 @@ export async function loadDraft(workspacePath) {
     request.onsuccess = () => resolve(request.result || null);
     request.onerror = () => reject(request.error);
   });
-  if (!record || record.format !== FORMAT) return null;
-  return { revision: record.revision, commands: record.commands || [] };
+  if (!record) return null;
+  if (record.format === FORMAT) {
+    return {
+      schemaRevision: record.schemaRevision || "",
+      commands: record.commands || [],
+      cursor: typeof record.cursor === "number" ? record.cursor : (record.commands || []).length,
+      legacy: false,
+      savedAt: record.savedAt || 0,
+    };
+  }
+  if (LEGACY_FORMATS.includes(record.format)) {
+    return {
+      schemaRevision: record.revision || "",
+      commands: record.commands || [],
+      cursor: null, // v1 never stored it: undo branch cannot be reconstructed
+      legacy: true,
+      savedAt: record.savedAt || 0,
+    };
+  }
+  // Unknown format: keep the commands viewable, never treat them as pending.
+  return {
+    schemaRevision: "",
+    commands: Array.isArray(record.commands) ? record.commands : [],
+    cursor: null,
+    legacy: true,
+    unsupported: true,
+    savedAt: record.savedAt || 0,
+  };
 }
 
 export async function clearDraft(workspacePath) {

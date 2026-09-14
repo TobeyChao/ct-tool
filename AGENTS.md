@@ -195,7 +195,7 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
         ▼                                          ▼
   exporting/build 五阶段 ──► exporting/service（锁→恢复→发布→deploy→账本）
         │
-        └─► cache/fingerprints 分层指纹 + schema_workspace 的 Draft→Plan→Apply 守卫
+        └─► cache/fingerprints 分层指纹 + schema_workspace 的 Draft→净差异→保存守卫
 ```
 
 ### i18n 文件结构与状态机
@@ -238,13 +238,14 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 | `ct/app/exporting/models.py` | `ExportRequest` / `CompletionPolicy` / `PreparedExport` / `TableBuild` / `ArtifactSet` / `ExportResult` / `InputChangedError` |
 | `ct/app/exporting/prepare.py` | 输入快照 `InputRevision` + 捕获前后与发布前的输入/目录成员复核 |
 | `ct/app/canonical_export.py` | **兼容层**：`run_canonical_export`（只导出、原 dict 形状）与历史名字重导出 |
-| `ct/app/data_preparation.py` | 共享 preparation 内核：选中表读取 / layout / 主键 / CodeName / 跨表 ref 校验，validate 与 export 共用一套 |
+| `ct/app/data_preparation.py` | 共享 preparation 内核：选中表 + ref 依赖闭包读取 / layout / 读取兼容闸门 / 主键 / CodeName / Enum token 域 / 跨表 ref 校验，validate 与 export 共用一套 |
 | `ct/contracts.py` | 事件与取消原语（`ProgressReporter` / `CancelToken` / `CancelledError` / `NullReporter`），不依赖 ct 其他部分 |
 | `ct/storage/files.py` | 单文件原子写、sha256、路径规范化（cache 层复用同一实现） |
 | `ct/storage/publication.py` | 可恢复的多文件发布：版本化 journal、同卷暂存、备份预检、幂等恢复 |
-| `ct/storage/workspace_lock.py` | 同一规范化 root 的 export/deploy 排他锁（POSIX `flock` / Windows 文件区间锁 + 进程内互斥） |
+| `ct/storage/workspace_lock.py` | 同一规范化 root 的 save/export/deploy 排他锁（POSIX `flock` / Windows 文件区间锁 + 进程内互斥） |
+| `ct/storage/workspace_transaction.py` | 共享事务入口：持锁 → 先恢复未完成发布 → 交出控制权（save/export/deploy 同一套 busy 语义） |
 | `ct/app/canonical_commands.py` | canonical `validate/status/gen-template/i18n` 用例 + `canonical_validate`（类型/主键/跨表 ref 外键校验）+ `CanonicalValidationError` |
-| `ct/app/schema_workspace/` | Draft → Change Plan → 原子 apply（`snapshot`/`candidate`/`plan`/`apply`/`commands_reducer`） |
+| `ct/app/schema_workspace/` | Draft → 净差异 → YAML-only 事务化保存（`snapshot`/`candidate`/`netdiff`/`save`/`commands_reducer`/`legacy_apply`） |
 | `ct/app/events.py` | 兼容重导出：事件原语已移到 `ct/contracts.py` |
 | `ct/schema/resources.py` | `Table`/`Record`/`Enum` + `FieldDef`；`TableResource` 提供派生属性（`i18n_fields`/`has_i18n`/`primary_field`/`resolved_json_key`/`resolved_excel_file`） |
 | `ct/schema/type_expression.py` | 类型表达式（`scalar`/`named`/`vector<T>`）+ YAML 文本解析/序列化 |
@@ -257,7 +258,8 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 | `ct/excel/layout.py` | `Layout`：字段→Excel 列的唯一映射真源（stable_path/group/depth/annotation） |
 | `ct/excel/layout_manifest.py` | Layout manifest 落 cache（schema_hash + 列布局） |
 | `ct/excel/canonical_reader.py` | 按 Layout 读 Excel，重建 canonical 行（record→dict、展开 vector<Record>→按组读） |
-| `ct/excel/canonical_template.py` | 生成模板工作簿 |
+| `ct/excel/canonical_template.py` | 生成模板工作簿（表头文本规则对闸门公开：`segments_for`） |
+| `ct/excel/reading_compat.py` | 读取兼容性闸门：manifest 列映射 + 真实受管表头 vs 当前布局，读取前证明可安全解释数据 |
 | `ct/excel/planning.py` | 数据搬移预检：稳定字段路径 + rename 命令 |
 | `ct/export/canonical_fbs.py` | 共享 `types.fbs` + 各表 FBS + 校验 |
 | `ct/export/canonical_binary.py` | 手写 FlatBuffers bytes + `DataBundle` |
@@ -272,7 +274,7 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 | `ct/diagnostics/errors.py` | `Issue`/`ValidationIssue`/`WorkspaceIssue` + `render()`/`report_errors()` |
 | `ct/web/app.py` | Flask 薄封装 + canonical JSON API |
 | `ct/web/tasks.py` | `CanonicalExportTask` 后台导出任务（阶段上报 + 历史） |
-| `ct/web/schema_workspace_api.py` | Draft/Plan/Apply 结构化 JSON API（不接受前端 YAML 文本） |
+| `ct/web/schema_workspace_api.py` | Draft/Candidate/Save 结构化 JSON API（不接受前端 YAML 文本；无持久化计划与 TTL） |
 | `ct/web/history.py` / `logs.py` / `task_state.py` | 面板历史 / 日志缓冲 / 任务状态 |
 | `ct/web/static/` | Vue3 前端（无构建，扁平 `static/`：`js/core`、`js/modules`、`styles`、`vendor`） |
 
@@ -292,7 +294,7 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 
 **FlatBuffers Binary 格式**：所有命名 Record/Enum 一次性、确定性依赖序发射进共享 `types.fbs`；每张表 `include "types.fbs"` 只定义自身 + `IndexEntry` 容器。每张表独立序列化为 bytes，随后打包为 `DataBundle`。`server_only` 字段在客户端 Binary 中排除；次语言 Bundle 只含主键 + i18n 字段变体。
 
-**事务化 Schema 写入**：schema 修改不再直接写 YAML——先入 Workspace Draft（命令流 + undo/redo），生成 Change Plan（影响面/风险/阻塞），再原子 Apply（staging + 原子替换 + 并发保护 baseRevision/candidateHash + recover）。
+**事务化 Schema 写入**：schema 修改不再直接写 YAML——先入 Workspace Draft（命令流 + undo cursor，IndexedDB 持久化），由服务端计算**净差异**（原始结构 vs 最终候选，显式 rename 追踪身份）并给出 candidateHash，再一次 `POST /api/schema-workspace/save` 事务化发布——只写实际变化的 YAML，共用工作区锁与 FilePublisher（含回滚新建文件），不读 Excel、不动模板/译文/产物/账本。Schema 基线（`schemaRevision`：global.yaml 字节 + schemas/types 目录成员与字节）不一致时返回冲突并保留草稿。Excel 更新是独立显式操作：validate/export 读取前会核对可信 manifest 与真实受管表头结构，不匹配即拒绝误读；Enum token 域与 CodeName 数据闸门均在读取阶段拦截。旧 Apply 的 journal/材料由 `legacy_apply.py` 一次性检测与恢复，不足则保留材料并阻止写入。
 
 **配置路径解析**：`config/global.yaml` 中所有路径均相对于项目根目录（含 `config/` 的目录）。通过 `cfg.resolve("key")` 获取绝对 `Path`。
 

@@ -18,15 +18,26 @@ from ct.app.exporting.models import InputChangedError
 from ct.schema.resources import TableResource
 
 
-def _excel_bytes(ids: list[int]) -> bytes:
-    wb = Workbook()
-    ws = wb.active
-    ws.append(["id"])      # 注释行
-    ws.append(["主键"])    # 字段行
-    for value in ids:
-        ws.append([value])
+def _excel_bytes(root: Path, ids: list[int]) -> bytes:
+    """该工程 Item 模板 + 指定数据行的字节（读取闸门要求真实模板表头）。"""
+    import io
+
+    from openpyxl import load_workbook
+
+    from ct.excel.layout_manifest import load_manifest
+
+    path = root / "excel" / "Item.xlsx"
+    manifest = load_manifest(root / "excel" / "layout_manifests", "Item")
+    start = (manifest.header_rows if manifest is not None else 2) + 1
+    workbook = load_workbook(path)
+    sheet = workbook.active
+    for index in range(start, sheet.max_row + 1):
+        sheet.cell(row=index, column=1, value=None)
+    for offset, value in enumerate(ids):
+        sheet.cell(row=start + offset, column=1, value=value)
     buffer = io.BytesIO()
-    wb.save(buffer)
+    workbook.save(buffer)
+    workbook.close()
     return buffer.getvalue()
 
 
@@ -44,9 +55,9 @@ def _project(tmp_path: Path, ids: list[int] | None = None) -> Path:
             }
         ],
     )
-    excel = root / "excel"
-    excel.mkdir(parents=True, exist_ok=True)
-    (excel / "Item.xlsx").write_bytes(_excel_bytes(ids if ids is not None else [1]))
+    from _helpers import make_workbook
+
+    make_workbook(root, "Item", [[value] for value in (ids if ids is not None else [1])])
     return root
 
 
@@ -88,7 +99,7 @@ def test_ledger_records_captured_bytes_not_a_later_reread(
 
     root = _project(tmp_path, ids=[1])
     excel = root / "excel" / "Item.xlsx"
-    captured = _excel_bytes([7])
+    captured = _excel_bytes(root, [7])
     monkeypatch.setattr(
         export_module, "read_excel_bytes", lambda workspace, tables: {excel: captured}
     )
@@ -107,7 +118,7 @@ def test_excel_change_during_generation_aborts(tmp_path: Path) -> None:
     root = _project(tmp_path, ids=[1])
     excel = root / "excel" / "Item.xlsx"
     with pytest.raises(InputChangedError) as excinfo:
-        run_canonical_export(root, reporter=_reporter_writing(excel, _excel_bytes([2])))
+        run_canonical_export(root, reporter=_reporter_writing(excel, _excel_bytes(root, [2])))
     assert "输入在生成期间发生变化" in str(excinfo.value)
 
 
@@ -152,7 +163,7 @@ def test_change_after_final_check_keeps_captured_hash(
 
     root = _project(tmp_path, ids=[1])
     excel = root / "excel" / "Item.xlsx"
-    captured_hash = hashlib.sha256(_excel_bytes([1])).hexdigest()
+    captured_hash = hashlib.sha256(excel.read_bytes()).hexdigest()
 
     real_verify = export_module.verify_inputs_unchanged
     calls = {"count": 0}
@@ -161,7 +172,7 @@ def test_change_after_final_check_keeps_captured_hash(
         real_verify(before, after, when=when)
         calls["count"] += 1
         if calls["count"] == 2:  # 第二次 = 发布前复核；之后、返回之前再改磁盘
-            excel.write_bytes(_excel_bytes([9]))
+            excel.write_bytes(_excel_bytes(root, [9]))
 
     monkeypatch.setattr(export_module, "verify_inputs_unchanged", spy)
 

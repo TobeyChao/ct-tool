@@ -6,6 +6,7 @@ export async function api(path, opts = {}) {
   if (!resp.ok || !payload || payload.ok === false) {
     const error = new Error((payload && payload.error) || ("HTTP " + resp.status));
     error.status = resp.status;
+    error.payload = payload || null;
     throw error;
   }
   return payload.data;

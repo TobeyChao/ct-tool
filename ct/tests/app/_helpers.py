@@ -38,3 +38,43 @@ def build_project(
     for type_def in types or []:
         write_yaml(root / "config" / "types" / f"{type_def['name']}.yaml", type_def)
     return root
+
+
+def make_workbook(root: Path, table: str, rows: list[list] | None = None) -> Path:
+    """Generate the canonical template for ``table``, then write ``rows`` below it.
+
+    validate/export verify the managed header structure before reading, so test
+    workbooks must be real templates instead of hand-rolled header rows.
+    """
+    from openpyxl import load_workbook
+
+    from ct.app.canonical_commands import canonical_gen_template
+    from ct.excel.layout_manifest import load_manifest
+
+    canonical_gen_template(root, table_filter=table)
+    path = root / "excel" / f"{table}.xlsx"
+    manifest = load_manifest(root / "excel" / "layout_manifests", table)
+    start = (manifest.header_rows if manifest is not None else 2) + 1
+    workbook = load_workbook(path)
+    worksheet = workbook.active
+    for offset, row in enumerate(rows if rows is not None else [[1, "剑", 10], [2, "盾", 20]]):
+        for column, value in enumerate(row, start=1):
+            worksheet.cell(row=start + offset, column=column, value=value)
+    workbook.save(path)
+    workbook.close()
+    return path
+
+
+def set_cell(root: Path, table: str, row_offset: int, column: int, value: object) -> None:
+    """Write one data cell (``row_offset`` 1 = first data row) of a template."""
+    from openpyxl import load_workbook
+
+    from ct.excel.layout_manifest import load_manifest
+
+    path = root / "excel" / f"{table}.xlsx"
+    manifest = load_manifest(root / "excel" / "layout_manifests", table)
+    start = (manifest.header_rows if manifest is not None else 2) + 1
+    workbook = load_workbook(path)
+    workbook.active.cell(row=start + row_offset - 1, column=column, value=value)
+    workbook.save(path)
+    workbook.close()

@@ -27,15 +27,11 @@ def _quest_table() -> TableResource:
     )
 
 
-def _write_excel(path: Path, rows: list[list]) -> None:
-    wb = Workbook()
-    ws = wb.active
-    # two header rows (max_nesting_depth + 1 = 2) + data rows
-    ws.append(["id", "type_id"])
-    ws.append(["主键", "类型"])
-    for row in rows:
-        ws.append(row)
-    wb.save(str(path))
+def _write_excel(root: Path, table: str, rows: list[list]) -> None:
+    """先生成模板再写数据：读取闸门要求受管表头与当前布局一致。"""
+    from _helpers import make_workbook
+
+    make_workbook(root, table, rows)
 
 
 def _workspace_with_dangling_ref(tmp_path: Path) -> Path:
@@ -49,9 +45,8 @@ def _workspace_with_dangling_ref(tmp_path: Path) -> Path:
             ]},
         ],
     )
-    (root / "excel").mkdir(parents=True, exist_ok=True)
-    _write_excel(root / "excel" / "ItemType.xlsx", [[1], [2]])
-    _write_excel(root / "excel" / "Quest.xlsx", [[1, 1], [2, 99]])  # 99 dangling
+    _write_excel(root, "ItemType", [[1], [2]])
+    _write_excel(root, "Quest", [[1, 1], [2, 99]])  # 99 dangling
     return root
 
 
@@ -166,8 +161,7 @@ def _workspace_with_codename(tmp_path: Path, rows: list[list]) -> Path:
             }
         ],
     )
-    (root / "excel").mkdir(parents=True, exist_ok=True)
-    _write_excel(root / "excel" / "ItemType.xlsx", rows)
+    _write_excel(root, "ItemType", rows)
     return root
 
 

@@ -50,11 +50,15 @@ def _build_project(root: Path) -> None:
     (root / "config" / "schemas" / "Item.yaml").write_text(
         yaml.safe_dump(schema, allow_unicode=True), encoding="utf-8"
     )
-    wb = Workbook()
+    # 真实模板 + 数据行：validate/export 在读取前会核对受管表头结构
+    from ct.app.canonical_commands import canonical_gen_template
+
+    canonical_gen_template(root, all_tables=True)
+    wb = load_workbook(root / "excel" / "Item.xlsx")
     ws = wb.active
-    ws.append(["id", "name", "price"])
-    ws.append(["主键", "名称", "价格"])
-    ws.append([1001, "铁剑", 100.0])
+    ws.cell(row=3, column=1, value=1001)
+    ws.cell(row=3, column=2, value="铁剑")
+    ws.cell(row=3, column=3, value=100.0)
     wb.save(root / "excel" / "Item.xlsx")
 
 

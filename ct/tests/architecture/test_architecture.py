@@ -17,8 +17,9 @@ import re
 from pathlib import Path
 
 from ct.app.schema_workspace.candidate import validate_candidate
+from ct.app.schema_workspace.candidate import candidate_hash
+from ct.app.schema_workspace.netdiff import compute_net_diff
 from ct.app.schema_workspace.commands_reducer import Command, DraftLog
-from ct.app.schema_workspace.plan import build_change_plan
 
 PKG = "ct"
 SRC = Path(__file__).parents[2] / "src" / PKG
@@ -365,7 +366,7 @@ def _snapshot_tree(root: Path) -> dict[str, bytes]:
     }
 
 
-def test_validate_and_plan_are_side_effect_free(tmp_path) -> None:
+def test_validate_and_net_diff_are_side_effect_free(tmp_path) -> None:
     from _helpers import build_project
     from ct.app.canonical_workspace import CanonicalWorkspace
 
@@ -381,7 +382,10 @@ def test_validate_and_plan_are_side_effect_free(tmp_path) -> None:
     log.execute(Command("add_field", {"owner": "table:Item", "field": {"name": "Price", "type": "int32"}}))
     current, indexes = log.current()
     validate_candidate(current, indexes)
-    build_change_plan(tuple(resources), current, old_indexes={}, new_indexes=indexes)
+    compute_net_diff(
+        (tuple(resources), {}), (current, indexes), log.commands, cursor=log.cursor
+    )
+    candidate_hash(current, indexes)
     after = _snapshot_tree(root)
     assert before == after
 

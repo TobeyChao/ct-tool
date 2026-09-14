@@ -63,16 +63,10 @@ def _build_project(root: Path) -> None:
         (root / "config" / "schemas" / f"{table}.yaml").write_text(
             yaml.safe_dump(schema, allow_unicode=True), encoding="utf-8"
         )
-        wb = Workbook()
-        ws = wb.active
-        ws.append(["主键", "名称"])
-        ws.append(["Id", "Name"])
-        if table == "Item":
-            ws.append([1, "铁剑"])
-            ws.append([2, "木剑"])
-        else:
-            ws.append([1, 3])
-        wb.save(root / "excel" / f"{table}.xlsx")
+        from _helpers import make_workbook
+
+        rows = [[1, "铁剑"], [2, "木剑"]] if table == "Item" else [[1, 3]]
+        make_workbook(root, table, rows)
 
 
 def _project(tmp_path: Path) -> Path:

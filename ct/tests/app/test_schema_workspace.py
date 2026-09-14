@@ -1,4 +1,4 @@
-"""Snapshot revision, draft reducer, candidate and change-plan tests (6.1-6.5)."""
+"""Snapshot revision, draft reducer and candidate validation tests (6.1-6.5)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,6 @@ from ct.app.schema_workspace.commands_reducer import (
     DraftLog,
     apply_commands,
 )
-from ct.app.schema_workspace.plan import build_change_plan
 from ct.app.schema_workspace.snapshot import build_snapshot
 from ct.schema.resources import FieldDef, RecordResource, TableResource
 from ct.schema.indexes import QueryIndex
@@ -155,32 +154,3 @@ def test_candidate_validation_rechecks_mutated_field_and_table_invariants() -> N
     issues = validate_candidate(resources, {})
     messages = [issue.message for issue in issues]
     assert any("主键" in message and "server_only" in message for message in messages)
-
-
-def test_change_plan_dependency_breaking_risk() -> None:
-    old = _base() + _records()
-    new_records = (
-        RecordResource(
-            name="DropReward",
-            fields=[
-                FieldDef(name="ItemId", type="int32"),
-                FieldDef(name="Extra", type="int32"),
-            ],
-        ),
-    )
-    new = _base() + new_records
-    plan = build_change_plan(old, new, old_indexes={}, new_indexes={})
-    assert plan.risk == "dependency-breaking"
-    assert any(impact.artifact == "FBS" for impact in plan.impacts)
-
-
-def test_change_plan_issues_carry_locations() -> None:
-    # destructive excel scenario requires an excel file; here verify the plan
-    # surfaces the excel blocker issue with a location via the issue kind
-    base = _base()
-    new_tables = (
-        TableResource(table="Item", primary="Id", fields=[FieldDef(name="Id", type="int32")]),
-        base[1],
-    )
-    plan = build_change_plan(base, new_tables, old_indexes={}, new_indexes={})
-    assert any(impact.artifact == "Excel" and impact.action in ("migrate", "keep") for impact in plan.impacts)

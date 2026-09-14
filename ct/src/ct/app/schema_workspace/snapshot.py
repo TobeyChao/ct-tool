@@ -141,3 +141,113 @@ def build_snapshot(
         i18n_hashes=i18n_hashes,
         generation_inputs_hash=generation_inputs_hash,
     )
+
+
+# --------------------------------------------------------------------------- #
+# Schema baseline (schemaRevision)
+#
+# The draft/save protocol compares *this* revision, not ``WorkspaceSnapshot``:
+# saving YAML may not be invalidated by Excel or translation edits, and an
+# unchanged Excel file must not make a draft look stale. It therefore covers
+# exactly the source of truth for schema structure: the raw bytes of
+# ``config/global.yaml`` (path configuration included) plus the members and raw
+# bytes of the schemas/types directories.
+# --------------------------------------------------------------------------- #
+
+SCHEMA_REVISION_FORMAT = "schema-revision/1"
+
+
+def config_file_path(config) -> Path:
+    """Path of the project's ``config/global.yaml``."""
+    return Path(config.project_root) / "config" / "global.yaml"
+
+
+@dataclass(frozen=True)
+class SchemaRevision:
+    """Schema-only baseline revision plus the per-member digests behind it."""
+
+    revision: str
+    config_digest: str = ""
+    members: dict[str, str] = field(default_factory=dict)
+
+    def matches(self, other: "SchemaRevision | None") -> bool:
+        return other is not None and self.revision == other.revision
+
+    def changed_members(self, other: "SchemaRevision | None") -> list[str]:
+        """Members whose digest differs (added, removed and edited alike)."""
+        if other is None:
+            return sorted(self.members)
+        keys = sorted(set(self.members) | set(other.members))
+        return [key for key in keys if self.members.get(key) != other.members.get(key)]
+
+    def to_payload(self) -> dict[str, Any]:
+        return {"revision": self.revision, "members": dict(sorted(self.members.items()))}
+
+
+@dataclass(frozen=True)
+class SchemaSources:
+    """Bytes captured in one pass together with the revision they hash to."""
+
+    revision: SchemaRevision
+    contents: dict[Path, bytes] = field(default_factory=dict)
+
+    def to_payload(self) -> dict[str, Any]:
+        return self.revision.to_payload()
+
+
+def schema_yaml_paths(config) -> list[Path]:
+    """Every ``*.yaml`` member of the configured schemas and types directories."""
+    paths: list[Path] = []
+    for directory in (config.resolve("schemas_dir"), config.resolve("types_dir")):
+        directory = Path(directory)
+        if directory.exists():
+            paths.extend(sorted(directory.glob("*.yaml")))
+    return paths
+
+
+def build_schema_revision(config, *, contents: "dict[Path, bytes] | None" = None) -> SchemaRevision:
+    """Hash the schema baseline, optionally from already-captured bytes."""
+    if contents is None:
+        contents = capture_schema_contents(config)
+    config_file = config_file_path(config)
+    schemas_dir = Path(config.resolve("schemas_dir"))
+    types_dir = Path(config.resolve("types_dir"))
+    members: dict[str, str] = {}
+    for path, data in contents.items():
+        path = Path(path)
+        if path == config_file:
+            continue
+        label = "schemas" if path.parent == schemas_dir else "types"
+        members[f"{label}/{path.name}"] = _sha256(data)
+    config_digest = _sha256(contents.get(config_file, b""))
+    payload = {
+        "format": SCHEMA_REVISION_FORMAT,
+        "config": config_digest,
+        "members": members,
+    }
+    revision = _sha256(
+        json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    )
+    return SchemaRevision(revision=revision, config_digest=config_digest, members=members)
+
+
+def capture_schema_contents(config) -> dict[Path, bytes]:
+    """Read ``global.yaml`` and every schema/type YAML exactly once."""
+    contents: dict[Path, bytes] = {}
+    config_file = config_file_path(config)
+    if config_file.exists():
+        contents[config_file] = config_file.read_bytes()
+    for path in schema_yaml_paths(config):
+        contents[path] = path.read_bytes()
+    return contents
+
+
+def capture_schema_sources(config) -> SchemaSources:
+    """Capture the schema baseline bytes and the revision describing them.
+
+    Callers load the workspace from ``contents`` (``CanonicalWorkspace.load``
+    accepts captured bytes) so the revision can never describe a different
+    source state than the resources actually used to build a candidate.
+    """
+    contents = capture_schema_contents(config)
+    return SchemaSources(revision=build_schema_revision(config, contents=contents), contents=contents)

@@ -45,8 +45,8 @@ AppShell、ModuleHeader、CommandBar、DataTable、Inspector、StatusBadge、Inl
 每个可见工作区 SHALL 最多有一个实心 primary action；危险操作不得使用 primary 样式；动效 SHALL 只表达 180-200ms 状态切换或轻量反馈，并尊重 reduced motion。
 
 #### Scenario: Schema draft has blocking issues
-- **WHEN** Change Plan 存在阻塞项
-- **THEN** “应用变更”禁用且附近说明原因，破坏性“放弃草稿”使用非 primary 危险样式
+- **WHEN** Schema 候选存在已知结构阻塞项
+- **THEN** 「保存变更」禁用且附近说明原因，破坏性「放弃草稿」使用非 primary 危险样式
 
 ### Requirement: Frontend accessibility baseline
 共享组件 SHALL 提供键盘路径、可见焦点、标签、语义状态、焦点恢复和足够文本对比度；隐藏内容 SHALL 使用条件渲染或 `hidden/inert`，不能仅靠透明度或负位移。
@@ -56,7 +56,7 @@ AppShell、ModuleHeader、CommandBar、DataTable、Inspector、StatusBadge、Inl
 - **THEN** 焦点顺序与视觉顺序一致，所有关键操作可达，关闭临时 UI 后焦点回到合理触发点
 
 ### Requirement: Dialog variant contract
-共享 Dialog SHALL 提供危险确认、表单、选择器和调色板四种变体，并复用同一模态骨架：焦点陷阱（跳过 disabled 控件）、Escape 关闭最上层、关闭后还焦触发元素、背景点击关闭、打开时对下层内容应用 inert；弹窗标题 id SHALL 唯一，嵌套打开不得冲突。宽度变体 SHALL 为：小号 `min(420px, 92vw)`、标准 `min(560px, 100vw-40px)`、变更计划 `min(640px, 100vw-40px)`、快速打开调色板 `min(480px, 92vw)`。初始焦点 SHALL 遵循：危险确认 → 取消按钮，表单 → 第一个输入框，选择器 → 搜索框。危险操作主按钮 SHALL 使用独立 danger 语义色且配按钮文案，不得只靠颜色传达。
+共享 Dialog SHALL 提供危险确认、表单、选择器和调色板四种变体，并复用同一模态骨架：焦点陷阱（跳过 disabled 控件）、Escape 关闭最上层、关闭后还焦触发元素、背景点击关闭、打开时对下层内容应用 inert；弹窗标题 id SHALL 唯一，嵌套打开不得冲突。宽度变体 SHALL 为：小号 `min(420px, 92vw)`、标准 `min(560px, 100vw-40px)`、快速打开调色板 `min(480px, 92vw)`。初始焦点 SHALL 遵循：危险确认 → 取消按钮，表单 → 第一个输入框，选择器 → 搜索框。危险操作主按钮 SHALL 使用独立 danger 语义色且配按钮文案，不得只靠颜色传达。
 
 #### Scenario: Danger confirm with reverse references
 - **WHEN** 用户尝试删除仍被反向引用的资源
@@ -79,42 +79,27 @@ AppShell、ModuleHeader、CommandBar、DataTable、Inspector、StatusBadge、Inl
 - **THEN** 先关闭类型选择器回到添加字段弹窗，再按 Esc 关闭添加字段弹窗，焦点逐层恢复
 
 ### Requirement: Implicit workspace draft surfacing
-Schema 编辑 SHALL 不提供「加入草稿」显式用户步骤：删除/添加等命令经确认后立即进入 Workspace Draft。草稿表面 SHALL 为壳层 main 底部常驻状态条且跨模块可见：未应用命令数（按待应用光标计数）+ 撤销/重做 + 「审查并应用」主操作；无待应用命令且无重做分支时状态条隐藏。全部撤销后状态条 SHALL 保留并呈现可重做态。草稿持久化失败 SHALL 在状态条上持续显示可处理的警告（不只 Toast），内存草稿仍可用。⌘Z / ⇧⌘Z SHALL 触发草稿撤销/重做。
+Schema 编辑 SHALL 不提供「加入草稿」步骤；操作进入可撤销的工作区草稿。壳层底部跨模块状态条 SHALL 显示最终变化资源数、撤销/重做、「保存变更」及放弃入口，不显示操作次数作为未保存数。重命名同一资源 SHALL 计一次，引用连带修改的资源 SHALL 分别计数。净差异为零时 SHALL 禁用保存并保留可用历史入口；没有历史、警告或成功反馈时隐藏。持久化警告 SHALL 持续显示，⌘Z/⇧⌘Z SHALL 保留逐步撤销/重做行为。
 
 #### Scenario: Delete lands in draft
-- **WHEN** 用户在删除确认弹窗点击「删除」
-- **THEN** 命令立即进入草稿，状态条显示「1 条未应用变更」，文件与导出产物未被修改
+- **WHEN** 用户在删除确认弹窗点击删除
+- **THEN** 文件未被修改，状态条显示净变化资源数
+
+#### Scenario: Toggle returns to baseline
+- **WHEN** CodeName 开启再关闭且没有其他净变化
+- **THEN** 显示「无未保存修改」，保存禁用，撤销仍可回到开启状态
 
 #### Scenario: Undo to zero keeps redo reachable
-- **WHEN** 用户撤销至待应用命令为 0 且存在重做分支
-- **THEN** 状态条保留并显示「已全部撤销 · 可重做」，撤销/审查禁用、重做可用
+- **WHEN** 用户撤销至基线且存在重做分支
+- **THEN** 状态条保留，保存禁用，重做可用
 
 #### Scenario: Persistence failure warning persists
 - **WHEN** IndexedDB 写入草稿失败
-- **THEN** 状态条持续显示「草稿未持久化」警告，编辑继续保留在内存
+- **THEN** 状态条持续显示草稿未持久化，内存编辑继续可用
 
 #### Scenario: Keyboard undo and redo
-- **WHEN** 用户在任意模块按 ⌘Z 或 ⇧⌘Z
-- **THEN** Schema 草稿相应撤销/重做一条命令，状态条计数与按钮态同步
-
-### Requirement: Change plan review dialog
-「审查并应用」SHALL 打开变更计划弹窗：风险徽标（安全/数据依赖/破坏/不兼容/依赖破坏）+ 按影响的产物清单（Schema/Excel/FBS/Binary/Accessor · 表 · 动作）+ 阻塞项列表（含位置与样例值）+ 计划有效期提示（默认 2 小时，过期需重新生成）。存在阻塞项 SHALL 禁用应用按钮。删除资源确认弹窗 SHALL 提供「查看影响」入口，以预览模式打开本弹窗（该命令未进入草稿，应用与放弃草稿禁用）。应用成功后弹窗关闭、草稿清空，状态条以成功态短暂显示已应用清单后隐藏。
-
-#### Scenario: Blocked plan cannot apply
-- **WHEN** 变更计划存在数据破坏或依赖破坏阻塞项
-- **THEN** 应用按钮禁用，阻塞项列出位置与样例值
-
-#### Scenario: Delete dialog previews impact
-- **WHEN** 用户在删除资源确认弹窗点击「查看影响」
-- **THEN** 变更计划弹窗以预览模式打开：横幅标明该删除「尚未加入草稿」，应用与放弃草稿按钮禁用；关闭预览后回到删除确认弹窗
-
-#### Scenario: Successful apply resets draft
-- **WHEN** 计划无阻塞且应用成功
-- **THEN** 弹窗关闭、状态条以成功态显示「已应用：<资源清单>」并在数秒后自动隐藏，撤销栈清空
-
-#### Scenario: Discard draft requires confirmation
-- **WHEN** 用户在变更计划弹窗点击「放弃草稿」
-- **THEN** 打开小号确认弹窗「放弃 N 条未应用变更？此操作不可撤销」，初始焦点在「取消」；确认后命令清空、状态条消失、变更计划弹窗一并关闭；取消则不改变草稿
+- **WHEN** 用户在任意模块按草稿撤销/重做快捷键
+- **THEN** 移动一条历史步骤，净差异资源数与按钮同步刷新
 
 ### Requirement: External documentation link
 侧栏「导出文档」SHALL 直接打开外部文档页，不弹窗（标记为外部链接）。
@@ -133,3 +118,30 @@ Schema 编辑 SHALL 不提供「加入草稿」显式用户步骤：删除/添�
 #### Scenario: Help shortcuts are truthful
 - **WHEN** 用户打开帮助与反馈弹窗
 - **THEN** 列出的快捷键（⌘P、⌘Z/⇧⌘Z、Esc）均为实际生效的快捷键
+
+### Requirement: Direct Schema save feedback
+「保存变更」SHALL 直接提交当前净差异对应的草稿，不先打开全产物审查弹窗。可查看摘要 SHALL 展示原始到最终的 YAML 结构差异及结构兼容性提示，不承诺 Excel 搬移或产物生成。候选仍在计算或保存进行中 SHALL 禁止提交过期候选；保存期间 SHALL 防止草稿变化被成功响应误清除。保存成功 SHALL 更新基线、清空本次历史、显示「已保存」；失败 SHALL 保留草稿并持续展示问题。
+
+#### Scenario: Repeated rename summary
+- **WHEN** 同一字段从 A 经 B 改到 C
+- **THEN** 摘要显示 A→C，不展示两次改名为两条待保存变化
+
+#### Scenario: Save without review ceremony
+- **WHEN** 用户点击合法且有净变化草稿的保存按钮
+- **THEN** 显示保存进度并提交，无计划生成/有效期/应用确认步骤
+
+#### Scenario: Successful save leaves Excel untouched
+- **WHEN** 保存完成且受影响表出现模板漂移
+- **THEN** 显示 YAML 已保存及模板待更新提示，更新模板由用户独立触发
+
+#### Scenario: Status refresh fails after successful save
+- **WHEN** YAML 已成功保存但模板状态查询失败
+- **THEN** 仍显示保存成功并说明状态暂不可用，不诱导用户重放已保存命令
+
+#### Scenario: Delete confirmation states scope
+- **WHEN** 用户准备删除资源
+- **THEN** 删除确认保留引用阻塞与取消默认焦点，说明仅保存时删除 YAML、Excel 和产物保留，不提供嵌套完整计划预览
+
+#### Scenario: Discard draft requires confirmation
+- **WHEN** 用户点击放弃草稿
+- **THEN** 显示按净变化资源数描述的小号确认弹窗，取消不改变草稿；仅有历史时说明清除编辑历史，确认后清空历史

@@ -67,14 +67,14 @@ def _richtext(name: str, annotation: str, type_color: str = "64748B") -> CellRic
     )
 
 
-def _top_segment(table_id: str, stable_path: str) -> str:
+def top_segment_for(table_id: str, stable_path: str) -> str:
     """Top-level field name (no group marker) for a column's stable path."""
     tail = stable_path[len(table_id) + 1:]
     head = tail.partition("/")[0]
     return head.partition("[")[0]
 
 
-def _segments(table_id: str, stable_path: str) -> list[str]:
+def segments_for(table_id: str, stable_path: str) -> list[str]:
     """Path segments with each ``[g]`` group marker expanded to its own level."""
     tail = stable_path[len(table_id) + 1:]
     segments: list[str] = []
@@ -151,7 +151,7 @@ def _column_ranges(
 ) -> dict[str, tuple[int, int]]:
     ranges: dict[str, list[int]] = {}
     for column in layout.columns:
-        top = _top_segment(layout.table_id, column.stable_path)
+        top = top_segment_for(layout.table_id, column.stable_path)
         ranges.setdefault(top, []).append(column.index)
     return {
         top: (min(indexes), max(indexes))
@@ -169,7 +169,7 @@ def _write_header_rows(
     for depth in range(1, max_depth + 1):
         grouped: dict[tuple[str, ...], list[Column]] = {}
         for column in layout.columns:
-            parts = _segments(layout.table_id, column.stable_path)
+            parts = segments_for(layout.table_id, column.stable_path)
             if len(parts) < depth:
                 continue
             grouped.setdefault(tuple(parts[:depth]), []).append(column)
@@ -184,7 +184,7 @@ def _write_header_rows(
             annotation = cols[0].field_annotation or cols[0].annotation
             if depth > 1 and segment.startswith("#"):
                 annotation = cols[0].type_text
-            leaf_depth = len(_segments(layout.table_id, cols[0].stable_path))
+            leaf_depth = len(segments_for(layout.table_id, cols[0].stable_path))
             is_leaf = depth >= leaf_depth
             top_type = cols[0].field_annotation or cols[0].annotation
             if depth == 1 and top_type.startswith("vector<"):
@@ -219,7 +219,7 @@ def _write_header_rows(
     # field cell spanning the remaining field rows. This keeps scalar table
     # fields visually aligned with nested records and fixed-vector slots.
     for column in layout.columns:
-        leaf_depth = len(_segments(layout.table_id, column.stable_path))
+        leaf_depth = len(segments_for(layout.table_id, column.stable_path))
         if leaf_depth >= max_depth:
             continue
         start_row = leaf_depth * 2

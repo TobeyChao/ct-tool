@@ -101,19 +101,3 @@ CLI export SHALL 仅在本地导出和配置的部署成功后提交账本；Web
 #### Scenario: 模板漂移的提示命令
 - **WHEN** `Item` 的 schema 已改但 manifest 未重建
 - **THEN** 输出 `[template-stale] Item  (建议: ct gen-template --table Item)`，提示中不含 `--update-header`
-
-### Requirement: 事务化 Apply 只发布 schema YAML（fingerprint/cache 发布未实现）
-
-`ct/app/schema_workspace/apply.py` 已实现事务语义：`WorkspaceApplyLock`、staging 目录、`cache/apply.journal.json`、backup、逐步 `os.replace` 发布与 `recover()` 恢复。但其发布范围只有 `config/schemas/*.yaml` 与 `config/types/*.yaml`（`stage_candidate_yaml`）。
-
-（本能力未实现）原始意图：Workspace Apply 在 staging 中计算候选 revision 的 layout manifests、schema/data/i18n/bundle fingerprints、ids 与缓存 bytes，并与 Schema、Excel 和生成产物一起纳入事务，成功后发布 cache，使下一次 export 可按分层 fingerprints 判断复用。
-
-现状：`prepare-apply` 调用 `create_plan(..., table_fingerprints={})` 恒传空字典；Apply 不写 `cache/state.json`，也不生成或发布 Excel、FBS、Binary 与 Accessor。
-
-#### Scenario: Apply 只替换 YAML
-- **WHEN** 候选通过校验并 commit
-- **THEN** 只有 `config/schemas|types/*.yaml` 被替换，`cache/state.json` 与 `output/` 下产物不变
-
-#### Scenario: 中断的 Apply 恢复到完整旧/新 revision
-- **WHEN** journal 的 `phase` 为 `backup` / `publish`
-- **THEN** `recover()` 用 backup 回滚旧 revision 并清理 journal；`phase` 为 `committed` 时改为把 staging 中未发布的文件补齐

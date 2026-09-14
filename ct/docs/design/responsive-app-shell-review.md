@@ -31,7 +31,7 @@
   pushDraft({type:'add_field',owner:currentResource(),field:v,type:typePickerSel,role});
   ```
   对象字面量里 `type` 出现两次,后值静默覆盖前值,`cmd.type` 实际是 `'int32'`/`'string'` 等类型表达式,而非 `'add_field'`。
-- **后果**:`impactRows()` 中 `c.type==='add_field'` 永远匹配不到,「审查并应用」对添加字段恒显示 0 条影响。
+- **后果**:`impactRows()` 中 `c.type==='add_field'` 永远匹配不到,旧「审查并应用」弹窗对添加字段恒显示 0 条影响。（该弹窗已随 YAML-only 保存移除，此处仅保留历史记录。）
 - **实测**:推入 Foo、Bar 两个字段后草稿栏计「2 条未应用变更」,审查计划中 impacts = 0、风险徽标「安全」;`draft.cmds` 实际内容为 `{type:'int32',field:'Foo'}`。
 - **修复**:第二个键改名为 `fieldType`(或 `expr`),`impactRows` 同步取用。
 

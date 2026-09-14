@@ -12,6 +12,7 @@
 - [工作区结构](#工作区结构)
 - [Schema 格式](#schema-格式)
 - [具名类型资源](#具名类型资源)
+- [Schema 工作台：新增资源与保存](#schema-工作台新增资源与保存)
 - [i18n 翻译流程](#i18n-翻译流程)
 - [导出产物](#导出产物)
 - [二进制格式](#二进制格式)
@@ -217,6 +218,59 @@ fields:
 
 > ⚠️ record 字段**不允许** `i18n` / `server_only`（schema 层硬报错）。
 > 这条约束由 schema 层独占负责 —— 下游导出/生成两层**不会报错，只会静默忽略**。
+
+---
+
+## Schema 工作台：新增资源与保存
+
+Web 面板的 Schema 页可以在不手写 YAML 的前提下新建 Table / Record / Enum：
+
+- **入口**：模块头部「新增 Schema」（自选类别）、每个资源分组右侧「＋」（预选该类别）、
+  空工作区里的空状态入口（同一个表单）。
+- **最小合法内容**：Table 只填名称/注释，自动带固定 `primary: Id` + `Id: int32`（不自动加
+  CodeName 或索引）；Record 必填首个字段（名称 + 类型，可直接选引用）；Enum 必填首个具名项
+  （ordinal 从 0 按输入顺序派生）。空名称、不合法名称、跨类别重名、空 Record/Enum 都会被拦下。
+
+### 草稿 → 保存 → 模板 → 导出 的边界
+
+| 阶段 | 做了什么 | 不做什么 |
+|---|---|---|
+| 草稿 | 命令流 + undo/redo cursor 存在 IndexedDB（按工作区隔离）；状态条显示**净变化资源数** | 不写任何文件；重命名/往返改名按**最终结构**归零 |
+| 预检 | 新增/添加字段前调 `POST /api/schema-workspace/candidate`（带当前草稿前缀）确认拟新增命令 | 预检通过**不是**持久化授权；服务端保存时再次校验 |
+| 保存 | `POST /api/schema-workspace/save`：按 `schemaRevision` + `candidateHash` 复核，只发布**实际变化**的资源 YAML（新增/删除/重命名/引用更新同一事务） | 不读 Excel、不改 layout manifest、不动 i18n/output/成功账本；零差异请求不写文件 |
+| 模板 | 保存只刷新**只读**状态；需要时点「更新模板」显式调用 `gen-template`（新表必须先保存） | 保存绝不自动重建工作簿；模板失败独立展示，不回滚已保存的 YAML |
+| 导出 | `ct export` 读取前核对可信 manifest + 真实受管表头结构；Enum token 域与 CodeName 数据闸门在读取阶段拦截 | 布局证明不了就拒绝读取，且不借导出刷新 manifest 掩盖漂移 |
+
+并用草稿的同一份候选派生所有视图（资源树、计数、Quick Open、类型选择器、引用选择器、
+反向引用）：新建的 Record/Enum 立即可作字段类型，新建的 Table 只作为 `Table.Field` 引用
+目标出现（**不会**进具名类型列表），无需中间保存。
+
+### API 命令示例（面板内部使用，不接受前端 YAML 文本）
+
+```jsonc
+// 新增 Enum / Record / Table（payload.kind 与 resource.kind 必须一致）
+{"type":"add_resource","payload":{"kind":"enum","resource":{"kind":"enum","name":"ItemRarity",
+  "values":[{"name":"Common","comment":"普通"}]}}}
+{"type":"add_resource","payload":{"kind":"record","resource":{"kind":"record","name":"DropReward",
+  "fields":[{"name":"Min","type":"int32"}]}}}
+{"type":"add_resource","payload":{"kind":"table","resource":{"table":"Quest","primary":"Id",
+  "fields":[{"name":"Id","type":"int32"},{"name":"Rarity","type":"ItemRarity"}]}}}
+
+// 预检：commands 是当前草稿前缀 + 拟新增命令
+POST /api/schema-workspace/candidate  {"commands":[ ... ]}
+// → {"ok":true,"data":{"resources":[...],"issues":[...],"netDiff":{...},"candidateHash":"..."}}
+
+// 保存：只写实际变化的 YAML
+POST /api/schema-workspace/save
+  {"schemaRevision":"<快照基线>","commands":[ ... ],"candidateHash":"<预检得到的 hash>"}
+// → 200 {"isNoOp":false,"written":["/…/config/types/ItemRarity.yaml"],"deleted":[],
+//          "notes":[...],"schemaRevision":"<新基线>","resources":[...]}
+// → 400 结构问题（issues 带 commands[i].payload.resource.… 定位）
+// → 409 conflict.kind ∈ schema-revision | candidate-hash | target | legacy-apply | busy
+
+// 模板（显式、按表）：新 Table 保存后才能生成
+POST /api/schema-workspace/gen-template  {"table":"Quest"}
+```
 
 ---
 
@@ -438,8 +492,8 @@ ct i18n compact [--lang L] [--table T] [--dry-run] [--root DIR]
 - **跨工作区共享同一个物理输出目录**不在互斥保证内；不同 `--root` 各自独立加锁。
 - `ct validate` / `ct status` 是**只读**的：它们会报告未完成或损坏的发布，但不会
   执行恢复、也不写任何文件。
-- Schema 编辑（Draft/Plan/Apply）有自己独立的 journal 与锁，与导出发布**不是**
-  同一个事务协议。
+- Schema 保存与导出/部署**共用同一把工作区锁与同一个可恢复发布器**：保存期间
+  导出会立即以「工作区正在保存、导出或部署」失败，反之亦然；两者不会各自发布半套文件。
 
 `ct status` 的真实输出（缺文件 / 数据变更 / 模板漂移 / 未完成发布，只在非空时打印；全新鲜时只有一行）：
 

@@ -1,8 +1,11 @@
-/* schema editor module: grouped resource list + fuzzy filter, field list,
-   draft commands -> change plan dialog -> prepare-apply -> apply.
-   Owns #page-schema; panes are collapsible docked columns (>=900, default
-   collapsed) or slide-out drawers (<900, one-cut). Draft state lives in the
-   shared pageState and is surfaced by the shell draft bar via ct:draft. */
+/* schema editor module: grouped resource list + fuzzy filter, field list.
+   Edits collect as a draft command log; the server-authoritative net
+   difference decides what the shell draft bar shows, and one save request
+   publishes only the YAML that actually changed (POST
+   /api/schema-workspace/save). Owns #page-schema; panes are collapsible docked
+   columns (>=900, default collapsed) or slide-out drawers (<900, one-cut).
+   Draft state lives in the shared pageState and is surfaced by the shell draft
+   bar via ct:draft. */
 import { api } from "../core/api.js";
 import { fuzzyScore } from "../core/fuzzy.js";
 import { loadDraft, saveDraft, clearDraft } from "../core/draft-store.js";
@@ -21,7 +24,9 @@ import {
   openFieldTypeEditor,
   openFieldCommentEditor,
   openAddField,
-  openChangePlan,
+  openCreateResource,
+  openDiscardDraft,
+  openDraftSummary,
   KIND_LABEL,
   resourceKind,
 } from "./schema-dialogs.js";
@@ -69,14 +74,29 @@ export async function mount(container) {
   state.indexesByTable = state.indexesByTable || {};
   state.commands = state.commands || [];
   state.cursor = state.commands.length;
-  state.applyResult = state.applyResult || null;
+  state.schemaRevision = state.schemaRevision || "";
+  state.netDiff = state.netDiff || null;
+  state.candidateHash = state.candidateHash || "";
+  state.issues = state.issues || [];
+  state.saving = false;
+  state.saveError = null;
+  state.busy = false;
+  state.notice = state.notice || "";
+  state.templateStatus = state.templateStatus || null;
+  state.statusError = state.statusError || "";
+  state.templateError = state.templateError || null;
+  state.templateTables = state.templateTables || [];
+  state.lastSavedTables = state.lastSavedTables || [];
 
   if (!state.resources) {
     try {
       const snapshot = await api("/api/schema-workspace");
       state.baseRevision = snapshot.revision;
+      state.schemaRevision = snapshot.schemaRevision || "";
       state.resources = snapshot.resources || [];
       state.reverseRefs = snapshot.reverseRefs || {};
+      state.netDiff = null;
+      state.error = null;
     } catch (e) {
       state.error = e.message;
       state.resources = [];
@@ -89,6 +109,8 @@ export async function mount(container) {
     } catch (e) { state.root = "/"; }
   }
   await restoreDraft(state);
+  // 恢复出来的草稿也要让服务器算一次净差异（状态条只显示净变化资源数）
+  if (state.commands.length) refreshCandidate();
 
   // Schema stays mounted while switching modules. Refresh the persisted
   // snapshot when returning so external YAML edits are visible immediately.
@@ -99,18 +121,28 @@ export async function mount(container) {
   async function refreshSchemaSnapshot() {
     try {
       const snapshot = await api("/api/schema-workspace");
-      if (state.commands.length && state.baseRevision && snapshot.revision !== state.baseRevision) {
-        // The persisted source changed after this draft was created; the old
-        // command log cannot safely be replayed against the new fields.
-        state.baseRevision = snapshot.revision;
-        state.resources = snapshot.resources || [];
-        await clearDraftState();
+      const changed = state.schemaRevision && snapshot.schemaRevision
+        && snapshot.schemaRevision !== state.schemaRevision;
+      if (changed && (state.commands.length || state.netDiff)) {
+        // 源 Schema 变了：不静默重放到新基线，也不自动清空草稿。
+        state.notice = "Schema 基线已变化，草稿需核对后重新加载";
+        state.netDiff = null;
+        state.candidateHash = "";
+        publishDraft();
+        renderList();
+        renderEditor();
+        renderInspector();
         return;
       }
       state.baseRevision = snapshot.revision;
+      state.schemaRevision = snapshot.schemaRevision || state.schemaRevision;
       state.resources = snapshot.resources || [];
       state.reverseRefs = snapshot.reverseRefs || {};
-      if (!state.commands.length) state.candidate = null;
+      state.error = null;
+      if (!state.commands.length) {
+        state.candidate = null;
+        state.netDiff = null;
+      }
       renderList();
       renderEditor();
       renderInspector();
@@ -120,24 +152,44 @@ export async function mount(container) {
   }
 
   async function restoreDraft(s) {
-    if (!s.baseRevision) return;
+    if (!s.schemaRevision) return;
+    let stored = null;
     try {
-      const stored = await loadDraft(s.root);
-      if (stored && stored.revision === s.baseRevision) {
-        s.commands = stored.commands;
-        s.cursor = stored.commands.length;
-      } else if (stored) {
-        await clearDraft(s.root); // source changed: discard stale draft
-      }
+      stored = await loadDraft(s.root);
     } catch (e) {
       s.persistWarning = e.message;
+      return;
     }
+    if (!stored || !stored.commands.length) return;
+    if (stored.legacy) {
+      // v1 never stored the cursor: keep the commands viewable (redoable) but do
+      // not resurrect undone steps or pretend they are pending saves.
+      s.commands = stored.commands;
+      s.cursor = 0;
+      s.notice = "旧格式草稿需核对：已保留命令，未计为待保存";
+      publishDraft();
+      return;
+    }
+    if (stored.schemaRevision && stored.schemaRevision !== s.schemaRevision) {
+      s.commands = stored.commands;
+      s.cursor = stored.cursor || 0;
+      s.schemaRevision = stored.schemaRevision;
+      s.notice = "草稿基于旧 Schema 基线，需核对后重新加载";
+      publishDraft();
+      return;
+    }
+    s.commands = stored.commands;
+    s.cursor = Math.min(stored.cursor ?? stored.commands.length, stored.commands.length);
   }
 
   async function persist(s) {
-    if (!s.baseRevision) return;
+    if (!s.schemaRevision) return;
     try {
-      await saveDraft(s.root, s.baseRevision, s.commands);
+      await saveDraft(s.root, {
+        schemaRevision: s.schemaRevision,
+        commands: s.commands,
+        cursor: s.cursor,
+      });
       s.persistWarning = null;
     } catch (e) {
       s.persistWarning = e.message;
@@ -148,12 +200,14 @@ export async function mount(container) {
   container.innerHTML = `
     <div class="ct-page-wrap ct-workbench-page">
       <div class="ct-panel-head ct-module-head">
-        <div><h1 class="ct-panel-title">Schema</h1><p>编辑资源结构，变更以草稿方式校验后原子应用。</p></div>
+        <div><h1 class="ct-panel-title">Schema</h1><p id="schema-subtitle">编辑资源结构，保存时只写实际变化的 YAML。</p></div>
         <div class="ct-module-actions">
           <button class="ct-btn ct-btn-sm ct-btn-ghost ct-m-only" id="inspector-open-m">属性 ›</button>
+          <button class="ct-btn ct-btn-sm ct-btn-primary" id="head-create-resource" title="新增 Table / Record / Enum">新增 Schema</button>
           <button class="ct-btn ct-btn-sm ct-btn-danger ct-d-only" id="head-delete-resource" title="删除资源">删除资源</button>
         </div>
       </div>
+      <div class="ct-draft-banner" id="draft-banner" hidden></div>
       <div class="ct-workspace-layout" data-resource-open="${state.resourceOpen}" data-inspector-open="${state.activeTool === "inspector"}">
       <aside class="ct-resource-pane" aria-label="Schema 资源">
         <div class="ct-resource-pane-inner">
@@ -241,15 +295,104 @@ export async function mount(container) {
     pushCommand,
     effectiveCommands,
     pendingCount: () => state.cursor,
+    changedResources: () => (state.netDiff ? state.netDiff.changedResources : 0),
+    candidatePool,
+    precheck,
+    startCreate,
     clearDraftState,
-    applyCommands,
+    saveChanges,
     refreshAll: () => { renderList(); renderEditor(); renderInspector(); },
   };
+
+  function candidatePool() {
+    return state.candidate || state.resources;
+  }
+
+  function candidateReverseRefs(pool) {
+    /** 反向引用从**当前候选**派生：新建资源的引用立刻可见，撤销后立刻消失。 */
+    const source = pool || candidatePool();
+    const byName = new Map(
+      source.map((resource) => [resource.name || resource.table || resource.resourceId, resource])
+    );
+    const refs = {};
+    const add = (targetId, owner, field, kind) => {
+      refs[targetId] = (refs[targetId] || []).concat([{ owner, field, kind }]);
+    };
+    source.forEach((resource) => {
+      const ownerName = resource.name || resource.table || resource.resourceId;
+      const ownerId = resource.resourceId || ownerName;
+      (resource.fields || []).forEach((field) => {
+        if (field.ref) {
+          const target = String(field.ref).split(".")[0];
+          add(`table:${target}`, ownerId, `${ownerName}/${field.name}`, "ref");
+          return;
+        }
+        const raw = String(field.type || "").trim();
+        const match = raw.match(/^vector\s*<\s*([^<>]+?)\s*>$/) || raw.match(/^([^<>]+)$/);
+        const named = match ? match[1].trim() : "";
+        const target = byName.get(named);
+        if (!target || (target.kind !== "record" && target.kind !== "enum")) return;
+        add(`${target.kind}:${named}`, ownerId, `${ownerName}/${field.name}`, "named");
+      });
+    });
+    return refs;
+  }
+
+  function ensureSelection() {
+    /** 撤销/删除后选择失效：退回最近仍存在的资源，否则返回空状态。 */
+    if (selectedResource()) return;
+    const pool = candidatePool();
+    const fallback = (state.recentResources || []).find((name) =>
+      pool.some((resource) => (resource.name || resource.table || resource.resourceId) === name));
+    state.selection = fallback || null;
+  }
+
+  function selectCreated(name, kind) {
+    /** 新建后选中它：过滤隐藏则清空过滤、展开分组，但不强行打开折叠的 pane。 */
+    const filter = container.querySelector("#resource-filter");
+    if (state.query && fuzzyScore(name, state.query) === Infinity) {
+      state.query = "";
+      if (filter) filter.value = "";
+    }
+    state.collapsedGroups[kind] = false;
+    writeJsonPreference("ct-resource-groups", state.collapsedGroups);
+    state.selection = name;
+    state.recentResources = [name, ...state.recentResources.filter((item) => item !== name)].slice(0, 12);
+    writeJsonPreference("ct-recent-resources", state.recentResources);
+    renderList();
+    renderEditor();
+    renderInspector();
+    updateHeadButtons();
+    requestAnimationFrame(() => editorTitle.focus({ preventScroll: true }));
+  }
+
+  async function precheck(command) {
+    /** 服务端预检：只返回结论，绝不回写草稿状态（旧响应不回写）。 */
+    const version = state.draftVersion || 0;
+    const commands = effectiveCommands().concat([command]);
+    const data = await api("/api/schema-workspace/candidate", {
+      method: "POST", body: JSON.stringify({ commands }),
+    });
+    if (version !== (state.draftVersion || 0)) return { stale: true, issues: [] };
+    return {
+      stale: false,
+      issues: (data.issues || []).filter((issue) => issue.kind !== "warning"),
+      resources: data.resources || [],
+    };
+  }
+
+  function startCreate(kind) {
+    if (state.saving) return;
+    openCreateResource(ctx, {
+      kind: kind || "",
+      onCreated: (name, createdKind) => selectCreated(name, createdKind),
+    });
+  }
 
   function resourceRows() {
     const q = state.query.trim();
     const grouped = { table: [], record: [], enum: [] };
-    state.resources.forEach((resource) => {
+    candidatePool().forEach((resource) => {
       const name = resource.name || resource.table || resource.resourceId || "";
       const kind = resourceKind(resource);
       const score = fuzzyScore(name, q);
@@ -269,7 +412,7 @@ export async function mount(container) {
   function renderList() {
     const query = state.query.trim();
     const groups = GROUPS.map((kind) => {
-      const matches = state.resources
+      const matches = candidatePool()
         .filter((resource) => resourceKind(resource) === kind)
         .map((resource) => ({
           resource,
@@ -280,9 +423,24 @@ export async function mount(container) {
       return { kind, matches };
     }).filter(({ matches }) => !query || matches.length);
     const matchCount = groups.reduce((count, group) => count + group.matches.length, 0);
-    const allCount = state.resources.length;
+    const allCount = candidatePool().length;
     const summary = container.querySelector("#resource-summary");
     if (summary) summary.textContent = `${matchCount} 匹配 · ${allCount} 总计 · 状态已保存`;
+    if (!allCount && state.error) {
+      // 加载失败 ≠ 空工作区：给出原因，而不是让人在坏工作区里新建资源
+      list.innerHTML = '<div class="ct-empty"><div class="ct-empty-title">Schema 未加载</div>'
+        + `<div class="ct-empty-sub" id="resource-load-error">${escapeHtml(state.error)}</div>`
+        + '<div class="ct-empty-sub">修好 YAML 后切回本模块或刷新页面重试。</div></div>';
+      return;
+    }
+    if (!allCount) {
+      list.innerHTML = '<div class="ct-empty"><div class="ct-empty-title">还没有任何 Schema</div>'
+        + '<div class="ct-empty-sub">从这里新增 Table / Record / Enum，无需先手写 YAML。</div>'
+        + '<button class="ct-btn ct-btn-primary ct-btn-sm" id="empty-create-resource">新增 Schema</button></div>';
+      const button = list.querySelector("#empty-create-resource");
+      if (button) button.addEventListener("click", () => startCreate(""));
+      return;
+    }
     if (!matchCount) {
       list.innerHTML = '<div class="ct-empty"><div class="ct-empty-title">没有匹配的资源</div><div class="ct-empty-sub">换一个名称或清空搜索。</div></div>';
       return;
@@ -311,13 +469,19 @@ export async function mount(container) {
       const rows = `<div class="ct-vlist-spacer" style="height:${windowed.before}px"></div><div class="ct-vlist-window">${windowRows}</div><div class="ct-vlist-spacer" style="height:${windowed.after}px"></div>`;
       resourcePosition += matches.length - windowed.start - windowed.rows.length;
       return `<section class="ct-resource-group${expanded ? " is-open" : ""}" data-open="${expanded}">
-        <button class="ct-group-toggle" data-group="${kind}" data-group-toggle="${kind}" aria-expanded="${expanded}"><span><span class="ct-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m9 6 6 6-6 6"></path></svg></span>${GROUP_TITLES[kind]}</span><span class="ct-group-count">${matches.length}</span></button>
+        <div class="ct-group-head"><button class="ct-group-toggle" data-group="${kind}" data-group-toggle="${kind}" aria-expanded="${expanded}"><span><span class="ct-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m9 6 6 6-6 6"></path></svg></span>${GROUP_TITLES[kind]}</span><span class="ct-group-count">${matches.length}</span></button><button class="ct-group-create" data-create-kind="${kind}" title="新增 ${KIND_LABEL[kind]}" aria-label="新增 ${KIND_LABEL[kind]}">＋</button></div>
         <div class="ct-resource-group-body"><div class="ct-resource-group-rows">${rows}</div></div>
       </section>`;
     }).join("");
     list.querySelectorAll(".ct-resource-row").forEach((row) => {
       row.addEventListener("click", () => {
         openResource(row.dataset.name);
+      });
+    });
+    list.querySelectorAll("[data-create-kind]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        startCreate(button.dataset.createKind);
       });
     });
     list.querySelectorAll(".ct-group-toggle").forEach((toggle) => {
@@ -453,6 +617,7 @@ export async function mount(container) {
   }
 
   function pushCommand(command) {
+    if (state.saving) return;
     state.commands = state.commands.slice(0, state.cursor);
     state.commands.push(command);
     state.cursor = state.commands.length;
@@ -460,18 +625,35 @@ export async function mount(container) {
   }
 
   function undo() {
+    if (state.saving) return;
     if (state.cursor > 0) { state.cursor -= 1; refreshDraft(); }
   }
 
   function redo() {
+    if (state.saving) return;
     if (state.cursor < state.commands.length) { state.cursor += 1; refreshDraft(); }
   }
 
+  function netChangedResources() {
+    if (state.netDiff) return state.netDiff.changedResources || 0;
+    return state.commands.length ? null : 0;
+  }
+
   function publishDraft() {
+    const changed = netChangedResources();
     window.dispatchEvent(new CustomEvent("ct:draft", { detail: {
-      pending: state.cursor,
+      changedResources: changed === null ? 0 : changed,
+      computing: Boolean(state.candidateComputing),
+      canUndo: state.cursor > 0,
       canRedo: state.commands.length > state.cursor,
+      canDiscard: Boolean(state.commands.length),
       warn: Boolean(state.persistWarning),
+      busy: Boolean(state.busy),
+      saving: Boolean(state.saving),
+      blocked: state.issues.length > 0,
+      notice: state.notice || "",
+      error: state.saveError ? state.saveError.message : "",
+      summary: state.netDiff ? state.netDiff.resources : [],
     } }));
   }
 
@@ -485,24 +667,51 @@ export async function mount(container) {
   }
 
   async function refreshCandidate() {
+    state.candidateComputing = true;
+    state.netDiff = null;
+    state.candidateHash = "";
+    publishDraft();
     const version = state.draftVersion || 0;
     try {
       const data = await api("/api/schema-workspace/candidate", {
-        method: "POST", body: JSON.stringify({ commands: effectiveCommands() }),
+        method: "POST", body: JSON.stringify({ commands: effectiveCommands(), schemaRevision: state.schemaRevision }),
       });
-      if (version !== (state.draftVersion || 0)) return; // stale candidate
+      if (version !== (state.draftVersion || 0) || state.saving) return; // stale response
       state.candidate = data.resources || state.resources;
-      renderList();
-      renderEditor();
-      renderInspector();
-    } catch (e) { /* keep base view */ }
+      state.netDiff = data.netDiff || null;
+      state.candidateHash = data.candidateHash || "";
+      state.issues = (data.issues || []).filter((issue) => issue.kind !== "warning");
+      state.reverseRefs = candidateReverseRefs(state.candidate);
+      ensureSelection();
+    } catch (e) {
+      if (version !== (state.draftVersion || 0) || state.saving) return;
+      state.netDiff = null;
+      state.candidateHash = "";
+      state.issues = [];
+      state.saveError = e;
+      state.notice = e.message;
+    }
+    state.candidateComputing = false;
+    renderList();
+    renderEditor();
+    renderInspector();
+    publishDraft();
   }
 
   async function clearDraftState() {
+    if (state.saving) return;
+    state.saveError = null;
+    state.templateError = null;
+    state.notice = "";
     state.commands = [];
     state.cursor = 0;
     state.candidate = null;
+    state.netDiff = null;
+    state.candidateHash = "";
+    state.issues = [];
     state.selectedField = null;
+    state.reverseRefs = candidateReverseRefs(state.resources);
+    ensureSelection();
     if (state.root) await clearDraft(state.root).catch(() => {});
     renderList();
     renderEditor();
@@ -510,37 +719,197 @@ export async function mount(container) {
     publishDraft();
   }
 
-  async function applyCommands(commands) {
-    const prepared = await api("/api/schema-workspace/prepare-apply", {
-      method: "POST", body: JSON.stringify({ commands }),
-    });
-    const result = await api("/api/schema-workspace/apply", {
-      method: "POST",
-      body: JSON.stringify({ planId: prepared.planId, baseRevision: prepared.baseRevision, candidateHash: prepared.candidateHash }),
-    });
-    state.applyResult = result;
-    state.commands = [];
-    state.cursor = 0;
-    state.candidate = null;
-    if (state.root) await clearDraft(state.root).catch(() => {});
-    try {
-      const snapshot = await api("/api/schema-workspace");
-      state.baseRevision = snapshot.revision;
-      state.resources = snapshot.resources || [];
-      state.reverseRefs = snapshot.reverseRefs || {};
-    } catch (e) { /* keep stale resources */ }
-    renderList();
-    renderEditor();
-    renderInspector();
+  async function saveChanges() {
+    if (state.saving || !state.netDiff || !state.candidateHash) return null;
+    if (state.issues.length) {
+      state.saveError = new Error(
+        `存在结构阻塞项，共 ${state.issues.length} 项，请先修复：`
+        + state.issues.map((i) => (i.location ? `${i.message}（${i.location}）` : i.message)).join("；")
+      );
+      publishDraft();
+      return null;
+    }
+    const commands = effectiveCommands();
+    const changed = state.netDiff ? state.netDiff.changedResources : (commands.length ? 1 : 0);
+    if (!commands.length || changed === 0) {
+      state.notice = "无未保存修改";
+      state.saveError = null;
+      publishDraft();
+      return null;
+    }
+
+    state.saving = true;
+    state.saveError = null;
+    state.busy = false;
     publishDraft();
-    const names = [...new Set(commands.map((c) => {
-      const raw = c.payload?.owner || c.payload?.name || "";
-      return raw.split(":").pop();
-    }).filter(Boolean))];
-    return { names: names.join("、") };
+    try {
+      const result = await api("/api/schema-workspace/save", {
+        method: "POST",
+        body: JSON.stringify({
+          schemaRevision: state.schemaRevision,
+          commands,
+          candidateHash: state.candidateHash,
+        }),
+      });
+      state.commands = [];
+      state.cursor = 0;
+      state.candidate = null;
+      state.netDiff = null;
+      state.candidateHash = "";
+      state.issues = [];
+      state.notice = "";
+      state.schemaRevision = result.schemaRevision || state.schemaRevision;
+      state.baseRevision = result.revision || state.baseRevision;
+      state.resources = result.resources || state.resources;
+      state.reverseRefs = result.reverseRefs || state.reverseRefs;
+      if (state.root) await clearDraft(state.root).catch(() => {});
+      state.lastSavedTables = (result.written || []).map(
+        (path) => String(path).replace(/\.[^.]+$/, "").split("/").pop()
+      );
+      await refreshTemplateStatus();
+      renderList();
+      renderEditor();
+      renderInspector();
+      const note = templateNote();
+      window.dispatchEvent(new CustomEvent("ct:draft", { detail: {
+        successText: result.isNoOp
+          ? "无未保存修改"
+          : `已保存 ${(result.written || []).length} 个 YAML` + (note ? ` · ${note}` : ""),
+      } }));
+      return result;
+    } catch (e) {
+      // 保存失败：草稿、光标和净差异原样保留，错误持续可见
+      const conflict = e.payload && e.payload.conflict;
+      const kind = conflict && conflict.kind;
+      if (kind === "schema-revision") {
+        state.notice = "Schema 基线已变化，草稿保留；请重新加载后核对";
+      } else if (kind === "legacy-apply") {
+        state.notice = "旧 Apply 事务材料无法可靠还原，已阻止保存";
+      } else if (kind === "legacy-apply-recovered") {
+        state.notice = "旧 Apply 事务已恢复，请重新加载后核对";
+      } else if (kind === "candidate-hash") {
+        state.notice = "候选已过期，请重新编辑后再保存";
+      } else if (e.payload && e.payload.busy) {
+        state.busy = true;
+        state.notice = "工作区正在导出或部署，稍后重试";
+      }
+      state.saveError = e;
+      publishDraft();
+      return null;
+    } finally {
+      state.saving = false;
+      publishDraft();
+    }
+  }
+
+  async function refreshTemplateStatus() {
+    // 保存已经成功；状态查询失败只说明状态暂不可用，绝不反过来标记保存失败
+    try {
+      const ws = await api("/api/workspace");
+      state.templateStatus = ws.status || {};
+      state.statusError = "";
+    } catch (e) {
+      state.templateStatus = null;
+      state.statusError = "模板状态暂不可用";
+    }
+    state.templateTables = affectedTables();
+  }
+
+  function affectedTables() {
+    if (!state.templateStatus) return [];
+    const saved = new Set(state.lastSavedTables || []);
+    const tables = [].concat(
+      state.templateStatus.missing || [],
+      state.templateStatus.drifted || []
+    );
+    return [...new Set(tables)].filter((table) => saved.has(table));
+  }
+
+  async function regenerateTemplate(table) {
+    // 显式入口：只在用户点击时重建模板，保存本身绝不触发
+    try {
+      await api("/api/schema-workspace/gen-template", {
+        method: "POST", body: JSON.stringify({ table }),
+      });
+      state.templateError = null;
+      state.notice = `模板已更新：${table}`;
+    } catch (e) {
+      // 模板失败独立展示：不能反过来把已成功的 YAML 保存标成失败
+      state.templateError = e;
+    }
+    await refreshTemplateStatus();
+    renderEditor();
+    publishDraft();
+  }
+
+  function unsavedTableNotice() {
+    /** 新 Table 必须先保存才能生成模板：没有落盘就没有可生成的 schema。 */
+    const selected = selectedResource();
+    if (!selected || resourceKind(selected) !== "table") return "";
+    const persisted = (state.resources || []).some(
+      (resource) => resource.resourceId === selected.resourceId);
+    if (persisted) return "";
+    return `${selected.name || selected.table} 尚未保存：保存后才能生成模板`;
+  }
+
+  function templateNote() {
+    if (state.statusError) return state.statusError;
+    const affected = affectedTables();
+    return affected.length ? `模板待更新：${affected.join("、")}` : "";
+  }
+
+  function discardDraft() {
+    if (state.saving || !state.commands.length) return;
+    openDiscardDraft(ctx, {
+      onDiscard: () => {
+        state.saveError = null;
+        state.notice = "";
+      },
+    });
+  }
+
+  function renderBanner() {
+    const banner = container.querySelector("#draft-banner");
+    if (!banner) return;
+    const messages = [];
+    if (state.error) messages.push(`Schema 快照加载失败：${state.error}`);
+    if (state.saveError) messages.push(state.saveError.message);
+    if (state.notice) messages.push(state.notice);
+    state.issues.forEach((issue) =>
+      messages.push(issue.location ? `${issue.message}（${issue.location}）` : issue.message));
+    const template = state.templateTables || [];
+    const templateBlock = template.length
+      ? `<div class="ct-error-inline" id="template-note">模板待更新：${template.map(escapeHtml).join("、")}
+           <button class="ct-btn ct-btn-sm ct-btn-ghost" id="banner-gen-template" data-table="${escapeHtml(template[0])}">更新模板</button></div>`
+      : "";
+    const templateFailure = state.templateError
+      ? `<div class="ct-error-inline" id="template-error">模板生成失败：${escapeHtml(state.templateError.message || "")}
+           <button class="ct-btn ct-btn-sm ct-btn-ghost" id="banner-retry-template">重试</button></div>`
+      : "";
+    const unsaved = unsavedTableNotice();
+    const unsavedBlock = unsaved
+      ? `<div class="ct-error-inline" id="template-unsaved">${escapeHtml(unsaved)}</div>`
+      : "";
+    banner.hidden = !messages.length && !template.length && !templateFailure && !unsavedBlock;
+    banner.innerHTML = (messages.length
+      ? `<div class="ct-error-inline">${messages.map((m) => escapeHtml(m)).join("<br>")}</div>`
+      : "") + templateBlock + templateFailure + unsavedBlock;
+    const retry = banner.querySelector("#banner-retry-template");
+    if (retry) {
+      retry.addEventListener("click", () => {
+        const table = (state.templateTables || [])[0]
+          || (state.lastSavedTables || [])[0];
+        if (table) regenerateTemplate(table);
+      });
+    }
+    const button = banner.querySelector("#banner-gen-template");
+    if (button) {
+      button.addEventListener("click", () => regenerateTemplate(button.dataset.table));
+    }
   }
 
   function renderEditor() {
+    renderBanner();
     const resource = selectedResource();
     const headDelete = container.querySelector("#head-delete-resource");
     if (headDelete) headDelete.disabled = !resource;
@@ -753,7 +1122,7 @@ export async function mount(container) {
     if (!field) {
       inspector.innerHTML = '<div class="ct-field"><label class="ct-field-label">选择</label><div>' +
         escapeHtml(state.selection || "—") + "</div></div>" +
-        (state.applyResult ? '<div class="ct-field"><label class="ct-field-label">上次结果</label><div>' + escapeHtml(state.applyResult.message || "成功") + "</div></div>" : "");
+        (state.notice ? '<div class="ct-field"><label class="ct-field-label">草稿状态</label><div>' + escapeHtml(state.notice) + "</div></div>" : "");
       return;
     }
     const rawType = field.type || field.type_expr || "";
@@ -847,7 +1216,7 @@ export async function mount(container) {
     const resultList = quickOpenHandle.el.querySelector("[data-qo-list]");
     if (!resultList) return;
     const recentOrder = new Map(state.recentResources.map((name, index) => [name, index]));
-    let candidates = state.resources
+    let candidates = candidatePool()
       .map((r) => {
         const name = r.name || r.table || r.resourceId || "";
         const score = fuzzyScore(name, query);
@@ -863,7 +1232,7 @@ export async function mount(container) {
     // to another workspace, an empty query must still show this workspace's
     // resources instead of producing a blank palette.
     if (!query && recentOrder.size && !candidates.length) {
-      candidates = state.resources
+      candidates = candidatePool()
         .map((r) => {
           const name = r.name || r.table || r.resourceId || "";
           return { resource: r, name, score: 0 };
@@ -939,6 +1308,7 @@ export async function mount(container) {
   sideTab.addEventListener("click", () => setInspectorOpen(state.activeTool !== "inspector"));
   container.querySelector("#inspector-back").addEventListener("click", () => setInspectorOpen(false));
   container.querySelector("#inspector-open-m").addEventListener("click", () => setInspectorOpen(true));
+  container.querySelector("#head-create-resource").addEventListener("click", () => startCreate(""));
   container.querySelector("#head-delete-resource").addEventListener("click", () => {
     const resource = selectedResource();
     if (resource) confirmDeleteResource(ctx, resource);
@@ -948,11 +1318,13 @@ export async function mount(container) {
   /* module-level events from shell/registry */
   window.addEventListener("ct:schema-quick-open-open", () => openQuickOpen());
   window.addEventListener("ct:schema-resource-toggle", () => setResourceOpen(!state.resourceOpen));
-  window.addEventListener("ct:draft-review", () => openChangePlan(ctx));
   window.addEventListener("ct:draft-action", (e) => {
     const type = e.detail && e.detail.type;
     if (type === "undo") undo();
     else if (type === "redo") redo();
+    else if (type === "save") saveChanges();
+    else if (type === "discard") discardDraft();
+    else if (type === "summary") openDraftSummary(ctx);
   });
 
   /* resize: crossing breakpoints collapses, never re-opens (只收不展) */

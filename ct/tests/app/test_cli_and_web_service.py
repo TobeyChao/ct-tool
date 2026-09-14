@@ -31,17 +31,10 @@ def _project(tmp_path: Path, tables: tuple[str, ...] = ("Item",)) -> Path:
             for name in tables
         ],
     )
-    excel = root / "excel"
-    excel.mkdir(parents=True, exist_ok=True)
+    from _helpers import make_workbook
+
     for name in tables:
-        wb = Workbook()
-        ws = wb.active
-        ws.append(["id", "name"])
-        ws.append(["主键", "名称"])
-        ws.append([1, "剑"])
-        buffer = io.BytesIO()
-        wb.save(buffer)
-        (excel / f"{name}.xlsx").write_bytes(buffer.getvalue())
+        make_workbook(root, name, [[1, "剑"]])
     return root
 
 
@@ -102,16 +95,18 @@ def test_cli_export_busy_exits_nonzero(tmp_path: Path) -> None:
         result = CliRunner().invoke(app, ["export", "--root", str(root)])
     output = _combined(result)
     assert result.exit_code == 1
-    assert "工作区正在导出/部署" in output
+    assert "工作区正在保存、导出或部署" in output
 
 
 def test_cli_export_unknown_table_exits_nonzero(tmp_path: Path) -> None:
     root = _project(tmp_path)
+    ledger = root / "cache" / "state.json"
+    ledger_before = ledger.read_bytes() if ledger.exists() else None
     result = CliRunner().invoke(app, ["export", "--table", "Nope", "--root", str(root)])
     output = _combined(result)
     assert result.exit_code == 1
     assert "表 'Nope' 不存在" in output
-    assert not (root / "cache" / "state.json").exists()
+    assert (ledger.read_bytes() if ledger.exists() else None) == ledger_before
 
 
 def test_cli_export_unknown_language_exits_nonzero(tmp_path: Path) -> None:
@@ -215,6 +210,8 @@ def test_web_export_task_reports_validation_failure(tmp_path: Path) -> None:
 
     root = _project(tmp_path)
     (root / "excel" / "Item.xlsx").unlink()
+    ledger = root / "cache" / "state.json"
+    ledger_before = ledger.read_bytes() if ledger.exists() else None
 
     canonical_export_task.status = "idle"
     try:
@@ -225,4 +222,5 @@ def test_web_export_task_reports_validation_failure(tmp_path: Path) -> None:
         canonical_export_task.status = "idle"
 
     assert state["status"] == "error", state
-    assert not (root / "cache" / "state.json").exists()
+    # 失败任务不得推进成功账本（模板生成留下的内容保持原样）
+    assert (ledger.read_bytes() if ledger.exists() else None) == ledger_before

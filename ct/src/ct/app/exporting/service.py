@@ -16,9 +16,8 @@ flag、不调用 typer、不打印文本——呈现交给显式通知回调与 
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 from pathlib import Path
-from typing import Callable, Iterator
+from typing import Callable
 
 from ct.app.exporting.models import (
     CompletionPolicy,
@@ -26,22 +25,9 @@ from ct.app.exporting.models import (
     ExportResult,
 )
 from ct.contracts import CancelToken, NullReporter, ProgressReporter
-from ct.storage.publication import FilePublisher
-from ct.storage.workspace_lock import WorkspaceLock
+from ct.storage.workspace_transaction import workspace_transaction
 
-
-@contextmanager
-def workspace_transaction(root: Path, reporter: ProgressReporter) -> Iterator[None]:
-    """持锁 → 先恢复未完成的本地发布 → 交出控制权（退出时释放锁）。
-
-    恢复先于配置加载：``global.yaml`` 即使被改到无法解析，也必须先把现场恢复掉。
-    同一个用例只调用一次，不会递归抢锁。
-    """
-    with WorkspaceLock(root):
-        recovery = FilePublisher(root).recover()
-        if recovery:
-            reporter.log(f"[发布恢复] {recovery}")
-        yield
+__all__ = ["run_export", "run_deploy", "workspace_transaction"]
 
 
 def run_export(

@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import threading
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -19,6 +20,9 @@ from ct.contracts import CancelledError, CancelToken, ProgressReporter
 from ct.config import load_config
 from ct.web.history import append_history, make_entry
 from ct.web.logs import log_buffer
+
+#: 失败任务在右下角任务栏停留的时长：超时后不再投影（日志页保留完整记录）。
+ERROR_HOLD_SECONDS = 15.0
 
 
 @dataclass
@@ -40,6 +44,8 @@ class _BaseTask:
     _token: CancelToken = field(default_factory=CancelToken, repr=False)
     _thread: threading.Thread | None = field(default=None, repr=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
+    _started_at: float = field(default=0.0, repr=False)
+    _settled_at: float | None = field(default=None, repr=False)
 
     @property
     def export_steps(self) -> list[str]:
@@ -63,6 +69,8 @@ class _BaseTask:
             self.errors = []
             self.cancelled = False
             self._token = CancelToken()
+            self._started_at = time.time()
+            self._settled_at = None
             self._thread = threading.Thread(
                 target=self._run, args=(root, forced), daemon=True
             )
@@ -90,9 +98,20 @@ class _BaseTask:
             }
 
     def global_task(self, root: Path) -> dict | None:
-        """Return the persistent shell projection for the active workspace."""
+        """右下角任务栏投影：running 持续投影，error 只停留 ``ERROR_HOLD_SECONDS``。
+
+        失败卡片到期后从任务栏消失（日志与导出页保留完整状态）；
+        ``started_at`` 让前端按运行次序区分关闭的是哪一次失败，
+        新一次导出的错误不会被上一次的关闭记录误伤。
+        """
         with self._lock:
             if self.root != root.resolve() or self.status not in {"running", "error"}:
+                return None
+            if (
+                self.status == "error"
+                and self._settled_at is not None
+                and time.monotonic() - self._settled_at > ERROR_HOLD_SECONDS
+            ):
                 return None
             message = self.message
             if self.step_name:
@@ -104,6 +123,7 @@ class _BaseTask:
                 "status": self.status,
                 "message": message,
                 "target": "/logs",
+                "started_at": round(self._started_at, 3),
             }
 
     def _run(self, root: Path, forced: bool) -> None:
@@ -114,6 +134,7 @@ class _BaseTask:
             self.status = "cancelled"
             self.cancelled = True
             self.message = "导出已取消（未提交新缓存）"
+            self._settled_at = time.monotonic()
         log_buffer.add("导出", "WARN", "导出已取消")
 
     def _finish_ok(
@@ -133,6 +154,7 @@ class _BaseTask:
             self.message = f"导出完成：{tables} 张表 · {round(elapsed, 2)}s"
             self.tables_exported = tables
             self.elapsed = elapsed
+            self._settled_at = time.monotonic()
         log_buffer.add(
             "导出", "INFO", f"导出完成：{tables} 张表（{round(elapsed, 2)}s）"
         )
@@ -143,6 +165,7 @@ class _BaseTask:
             self.message = message
             if errors:
                 self.errors = list(errors)
+            self._settled_at = time.monotonic()
 
     def _set_step(self, step: str) -> None:
         with self._lock:

@@ -43,14 +43,9 @@ def _project(tmp_path: Path) -> Path:
             }
         ],
     )
-    excel = root / "excel"
-    excel.mkdir(parents=True, exist_ok=True)
-    wb = Workbook()
-    ws = wb.active
-    ws.append(["id"])       # 注释行
-    ws.append(["主键"])     # 字段行
-    ws.append([1])
-    wb.save(str(excel / "Item.xlsx"))
+    from _helpers import make_workbook
+
+    make_workbook(root, "Item", [[1]])
     return root
 
 
@@ -83,11 +78,14 @@ def test_compat_entry_exports_only(tmp_path: Path, monkeypatch) -> None:
         "ct.export.deploy.deploy", lambda *args, **kwargs: calls.append("deploy") or 0
     )
 
+    ledger = root / "cache" / "state.json"
+    ledger_before = ledger.read_bytes() if ledger.exists() else None
     result = run_canonical_export(root)
 
     assert calls == [], "兼容入口不得部署"
     assert set(result) == LEGACY_KEYS
-    assert not (root / "cache" / "state.json").exists(), "兼容入口不得提交账本"
+    # 兼容入口不得推进成功账本（模板生成留下的账本内容必须原样）
+    assert (ledger.read_bytes() if ledger.exists() else None) == ledger_before
     assert (root / "output" / "json" / "Item_zh.json").is_file()
 
 

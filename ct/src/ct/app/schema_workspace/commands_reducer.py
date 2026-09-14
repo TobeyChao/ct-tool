@@ -12,6 +12,7 @@ from typing import Any
 
 from ct.schema.commands import rename_field, rename_resource
 from ct.schema.indexes import QueryIndex, parse_indexes
+from ct.schema.resource_repository import ResourceDecodeError, decode_resource_payload
 from ct.schema.resources import (
     EnumItem,
     EnumResource,
@@ -53,11 +54,35 @@ def _field_index(fields: tuple, name: str) -> int:
     raise ValueError(f"字段 {name} 不存在")
 
 
+def _add_resource(command: Command) -> SchemaResource:
+    """把 add_resource 命令解成领域模型。
+
+    公开协议是结构化 JSON（``{"kind":..., "resource":{...}}``）；Python 内部
+    仍可直接传模型对象，但只认这一种形状，不接受含糊的两套输入。
+    """
+    if "resource" not in command.payload:
+        raise ResourceDecodeError("add_resource 缺少 resource", location="resource")
+    resource = command.payload["resource"]
+    if isinstance(resource, (TableResource, RecordResource, EnumResource)):
+        return resource
+    kind = command.payload.get("kind")
+    if kind is None and isinstance(resource, dict):
+        kind = "table" if "table" in resource else resource.get("kind")
+    return decode_resource_payload(kind, resource)
+
+
 def apply_command(state: DraftState, command: Command) -> DraftState:
     resources, indexes = state
     if command.type == "add_resource":
-        resource = command.payload["resource"]
-        return (resources + (resource,), indexes)
+        resource = _add_resource(command)
+        if any(existing.resource_id == resource.resource_id for existing in resources):
+            raise ValueError(f"资源 {resource.resource_id} 已存在")
+        new_indexes = dict(indexes)
+        if isinstance(resource, TableResource):
+            # Table 的索引声明随资源一起创建：草稿索引状态必须同步初始化，
+            # 否则 merge_indexes 会把它抹成 ()（等价于静默删掉索引）
+            new_indexes[resource.resource_id] = tuple(resource.indexes)
+        return (resources + (resource,), new_indexes)
     if command.type == "delete_resource":
         name = command.payload["name"]
         index = _resource_index(resources, name)

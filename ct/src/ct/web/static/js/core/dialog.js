@@ -1,5 +1,5 @@
 /* core/dialog: shared modal stack — the single dialog contract for all modules.
-   Variants: sm / std / plan / palette / wide (CSS width classes).
+   Variants: sm / std / palette / wide (CSS width classes).
    Stack semantics: Escape closes the topmost layer (or lets it consume Esc,
    e.g. palette clears its query first), focus is trapped per dialog skipping
    disabled controls, closing returns focus to the opener, the app shell gets
@@ -80,7 +80,7 @@ export function openDialog(options) {
     titleExtra = "",
     body = "",
     footer = "",
-    variant = "std", // sm | std | plan | palette | wide
+    variant = "std", // sm | std | palette | wide
     initialFocusSelector = "", // defaults to first focusable in the dialog
     onEsc = null, // (handle) => true consumes Escape without closing
     onClose = null, // (handle) => void, also fired for programmatic close

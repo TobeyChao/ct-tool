@@ -37,14 +37,9 @@ def _item_project(root: Path) -> Path:
 
 
 def _write_excel(root: Path, rows: list[list]) -> None:
-    (root / "excel").mkdir(parents=True, exist_ok=True)
-    wb = Workbook()
-    ws = wb.active
-    ws.append(["Id", "Name"])
-    ws.append(["主键", "名称"])
-    for row in rows:
-        ws.append(row)
-    wb.save(str(root / "excel" / "Item.xlsx"))
+    from _helpers import make_workbook
+
+    make_workbook(root, "Item", rows)
 
 
 def test_export_failure_preserves_previous_artifacts(tmp_path: Path) -> None:
@@ -95,12 +90,7 @@ def test_export_empty_table(tmp_path: Path) -> None:
             }
         ],
     )
-    (root / "excel").mkdir(parents=True, exist_ok=True)
-    wb = Workbook()
-    ws = wb.active
-    ws.append(["Id", "Name"])
-    ws.append(["主键", "名称"])
-    wb.save(str(root / "excel" / "Item.xlsx"))  # 只有表头
+    _write_excel(root, [])  # 只有表头
 
     run_canonical_export(root)
 
@@ -119,14 +109,7 @@ def test_export_uniform_double_with_i18n_and_reuse(tmp_path: Path) -> None:
             {'name': 'Name', 'type': 'string', 'i18n': True},
         ],
     }])
-    (root / 'excel').mkdir()
-    wb = Workbook()
-    ws = wb.active
-    ws.append(['主键', '数值', '名称'])
-    ws.append(['Id', 'Value', 'Name'])
-    for i in range(1, 20):
-        ws.append([i, i + .125, '字' * i])
-    wb.save(root / 'excel' / 'Item.xlsx')
+    _write_excel(root, [[i, i + .125, '字' * i] for i in range(1, 20)])
     run_canonical_export(root)
     outputs = {p: p.read_bytes() for p in (root / 'output').rglob('*') if p.is_file()}
     assert (root / 'output' / 'binary' / 'data_zh.bin') in outputs

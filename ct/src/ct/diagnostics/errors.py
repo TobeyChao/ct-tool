@@ -83,8 +83,14 @@ class WorkspaceIssue(Issue):
     """项目级问题：缺文件、schema 加载错误等。"""
 
 
-def format_error(table: str, row: int, field: str, message: str) -> str:
-    """Format a single validation error in a planner-friendly format."""
+def format_error(table: str, row: int | None, field: str, message: str) -> str:
+    """Format a single validation error in a planner-friendly format.
+
+    ``row is None`` marks a table- or structure-level problem (no single cell to
+    point at); the location, when there is one, is already inside ``message``.
+    """
+    if row is None:
+        return f"[{table}.xlsx] {message}"
     return f"[{table}.xlsx] 第{row}行 {field}：{message}"
 
 

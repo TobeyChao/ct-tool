@@ -36,14 +36,9 @@ def _item_project(root: Path) -> Path:
 
 
 def _write_item_excel(root: Path) -> None:
-    (root / "excel").mkdir(parents=True, exist_ok=True)
-    wb = Workbook()
-    ws = wb.active
-    ws.append(["Id", "Name"])
-    ws.append(["主键", "名称"])
-    ws.append([1, "铁剑"])
-    ws.append([2, "木剑"])
-    wb.save(str(root / "excel" / "Item.xlsx"))
+    from _helpers import make_workbook
+
+    make_workbook(root, "Item", [[1, "铁剑"], [2, "木剑"]])
 
 
 def test_i18n_tables_lists_has_i18n(tmp_path: Path) -> None:

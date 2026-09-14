@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass
 from typing import Any
 
@@ -18,8 +20,11 @@ from ct.schema.resources import (
     SchemaResource,
     TableResource,
     named_references,
+    resource_to_data,
 )
 from ct.schema.type_expression import NamedType, VectorType
+
+CANDIDATE_FORMAT = "workspace-candidate/1"
 
 
 def _resolve_named(
@@ -46,9 +51,9 @@ def merge_indexes(
 ) -> tuple[SchemaResource, ...]:
     """把草稿里的索引**并进 Table 资源**。
 
-    索引原本只存在于编辑器的草稿字典里，落盘时被丢弃（``stage_candidate_yaml`` 只写
-    resources）—— 于是编辑器里设的索引从来没有到达 YAML/导出器。并进资源后，
-    持久化、加载、导出走同一条数据通路。
+    索引原本只存在于编辑器的草稿字典里，落盘时被丢弃 —— 于是编辑器里设的索引从来
+    没有到达 YAML/导出器。并进资源后，持久化、加载、导出走同一条数据通路
+    （``save.plan_yaml_save`` 写出的就是并进索引后的资源）。
     """
     merged: list[SchemaResource] = []
     for resource in resources:
@@ -87,6 +92,29 @@ class CandidateIssue:
 
     def render(self) -> str:
         return f"{self.message}（{self.location}）" if self.location else self.message
+
+
+def candidate_hash(
+    resources: tuple[SchemaResource, ...],
+    indexes: dict[str, tuple[QueryIndex, ...]],
+) -> str:
+    """Deterministic identity of a candidate, used for optimistic concurrency.
+
+    Built from the canonical persistence representation with resources sorted by
+    identity, so browser-side command order or object key order cannot change it,
+    while every structural change necessarily does.
+    """
+    merged = merge_indexes(resources, indexes)
+    payload = {
+        "format": CANDIDATE_FORMAT,
+        "resources": [
+            resource_to_data(resource)
+            for resource in sorted(merged, key=lambda item: item.resource_id)
+        ],
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    ).hexdigest()
 
 
 def validate_candidate(

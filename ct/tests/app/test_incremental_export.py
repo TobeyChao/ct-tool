@@ -12,16 +12,9 @@ from ct.app.canonical_commands import CanonicalValidationError
 
 
 def _excel(root, name="Item", rows=None):
-    path = root / "excel" / f"{name}.xlsx"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    wb = Workbook()
-    ws = wb.active
-    ws.append(["Id", "Name", "Value"])
-    ws.append(["主键", "名称", "值"])
-    for row in rows if rows is not None else [[1, "剑", 10], [2, "盾", 20]]:
-        ws.append(row)
-    wb.save(path)
-    wb.close()
+    from _helpers import make_workbook
+
+    make_workbook(root, name, rows)
 
 
 @pytest.fixture
@@ -190,6 +183,8 @@ def test_transitive_record_change_rebuilds_dependent_binary_and_accessor(tmp_pat
     write_yaml(root / "config/types/Power.yaml", {
         "kind": "record", "name": "Power", "fields": [{"name": "Amount", "type": "int64"}],
     })
+    # 叶子类型变化 ⇒ 托管列类型变化 ⇒ 先显式更新模板（读取闸门不再放行旧布局）
+    canonical_gen_template(root, all_tables=True)
     result = run_canonical_export(root)
     assert {"data_zh.bin", "ItemAccessor.cs", "types.fbs"} <= {
         Path(p).name for p in result["written"]}

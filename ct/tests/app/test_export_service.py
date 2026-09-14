@@ -15,15 +15,26 @@ from ct.app.exporting.service import run_export
 from ct.storage.workspace_lock import WorkspaceBusyError, WorkspaceLock
 
 
-def _excel_bytes(ids: list[int]) -> bytes:
-    wb = Workbook()
-    ws = wb.active
-    ws.append(["id", "name"])
-    ws.append(["主键", "名称"])
-    for value in ids:
-        ws.append([value, "剑"])
+def _excel_bytes(root: Path, ids: list[int]) -> bytes:
+    """该工程模板 + 指定主键的字节（读取闸门要求真实受管表头）。"""
+    from openpyxl import load_workbook
+
+    from ct.excel.layout_manifest import load_manifest
+
+    path = root / "excel" / "Item.xlsx"
+    manifest = load_manifest(root / "excel" / "layout_manifests", "Item")
+    start = (manifest.header_rows if manifest is not None else 2) + 1
+    workbook = load_workbook(path)
+    sheet = workbook.active
+    for index in range(start, sheet.max_row + 1):
+        sheet.cell(row=index, column=1, value=None)
+        sheet.cell(row=index, column=2, value=None)
+    for offset, value in enumerate(ids):
+        sheet.cell(row=start + offset, column=1, value=value)
+        sheet.cell(row=start + offset, column=2, value="剑")
     buffer = io.BytesIO()
-    wb.save(buffer)
+    workbook.save(buffer)
+    workbook.close()
     return buffer.getvalue()
 
 
@@ -42,10 +53,10 @@ def _project(tmp_path: Path, tables: tuple[str, ...] = ("Item",)) -> Path:
             for name in tables
         ],
     )
-    excel = root / "excel"
-    excel.mkdir(parents=True, exist_ok=True)
+    from _helpers import make_workbook
+
     for name in tables:
-        (excel / f"{name}.xlsx").write_bytes(_excel_bytes([1]))
+        make_workbook(root, name, [[1, "剑"]])
     return root
 
 
@@ -100,7 +111,7 @@ def test_deploy_failure_keeps_new_local_artifacts_and_old_ledger(
     monkeypatch.setattr("ct.export.deploy.deploy", boom)
 
     # 数据变了，本次强制导出会产出**新**本地产物
-    (root / "excel" / "Item.xlsx").write_bytes(_excel_bytes([2]))
+    (root / "excel" / "Item.xlsx").write_bytes(_excel_bytes(root, [2]))
 
     with pytest.raises(OSError):
         run_export(
@@ -126,13 +137,15 @@ def test_ledger_failure_is_not_reported_as_success(
         raise OSError("注入：账本替换失败")
 
     monkeypatch.setattr("ct.app.exporting.build.persist_export_state", boom)
+    ledger = root / "cache" / "state.json"
+    ledger_before = ledger.read_bytes() if ledger.exists() else None
 
     with pytest.raises(OSError):
         run_export(ExportRequest(root=root))
 
-    # 已完整发布的本地产物保留，但不留下成功账本
+    # 已完整发布的本地产物保留，但成功账本不得被推进
     assert (root / "output" / "json" / "Item_zh.json").is_file()
-    assert not (root / "cache" / "state.json").exists()
+    assert (ledger.read_bytes() if ledger.exists() else None) == ledger_before
 
 
 def test_partial_scope_keeps_other_ledger_records(tmp_path: Path) -> None:

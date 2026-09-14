@@ -37,16 +37,13 @@ def _workspace(tmp_path, *, filled: int):
         tmp_path / "gd",
         schemas=[{"table": "Sparse", "primary": "Id", "fields": fields}],
     )
-    path = root / "excel" / "Sparse.xlsx"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    book = Workbook()
-    sheet = book.active
-    sheet.append([field["name"] for field in fields])
-    sheet.append(["注释"] * len(fields))
-    for row in range(200):
-        sheet.append([row + 1] + [row + j for j in range(1, filled)])
-    book.save(path)
-    book.close()
+    from _helpers import make_workbook
+
+    make_workbook(
+        root,
+        "Sparse",
+        [[row + 1] + [row + j for j in range(1, filled)] for row in range(200)],
+    )
     return root
 
 

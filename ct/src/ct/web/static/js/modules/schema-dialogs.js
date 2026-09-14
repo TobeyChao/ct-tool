@@ -1,13 +1,14 @@
 /* schema-dialogs: every Schema editing surface that is a dialog, riding the
    shared core/dialog stack (Esc 逐层退栈/焦点陷阱/还焦 are the stack's job).
-   D1 删除资源(+查看影响预览) / D2 删除字段 / 改名 / 枚举新增值 /
-   F1 添加字段(+F2 类型选择器) / P5 变更计划 / P6 放弃草稿.
+   D1 删除资源 / D2 删除字段 / 改名 / 枚举新增值 /
+   F1 添加字段(+F2 类型选择器) / 净差异摘要 / 放弃草稿.
    ctx (provided by schema.js) carries data + command flow, this file owns UI:
    - ctx.pushCommand(cmd)          append a draft command
    - ctx.effectiveCommands()       pending commands (slice to cursor)
    - ctx.pendingCount()            pending command count
+   - ctx.changedResources()        net changed resource count
    - ctx.clearDraftState()         drop the whole draft (persist + re-render)
-   - ctx.applyCommands(cmds)       prepare-apply → apply; returns {names}
+   - ctx.saveChanges()             POST /api/schema-workspace/save
    - ctx.refreshAll()              re-render list/editor/inspector
    - ctx.state                     schema page state (resources, reverseRefs…) */
 
@@ -25,15 +26,6 @@ export function resourceKind(resource) {
   return resource.kind || (resource.fields ? "table" : "enum");
 }
 const SCALARS = ["int32", "int64", "float", "double", "bool", "string"];
-const RISK_LABEL = {
-  safe: "安全",
-  blocker: "阻塞",
-  "data-dependent": "数据依赖",
-  destructive: "破坏",
-  incompatible: "不兼容",
-  "dependency-breaking": "依赖破坏",
-};
-
 function validFieldName(value) {
   return NAME_RE.test(value) && !value.endsWith("_");
 }
@@ -56,7 +48,7 @@ export function confirmDeleteField(ctx, resource, fieldName, typeLabel) {
   });
 }
 
-/* ---- D1 删除资源（含「查看影响」预览） ---- */
+/* ---- D1 删除资源 ---- */
 export function confirmDeleteResource(ctx, resource) {
   const refs = ctx.state.reverseRefs[resource.resourceId] || [];
   const blocked = refs.length > 0;
@@ -71,9 +63,8 @@ export function confirmDeleteResource(ctx, resource) {
         <span class="ct-resource-kind">${escapeHtml(KIND_LABEL[kind] || kind)}</span>
         <b class="ct-mono" style="font-weight:680;font-size:14px">${escapeHtml(name)}</b></p>
       ${blocked ? `<div class="ct-blocker-list"><div class="ct-blocker">⛔ 无法删除：仍被引用 ${refs.map((r) => `<span class="ct-loc">${escapeHtml(r.field)}</span>`).join("、")}（不提供级联删除）</div></div>` : ""}
-      <p style="margin:0;color:var(--ct-ink-2);font-size:12.5px;line-height:1.7">将移除：${fieldCount} 个字段${resource.excel_file ? " · " + escapeHtml(resource.excel_file) : ""}<br>变更先进入草稿，可在底部撤销，审查并应用后才真正落盘。</p>`,
-    footer: `<button class="ct-btn ct-btn-ghost" id="dl-seeplan">查看影响</button>
-      <button class="ct-btn ct-btn-ghost" data-cancel>取消</button>
+      <p style="margin:0;color:var(--ct-ink-2);font-size:12.5px;line-height:1.7">将移除：${fieldCount} 个字段${resource.excel_file ? " · " + escapeHtml(resource.excel_file) : ""}<br>变更先进入草稿，可在底部撤销；保存时只删除该资源的 YAML，Excel 与既有产物保留。</p>`,
+    footer: `<button class="ct-btn ct-btn-ghost" data-cancel>取消</button>
       <button class="ct-btn ct-btn-danger-solid" data-confirm ${blocked ? "disabled" : ""}>删除</button>`,
   });
   handle.el.querySelector("[data-cancel]").addEventListener("click", () => handle.close());
@@ -82,9 +73,7 @@ export function confirmDeleteResource(ctx, resource) {
     ctx.state.selection = null;
     handle.close();
   });
-  handle.el.querySelector("#dl-seeplan").addEventListener("click", () => {
-    openChangePlan(ctx, { type: "delete_resource", payload: { name: resource.resourceId } });
-  });
+
 }
 
 /* ---- 改名字段 / 枚举新增值（表单弹窗，替换 prompt） ---- */
@@ -183,6 +172,9 @@ export function promptEnumValue(ctx, resource, values) {
   const commentEl = handle.el.querySelector("[data-aev-comment]");
   const msgEl = handle.el.querySelector("[data-aev-msg]");
   const showMsg = (text) => { msgEl.hidden = !text; msgEl.textContent = text || ""; };
+  let refTarget = "";
+  let refType = "int32";
+  const isRefMode = () => Boolean(refEl && refEl.checked);
   nameEl.addEventListener("input", () => { nameEl.classList.remove("invalid"); showMsg(""); });
   nameEl.addEventListener("keydown", (e) => {
     if (e.key === "Enter") handle.el.querySelector("[data-submit]").click();
@@ -202,15 +194,17 @@ export function promptEnumValue(ctx, resource, values) {
       return;
     }
     const next = [...items, { name, comment: commentEl.value.trim() }];
-    // 提交前后端校验兜底（标识符/重复/256 上限），失败保持弹窗打开
+    // 提交前服务端预检（标识符/重复/256 上限）——带上当前草稿前缀，
+    // 失败保持弹窗打开
     try {
-      const validation = await api("/api/schema-workspace/validate", {
-        method: "POST",
-        body: JSON.stringify({ commands: [{ type: "set_enum_values", payload: { name: resource.resourceId, values: next } }] }),
+      const result = await ctx.precheck({
+        type: "set_enum_values",
+        payload: { name: resource.resourceId, values: next },
       });
-      if (!validation.valid) {
-        const first = validation.issues && validation.issues[0];
-        showMsg(first ? `${first.message}${first.location ? `（${first.location}）` : ""}` : "值约束校验失败");
+      if (result.stale) { showMsg("草稿已变化，请重试"); return; }
+      const first = (result.issues || [])[0];
+      if (first) {
+        showMsg(first.location ? `${first.message}（${first.location}）` : first.message);
         return;
       }
     } catch (e) {
@@ -273,9 +267,10 @@ export function openEnumCommentEditor(ctx, resource, item, ordinal) {
 /* ---- F2 类型选择器（可嵌套：F1 内与字段表独立入口共用） ---- */
 export function openTypePicker(ctx, { role = "", onPick }) {
   const i18nOnly = role === "i18n";
+  const pool = ctx.candidatePool ? ctx.candidatePool() : (ctx.state.resources || []);
   const named = i18nOnly
     ? []
-    : (ctx.state.resources || []).filter((r) => r.kind === "record" || r.kind === "enum");
+    : pool.filter((r) => r.kind === "record" || r.kind === "enum");
   const scalars = i18nOnly ? ["string"] : SCALARS;
   const handle = openDialog({
     title: "选择类型",
@@ -307,6 +302,56 @@ export function openTypePicker(ctx, { role = "", onPick }) {
     handle.close();
     onPick(row.dataset.type);
   });
+}
+
+/* 引用目标（Table.Field）：Table 只能作为 ref 目标出现，不进类型列表。 */
+export function openRefPicker(ctx, { onPick }) {
+  const pool = ctx.candidatePool ? ctx.candidatePool() : (ctx.state.resources || []);
+  const rows = pool
+    .filter((resource) => resourceKind(resource) === "table")
+    .flatMap((table) =>
+      (table.fields || [])
+        .filter((field) => !field.server_only)
+        .map((field) => ({
+          ref: `${table.name || table.table}.${field.name}`,
+          table: table.name || table.table,
+          field,
+        }))
+    );
+  const handle = openDialog({
+    title: "选择引用目标",
+    variant: "sm",
+    initialFocusSelector: "[data-ref-search]",
+    body: `<input class="ct-dlg-input" data-ref-search placeholder="搜索 Table.Field…" autocomplete="off">
+      <div class="ct-dlg-list" data-ref-list style="margin-top:10px"></div>
+      <div class="ct-dlg-hint">引用值必须存在于目标表主键/字段集合；不支持 vector 引用。</div>`,
+    footer: `<button class="ct-btn ct-btn-ghost" data-cancel>取消</button>`,
+  });
+  handle.el.querySelector("[data-cancel]").addEventListener("click", () => handle.close());
+  const search = handle.el.querySelector("[data-ref-search]");
+  const list = handle.el.querySelector("[data-ref-list]");
+  function render(query) {
+    const q = (query || "").trim().toLowerCase();
+    const matches = rows.filter((row) => !q || row.ref.toLowerCase().includes(q));
+    list.innerHTML = matches.length
+      ? matches
+          .map(
+            (row) =>
+              `<button class="ct-dlg-row" data-ref="${escapeHtml(row.ref)}"><span class="ct-mono">${escapeHtml(row.ref)}</span><span class="ct-resource-kind">${escapeHtml(String(row.field.type || ""))}</span></button>`
+          )
+          .join("")
+      : '<div class="ct-dlg-empty">没有可引用的表</div>';
+  }
+  render("");
+  search.addEventListener("input", () => render(search.value));
+  list.addEventListener("click", (event) => {
+    const row = event.target.closest("[data-ref]");
+    if (!row) return;
+    const picked = rows.find((item) => item.ref === row.dataset.ref);
+    handle.close();
+    onPick(row.dataset.ref, String(picked.field.type || "int32"));
+  });
+  return handle;
 }
 
 /* Edit an existing field's base type, vector shape and Excel input layout. */
@@ -437,6 +482,7 @@ export function openAddField(ctx, resource) {
           <div class="ct-opt-chips">
             <label class="ct-chip"><input type="checkbox" data-af-code ${hasCode || isRecord ? "disabled" : ""}><span>代号（Code）</span></label>
             <label class="ct-chip"><input type="checkbox" data-af-vec><span>vector</span></label>
+            <label class="ct-chip"><input type="checkbox" data-af-ref><span>引用</span></label>
           </div>
         </div>
         <div class="ct-opt-row" data-af-vec-row hidden><span class="ct-opt-label">形态</span>
@@ -467,16 +513,21 @@ export function openAddField(ctx, resource) {
   const sepNote = root.querySelector("[data-af-sep-note]");
   const typeEl = root.querySelector("[data-af-type]");
   const typeTxt = root.querySelector("[data-af-type-txt]");
+  const refEl = root.querySelector("[data-af-ref]");
   const roleEls = [...root.querySelectorAll('input[name="af-role"]')];
   const msgEl = root.querySelector("[data-af-msg]");
   const role = () => roleEls.find((r) => r.checked)?.value || "";
 
   const showMsg = (text) => { msgEl.hidden = !text; msgEl.textContent = text || ""; };
+  let refTarget = "";
+  let refType = "int32";
+  const isRefMode = () => Boolean(refEl && refEl.checked);
   const setFlavor = (fix) => { flavorFix.checked = fix; colsRow.hidden = !fix; sepNote.hidden = fix; };
   function syncControls() {
     const codeOn = codeEl.checked;
     nameEl.disabled = codeOn;
-    typeEl.disabled = codeOn;
+    typeEl.disabled = codeOn || isRefMode();
+    if (refEl) refEl.disabled = codeOn;
     roleEls.forEach((r) => {
       if (r.value === "i18n" || r.value === "server") r.disabled = codeOn || isRecord;
     });
@@ -497,6 +548,7 @@ export function openAddField(ctx, resource) {
     setFlavor(fixedVector);
   }
   function updateMsg() {
+    if (isRefMode()) { showMsg(refTarget ? `引用 ${refTarget}（类型 ${refType}）` : "请选择引用目标 Table.Field"); return; }
     if (codeEl.checked) { showMsg("Code 索引要求：非空 · 表内唯一 · 非 i18n string（程序引用键）"); return; }
     if (vecEl.checked && isRefText(typeSel)) { showMsg("ref 字段不支持 vector"); return; }
     if (vecEl.checked && fixedVector) { showMsg("定长 vector 使用固定展开列数，需配置展开组数"); return; }
@@ -520,6 +572,28 @@ export function openAddField(ctx, resource) {
   flavorFix.addEventListener("change", () => { if (!flavorFix.disabled) { fixedVector = true; setFlavor(true); updateMsg(); } });
   roleEls.forEach((r) => r.addEventListener("change", () => { syncControls(); syncVec(); updateMsg(); }));
   nameEl.addEventListener("input", () => nameEl.classList.remove("invalid"));
+  if (refEl) {
+    refEl.addEventListener("change", () => {
+      if (refEl.checked) {
+        vecEl.checked = false;
+        vecEl.disabled = true;
+        openRefPicker(ctx, {
+          onPick: (ref, typeText) => {
+            refTarget = ref;
+            refType = typeText || "int32";
+            typeTxt.textContent = ref;
+            syncControls();
+            updateMsg();
+          },
+        });
+      } else {
+        refTarget = "";
+        vecEl.disabled = false;
+        syncControls();
+        updateMsg();
+      }
+    });
+  }
   typeEl.addEventListener("click", () => {
     openTypePicker(ctx, {
       role: role(),
@@ -544,8 +618,12 @@ export function openAddField(ctx, resource) {
       if (hasCode) { showMsg("该表已有代号字段 Code，一表至多一个"); return; }
       if (vecOn || typeSel !== "string" || currentRole !== "") { showMsg("代号字段 Code 必须为 string 且角色为「无」"); return; }
     }
-    const fieldType = vecOn ? `vector<${typeSel}>` : typeSel;
+    const fieldType = isRefMode() ? refType : (vecOn ? `vector<${typeSel}>` : typeSel);
     const field = { name: value, type: fieldType };
+    if (isRefMode()) {
+      if (!refTarget) { showMsg("请选择引用目标 Table.Field"); return; }
+      field.ref = refTarget;
+    }
     if (currentRole === "i18n") field.i18n = true;
     if (currentRole === "server") field.server_only = true;
     if (vecOn && fixedVector) {
@@ -553,15 +631,17 @@ export function openAddField(ctx, resource) {
       if (!Number.isFinite(cols) || cols < 1) { showMsg("展开组数须为正整数"); return; }
       field.excel_columns = cols;
     }
-    // 提交前后端校验兜底（类型/角色边界），失败保持弹窗打开
+    // 提交前服务端预检（类型/角色/引用边界）：带上当前草稿前缀，因此
+    // 可以直接引用同一草稿里刚创建的类型；失败保持弹窗打开
     try {
-      const validation = await api("/api/schema-workspace/validate", {
-        method: "POST",
-        body: JSON.stringify({ commands: [{ type: "add_field", payload: { owner: resource.resourceId, field } }] }),
+      const result = await ctx.precheck({
+        type: "add_field",
+        payload: { owner: resource.resourceId, field },
       });
-      if (!validation.valid) {
-        const first = validation.issues && validation.issues[0];
-        showMsg(first ? `${first.message}${first.location ? `（${first.location}）` : ""}` : "字段约束校验失败");
+      if (result.stale) { showMsg("草稿已变化，请重试"); return; }
+      const first = (result.issues || [])[0];
+      if (first) {
+        showMsg(first.location ? `${first.message}（${first.location}）` : first.message);
         return;
       }
     } catch (e) {
@@ -573,86 +653,232 @@ export function openAddField(ctx, resource) {
   });
 }
 
-/* ---- P5 变更计划（含删除弹窗「查看影响」预览模式） ---- */
-export async function openChangePlan(ctx, extraCommand = null) {
-  const preview = Boolean(extraCommand);
-  const base = ctx.effectiveCommands();
-  const commands = preview ? base.concat([extraCommand]) : base;
-  let data;
-  try {
-    data = await api("/api/schema-workspace/change-plan", {
-      method: "POST",
-      body: JSON.stringify({ commands }),
-    });
-  } catch (e) {
-    openDialog({
-      title: "审查并应用", variant: "plan", initialFocusSelector: "[data-close]",
-      body: `<div class="ct-error-inline">${escapeHtml(e.message)}</div>`,
-      footer: `<button class="ct-btn ct-btn-ghost" data-close>关闭</button>`,
-    });
-    return null;
-  }
-  // blocked when plan generation failed: backend returns {plan:null, issues:[...]}
-  // (key present, value null). Successful responses omit `plan`, so use strict ===,
-  // never == null (which would treat an absent key as null and always block).
-  const blocked = data.plan === null || Boolean(data.blocked);
-  const riskLabel = RISK_LABEL[data.risk] || data.risk || (blocked ? "校验失败" : "");
-  const impacts = (data.impacts || []).map((i) =>
-    `<div class="ct-impact"><span class="ct-art">${escapeHtml(i.artifact)}</span><span class="ct-mono" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(i.table)}</span><span class="ct-act">${escapeHtml(i.action)}</span></div>`
-  ).join("");
-  const blockers = (data.issues || [])
-    .filter((i) => i.kind === "blocker" || i.kind === "untracked")
-    .map((i) => {
-      const samples = i.samples && i.samples.length
-        ? `，样例 ${escapeHtml(Array.isArray(i.samples) ? i.samples.join("、") : i.samples)}`
-        : "";
-      return `<div class="ct-blocker">⛔ ${escapeHtml(i.message)}${samples}${i.location ? ` <span class="ct-loc">${escapeHtml(i.location)}</span>` : ""}</div>`;
-    })
-    .join("");
+/* ---- 新增 Schema：统一三类资源的最小合法创建表单 ---- */
+const CREATE_HINTS = {
+  table: "Table 自动带固定 Id: int32 主键；保存后仍可在编辑器里继续加字段与查询索引。",
+  record: "Record 至少一个字段；需要 vector<Record> 时先选类型，保存前预检会要求 excel_columns。",
+  enum: "Enum 至少一个具名项，ordinal 按输入顺序从 0 派生。",
+};
+
+export function openCreateResource(ctx, { kind = "", onCreated = null } = {}) {
+  let selectedKind = ["table", "record", "enum"].includes(kind) ? kind : "table";
+  let firstType = "int32";
+  let firstRef = "";
+  let submitting = false;
 
   const handle = openDialog({
-    title: "审查并应用",
-    variant: "plan",
-    initialFocusSelector: "[data-cancel]",
-    body: `${preview ? `<div class="ct-blocker-list"><div class="ct-blocker info">预览：${escapeHtml(extraCommand.type === "delete_resource" ? "删除 " + extraCommand.payload.name : "")} 的影响（尚未加入草稿）——确认请在删除弹窗点击「删除」</div></div>` : ""}
-      <div class="ct-risk-line"><span class="ct-badge ${blocked ? "ct-badge-warn" : "ct-badge-ok"}">● 风险：${escapeHtml(riskLabel)}</span></div>
-      ${impacts ? `<div class="ct-impacts">${impacts}</div>` : ""}
-      ${blockers ? `<div class="ct-blocker-list">${blockers}</div>` : ""}
-      <div class="ct-dlg-hint">计划有效期 2 小时，过期需重新生成</div>`,
-    footer: `<button class="ct-btn ct-btn-danger" data-discard ${preview || !commands.length ? "disabled" : ""}>放弃草稿</button>
-      <button class="ct-btn ct-btn-ghost" data-cancel>取消</button>
-      <button class="ct-btn ct-btn-primary" data-apply ${blocked || preview ? "disabled" : ""}>应用变更</button>`,
+    title: "新增 Schema",
+    variant: "sm",
+    initialFocusSelector: "[data-cr-name]",
+    body: `<div class="ct-dlg-field">
+        <label class="ct-dlg-label">类别</label>
+        <div class="ct-chip-row" data-cr-kinds>${["table", "record", "enum"]
+          .map((k) => `<button type="button" class="ct-chip${k === selectedKind ? " active" : ""}" data-cr-kind="${k}">${KIND_LABEL[k]}</button>`)
+          .join("")}</div>
+      </div>
+      <div class="ct-dlg-field">
+        <label class="ct-dlg-label">名称</label>
+        <input class="ct-dlg-input" data-cr-name placeholder="Item" autocomplete="off">
+      </div>
+      <div class="ct-dlg-field">
+        <label class="ct-dlg-label">注释</label>
+        <input class="ct-dlg-input" data-cr-comment placeholder="可选" autocomplete="off">
+      </div>
+      <div class="ct-dlg-field" data-cr-field>
+        <label class="ct-dlg-label">首个字段</label>
+        <input class="ct-dlg-input" data-cr-field-name placeholder="Min" autocomplete="off">
+        <button type="button" class="ct-btn ct-btn-ghost ct-btn-sm" data-cr-field-type style="margin-top:6px">类型：<span class="ct-mono" data-cr-field-type-text>${firstType}</span></button>
+        <button type="button" class="ct-btn ct-btn-ghost ct-btn-sm" data-cr-ref style="margin-top:6px">引用…</button>
+      </div>
+      <div class="ct-dlg-field" data-cr-item hidden>
+        <label class="ct-dlg-label">首个枚举项</label>
+        <input class="ct-dlg-input" data-cr-item-name placeholder="Common" autocomplete="off">
+        <input class="ct-dlg-input" data-cr-item-comment placeholder="注释（可选）" autocomplete="off" style="margin-top:6px">
+      </div>
+      <div class="ct-dlg-hint" data-cr-hint></div>
+      <div class="ct-dlg-err" data-cr-err></div>`,
+    footer: `<button class="ct-btn ct-btn-ghost" data-cancel>取消</button>
+      <button class="ct-btn ct-btn-primary" data-submit>创建</button>`,
   });
 
-  handle.el.querySelector("[data-cancel]").addEventListener("click", () => handle.close());
-  if (!preview) {
-    handle.el.querySelector("[data-discard]").addEventListener("click", () => {
-      openDiscardDraft(ctx, { onDiscard: () => handle.close() });
-    });
-    handle.el.querySelector("[data-apply]").addEventListener("click", async (e) => {
-      const btn = e.currentTarget;
-      btn.disabled = true;
-      try {
-        const result = await ctx.applyCommands(commands);
-        handle.close();
-        window.dispatchEvent(new CustomEvent("ct:draft", { detail: { successText: "已应用：" + (result.names || "草稿变更") } }));
-      } catch (err) {
-        btn.disabled = false;
-        const body = handle.el.querySelector(".ct-dialog-body");
-        body.insertAdjacentHTML("afterbegin", `<div class="ct-error-inline">${escapeHtml(err.message)}</div>`);
-      }
-    });
+  const el = handle.el;
+  const nameInput = el.querySelector("[data-cr-name]");
+  const commentInput = el.querySelector("[data-cr-comment]");
+  const fieldRow = el.querySelector("[data-cr-field]");
+  const fieldNameInput = el.querySelector("[data-cr-field-name]");
+  const fieldTypeText = el.querySelector("[data-cr-field-type-text]");
+  const itemRow = el.querySelector("[data-cr-item]");
+  const itemNameInput = el.querySelector("[data-cr-item-name]");
+  const itemCommentInput = el.querySelector("[data-cr-item-comment]");
+  const hint = el.querySelector("[data-cr-hint]");
+  const errorBox = el.querySelector("[data-cr-err]");
+  const submit = el.querySelector("[data-submit]");
+
+  function showError(message) {
+    errorBox.textContent = message || "";
+    errorBox.classList.toggle("show", Boolean(message));
   }
+
+  function syncKind() {
+    el.querySelectorAll("[data-cr-kind]").forEach((chip) => {
+      chip.classList.toggle("active", chip.dataset.crKind === selectedKind);
+    });
+    fieldRow.hidden = selectedKind === "enum";
+    itemRow.hidden = selectedKind !== "enum";
+    hint.textContent = CREATE_HINTS[selectedKind];
+    if (selectedKind === "record") nameInput.placeholder = "DropReward";
+    else if (selectedKind === "enum") nameInput.placeholder = "ItemRarity";
+    else nameInput.placeholder = "Item";
+    showError("");
+  }
+
+  el.querySelectorAll("[data-cr-kind]").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      selectedKind = chip.dataset.crKind;
+      syncKind();
+    });
+  });
+  el.querySelector("[data-cr-field-type]").addEventListener("click", () => {
+    openTypePicker(ctx, {
+      onPick: (type) => {
+        firstRef = "";
+        firstType = type;
+        fieldTypeText.textContent = type;
+      },
+    });
+  });
+  el.querySelector("[data-cr-ref]").addEventListener("click", () => {
+    openRefPicker(ctx, {
+      onPick: (ref, typeText) => {
+        firstRef = ref;
+        firstType = typeText || "int32";
+        fieldTypeText.textContent = ref;
+      },
+    });
+  });
+  syncKind();
+
+  function buildCommand() {
+    const name = nameInput.value.trim();
+    if (!validFieldName(name)) {
+      return { error: "名称需以大写字母开头，只含字母/数字/下划线，且不以 _ 结尾" };
+    }
+    const pool = ctx.candidatePool ? ctx.candidatePool() : (ctx.state.resources || []);
+    if (pool.some((r) => (r.name || r.table || r.resourceId) === name)) {
+      return { error: `名称 ${name} 已被占用（不区分类别）` };
+    }
+    const comment = commentInput.value.trim();
+    if (selectedKind === "table") {
+      const resource = { table: name, primary: "Id", fields: [{ name: "Id", type: "int32" }] };
+      if (comment) resource.comment = comment;
+      return { command: { type: "add_resource", payload: { kind: "table", resource } } };
+    }
+    if (selectedKind === "record") {
+      const fieldName = fieldNameInput.value.trim();
+      if (!validFieldName(fieldName)) {
+        return { error: "首个字段名需以大写字母开头，只含字母/数字/下划线，且不以 _ 结尾" };
+      }
+      const firstField = { name: fieldName, type: firstType };
+      if (firstRef) firstField.ref = firstRef;
+      const resource = { kind: "record", name, fields: [firstField] };
+      if (comment) resource.comment = comment;
+      return { command: { type: "add_resource", payload: { kind: "record", resource } } };
+    }
+    const item = itemNameInput.value.trim();
+    if (!ENUM_VALUE_RE.test(item)) {
+      return { error: "首个枚举项名需为合法标识符" };
+    }
+    const resource = {
+      kind: "enum",
+      name,
+      values: [{ name: item, comment: itemCommentInput.value.trim() }],
+    };
+    if (comment) resource.comment = comment;
+    return { command: { type: "add_resource", payload: { kind: "enum", resource } } };
+  }
+
+  el.querySelector("[data-cancel]").addEventListener("click", () => handle.close());
+  submit.addEventListener("click", async () => {
+    if (submitting) return;
+    const built = buildCommand();
+    if (built.error) {
+      showError(built.error);
+      return;
+    }
+    submitting = true;
+    submit.disabled = true;
+    submit.textContent = "创建中…";
+    try {
+      const result = await ctx.precheck(built.command);
+      if (result.stale) {
+        showError("草稿已变化，请重新确认后提交");
+        return;
+      }
+      const issue = (result.issues || [])[0];
+      if (issue) {
+        showError(issue.location ? `${issue.message}（${issue.location}）` : issue.message);
+        return;
+      }
+      const name = built.command.payload.resource.name
+        || built.command.payload.resource.table;
+      ctx.pushCommand(built.command);
+      handle.close();
+      if (onCreated) onCreated(name, selectedKind);
+    } catch (e) {
+      showError(e.message || "预检失败");
+    } finally {
+      submitting = false;
+      if (el.isConnected) {
+        submit.disabled = false;
+        submit.textContent = "创建";
+      }
+    }
+  });
   return handle;
 }
 
-/* ---- P6 放弃草稿 ---- */
+/* ---- 净差异摘要（服务器权威计算，不承诺产物重建） ---- */
+const CHANGE_LABEL = { added: "新增", removed: "删除", modified: "修改", renamed: "重命名" };
+
+export function openDraftSummary(ctx) {
+  const diff = ctx.state.netDiff || { resources: [], changedResources: 0, isNoOp: true };
+  const rows = (diff.resources || []).map((item) => {
+    const fields = (item.fields || []).map((field) => {
+      const label = CHANGE_LABEL[field.change] || field.change;
+      const name = field.oldName && field.oldName !== field.name
+        ? `${field.oldName} → ${field.name}`
+        : field.name;
+      const details = field.details && field.details.length ? ` · ${field.details.join("、")}` : "";
+      return `<div class="ct-impact"><span class="ct-art">${escapeHtml(KIND_LABEL[item.kind] || item.kind)}</span><span class="ct-mono" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(name)}</span><span class="ct-act">${escapeHtml(label + details)}</span></div>`;
+    }).join("");
+    const head = item.oldName && item.oldName !== item.name
+      ? `${item.oldName} → ${item.name}`
+      : item.name;
+    return `<div class="ct-dlg-field"><label class="ct-dlg-label">${escapeHtml(CHANGE_LABEL[item.change] || item.change)} ${escapeHtml(head)}</label>${fields || '<div class="ct-hint">资源结构或属性变化</div>'}</div>`;
+  }).join("");
+  const body = `
+    <p style="margin:0 0 10px;color:var(--ct-ink-2);font-size:12.5px;line-height:1.7">原始结构到最终候选的净差异：<b>${diff.changedResources || 0} 个资源</b>有未保存修改。保存只写这些 YAML，不改 Excel、模板 manifest、翻译或导出产物。</p>
+    ${rows || '<div class="ct-hint">没有未保存修改。</div>'}`;
+  const handle = openDialog({
+    title: "未保存修改",
+    variant: "std",
+    initialFocusSelector: "[data-close]",
+    body,
+    footer: `<button class="ct-btn ct-btn-ghost" data-close>关闭</button>`,
+  });
+  return handle;
+}
+
+/* ---- 放弃草稿 ---- */
 export function openDiscardDraft(ctx, opts = {}) {
   const handle = openDialog({
     title: "放弃草稿",
     variant: "sm",
     initialFocusSelector: "[data-cancel]",
-    body: `<p style="margin:0;color:var(--ct-ink)">放弃 ${ctx.pendingCount()} 条未应用变更？此操作不可撤销。</p>`,
+    body: `<p style="margin:0;color:var(--ct-ink)">放弃 ${ctx.changedResources()} 个资源的未保存修改？此操作不可撤销。</p>`
+      + (ctx.pendingCount() && !ctx.changedResources()
+        ? `<p class="ct-hint" style="margin:8px 0 0">当前没有净变化，放弃只会清除 ${ctx.pendingCount()} 步编辑历史。</p>`
+        : ""),
     footer: `<button class="ct-btn ct-btn-ghost" data-cancel>取消</button>
       <button class="ct-btn ct-btn-danger-solid" data-confirm>放弃</button>`,
   });

@@ -56,12 +56,12 @@ def _build_project(root: Path, unity: Path | None = None) -> None:
     (root / "config" / "schemas" / "Item.yaml").write_text(
         yaml.safe_dump(schema, allow_unicode=True), encoding="utf-8"
     )
-    wb = Workbook()
-    ws = wb.active
-    ws.append(["id", "name", "price"])
-    ws.append(["主键", "名称", "价格"])
-    ws.append([1001, "铁剑", 100.0])
-    wb.save(root / "excel" / "Item.xlsx")
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
+    from _helpers import make_workbook
+
+    make_workbook(root, "Item", [[1001, "铁剑", 100.0]])
 
 
 def test_export_deploys_to_unity(tmp_path: Path) -> None:
@@ -136,8 +136,10 @@ def test_deploy_failure_fails_export(tmp_path: Path) -> None:
     cfg["deploy"]["targets"] = [{"source": "output/nope", "dest": "Assets/Nope"}]
     cfg_path.write_text(yaml.safe_dump(cfg, allow_unicode=True), encoding="utf-8")
 
+    ledger = root / "cache" / "state.json"
+    ledger_before = ledger.read_bytes() if ledger.exists() else None
     result = runner.invoke(app, ["export", "--all", "--root", str(root)])
     assert result.exit_code != 0
     assert "[deploy error]" in result.output
-    # 部署失败不提交缓存
-    assert not (root / "cache" / "state.json").exists()
+    # 部署失败不推进成功账本（模板生成留下的内容保持原样）
+    assert (ledger.read_bytes() if ledger.exists() else None) == ledger_before

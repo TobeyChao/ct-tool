@@ -70,23 +70,31 @@ function renderPages(active) {
     `<section class="ct-page${m.id === active ? " active" : ""}" id="page-${m.id}" data-page="${m.id}"${m.id === active ? "" : " inert aria-hidden=\"true\""}></section>`
   ).join("")}<div class="ct-draftbar" id="ct-draftbar" hidden>
     <span class="ct-draft-dot" aria-hidden="true"></span>
-    <span class="ct-draft-txt" id="ct-draft-txt">0 条未应用变更</span>
+    <button class="ct-draft-txt ct-draft-txt-btn" id="ct-draft-txt" type="button" title="查看未保存修改">无未保存修改</button>
     <span class="ct-draft-acts">
       <button class="ct-btn ct-btn-ghost ct-btn-sm" id="ct-draft-undo" disabled>撤销</button>
       <button class="ct-btn ct-btn-ghost ct-btn-sm" id="ct-draft-redo" disabled>重做</button>
-      <button class="ct-btn ct-btn-primary ct-btn-sm" id="ct-draft-review" disabled>审查并应用</button>
+      <button class="ct-btn ct-btn-ghost ct-btn-sm" id="ct-draft-discard" disabled>放弃草稿</button>
+      <button class="ct-btn ct-btn-primary ct-btn-sm" id="ct-draft-save" disabled>保存变更</button>
     </span>
   </div><div class="ct-toast" id="ct-toast" role="status" aria-live="polite" hidden></div></main>`;
+}
+
+/* task dismissal key: id + started_at（per run）。服务端对 error 卡片有停留时限，
+   手动关闭按"哪一次运行"记录 —— 新一次导出的错误不会被上一次的关闭误伤。 */
+function taskKey(t) {
+  return `${t.id}@${t.started_at ?? ""}`;
 }
 
 function renderTaskbar(tasks) {
   const items = tasks || [];
   if (!items.length) return "";
   return `<div class="ct-taskbar" role="status" aria-live="polite">${items.map((t) =>
-    `<div class="ct-task ${t.status === "error" ? "error" : ""}">
+    `<div class="ct-task ${t.status === "error" ? "error" : ""}${t.target ? "" : " no-link"}">
       <span class="ct-task-indicator" aria-hidden="true"></span>
       <span class="ct-task-copy"><strong>${escapeHtml(t.kind)}</strong><span>${escapeHtml(t.scope)} · ${escapeHtml(t.message || t.status)}</span></span>
       ${t.target ? `<a class="ct-task-link" href="#${escapeHtml(t.target)}">查看日志</a>` : ""}
+      ${t.status === "error" ? `<button type="button" class="ct-task-close" data-task-dismiss="${escapeHtml(taskKey(t))}" aria-label="关闭错误提示" title="关闭">×</button>` : ""}
     </div>`
   ).join("")}</div>`;
 }
@@ -165,7 +173,18 @@ function showSuccessToast(text) {
 function renderDraftBar(detail) {
   const bar = document.getElementById("ct-draftbar");
   if (!bar) return;
-  const { pending = 0, canRedo = false, warn = false, successText = "" } = detail || {};
+  const {
+    changedResources = 0,
+    computing = false,
+    canUndo = false,
+    canRedo = false,
+    warn = false,
+    busy = false,
+    saving = false,
+    blocked = false,
+    notice = "",
+    successText = "",
+  } = detail || {};
   if (successText) {
     clearTimeout(draftSuccessTimer);
     bar.hidden = true;
@@ -174,20 +193,36 @@ function renderDraftBar(detail) {
     return;
   }
   clearTimeout(draftSuccessTimer);
-  if (!pending && !canRedo) {
+  const hasHistory = canUndo || canRedo;
+  if (!changedResources && !hasHistory && !warn && !notice && !computing) {
     bar.hidden = true;
     bar.classList.remove("warn", "success");
     return;
   }
   bar.hidden = false;
-  bar.classList.toggle("warn", Boolean(warn));
+  bar.classList.toggle("warn", Boolean(warn || blocked || notice));
   bar.classList.remove("success");
-  const note = warn ? " · 草稿未持久化（IndexedDB）" : "";
-  document.getElementById("ct-draft-txt").textContent =
-    (pending ? pending + " 条未应用变更" : "已全部撤销 · 可重做") + note;
-  document.getElementById("ct-draft-undo").disabled = !pending;
+
+  const notes = [];
+  if (warn) notes.push("草稿未持久化（IndexedDB）");
+  if (blocked) notes.push("存在阻塞项，无法保存");
+  if (notice) notes.push(notice);
+  if (saving) notes.push("保存中…");
+  else if (busy) notes.push("工作区忙，稍后重试");
+
+  const summary = document.getElementById("ct-draft-txt");
+  summary.textContent = (computing
+    ? "正在计算未保存修改…"
+    : (changedResources ? `${changedResources} 个资源有未保存修改` : "无未保存修改"))
+    + (notes.length ? " · " + notes.join(" · ") : "");
+  summary.disabled = !changedResources;
+
+  document.getElementById("ct-draft-undo").disabled = !canUndo;
   document.getElementById("ct-draft-redo").disabled = !canRedo;
-  document.getElementById("ct-draft-review").disabled = !pending;
+  document.getElementById("ct-draft-discard").disabled = !(hasHistory || changedResources) || saving;
+  const save = document.getElementById("ct-draft-save");
+  save.disabled = !changedResources || blocked || saving || busy;
+  save.textContent = saving ? "保存中…" : "保存变更";
 }
 
 /* ---- about / help dialogs (sidebar footer) ---- */
@@ -293,17 +328,40 @@ export async function bootstrap() {
   /* draftbar buttons: shell owns the surface, schema owns the draft domain */
   const draftUndoBtn = document.getElementById("ct-draft-undo");
   const draftRedoBtn = document.getElementById("ct-draft-redo");
-  const draftReviewBtn = document.getElementById("ct-draft-review");
+  const draftSaveBtn = document.getElementById("ct-draft-save");
+  const draftDiscardBtn = document.getElementById("ct-draft-discard");
+  const draftSummaryBtn = document.getElementById("ct-draft-txt");
   if (draftUndoBtn) draftUndoBtn.addEventListener("click", () =>
     window.dispatchEvent(new CustomEvent("ct:draft-action", { detail: { type: "undo" } })));
   if (draftRedoBtn) draftRedoBtn.addEventListener("click", () =>
     window.dispatchEvent(new CustomEvent("ct:draft-action", { detail: { type: "redo" } })));
-  if (draftReviewBtn) draftReviewBtn.addEventListener("click", () =>
-    window.dispatchEvent(new CustomEvent("ct:draft-review")));
+  if (draftSaveBtn) draftSaveBtn.addEventListener("click", () =>
+    window.dispatchEvent(new CustomEvent("ct:draft-action", { detail: { type: "save" } })));
+  if (draftDiscardBtn) draftDiscardBtn.addEventListener("click", () =>
+    window.dispatchEvent(new CustomEvent("ct:draft-action", { detail: { type: "discard" } })));
+  if (draftSummaryBtn) draftSummaryBtn.addEventListener("click", () =>
+    window.dispatchEvent(new CustomEvent("ct:draft-action", { detail: { type: "summary" } })));
 
+  /* taskbar: 轮询驱动渲染；错误卡片可手动关闭（按运行次序记忆，
+     轮询重渲染不会让已关闭的卡片复活）。 */
+  const dismissedTasks = new Set();
+  let lastTasks = [];
+  const taskbarHost = document.getElementById("ct-taskbar");
+  const renderTaskbarState = () => {
+    if (!taskbarHost) return;
+    const visible = lastTasks.filter((t) => !dismissedTasks.has(taskKey(t)));
+    taskbarHost.innerHTML = renderTaskbar(visible);
+  };
   onTasks((tasks) => {
-    const host = document.getElementById("ct-taskbar");
-    if (host) host.innerHTML = renderTaskbar(tasks);
+    lastTasks = tasks || [];
+    renderTaskbarState();
+  });
+  if (taskbarHost) taskbarHost.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-task-dismiss]");
+    if (!btn) return;
+    const key = btn.dataset.taskDismiss;
+    if (key) dismissedTasks.add(key);
+    renderTaskbarState();
   });
   startPolling();
   return { activateModule, getPageState };
