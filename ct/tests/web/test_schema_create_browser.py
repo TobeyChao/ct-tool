@@ -385,8 +385,9 @@ def test_unsaved_table_explains_template_requires_save(create_server, chromium_b
     # 新建（未保存）的 Table：明确说明先保存，且不提供模板生成入口
     page.wait_for_selector("#template-unsaved")
     assert "保存后才能生成模板" in page.locator("#template-unsaved").text_content()
-    assert page.locator("#banner-gen-template").count() == 0
-    assert page.locator("#template-note").count() == 0
+    assert page.locator('.banner-gen-template[data-table="Quest"]').count() == 0
+    note = page.locator("#template-note")
+    assert note.count() == 0 or "Quest" not in (note.text_content() or "")
 
     # 保存后：入口变成模板待更新（若表模板缺失）
     page.locator("#ct-draft-save").click()
@@ -396,6 +397,36 @@ def test_unsaved_table_explains_template_requires_save(create_server, chromium_b
     )
     page.wait_for_timeout(300)
     assert page.locator("#template-unsaved").count() == 0
+    page.wait_for_selector('.banner-gen-template[data-table="Quest"]')
+    assert "Quest" in page.locator("#template-note").text_content()
+    context.close()
+
+
+def test_template_entry_survives_reload(create_server, chromium_browser) -> None:
+    """保存新表后不更新模板，刷新页面（新会话）横幅入口依然存在且可用。"""
+    url, workspace = create_server
+    context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
+    page = context.new_page()
+    _open_schema(page, url)
+    _create(page, "table", "Quest")
+    _wait_draftbar(page, "1 个资源有未保存修改")
+    page.locator("#ct-draft-save").click()
+    page.wait_for_function(
+        "() => { const bar = document.getElementById('ct-draftbar'); return !bar || bar.hidden; }",
+        timeout=10000,
+    )
+    page.wait_for_selector('.banner-gen-template[data-table="Quest"]')
+
+    # 刷新 = 丢弃全部会话内记忆（lastSavedTables 等），横幅必须由工作区状态重建
+    page.reload(wait_until="load")
+    _open_schema(page, url)
+    page.wait_for_selector('.banner-gen-template[data-table="Quest"]')
+    assert "Quest" in page.locator("#template-note").text_content()
+
+    # 入口真实可用：点击后模板落盘，该表的入口收敛
+    page.locator('.banner-gen-template[data-table="Quest"]').click()
+    page.wait_for_selector('.banner-gen-template[data-table="Quest"]', state="detached")
+    assert (workspace / "excel" / "Quest.xlsx").exists()
     context.close()
 
 
@@ -412,9 +443,9 @@ def test_record_and_enum_have_no_template_entry(create_server, chromium_browser)
         timeout=10000,
     )
     page.wait_for_timeout(400)
-    # Enum 不是表：既没有“尚未保存”的模板提示，也没有模板入口
+    # Enum 不是表：既没有“尚未保存”的模板提示，也没有针对它的模板入口
     assert page.locator("#template-unsaved").count() == 0
-    assert page.locator("#banner-gen-template").count() == 0
+    assert page.locator('.banner-gen-template[data-table="ItemRarity"]').count() == 0
     page.wait_for_selector('#page-schema .ct-resource-row[data-name="ItemRarity"]')
     context.close()
 

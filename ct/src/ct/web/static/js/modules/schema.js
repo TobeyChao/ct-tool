@@ -103,11 +103,20 @@ export async function mount(container) {
     }
   }
   if (!state.root) {
+    // 首次挂载（刷新/新会话）顺带取回模板状态：横幅入口不能只活在
+    // 「这次会话保存过」的记忆里，否则刷新后缺失模板的表就没有入口了。
     try {
       const ws = await api("/api/workspace");
       state.root = ws.root;
-    } catch (e) { state.root = "/"; }
+      state.templateStatus = ws.status || {};
+      state.statusError = "";
+    } catch (e) {
+      state.root = "/";
+      state.templateStatus = null;
+      state.statusError = "模板状态暂不可用";
+    }
   }
+  state.templateTables = pendingTemplateTables();
   await restoreDraft(state);
   // 恢复出来的草稿也要让服务器算一次净差异（状态条只显示净变化资源数）
   if (state.commands.length) refreshCandidate();
@@ -115,7 +124,11 @@ export async function mount(container) {
   // Schema stays mounted while switching modules. Refresh the persisted
   // snapshot when returning so external YAML edits are visible immediately.
   window.addEventListener("ct:module", (event) => {
-    if (event.detail === "schema") refreshSchemaSnapshot();
+    if (event.detail === "schema") {
+      refreshSchemaSnapshot();
+      // 回到 Schema 页也刷新模板状态：外部（CLI/其他标签页）生成模板后横幅即时收敛
+      refreshTemplateStatus().then(renderBanner);
+    }
   });
 
   async function refreshSchemaSnapshot() {
@@ -812,10 +825,21 @@ export async function mount(container) {
       state.templateStatus = null;
       state.statusError = "模板状态暂不可用";
     }
-    state.templateTables = affectedTables();
+    state.templateTables = pendingTemplateTables();
+  }
+
+  function pendingTemplateTables() {
+    // 横幅展示工作区全部模板待办（缺模板 + 已漂移），不与「本次保存了什么」
+    // 求交集：刷新或重开会话后，更新模板的入口依然成立。
+    if (!state.templateStatus) return [];
+    return [...new Set([].concat(
+      state.templateStatus.missing || [],
+      state.templateStatus.drifted || []
+    ))];
   }
 
   function affectedTables() {
+    // 保存成功提示只提本次保存的表：精确反馈这次动作的后果
     if (!state.templateStatus) return [];
     const saved = new Set(state.lastSavedTables || []);
     const tables = [].concat(
@@ -879,8 +903,9 @@ export async function mount(container) {
       messages.push(issue.location ? `${issue.message}（${issue.location}）` : issue.message));
     const template = state.templateTables || [];
     const templateBlock = template.length
-      ? `<div class="ct-error-inline" id="template-note">模板待更新：${template.map(escapeHtml).join("、")}
-           <button class="ct-btn ct-btn-sm ct-btn-ghost" id="banner-gen-template" data-table="${escapeHtml(template[0])}">更新模板</button></div>`
+      ? `<div class="ct-error-inline" id="template-note">模板待更新：${template.map((table) =>
+          `${escapeHtml(table)}<button class="ct-btn ct-btn-sm ct-btn-ghost banner-gen-template" data-table="${escapeHtml(table)}">更新模板</button>`
+        ).join("、")}</div>`
       : "";
     const templateFailure = state.templateError
       ? `<div class="ct-error-inline" id="template-error">模板生成失败：${escapeHtml(state.templateError.message || "")}
@@ -902,10 +927,9 @@ export async function mount(container) {
         if (table) regenerateTemplate(table);
       });
     }
-    const button = banner.querySelector("#banner-gen-template");
-    if (button) {
+    banner.querySelectorAll(".banner-gen-template").forEach((button) => {
       button.addEventListener("click", () => regenerateTemplate(button.dataset.table));
-    }
+    });
   }
 
   function renderEditor() {

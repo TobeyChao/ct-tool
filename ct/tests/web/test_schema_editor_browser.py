@@ -1065,12 +1065,10 @@ def test_save_refreshes_template_status_without_rebuilding(
     # 保存本身没有重建模板
     assert (item_book.read_bytes(), item_book.stat().st_mtime_ns) == before
 
-    # 显式入口会真的更新模板
-    page.locator("#banner-gen-template").click()
-    page.wait_for_function(
-        "() => { const note = document.getElementById('template-note'); return !note; }",
-        timeout=20000,
-    )
+    # 显式入口会真的更新模板：横幅列出全部待办（Quest 缺模板、Item 已漂移），
+    # 每张表有自己的入口，这里点名刚改过 Schema 的 Item
+    page.locator('.banner-gen-template[data-table="Item"]').click()
+    page.wait_for_selector('.banner-gen-template[data-table="Item"]', state="detached")
     assert (item_book.read_bytes(), item_book.stat().st_mtime_ns) != before
     context.close()
 

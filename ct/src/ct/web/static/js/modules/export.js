@@ -50,6 +50,7 @@ export async function mount(container) {
 
   state.changed = state.workspace?.status?.changed || [];
   state.drifted = state.workspace?.status?.drifted || [];
+  state.missing = state.workspace?.status?.missing || [];
   state.hasRun = state.progress?.status !== "idle" || Boolean(state.lastExport);
   renderShell();
   update();
@@ -67,6 +68,7 @@ export async function mount(container) {
       state.workspace = await api("/api/workspace");
       state.changed = state.workspace?.status?.changed || [];
       state.drifted = state.workspace?.status?.drifted || [];
+      state.missing = state.workspace?.status?.missing || [];
       update();
     } catch (error) {
       state.workspaceError = error.message;
@@ -100,7 +102,7 @@ export async function mount(container) {
                 <dl class="ct-context-list">
                   <div><dt>构建模式</dt><dd id="export-context-mode">增量导出</dd></div>
                   <div><dt>待导出</dt><dd id="export-context-pending"></dd></div>
-                  <div><dt>模板漂移</dt><dd id="export-context-drifted"></dd></div>
+                  <div><dt>模板待更新</dt><dd id="export-context-drifted"></dd></div>
                   <div><dt>执行结果</dt><dd id="export-context-result"></dd></div>
                   <div class="ct-context-path"><dt>产物目录</dt><dd>${outputPath()}</dd></div>
                 </dl>
@@ -116,8 +118,9 @@ export async function mount(container) {
     if (!host) return;
     const running = state.progress?.status === "running";
     const busy = running || state.submitting;
+    const pendingTemplates = state.drifted.length + state.missing.length;
     host.innerHTML = `
-      ${state.drifted.length && !running ? '<button class="ct-btn ct-btn-ghost" id="export-regenerate-template">重新生成模板</button>' : ""}
+      ${pendingTemplates && !running ? '<button class="ct-btn ct-btn-ghost" id="export-regenerate-template">重新生成模板</button>' : ""}
       <button class="ct-btn ct-btn-ghost" id="export-cancel" ${running ? "" : "hidden"}>取消</button>
       <button class="ct-btn ct-btn-ghost" id="export-force" title="跳过增量缓存，重新生成所有产物" ${busy ? "disabled" : ""}>强制全量重建</button>
       <button class="ct-btn ct-btn-primary" id="export-start" ${busy ? "disabled" : ""}>${state.hasRun ? "重新导出" : "开始导出"}</button>`;
@@ -128,15 +131,27 @@ export async function mount(container) {
   }
 
   function regenerateTemplates() {
-    const tables = [...state.drifted];
-    if (!tables.length) return;
+    const drifted = [...state.drifted];
+    const missing = [...state.missing];
+    if (!drifted.length && !missing.length) return;
+    // 漂移 = 覆盖已有 Excel（迁移保留数据行）；缺失 = 全新文件，无覆盖风险
+    const driftedBlock = drifted.length
+      ? `<p>以下表的 Schema 与 Excel 模板布局不一致：</p><p class="ct-mono">${drifted.map(escapeHtml).join("、")}</p>`
+      : "";
+    const missingBlock = missing.length
+      ? `<p>以下表还没有 Excel 模板，将按当前 Schema 新建：</p><p class="ct-mono">${missing.map(escapeHtml).join("、")}</p>`
+      : "";
+    const warning = drifted.length
+      ? '<p class="ct-dialog-warning">重新生成会覆盖漂移表的 Excel 文件，请确认已备份或不再需要当前填写内容。</p>'
+      : "<p>新建模板不会覆盖任何已有文件。</p>";
     confirmDialog({
       title: "重新生成模板？",
-      body: `<p>以下表的 Schema 与 Excel 模板布局不一致：</p><p class="ct-mono">${tables.map(escapeHtml).join("、")}</p><p class="ct-dialog-warning">重新生成会覆盖这些表的 Excel 文件，请确认已备份或不再需要当前填写内容。</p>`,
-      confirmLabel: "覆盖并生成",
+      body: driftedBlock + missingBlock + warning,
+      confirmLabel: drifted.length ? "覆盖并生成" : "生成模板",
       onConfirm: (handle) => {
         const button = handle.el.querySelector("[data-confirm]");
         if (button) { button.disabled = true; button.textContent = "生成中…"; }
+        const tables = [...new Set([...drifted, ...missing])];
         Promise.all(tables.map((table) => api("/api/schema-workspace/gen-template", {
           method: "POST",
           body: JSON.stringify({ table }),
@@ -145,6 +160,7 @@ export async function mount(container) {
           state.workspace = await api("/api/workspace");
           state.changed = state.workspace?.status?.changed || [];
           state.drifted = state.workspace?.status?.drifted || [];
+          state.missing = state.workspace?.status?.missing || [];
           update();
           window.dispatchEvent(new CustomEvent("ct:draft", { detail: { successText: `已重新生成模板：${tables.join("、")}` } }));
         }).catch((error) => {
@@ -202,7 +218,10 @@ export async function mount(container) {
     if (pending) {
       pending.textContent = progress?.status === "done" ? "0 张表" : `${state.changed.length} 张表`;
     }
-    if (drifted) drifted.textContent = state.drifted.length ? `${state.drifted.length} 张表` : "无";
+    if (drifted) {
+      const pendingTemplates = state.drifted.length + state.missing.length;
+      drifted.textContent = pendingTemplates ? `${pendingTemplates} 张表` : "无";
+    }
     if (!result) return;
     if (!progress || progress.status === "idle") {
       result.textContent = lastExportText();
@@ -245,7 +264,9 @@ export async function mount(container) {
     message.textContent = state.lastExport ? "可以重新生成当前工作区产物" : "完成首次导出后，这里会保留阶段结果";
     host.innerHTML = `<div class="ct-empty ct-export-empty">
       <div class="ct-empty-title">${state.lastExport ? "工作区可以导出" : "还没有导出记录"}</div>
-      <div class="ct-empty-sub">${state.drifted.length ? `${state.drifted.length} 张表模板需要重新生成` : state.changed.length ? `${state.changed.length} 张表存在待导出变更` : "当前源数据与模板状态正常"}</div>
+      <div class="ct-empty-sub">${(state.drifted.length || state.missing.length)
+        ? `${state.drifted.length + state.missing.length} 张表模板待更新`
+        : state.changed.length ? `${state.changed.length} 张表存在待导出变更` : "当前源数据与模板状态正常"}</div>
     </div>`;
   }
 
