@@ -524,9 +524,13 @@ export async function mount(container) {
     }) || null;
   }
 
-  function renderTypeExpression(typeExpression) {
+  function renderTypeExpression(typeExpression, { editable = true } = {}) {
     const target = namedTypeTarget(typeExpression);
-    const editBtn = `<button class="ct-type-edit" data-act="type" title="修改类型" aria-label="修改 ${escapeHtml(typeExpression)} 类型">✎</button>`;
+    // 主键类型被模型固定为 int32（索引向量 / idHash / ByID(int) 都是 32 位承载），
+    // 改类型的草稿永远无法通过候选校验，所以主键不提供修改类型入口。
+    const editBtn = editable
+      ? `<button class="ct-type-edit" data-act="type" title="修改类型" aria-label="修改 ${escapeHtml(typeExpression)} 类型">✎</button>`
+      : "";
     if (!target) {
       return `<span class="ct-type-expression">${escapeHtml(typeExpression)}${editBtn}</span>`;
     }
@@ -1011,12 +1015,16 @@ export async function mount(container) {
       return;
     }
     const refs = state.reverseRefs[resource.resourceId] || [];
-    // Record 字段没有角色/约束语义（i18n / server_only / ref / Code 均为表级概念），
+    // Record 字段没有角色/约束语义（i18n / server_only / ref / CodeName 均为表级概念），
     // 隐藏该列与字段名旁的标记，避免空列误导；Table 保持完整列。
     const isRecord = kind === "record";
+    // CODENAME 徽标 = 表声明了 codename 索引 && 字段是约定目标 CodeName；
+    // 只叫 CodeName 但没开索引的字段不算 —— 那时它就是普通 string。
+    const isCodenameTarget = (f) =>
+      !isRecord && f.name === "CodeName" && (resource.indexes || []).some((i) => i.kind === "codename");
     const roleHeader = isRecord ? "" : "<th>角色与约束</th>";
-    const roleMark = (f) => isRecord ? "" : `<span class="ct-field-role">${f.i18n ? "🌐" : ""}${f.server_only ? "🖥" : ""}${f.ref ? "🔗" : ""}</span>`;
-    const roleTd = (f) => isRecord ? "" : `<td><span class="ct-role-list">${f.name === resource.primary ? '<span class="ct-badge ct-badge-warn">PRIMARY</span>' : ""}${f.i18n ? '<span class="ct-badge ct-badge-mute">I18N</span>' : ""}${f.server_only ? '<span class="ct-badge ct-badge-mute">SERVER</span>' : ""}${f.ref ? `<button class="ct-type-link" data-navigate-type="${escapeHtml(f.ref.split(".")[0])}" title="打开 ${escapeHtml(f.ref.split(".")[0])}">REF ${escapeHtml(f.ref)}</button>` : ""}</span></td>`;
+    const roleMark = (f) => isRecord ? "" : `<span class="ct-field-role">${f.i18n ? "🌐" : ""}${f.server_only ? "🖥" : ""}${f.ref ? "🔗" : ""}${isCodenameTarget(f) ? "🏷" : ""}</span>`;
+    const roleTd = (f) => isRecord ? "" : `<td><span class="ct-role-list">${f.name === resource.primary ? '<span class="ct-badge ct-badge-warn">PRIMARY</span>' : ""}${f.i18n ? '<span class="ct-badge ct-badge-mute">I18N</span>' : ""}${f.server_only ? '<span class="ct-badge ct-badge-mute">SERVER</span>' : ""}${isCodenameTarget(f) ? '<span class="ct-badge ct-badge-ok" title="codename 索引：非空 · 表内唯一，生成 ByCodeName 查询">CODENAME</span>' : ""}${f.ref ? `<button class="ct-type-link" data-navigate-type="${escapeHtml(f.ref.split(".")[0])}" title="打开 ${escapeHtml(f.ref.split(".")[0])}">REF ${escapeHtml(f.ref)}</button>` : ""}</span></td>`;
     editorBody.innerHTML = `${warning}<section class="ct-editor-section">
       <div class="ct-section-heading"><div><h2>字段结构</h2><p>类型和字段注释可直接在字段操作中编辑。</p></div></div>
       <div class="ct-field-table"><table class="ct-data ct-field-grid"><thead><tr><th>字段</th><th>类型表达式</th><th>Excel</th>${roleHeader}<th aria-label="操作"></th></tr></thead>
@@ -1028,7 +1036,7 @@ export async function mount(container) {
         return `<tr class="${selected ? "ct-row-selected" : ""}" data-field="${escapeHtml(f.name)}">
           <td><button class="ct-inline-btn" data-act="rename" ${isPrimary ? "disabled" : ""} title="${isPrimary ? "主键字段不可改名" : "改名"}">${escapeHtml(f.name)}</button>
               ${roleMark(f)}</td>
-          <td>${renderTypeExpression(typeExpr)}</td>
+          <td>${renderTypeExpression(typeExpr, { editable: !isPrimary })}</td>
           <td class="ct-mono">${f.excel_columns ? `expanded × ${f.excel_columns}` : "1 column"}</td>
           ${roleTd(f)}
           <td class="ct-row-ops">

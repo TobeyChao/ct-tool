@@ -76,7 +76,7 @@ class CanonicalWorkspace:
 
     @property
     def indexes(self) -> dict[str, tuple]:
-        """表 id → 查询索引声明（Code/Group）。"""
+        """表 id → 查询索引声明（当前仅 CodeName）。"""
         return {table.resource_id: table.indexes for table in self.resources.tables}
 
     @property

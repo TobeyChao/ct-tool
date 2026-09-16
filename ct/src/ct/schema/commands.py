@@ -153,23 +153,29 @@ def rename_field(
 
     owner_table = owner_id.partition(":")[2]
 
-    def remap_field(field):
-        if field.name == old_field:
-            field = field.model_copy(update={"name": new_field})
+    def remap_ref(field):
+        """改写指向 owner 表旧字段的 ref（历史兼容：ref 现已收窄为主键外键，正常不会命中）。"""
         ref = field.ref
         if ref and ref == f"{owner_table}.{old_field}":
-            field = field.model_copy(update={"ref": f"{owner_table}.{new_field}"})
+            return field.model_copy(update={"ref": f"{owner_table}.{new_field}"})
         return field
+
+    def remap_owner_field(field):
+        if field.name == old_field:
+            field = field.model_copy(update={"name": new_field})
+        return remap_ref(field)
 
     new_resources = []
     for resource in resources:
         if resource.resource_id == owner_id:
-            new_fields = [remap_field(field) for field in fields]
+            new_fields = [remap_owner_field(field) for field in fields]
             new_resources.append(
                 resource.model_copy(update={"fields": new_fields})
             )
         elif isinstance(resource, TableResource):
-            new_fields = [remap_field(field) for field in resource.fields]
+            # 其他表**只改写 ref、不改字段名**：字段名是表内作用域，不同表里的
+            # 同名字段（如约定字段 CodeName）彼此独立，改名不得跨表广播。
+            new_fields = [remap_ref(field) for field in resource.fields]
             new_resources.append(resource.model_copy(update={"fields": new_fields}))
         else:
             new_resources.append(resource)

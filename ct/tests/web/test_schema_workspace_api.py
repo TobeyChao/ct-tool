@@ -152,3 +152,35 @@ def test_deleted_table_index_is_not_inherited_by_reused_name(tmp_path: Path) -> 
     assert response.status_code == 200
     assert response.get_json()["data"]["valid"] is True
 
+
+def test_codename_field_commands_violate_invariant_without_index_removal(tmp_path: Path) -> None:
+    """删/改名 CodeName 而不撤 codename 索引声明：候选终态违反不变式，必须被拦。"""
+    client, _ = _client_with_codename(tmp_path)
+    for commands in (
+        [{"type": "delete_field", "payload": {"owner": "table:Item", "name": "CodeName"}}],
+        [{"type": "rename_field", "payload": {"owner": "table:Item", "old": "CodeName", "new": "TypeCode"}}],
+    ):
+        response = client.post("/api/schema-workspace/validate", json={"commands": commands})
+        assert response.status_code == 200
+        data = response.get_json()["data"]
+        assert data["valid"] is False
+        assert any("codename 索引要求存在名为 CodeName" in issue["message"] for issue in data["issues"])
+
+
+def test_codename_field_commands_with_explicit_index_removal_are_valid(tmp_path: Path) -> None:
+    """UI 显式级联路径：先撤 codename 索引声明，再删/改 CodeName —— 终态合法。
+
+    校验只看命令流的终态，所以两条命令放进同一份草稿是合法的。
+    """
+    client, _ = _client_with_codename(tmp_path)
+    drop = {"type": "set_indexes", "payload": {"table": "table:Item", "indexes": []}}
+    for tail in (
+        {"type": "delete_field", "payload": {"owner": "table:Item", "name": "CodeName"}},
+        {"type": "rename_field", "payload": {"owner": "table:Item", "old": "CodeName", "new": "TypeCode"}},
+    ):
+        response = client.post(
+            "/api/schema-workspace/validate", json={"commands": [drop, tail]}
+        )
+        assert response.status_code == 200
+        assert response.get_json()["data"]["valid"] is True
+

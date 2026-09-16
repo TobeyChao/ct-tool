@@ -65,6 +65,7 @@ def validate_indexes(table: TableResource, indexes: tuple[QueryIndex, ...]) -> N
             raise ValueError(
                 f"表 {table.table}: codename 索引要求存在名为 {CODENAME_FIELD} 的"
                 "字段（type: string），当前字段列表里没有"
+                "（如需删除/改名该字段，先移除 codename 索引声明）"
             )
         if field.i18n:
             raise ValueError(

@@ -111,6 +111,38 @@ def test_non_primary_field_rename_keeps_cross_table_ref_targets(tmp_path) -> Non
     assert ref.ref == "ItemType.Id"
 
 
+def test_field_rename_does_not_broadcast_to_same_named_fields_in_other_tables(tmp_path) -> None:
+    """字段名是表内作用域：改一张表的 CodeName 不得连带改其他表的 CodeName。
+
+    约定字段 CodeName 本来就会在多张表里同名；回归背景：rename_field 曾把
+    改名广播到所有 TableResource 的同名字段上。
+    """
+    quest = {
+        "table": "Quest",
+        "primary": "Id",
+        "fields": [
+            {"name": "Id", "type": "int32"},
+            {"name": "CodeName", "type": "string"},
+        ],
+    }
+    item_type = {
+        "table": "ItemType",
+        "primary": "Id",
+        "fields": [
+            {"name": "Id", "type": "int32"},
+            {"name": "CodeName", "type": "string"},
+        ],
+    }
+    ws = _ws(tmp_path, schemas=[quest, item_type], types=[DROPreWARD, RARITY])
+    result = rename_field(ws.resources.resources, "table:ItemType", "CodeName", "TypeCode")
+    assert result.mapping == {"table:ItemType/CodeName": "table:ItemType/TypeCode"}
+
+    renamed = next(r for r in result.resources if r.resource_id == "table:ItemType")
+    assert [f.name for f in renamed.fields] == ["Id", "TypeCode"]
+    other = next(r for r in result.resources if r.resource_id == "table:Quest")
+    assert [f.name for f in other.fields] == ["Id", "CodeName"]
+
+
 def test_rename_then_undo_restores_original_workspace(tmp_path) -> None:
     ws = _ws(tmp_path)
     forward = rename_resource(ws.resources.resources, "DropReward", "DropBonus")

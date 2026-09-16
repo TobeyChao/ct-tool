@@ -218,13 +218,17 @@ def test_add_field_code_codename_locks_fields(editor_url: str, chromium_browser:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
     _open_schema_module(page, editor_url)
-    _select_item(page)
+    # 代号 chip 固定字段名 CodeName：Item 已有 CodeName（chip 应禁用），
+    # 所以这个场景选只有 Id 的 Quest 表
+    _open_resource_pane(page)
+    page.locator('#page-schema .ct-resource-row[data-name="Quest"]').first.click()
+    page.wait_for_function("() => document.querySelector('#editor-title').textContent === 'Quest'")
 
     page.locator("#page-schema #add-field").click()
     page.wait_for_selector("[data-af-name]")
     page.locator('.ct-dialog .ct-chip', has_text='代号').click()
-    # Code locks the name/type and disables the role chips
-    assert page.locator("[data-af-name]").input_value() == "Code"
+    # CodeName locks the name/type and disables the role chips
+    assert page.locator("[data-af-name]").input_value() == "CodeName"
     assert page.locator("[data-af-name]").is_disabled()
     assert page.locator('[data-af-name] ~ .ct-dlg-err').count() >= 0
     assert page.locator('.ct-dialog input[name="af-role"][value="i18n"]').is_disabled()
@@ -534,6 +538,9 @@ def test_primary_field_actions_are_locked(editor_url: str, chromium_browser: Any
     assert "编辑字段注释" in (primary_ops.nth(2).get_attribute("title") or "")
     assert "主键字段不可删除" in (primary_ops.nth(3).get_attribute("title") or "")
     assert "主键字段不可调整顺序" in (primary_ops.nth(0).get_attribute("title") or "")
+    # 主键类型被模型固定为 int32：不提供修改类型入口，非主键字段才有 ✎
+    assert page.locator("#page-schema tr[data-field='Id'] [data-act='type']").count() == 0
+    assert page.locator("#page-schema tr[data-field='Name'] [data-act='type']").count() == 1
     context.close()
 
 
@@ -592,6 +599,108 @@ def test_query_index_cards_restore_persisted_and_draft_state(
     _select_item(page)
     page.get_by_role("button", name="查询索引").click()
     playwright_api.expect(page.locator("#page-schema [data-index-codename]")).not_to_be_checked()
+    context.close()
+
+
+def test_codename_badge_shows_only_when_index_declared(
+    editor_server: tuple[str, Path], chromium_browser: Any
+) -> None:
+    """角色与约束列：CODENAME 徽标 = 表声明 codename 索引 && 字段是约定目标 CodeName。
+
+    只叫 CodeName 但没开索引的字段是普通 string，不该有徽标。
+    """
+    url, workspace = editor_server
+    item = workspace / "config" / "schemas" / "Item.yaml"
+    context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
+    page = context.new_page()
+    _open_schema_module(page, url)
+    _select_item(page)
+
+    # 未声明索引：CodeName 行无 CODENAME 徽标、无 🏷 标记
+    assert page.locator("#page-schema tr[data-field='CodeName'] .ct-badge", has_text="CODENAME").count() == 0
+    assert page.locator("#page-schema tr[data-field='CodeName'] .ct-field-role", has_text="🏷").count() == 0
+
+    # 声明 codename 索引后：CodeName 行出现 CODENAME 徽标 + 🏷 标记，其他字段行不受影响
+    item.write_text(
+        item.read_text(encoding="utf-8") + "indexes:\n  - kind: codename\n",
+        encoding="utf-8",
+    )
+    page.reload(wait_until="load")
+    _open_schema_module(page, url)
+    _select_item(page)
+    codename_badge = page.locator("#page-schema tr[data-field='CodeName'] .ct-badge", has_text="CODENAME")
+    assert codename_badge.count() == 1
+    assert page.locator("#page-schema tr[data-field='CodeName'] .ct-field-role", has_text="🏷").count() == 1
+    assert page.locator("#page-schema tr[data-field='Id'] .ct-badge", has_text="CODENAME").count() == 0
+    assert page.locator("#page-schema tr[data-field='Name'] .ct-badge", has_text="CODENAME").count() == 0
+    context.close()
+
+
+def _open_item_with_codename_index(
+    url: str, workspace: Path, chromium_browser: Any
+) -> tuple[Any, Any]:
+    """Item 声明 codename 索引并打开其字段表（返回 (page, context)，调用方负责 close）。"""
+    item = workspace / "config" / "schemas" / "Item.yaml"
+    item.write_text(
+        item.read_text(encoding="utf-8") + "indexes:\n  - kind: codename\n",
+        encoding="utf-8",
+    )
+    context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
+    page = context.new_page()
+    _open_schema_module(page, url)
+    _open_resource_pane(page)
+    page.locator('#page-schema .ct-resource-row[data-name="Item"]').first.click()
+    page.wait_for_function("() => document.querySelector('#editor-title')?.textContent === 'Item'")
+    page.wait_for_selector("#page-schema table.ct-field-grid")
+    return page, context
+
+
+def test_delete_codename_field_offers_explicit_index_cascade(
+    editor_server: tuple[str, Path], chromium_browser: Any
+) -> None:
+    """删除 codename 索引表的 CodeName：弹窗披露后果，确认时显式附带撤索引命令。"""
+    url, workspace = editor_server
+    page, context = _open_item_with_codename_index(url, workspace, chromium_browser)
+
+    page.locator("#page-schema tr[data-field='CodeName'] [data-act='delete']").click()
+    page.wait_for_selector(".ct-dialog-mask.open")
+    dialog = page.locator(".ct-dialog-mask.open .ct-dialog")
+    assert "codename 索引" in dialog.text_content()
+    assert "一并移除" in dialog.text_content()
+    page.locator(".ct-dialog-mask.open [data-confirm]").click()
+    page.wait_for_timeout(400)
+
+    # 字段已删、索引声明已撤（查询索引卡片上的开关回到未勾选）、候选无阻塞
+    assert page.locator("#page-schema tr[data-field='CodeName']").count() == 0
+    page.get_by_role("button", name="查询索引").click()
+    page.wait_for_selector("#page-schema .ct-index-card")
+    playwright_api.expect(page.locator("#page-schema [data-index-codename]")).not_to_be_checked()
+    assert "codename 索引要求" not in page.locator("#draft-banner").text_content()
+    context.close()
+
+
+def test_rename_codename_field_offers_explicit_index_cascade(
+    editor_server: tuple[str, Path], chromium_browser: Any
+) -> None:
+    """改名离开 CodeName：弹窗披露后果，确认时显式附带撤索引命令。"""
+    url, workspace = editor_server
+    page, context = _open_item_with_codename_index(url, workspace, chromium_browser)
+
+    page.locator("#page-schema tr[data-field='CodeName'] [data-act='rename']").click()
+    page.wait_for_selector(".ct-dialog-mask.open")
+    dialog = page.locator(".ct-dialog-mask.open .ct-dialog")
+    assert "codename 索引" in dialog.text_content()
+    page.fill(".ct-dialog-mask.open [data-form-input]", "TypeCode")
+    page.locator(".ct-dialog-mask.open [data-submit]").click()
+    page.wait_for_timeout(400)
+
+    # 字段已改名、索引声明已撤、候选无阻塞
+    assert page.locator("#page-schema tr[data-field='TypeCode']").count() == 1
+    assert page.locator("#page-schema tr[data-field='CodeName']").count() == 0
+    page.get_by_role("button", name="查询索引").click()
+    page.wait_for_selector("#page-schema .ct-index-card")
+    playwright_api.expect(page.locator("#page-schema [data-index-codename]")).not_to_be_checked()
+    assert "codename 索引要求" not in page.locator("#draft-banner").text_content()
     context.close()
 
 

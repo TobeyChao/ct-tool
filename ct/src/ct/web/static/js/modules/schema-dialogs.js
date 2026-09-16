@@ -30,19 +30,42 @@ function validFieldName(value) {
   return NAME_RE.test(value) && !value.endsWith("_");
 }
 
+/* ---- codename 索引级联（显式组合命令，不做静默级联） ---- */
+// codename 索引固定指向名为 CodeName 的字段：删除/改名该字段会让候选态违反
+// 「声明索引就必须有 CodeName」的不变式（服务端候选校验会拦下并阻塞草稿）。
+// 所以这两个入口在确认时**显式**附带一条 set_indexes（去掉 codename），
+// 弹窗里写明后果；草稿是命令流，可整体撤销。
+function codenameIndexOn(resource) {
+  return resourceKind(resource) === "table"
+    && (resource.indexes || []).some((i) => i.kind === "codename");
+}
+function dropCodenameIndexCommand(resource) {
+  return {
+    type: "set_indexes",
+    payload: {
+      table: resource.resourceId,
+      indexes: (resource.indexes || []).filter((i) => i.kind !== "codename"),
+    },
+  };
+}
+const CODENAME_CASCADE_NOTE = '<p style="margin:8px 0 0;color:var(--ct-warn);font-size:12.5px">该表声明了 codename 索引（固定指向 <span class="ct-mono">CodeName</span> 字段）：确认后将一并移除该索引声明，<span class="ct-mono">ByCodeName</span> 查询随之消失；可撤销。</p>';
+
 /* ---- D2 删除字段 ---- */
 export function confirmDeleteField(ctx, resource, fieldName, typeLabel) {
+  const cascadeIndexes = fieldName === "CodeName" && codenameIndexOn(resource);
   const handle = openDialog({
     title: "删除字段",
     variant: "sm",
     initialFocusSelector: "[data-cancel]",
     body: `<p style="margin:0 0 8px"><b class="ct-mono" style="font-weight:600">${escapeHtml(fieldName)}</b> <span class="ct-hint ct-mono">· ${escapeHtml(typeLabel || "")}</span></p>
-      <p style="margin:0;color:var(--ct-ink-2);font-size:12.5px">将移出字段表与 Excel 列。作为草稿变更，可撤销。</p>`,
+      <p style="margin:0;color:var(--ct-ink-2);font-size:12.5px">将移出字段表与 Excel 列。作为草稿变更，可撤销。</p>
+      ${cascadeIndexes ? CODENAME_CASCADE_NOTE : ""}`,
     footer: `<button class="ct-btn ct-btn-ghost" data-cancel>取消</button>
       <button class="ct-btn ct-btn-danger-solid" data-confirm>删除</button>`,
   });
   handle.el.querySelector("[data-cancel]").addEventListener("click", () => handle.close());
   handle.el.querySelector("[data-confirm]").addEventListener("click", () => {
+    if (cascadeIndexes) ctx.pushCommand(dropCodenameIndexCommand(resource));
     ctx.pushCommand({ type: "delete_field", payload: { owner: resource.resourceId, name: fieldName } });
     handle.close();
   });
@@ -77,7 +100,7 @@ export function confirmDeleteResource(ctx, resource) {
 }
 
 /* ---- 改名字段 / 枚举新增值（表单弹窗，替换 prompt） ---- */
-function formDialog({ title, label, placeholder, initial = "", submitLabel, validate, onSubmit }) {
+function formDialog({ title, label, placeholder, initial = "", submitLabel, validate, note = "", onSubmit }) {
   const handle = openDialog({
     title,
     variant: "sm",
@@ -86,7 +109,7 @@ function formDialog({ title, label, placeholder, initial = "", submitLabel, vali
         <label class="ct-dlg-label">${escapeHtml(label)}</label>
         <input class="ct-dlg-input" data-form-input placeholder="${escapeHtml(placeholder || "")}" value="${escapeHtml(initial)}" autocomplete="off">
         <div class="ct-dlg-err">${escapeHtml(validate.hint || "输入不合法")}</div>
-      </div>`,
+      </div>${note}`,
     footer: `<button class="ct-btn ct-btn-ghost" data-cancel>取消</button>
       <button class="ct-btn ct-btn-primary" data-submit>${escapeHtml(submitLabel)}</button>`,
   });
@@ -134,15 +157,19 @@ export function openFieldCommentEditor(ctx, resource, field) {
 }
 
 export function promptRenameField(ctx, resource, oldName) {
+  // 改名离开 CodeName 会让 codename 索引失去目标字段：显式附带移除索引声明
+  const cascadeIndexes = oldName === "CodeName" && codenameIndexOn(resource);
   formDialog({
     title: "重命名字段",
     label: "新字段名",
     placeholder: oldName,
     initial: oldName,
     submitLabel: "重命名",
+    note: cascadeIndexes ? CODENAME_CASCADE_NOTE : "",
     validate: { check: validFieldName, hint: "字段名须以大写字母开头，且不以 _ 结尾" },
     onSubmit: (value) => {
       if (value === oldName) return false;
+      if (cascadeIndexes) ctx.pushCommand(dropCodenameIndexCommand(resource));
       ctx.pushCommand({ type: "rename_field", payload: { owner: resource.resourceId, old: oldName, new: value } });
       if (ctx.state.selectedField === oldName) ctx.state.selectedField = value;
     },
@@ -445,13 +472,13 @@ export function openFieldTypeEditor(ctx, field, onApply) {
   sync();
 }
 
-/* ---- F1 添加字段（角色×约束互斥 + Code 固定名 + vector 修饰符） ---- */
+/* ---- F1 添加字段（角色×约束互斥 + CodeName 固定名 + vector 修饰符） ---- */
 // Server-only 角色不在前端提供入口：既有 server_only 字段仍按 YAML 原样展示
 // （字段表 SERVER 标记 / Inspector 只读旗标），但不再从界面新建。
 export function openAddField(ctx, resource) {
   let typeSel = "int32";
   let fixedVector = false;
-  const hasCode = (resource.fields || []).some((f) => f.name === "Code");
+  const hasCode = (resource.fields || []).some((f) => f.name === "CodeName");
   const isRecord = resource.kind === "record";
   const isRefText = (t) => Boolean(t) && t.includes(".") && !t.startsWith("vector");
   const isRecordText = (t) => {
@@ -481,7 +508,7 @@ export function openAddField(ctx, resource) {
         </div>
         <div class="ct-opt-row"><span class="ct-opt-label">约束</span>
           <div class="ct-opt-chips">
-            <label class="ct-chip"><input type="checkbox" data-af-code ${hasCode || isRecord ? "disabled" : ""}><span>代号（Code）</span></label>
+            <label class="ct-chip"><input type="checkbox" data-af-code ${hasCode || isRecord ? "disabled" : ""}><span>代号（CodeName）</span></label>
             <label class="ct-chip"><input type="checkbox" data-af-vec><span>vector</span></label>
             <label class="ct-chip"><input type="checkbox" data-af-ref ${isRecord ? "disabled" : ""}><span>引用</span></label>
           </div>
@@ -492,8 +519,8 @@ export function openAddField(ctx, resource) {
             <label><input type="radio" name="af-flavor" data-af-flavor-fix><span>定长</span></label>
           </div>
         </div>
-        ${isRecord ? '<div class="ct-opt-sub">Record 不支持 I18N / 代号（Code）/ 引用，仅支持普通字段与 vector</div>' : ""}
-        ${hasCode ? '<div class="ct-opt-sub">该表已有代号字段 Code，一表至多一个</div>' : ""}
+        ${isRecord ? '<div class="ct-opt-sub">Record 不支持 I18N / 代号（CodeName）/ 引用，仅支持普通字段与 vector</div>' : ""}
+        ${hasCode ? '<div class="ct-opt-sub">该表已有代号字段 CodeName，一表至多一个</div>' : ""}
         <div class="ct-opt-sub" data-af-sep-note hidden>变长 · 分隔符工具内置（,）</div>
         <div class="ct-opt-sub" data-af-cols-row hidden>定长 · 固定展开列组　展开组数 <input class="ct-dlg-input" data-af-cols value="3"> 组</div>
         <div class="ct-dlg-msg" data-af-msg hidden></div>
@@ -550,7 +577,7 @@ export function openAddField(ctx, resource) {
   }
   function updateMsg() {
     if (isRefMode()) { showMsg(refTarget ? `引用 ${refTarget}（类型 ${refType}）` : "请选择引用目标 Table.Primary（主键）"); return; }
-    if (codeEl.checked) { showMsg("Code 索引要求：非空 · 表内唯一 · 非 i18n string（程序引用键）"); return; }
+    if (codeEl.checked) { showMsg("CodeName 索引要求：非空 · 表内唯一 · 非 i18n string（程序引用键）"); return; }
     if (vecEl.checked && isRefText(typeSel)) { showMsg("ref 字段不支持 vector"); return; }
     if (vecEl.checked && fixedVector) { showMsg("定长 vector 使用固定展开列数，需配置展开组数"); return; }
     if (isRefText(typeSel)) { showMsg("ref 外键值必须存在于引用表主键集（空值会被校验拦截）"); return; }
@@ -559,7 +586,7 @@ export function openAddField(ctx, resource) {
   codeEl.addEventListener("change", () => {
     if (codeEl.checked) {
       roleEls.forEach((r) => { r.checked = r.value === ""; });
-      nameEl.value = "Code";
+      nameEl.value = "CodeName";
       typeSel = "string";
       typeTxt.textContent = "string";
       vecEl.checked = false;
@@ -614,10 +641,10 @@ export function openAddField(ctx, resource) {
     const currentRole = role();
     const vecOn = vecEl.checked;
     if (currentRole === "i18n" && (vecOn || typeSel !== "string")) { showMsg("I18N 角色仅支持 string 类型"); return; }
-    if (value === "Code") {
-      if (isRecord) { showMsg("Record 不支持代号字段 Code（表级概念）"); return; }
-      if (hasCode) { showMsg("该表已有代号字段 Code，一表至多一个"); return; }
-      if (vecOn || typeSel !== "string" || currentRole !== "") { showMsg("代号字段 Code 必须为 string 且角色为「无」"); return; }
+    if (value === "CodeName") {
+      if (isRecord) { showMsg("Record 不支持代号字段 CodeName（表级概念）"); return; }
+      if (hasCode) { showMsg("该表已有代号字段 CodeName，一表至多一个"); return; }
+      if (vecOn || typeSel !== "string" || currentRole !== "") { showMsg("代号字段 CodeName 必须为 string 且角色为「无」"); return; }
     }
     const fieldType = isRefMode() ? refType : (vecOn ? `vector<${typeSel}>` : typeSel);
     const field = { name: value, type: fieldType };
