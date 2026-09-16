@@ -85,6 +85,14 @@ def create_app(
             tasks.insert(0, export)
         return ok(tasks)
 
+    @app.post("/api/tasks/<task_id>/dismiss")
+    @safe
+    def dismiss_task(task_id: str):
+        """关闭右下角失败卡片：服务端记账，刷新页面不复活。"""
+        if task_id != "canonical-export":
+            return err(f"未知任务: {task_id}", 404)
+        return ok({"dismissed": canonical_export_task.dismiss_global()})
+
     @app.get("/")
     @safe
     def index():

@@ -6,7 +6,7 @@ import { api } from "../core/api.js";
 import { escapeHtml } from "../core/dom.js";
 import { openDialog, pushEscLayer } from "../core/dialog.js";
 
-const STATUS_LABEL = { translated: "已译完", stale: "待审", missing: "缺失" };
+const STATUS_LABEL = { translated: "已译完", stale: "待审", missing: "缺失", orphan: "无主" };
 /* hide-able columns in the entry table: 原文/译文/状态/操作 */
 const COL_INDEX = { src: 3, trans: 4, status: 5, ops: 6 };
 
@@ -94,7 +94,16 @@ function bindOnce(container) {
     if (key) return saveEntry(container, key);
     if (lang) { state.lang = lang; return refresh(container); }
     if (filter) { state.statusFilter = filter; return render(container); }
-    if ("confirmCompact" in btn.dataset) return confirmCompact(container);
+  });
+
+  container.addEventListener("change", (e) => {
+    const box = e.target.closest?.(".ct-col-menu input[data-col]");
+    if (!box) return;
+    const hidden = hiddenCols();
+    if (box.checked) hidden.delete(box.dataset.col);
+    else hidden.add(box.dataset.col);
+    try { localStorage.setItem("ct-i18n-cols", JSON.stringify([...hidden])); } catch (error) { /* preference only */ }
+    applyColVisibility(container);
   });
 
   // Blur persists a changed inline draft, then collapses to preview. Merely opening an
@@ -460,15 +469,6 @@ function toggleColVis(container) {
     if (m && !m.hidden) { m.hidden = true; return true; }
     return false;
   }, 10);
-  menu.querySelectorAll("input[data-col]").forEach((box) => {
-    box.addEventListener("change", () => {
-      const hidden = hiddenCols();
-      if (box.checked) hidden.delete(box.dataset.col);
-      else hidden.add(box.dataset.col);
-      try { localStorage.setItem("ct-i18n-cols", JSON.stringify([...hidden])); } catch (e) { /* ignore */ }
-      applyColVisibility(container);
-    }, { once: true });
-  });
 }
 
 /* ---------------- source truncation tails ---------------- */
@@ -628,6 +628,7 @@ function statusBadge(status) {
   if (status === "translated") return { cls: "ct-badge-ok", text: STATUS_LABEL.translated };
   if (status === "missing") return { cls: "ct-badge-warn", text: STATUS_LABEL.missing };
   if (status === "stale") return { cls: "ct-badge-warn", text: STATUS_LABEL.stale };
+  if (status === "orphan") return { cls: "ct-badge-mute", text: STATUS_LABEL.orphan };
   return { cls: "ct-badge-mute", text: status || "unknown" };
 }
 

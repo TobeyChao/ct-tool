@@ -46,6 +46,20 @@ class LogBuffer:
             for r in records
         ]
 
+    def restore(self, entries: list[dict]) -> None:
+        """用 ``snapshot()`` 返回的条目覆盖当前缓冲（失败注入后复原用）。"""
+        with self._lock:
+            self._records.clear()
+            for entry in entries:
+                self._records.append(
+                    LogRecord(
+                        time=entry["time"],
+                        module=entry["module"],
+                        level=entry["level"],
+                        message=entry["message"],
+                    )
+                )
+
 
 class PanelLogHandler(logging.Handler):
     """把标准 logging 记录转发到面板缓冲（按 logger 名推断模块）。"""

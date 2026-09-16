@@ -27,7 +27,7 @@
 仓库根目录/
 ├── ct/                   # 配表工具（自包含 Python 项目）
 │   ├── src/ct/           #   Python 包 (cli, config, contracts, app, schema, excel, export, cache, storage, diagnostics, web)
-│   │   └── web/static/   #     面板前端资源（Vue 无构建，随包分发，扁平 static/）
+│   │   └── web/static/   #     面板前端资源（原生 ES modules，无构建，随包分发）
 │   ├── tests/            #   pytest 测试
 │   ├── docs/             #   工具文档与设计稿
 │   ├── pyproject.toml    #   打包配置（src layout + package-data）
@@ -274,7 +274,7 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 | `ct/web/tasks.py` | `CanonicalExportTask` 后台导出任务（阶段上报 + 历史） |
 | `ct/web/schema_workspace_api.py` | Draft/Candidate/Save 结构化 JSON API（不接受前端 YAML 文本；无持久化计划与 TTL） |
 | `ct/web/history.py` / `logs.py` / `task_state.py` | 面板历史 / 日志缓冲 / 任务状态 |
-| `ct/web/static/` | Vue3 前端（无构建，扁平 `static/`：`js/core`、`js/modules`、`styles`、`vendor`） |
+| `ct/web/static/` | 原生 JavaScript 前端（无构建，ES modules 按 `js/core`、`js/modules` 与 `styles` 分层） |
 
 ### 关键设计决策
 

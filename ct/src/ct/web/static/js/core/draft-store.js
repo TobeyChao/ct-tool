@@ -1,18 +1,15 @@
 /* core/draft-store: IndexedDB persistence for the schema Draft.
 
-   v2 persists the whole editing state the editor needs to restore faithfully:
-   the Schema baseline (schemaRevision), the command log **and** the undo
-   cursor. v1 records only stored commands, so replaying them would silently
-   resurrect steps the user had undone; they are loaded with `cursor: null` and
-   `legacy: true`, and the editor asks the user to check them instead of
-   treating every command as pending.
+   Persists the whole editing state the editor needs to restore faithfully:
+   the Schema baseline (schemaRevision), the command log and the undo
+   cursor. Records whose format is not the current FORMAT are treated as
+   "no draft"; the next save overwrites them.
 
    Quota/write failure keeps the in-memory draft and surfaces a persistent
    warning instead of pretending to save. */
 const DB_NAME = "ct-drafts";
 const STORE = "drafts";
 const FORMAT = "ct-draft-v2";
-const LEGACY_FORMATS = ["ct-draft-v1"];
 
 let dbPromise = null;
 
@@ -29,6 +26,7 @@ function openDb() {
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
+  dbPromise.catch(() => { dbPromise = null; });
   return dbPromise;
 }
 
@@ -57,32 +55,11 @@ export async function loadDraft(workspacePath) {
     request.onsuccess = () => resolve(request.result || null);
     request.onerror = () => reject(request.error);
   });
-  if (!record) return null;
-  if (record.format === FORMAT) {
-    return {
-      schemaRevision: record.schemaRevision || "",
-      commands: record.commands || [],
-      cursor: typeof record.cursor === "number" ? record.cursor : (record.commands || []).length,
-      legacy: false,
-      savedAt: record.savedAt || 0,
-    };
-  }
-  if (LEGACY_FORMATS.includes(record.format)) {
-    return {
-      schemaRevision: record.revision || "",
-      commands: record.commands || [],
-      cursor: null, // v1 never stored it: undo branch cannot be reconstructed
-      legacy: true,
-      savedAt: record.savedAt || 0,
-    };
-  }
-  // Unknown format: keep the commands viewable, never treat them as pending.
+  if (!record || record.format !== FORMAT) return null;
   return {
-    schemaRevision: "",
-    commands: Array.isArray(record.commands) ? record.commands : [],
-    cursor: null,
-    legacy: true,
-    unsupported: true,
+    schemaRevision: record.schemaRevision || "",
+    commands: record.commands || [],
+    cursor: typeof record.cursor === "number" ? record.cursor : (record.commands || []).length,
     savedAt: record.savedAt || 0,
   };
 }

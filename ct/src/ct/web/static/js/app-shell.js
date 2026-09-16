@@ -80,12 +80,6 @@ function renderPages(active) {
   </div><div class="ct-toast" id="ct-toast" role="status" aria-live="polite" hidden></div></main>`;
 }
 
-/* task dismissal key: id + started_at（per run）。服务端对 error 卡片有停留时限，
-   手动关闭按"哪一次运行"记录 —— 新一次导出的错误不会被上一次的关闭误伤。 */
-function taskKey(t) {
-  return `${t.id}@${t.started_at ?? ""}`;
-}
-
 function renderTaskbar(tasks) {
   const items = tasks || [];
   if (!items.length) return "";
@@ -94,7 +88,7 @@ function renderTaskbar(tasks) {
       <span class="ct-task-indicator" aria-hidden="true"></span>
       <span class="ct-task-copy"><strong>${escapeHtml(t.kind)}</strong><span>${escapeHtml(t.scope)} · ${escapeHtml(t.message || t.status)}</span></span>
       ${t.target ? `<a class="ct-task-link" href="#${escapeHtml(t.target)}">查看日志</a>` : ""}
-      ${t.status === "error" ? `<button type="button" class="ct-task-close" data-task-dismiss="${escapeHtml(taskKey(t))}" aria-label="关闭错误提示" title="关闭">×</button>` : ""}
+      ${t.status === "error" ? `<button type="button" class="ct-task-close" data-task-dismiss="${escapeHtml(String(t.id))}" aria-label="关闭错误提示" title="关闭">×</button>` : ""}
     </div>`
   ).join("")}</div>`;
 }
@@ -158,7 +152,7 @@ function setSidebarDrawer(open) {
 /* ---- shell draft bar: schema module publishes state via ct:draft ---- */
 let draftSuccessTimer = null;
 let toastTimer = null;
-function showSuccessToast(text) {
+function showToast(text) {
   const toast = document.getElementById("ct-toast");
   if (!toast) return;
   clearTimeout(toastTimer);
@@ -189,7 +183,7 @@ function renderDraftBar(detail) {
     clearTimeout(draftSuccessTimer);
     bar.hidden = true;
     bar.classList.remove("warn", "success");
-    showSuccessToast(successText);
+    showToast(successText);
     return;
   }
   clearTimeout(draftSuccessTimer);
@@ -342,15 +336,15 @@ export async function bootstrap() {
   if (draftSummaryBtn) draftSummaryBtn.addEventListener("click", () =>
     window.dispatchEvent(new CustomEvent("ct:draft-action", { detail: { type: "summary" } })));
 
-  /* taskbar: 轮询驱动渲染；错误卡片可手动关闭（按运行次序记忆，
-     轮询重渲染不会让已关闭的卡片复活）。 */
-  const dismissedTasks = new Set();
+  /* taskbar: 轮询驱动渲染。错误卡片可手动关闭：乐观移除 + 服务端记账
+     （POST /api/tasks/<id>/dismiss），关闭状态落在服务端，刷新页面不复活；
+     新一次导出由服务端重置，下一次失败照常提示。记账失败时给出提示，
+     卡片会随下一轮轮询恢复，不会无声消失。 */
   let lastTasks = [];
   const taskbarHost = document.getElementById("ct-taskbar");
   const renderTaskbarState = () => {
     if (!taskbarHost) return;
-    const visible = lastTasks.filter((t) => !dismissedTasks.has(taskKey(t)));
-    taskbarHost.innerHTML = renderTaskbar(visible);
+    taskbarHost.innerHTML = renderTaskbar(lastTasks);
   };
   onTasks((tasks) => {
     lastTasks = tasks || [];
@@ -359,9 +353,13 @@ export async function bootstrap() {
   if (taskbarHost) taskbarHost.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-task-dismiss]");
     if (!btn) return;
-    const key = btn.dataset.taskDismiss;
-    if (key) dismissedTasks.add(key);
+    const id = btn.dataset.taskDismiss;
+    if (!id) return;
+    lastTasks = lastTasks.filter((t) => String(t.id) !== id);
     renderTaskbarState();
+    api(`/api/tasks/${encodeURIComponent(id)}/dismiss`, { method: "POST" }).catch(() => {
+      showToast("关闭失败，请重试");
+    });
   });
   startPolling();
   return { activateModule, getPageState };

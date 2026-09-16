@@ -1,8 +1,10 @@
 """任务栏投影（右下角）：running 持续投影，error 只停留 ERROR_HOLD_SECONDS。
 
 回归背景：导出失败后 error 状态永不过期，右下角错误卡片无法消失
-（既无自动隐藏也无关闭按钮）。现在服务端按 settle 时间让 error 投影到期，
-并在 payload 里带上 started_at 供前端按运行次序记录手动关闭。
+（既无自动隐藏也无关闭按钮）。现在关闭状态由服务端记账
+（``dismiss_global`` / ``POST /api/tasks/<id>/dismiss``）：
+刷新页面不复活，新一次 ``start()`` 重置标记，下一次失败照常提示。
+``started_at`` 仅用于标识运行次序，前端不再自行记录关闭状态。
 """
 
 from __future__ import annotations
@@ -78,6 +80,77 @@ def test_fail_marks_settle_time_for_new_run(tmp_path: Path) -> None:
     task._fail("导出异常: boom")
 
     assert task.global_task(tmp_path) is not None
+
+
+def _wait_for_status(task: CanonicalExportTask, status: str, timeout: float = 10.0) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if task.status == status:
+            return
+        time.sleep(0.02)
+    raise AssertionError(f"任务未在 {timeout}s 内进入 {status}（当前 {task.status}）")
+
+
+def test_dismissed_error_leaves_taskbar_until_next_run(tmp_path: Path) -> None:
+    root = build_project(
+        tmp_path / "gd",
+        schemas=[
+            {
+                "table": "Item",
+                "primary": "Id",
+                "fields": [{"name": "Id", "type": "int32", "comment": "a"}],
+            }
+        ],
+    )
+    (root / "config" / "global.yaml").unlink()  # 让导出真实失败
+    task = CanonicalExportTask()
+
+    task.start(root)
+    _wait_for_status(task, "error")
+    assert task.global_task(root) is not None
+
+    assert task.dismiss_global() is True
+    assert task.global_task(root) is None
+
+    # 新一次 start()：服务端重置关闭标记，下一次失败照常提示
+    task.start(root)
+    _wait_for_status(task, "error")
+    assert task.global_task(root) is not None
+
+
+def test_dismiss_is_rejected_while_running(tmp_path: Path) -> None:
+    task = CanonicalExportTask()
+    task.root = tmp_path.resolve()
+    task.status = "running"
+    task.message = "导出进行中…"
+
+    assert task.dismiss_global() is False
+    assert task.global_task(tmp_path) is not None
+
+
+def test_tasks_dismiss_endpoint_hides_error(tmp_path: Path, monkeypatch) -> None:
+    client, root = _client(tmp_path)
+    monkeypatch.setattr(canonical_export_task, "root", root.resolve())
+    monkeypatch.setattr(canonical_export_task, "status", "error")
+    monkeypatch.setattr(canonical_export_task, "message", "校验未通过，导出中止")
+    monkeypatch.setattr(canonical_export_task, "_settled_at", time.monotonic())
+    monkeypatch.setattr(canonical_export_task, "_dismissed", False)
+
+    resp = client.post("/api/tasks/canonical-export/dismiss")
+
+    assert resp.status_code == 200
+    assert resp.get_json()["data"] == {"dismissed": True}
+    tasks = client.get("/api/tasks").get_json()["data"]
+    assert all(t["id"] != "canonical-export" for t in tasks)
+
+
+def test_tasks_dismiss_endpoint_rejects_unknown_id(tmp_path: Path) -> None:
+    client, _ = _client(tmp_path)
+
+    resp = client.post("/api/tasks/nope/dismiss")
+
+    assert resp.status_code == 404
+    assert "未知任务" in resp.get_json()["error"]
 
 
 def test_tasks_endpoint_drops_expired_error(tmp_path: Path, monkeypatch) -> None:

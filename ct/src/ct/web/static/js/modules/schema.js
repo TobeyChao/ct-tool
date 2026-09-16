@@ -7,7 +7,7 @@
    Draft state lives in the shared pageState and is surfaced by the shell draft
    bar via ct:draft. */
 import { api } from "../core/api.js";
-import { fuzzyScore } from "../core/fuzzy.js";
+import { fuzzyScore, highlightRanges } from "../core/fuzzy.js";
 import { loadDraft, saveDraft, clearDraft } from "../core/draft-store.js";
 import { getPageState } from "../app-shell.js";
 import { escapeHtml } from "../core/dom.js";
@@ -52,13 +52,16 @@ function typeText(resource) {
 
 function highlight(text, query) {
   if (!query) return escapeHtml(text);
-  const lower = text.toLowerCase();
-  const q = query.toLowerCase();
-  const index = lower.indexOf(q);
-  if (index < 0) return escapeHtml(text);
-  return escapeHtml(text.slice(0, index))
-    + "<mark>" + escapeHtml(text.slice(index, index + q.length)) + "</mark>"
-    + escapeHtml(text.slice(index + q.length));
+  const ranges = highlightRanges(text, query);
+  if (!ranges.length) return escapeHtml(text);
+  let cursor = 0;
+  let result = "";
+  for (const [start, end] of ranges) {
+    result += escapeHtml(text.slice(cursor, start));
+    result += "<mark>" + escapeHtml(text.slice(start, end)) + "</mark>";
+    cursor = end;
+  }
+  return result + escapeHtml(text.slice(cursor));
 }
 
 export async function mount(container) {
@@ -71,7 +74,6 @@ export async function mount(container) {
   state.resourceOpen = state.resourceOpen ?? false; // panes default collapsed
   state.collapsedGroups = state.collapsedGroups || readJsonPreference("ct-resource-groups", {});
   state.recentResources = state.recentResources || readJsonPreference("ct-recent-resources", []);
-  state.indexesByTable = state.indexesByTable || {};
   state.commands = state.commands || [];
   state.cursor = state.commands.length;
   state.schemaRevision = state.schemaRevision || "";
@@ -174,15 +176,6 @@ export async function mount(container) {
       return;
     }
     if (!stored || !stored.commands.length) return;
-    if (stored.legacy) {
-      // v1 never stored the cursor: keep the commands viewable (redoable) but do
-      // not resurrect undone steps or pretend they are pending saves.
-      s.commands = stored.commands;
-      s.cursor = 0;
-      s.notice = "旧格式草稿需核对：已保留命令，未计为待保存";
-      publishDraft();
-      return;
-    }
     if (stored.schemaRevision && stored.schemaRevision !== s.schemaRevision) {
       s.commands = stored.commands;
       s.cursor = stored.cursor || 0;
@@ -1095,7 +1088,7 @@ export async function mount(container) {
 
   function renderIndexCards(resource) {
     if (!resource.primary) return "";
-    const current = state.indexesByTable[resource.resourceId] || [];
+    const current = resource.indexes || [];
     // CodeName 索引**固定指向名为 CodeName 的 string 字段** —— 不是「随便指一个 string 字段」，
     // 所以这里是一个开关，没有字段选择器。表里没有 CodeName 字段时禁用（后端也会拒）。
     const codenameOn = current.some((i) => i.kind === "codename");
@@ -1120,11 +1113,10 @@ export async function mount(container) {
     const codenameBox = editorBody.querySelector("[data-index-codename]");
     if (codenameBox) {
       codenameBox.addEventListener("change", () => {
-        const rest = (state.indexesByTable[resource.resourceId] || []).filter(
+        const rest = (resource.indexes || []).filter(
           (i) => i.kind !== "codename"
         );
         const next = codenameBox.checked ? [...rest, { kind: "codename" }] : rest;
-        state.indexesByTable[resource.resourceId] = next;
         pushCommand({ type: "set_indexes", payload: { table: resource.resourceId, indexes: next } });
       });
     }

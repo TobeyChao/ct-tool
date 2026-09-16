@@ -83,7 +83,7 @@ def test_canonical_export_task_reports_phases_and_history(tmp_path: Path) -> Non
         history = json.loads(
             (workspace / "cache" / "panel_history.json").read_text(encoding="utf-8")
         )
-        assert history[-1]["result"] == "成功"
+        assert history[-1]["result"] == "success"  # 状态码契约，前端负责本地化
         assert history[-1]["tables"] == 4
     finally:
         canonical_export_task.status = "idle"

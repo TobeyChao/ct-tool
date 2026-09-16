@@ -2,6 +2,7 @@
 import { api } from "../core/api.js";
 import { escapeHtml } from "../core/dom.js";
 import { confirmDialog, openDialog } from "../core/dialog.js";
+import { resultLabel } from "../core/labels.js";
 
 const STATUS = {
   idle: { label: "准备就绪", badge: "ct-badge-mute" },
@@ -278,7 +279,7 @@ export async function mount(container) {
   function lastExportText() {
     const entry = state.lastExport;
     if (!entry) return "暂无记录";
-    return `${String(entry.time)} · ${String(entry.result)}`;
+    return `${String(entry.time)} · ${resultLabel(entry.result)}`;
   }
 
   function outputPath() {

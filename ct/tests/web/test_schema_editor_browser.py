@@ -128,6 +128,13 @@ def test_resource_groups_and_filter(editor_url: str, chromium_browser: Any) -> N
     filtered = page.locator("#page-schema .ct-resource-row").all_text_contents()
     assert any("Item" in n for n in filtered)
     assert len(filtered) == 2  # Item + ItemRarity
+
+    # Subsequence fuzzy matches highlight the actual matched characters rather
+    # than looking for one contiguous substring.
+    page.locator("#page-schema #resource-filter").fill("IR")
+    page.wait_for_timeout(50)
+    rarity = page.locator('#page-schema .ct-resource-row[data-name="ItemRarity"]')
+    assert rarity.locator("mark").all_text_contents() == ["I", "R"]
     context.close()
 
 
@@ -558,6 +565,34 @@ def test_query_index_cards_emit_set_indexes(editor_url: str, chromium_browser: A
     context.close()
 
 
+def test_query_index_cards_restore_persisted_and_draft_state(
+    editor_server: tuple[str, Path], chromium_browser: Any
+) -> None:
+    url, workspace = editor_server
+    item = workspace / "config" / "schemas" / "Item.yaml"
+    item.write_text(
+        item.read_text(encoding="utf-8") + "indexes:\n  - kind: codename\n",
+        encoding="utf-8",
+    )
+
+    context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
+    page = context.new_page()
+    _open_schema_module(page, url)
+    _select_item(page)
+    page.get_by_role("button", name="查询索引").click()
+    checkbox = page.locator("#page-schema [data-index-codename]")
+    playwright_api.expect(checkbox).to_be_checked()
+
+    checkbox.uncheck()
+    _expect_resources(page, 1)
+    page.reload(wait_until="load")
+    _open_schema_module(page, url)
+    _select_item(page)
+    page.get_by_role("button", name="查询索引").click()
+    playwright_api.expect(page.locator("#page-schema [data-index-codename]")).not_to_be_checked()
+    context.close()
+
+
 def test_enum_editor_value_operations(editor_url: str, chromium_browser: Any) -> None:
     context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
     page = context.new_page()
@@ -907,45 +942,6 @@ def test_net_difference_toggle_round_trip_keeps_history(
     context.close()
 
 
-def test_legacy_draft_is_kept_for_inspection(
-    editor_server: tuple[str, Path], chromium_browser: Any
-) -> None:
-    url, workspace = editor_server
-    context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
-    page = context.new_page()
-    page.goto(url, wait_until="load")
-    # seed a v1 record: commands but no cursor / schemaRevision
-    page.evaluate(
-        """(root) => new Promise((resolve) => {
-          const req = indexedDB.open('ct-drafts', 1);
-          req.onupgradeneeded = () => {
-            if (!req.result.objectStoreNames.contains('drafts')) {
-              req.result.createObjectStore('drafts', { keyPath: 'key' });
-            }
-          };
-          req.onsuccess = () => {
-            const tx = req.result.transaction('drafts', 'readwrite');
-            tx.objectStore('drafts').put({
-              key: 'draft:' + root,
-              format: 'ct-draft-v1',
-              revision: 'stale-revision',
-              commands: [{ type: 'add_field', payload: { owner: 'table:Item', field: { name: 'Legacy', type: 'int32' } } }],
-            });
-            tx.oncomplete = () => resolve(true);
-          };
-        })""",
-        str(workspace),
-    )
-    page.reload(wait_until="load")
-    _open_schema_module(page, url)
-    _select_item(page)
-    # 旧格式草稿：保留命令（可重做）但不当作待保存状态
-    _wait_draftbar(page, "旧格式草稿需核对")
-    assert page.locator("#ct-draft-save").is_disabled()
-    assert page.locator("#ct-draft-redo").is_enabled()
-    context.close()
-
-
 def test_persistence_failure_warning_stays_visible(
     editor_server: tuple[str, Path], chromium_browser: Any
 ) -> None:
@@ -960,6 +956,36 @@ def test_persistence_failure_warning_stays_visible(
     _add_field(page, "Price")
     _wait_draftbar(page, "草稿未持久化")
     assert page.locator("#ct-draftbar").is_visible()
+    context.close()
+
+
+def test_persistence_retries_after_transient_database_open_failure(
+    editor_server: tuple[str, Path], chromium_browser: Any
+) -> None:
+    url, _workspace = editor_server
+    context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
+    page = context.new_page()
+    page.add_init_script(
+        """() => {
+          const original = window.indexedDB;
+          let reads = 0;
+          Object.defineProperty(window, 'indexedDB', {
+            configurable: true,
+            get() {
+              reads += 1;
+              if (reads === 1) throw new Error('temporary indexedDB failure');
+              return original;
+            },
+          });
+        }"""
+    )
+    _open_schema_module(page, url)
+    _select_item(page)
+    _add_field(page, "Price")
+    _expect_resources(page, 1)
+    page.wait_for_function(
+        "() => !(document.getElementById('ct-draft-txt')?.textContent || '').includes('草稿未持久化')"
+    )
     context.close()
 
 

@@ -46,6 +46,7 @@ class _BaseTask:
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
     _started_at: float = field(default=0.0, repr=False)
     _settled_at: float | None = field(default=None, repr=False)
+    _dismissed: bool = field(default=False, repr=False)
 
     @property
     def export_steps(self) -> list[str]:
@@ -71,6 +72,7 @@ class _BaseTask:
             self._token = CancelToken()
             self._started_at = time.time()
             self._settled_at = None
+            self._dismissed = False
             self._thread = threading.Thread(
                 target=self._run, args=(root, forced), daemon=True
             )
@@ -97,15 +99,29 @@ class _BaseTask:
                 "cancelled": self.cancelled,
             }
 
+    def dismiss_global(self) -> bool:
+        """关闭右下角的失败卡片（服务端记账，刷新页面不复活）。
+
+        只对 error 态有效；running 是实时进度，不允许关闭。
+        新一次 ``start()`` 会重置标记，下一次失败照常提示。
+        """
+        with self._lock:
+            if self.status != "error":
+                return False
+            self._dismissed = True
+            return True
+
     def global_task(self, root: Path) -> dict | None:
         """右下角任务栏投影：running 持续投影，error 只停留 ``ERROR_HOLD_SECONDS``。
 
         失败卡片到期后从任务栏消失（日志与导出页保留完整状态）；
-        ``started_at`` 让前端按运行次序区分关闭的是哪一次失败，
-        新一次导出的错误不会被上一次的关闭记录误伤。
+        已被用户手动关闭的失败卡片同样不再投影。
+        ``started_at`` 标识运行次序，供消费方区分不同一轮导出。
         """
         with self._lock:
             if self.root != root.resolve() or self.status not in {"running", "error"}:
+                return None
+            if self._dismissed:
                 return None
             if (
                 self.status == "error"
@@ -143,7 +159,6 @@ class _BaseTask:
         """完成态：写历史 + 置 done。"""
         entry = make_entry(
             scope=scope,
-            result="成功",
             tables=tables,
             elapsed=elapsed,
             forced=self.forced,

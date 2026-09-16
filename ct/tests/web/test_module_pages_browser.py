@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 import threading
 from pathlib import Path
@@ -21,11 +22,17 @@ FIXTURE = CT_ROOT / "tests/fixtures/repository_cutover/workspace"
 
 
 @pytest.fixture
-def module_url(tmp_path) -> Iterator[str]:
-    workspace = tmp_path / "workspace"
+def module_workspace(tmp_path) -> Iterator[Path]:
+    # 长目录名保证失败信息里的路径足够长，回归测试不依赖系统 tmp 目录的长度。
+    workspace = tmp_path / ("workspace-" + "path-segment" * 16)
     for section in ("config", "excel", "i18n"):
         shutil.copytree(FIXTURE / section, workspace / section)
-    server = make_server("127.0.0.1", 0, create_app(workspace), threaded=True)
+    yield workspace
+
+
+@pytest.fixture
+def module_url(module_workspace) -> Iterator[str]:
+    server = make_server("127.0.0.1", 0, create_app(module_workspace), threaded=True)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
@@ -73,6 +80,119 @@ def test_export_summary_refreshes_after_run(module_url: str, chromium_browser: A
     page.close()
 
 
+def test_export_offers_missing_template_regeneration(
+    module_url: str, module_workspace: Path, chromium_browser: Any, monkeypatch
+) -> None:
+    """新增表还没有 Excel 模板（missing）：导出页必须提供重建入口并真正落盘。
+
+    之前导出页只看 drifted，缺模板的新表既没有按钮、上下文还显示「无」，
+    用户只能靠 Schema 页横幅（且刷新后消失）发现这个问题。
+    """
+    # 导出进度是进程级单例：同文件前序用例可能真跑过导出（done/error 残留）。
+    # 换一个干净实例，保证断言的是「首次进入导出页」的空态与上下文。
+    import ct.web.app as web_app
+    from ct.web.tasks import CanonicalExportTask
+
+    monkeypatch.setattr(web_app, "canonical_export_task", CanonicalExportTask())
+
+    missing_book = module_workspace / "excel" / "Quest.xlsx"
+    missing_book.unlink()  # 让 Quest 成为缺模板的表（manifest 仍在，无碍）
+
+    page = chromium_browser.new_page(viewport={"width": 1600, "height": 900})
+    page.goto(module_url, wait_until="load")
+    page.locator('.ct-sitem[data-module="export"]').click()
+    page.wait_for_selector("#export-regenerate-template")
+    playwright_api.expect(page.locator("#export-context-drifted")).to_have_text("1 张表")
+    assert "1 张表模板待更新" in page.locator(".ct-export-empty").inner_text()
+
+    page.locator("#export-regenerate-template").click()
+    dialog = page.locator(".ct-dialog-mask.open")
+    playwright_api.expect(dialog).to_be_visible()
+    # 缺失表是新建语义：说明「新建」且不警告覆盖
+    assert "还没有 Excel 模板" in dialog.inner_text()
+    assert "不会覆盖任何已有文件" in dialog.inner_text()
+    assert "覆盖" not in dialog.locator("[data-confirm]").inner_text()
+    dialog.locator("[data-confirm]").click()
+    playwright_api.expect(dialog).not_to_be_visible()
+    assert missing_book.exists()
+    # Quest 生成后进入 changed，模板待办清零 → 入口消失
+    playwright_api.expect(page.locator("#export-regenerate-template")).to_have_count(0)
+    page.close()
+
+
+def test_export_failure_message_wraps_inside_context_card(
+    module_url: str, module_workspace: Path, chromium_browser: Any
+) -> None:
+    """失败信息（含长路径等不可断行 token）必须换行，不能画出“本次导出”卡片。"""
+    from ct.web.logs import log_buffer
+
+    # 失败路径会向共享日志缓冲写入 ERROR（含“导出”字样），结束后复原，
+    # 避免污染后续日志筛选类测试。
+    log_entries_before = log_buffer.snapshot()
+    try:
+        _assert_export_failure_message_wraps(module_url, module_workspace, chromium_browser)
+    finally:
+        log_buffer.restore(log_entries_before)
+
+
+def test_taskbar_dismiss_shows_toast_when_request_fails(
+    module_url: str, module_workspace: Path, chromium_browser: Any, monkeypatch
+) -> None:
+    """dismiss 请求失败不能无声无息：toast 提示，卡片随下一轮轮询恢复。"""
+    import ct.web.app as web_app
+    from ct.web.logs import log_buffer
+    from ct.web.tasks import CanonicalExportTask
+
+    # 导出进度是进程级单例：换干净实例，避免同文件前序用例的状态残留。
+    monkeypatch.setattr(web_app, "canonical_export_task", CanonicalExportTask())
+    log_entries_before = log_buffer.snapshot()
+    try:
+        (module_workspace / "config" / "global.yaml").unlink()
+        page = chromium_browser.new_page(viewport={"width": 1280, "height": 720})
+        page.route("**/api/tasks/*/dismiss", lambda route: route.abort())
+        page.goto(module_url, wait_until="load")
+        page.locator('.ct-sitem[data-module="export"]').click()
+        page.locator("#page-export #export-start").click()
+        close_btn = page.locator("#ct-taskbar .ct-task-close")
+        close_btn.wait_for(timeout=10_000)
+
+        close_btn.click()
+        playwright_api.expect(page.locator("#ct-toast")).to_be_visible()
+        playwright_api.expect(page.locator("#ct-toast")).to_contain_text("关闭失败")
+        # 乐观移除只是本地视角：服务端没记账，卡片随下一轮轮询恢复
+        playwright_api.expect(close_btn).to_be_visible()
+        page.close()
+    finally:
+        log_buffer.restore(log_entries_before)
+
+
+def _assert_export_failure_message_wraps(
+    module_url: str, module_workspace: Path, chromium_browser: Any
+) -> None:
+    (module_workspace / "config" / "global.yaml").unlink()
+    page = chromium_browser.new_page(viewport={"width": 1280, "height": 720})
+    page.goto(module_url, wait_until="load")
+    page.locator('.ct-sitem[data-module="export"]').click()
+    page.locator("#page-export #export-start").click()
+    page.locator("#export-badge", has_text="导出中止").wait_for(timeout=10_000)
+
+    result = page.locator("#export-context-result")
+    assert "文件不存在" in result.inner_text()
+    stays_inside = page.evaluate(
+        """() => {
+          const measured = (el) => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect(); };
+          const card = document.querySelector('#page-export .ct-export-context');
+          const section = document.querySelector('#page-export .ct-workbench-section');
+          return {
+            result: measured(document.querySelector('#export-context-result')).right <= card.getBoundingClientRect().right,
+            message: measured(document.querySelector('#export-message')).right <= section.getBoundingClientRect().right,
+          };
+        }"""
+    )
+    assert stays_inside == {"result": True, "message": True}
+    page.close()
+
+
 def test_i18n_module_renders_lang_rows(module_url: str, chromium_browser: Any) -> None:
     page = chromium_browser.new_page(viewport={"width": 1600, "height": 900})
     page.goto(module_url, wait_until="load")
@@ -85,6 +205,27 @@ def test_i18n_module_renders_lang_rows(module_url: str, chromium_browser: Any) -
     # language pills en/ja are offered in the toolbar
     pills = page.locator("#page-i18n [data-lang]").all_text_contents()
     assert "en" in pills and "ja" in pills
+    page.close()
+
+
+def test_i18n_orphan_status_uses_localized_badge(
+    module_url: str, module_workspace: Path, chromium_browser: Any
+) -> None:
+    path = module_workspace / "i18n" / "en" / "Item.json"
+    entries = json.loads(path.read_text(encoding="utf-8"))
+    entries["999.Name"] = {
+        "source": "已删除条目",
+        "text": "Removed entry",
+        "confirmed": True,
+        "status": "orphan",
+    }
+    path.write_text(json.dumps(entries, ensure_ascii=False), encoding="utf-8")
+
+    page = chromium_browser.new_page(viewport={"width": 1600, "height": 900})
+    page.goto(module_url, wait_until="load")
+    page.locator('.ct-sitem[data-module="i18n"]').click()
+    page.wait_for_selector("#page-i18n .ct-data tbody tr")
+    playwright_api.expect(page.locator("#page-i18n .ct-badge-mute", has_text="无主")).to_have_count(1)
     page.close()
 
 
@@ -105,6 +246,26 @@ def test_history_module_renders_empty(module_url: str, chromium_browser: Any) ->
     page.wait_for_selector("#page-history .ct-empty-sub")
     # fresh cache -> empty state
     assert page.locator("#page-history .ct-empty-sub", has_text="暂无导出历史").count() == 1
+    page.close()
+
+
+def test_history_success_uses_success_badge(
+    module_url: str, module_workspace: Path, chromium_browser: Any
+) -> None:
+    from ct.web.history import append_history, make_entry
+
+    cache = module_workspace / "cache"
+    append_history(cache, make_entry(scope="全部表 × 全量语言", tables=4, elapsed=0.2))
+    # 旧账本直接存展示串：读取时归一为状态码，渲染同样落在成功徽章上
+    append_history(
+        cache,
+        make_entry(scope="全部表 × 全量语言", result="成功", tables=3, elapsed=0.1),
+    )
+    page = chromium_browser.new_page(viewport={"width": 1600, "height": 900})
+    page.goto(module_url, wait_until="load")
+    page.locator('.ct-sitem[data-module="history"]').click()
+    playwright_api.expect(page.locator("#page-history .ct-badge-ok", has_text="成功")).to_have_count(2)
+    playwright_api.expect(page.locator("#page-history .ct-badge-err")).to_have_count(0)
     page.close()
 
 

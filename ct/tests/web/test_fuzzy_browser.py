@@ -88,3 +88,28 @@ def test_highlight_ranges(fuzzy_url: str, chromium_browser: Any) -> None:
     assert ranges == [[0, 1], [4, 5]]
     empty = page.evaluate("() => __fuzzy.highlightRanges('ItemRarity', 'zz')")
     assert empty == []
+
+
+def test_highlight_ranges_respect_unicode_boundaries(
+    fuzzy_url: str, chromium_browser: Any
+) -> None:
+    """高亮下标必须在原文码位边界上：不劈代理对，不因变长小写漂移。
+
+    旧实现在 toLowerCase 后的串上算下标、回原文切片：星面字符（𝐀）会被
+    劈成孤立代理项；İ（小写为 i̇，两个码元）之后的匹配全部错位。
+    """
+    page = chromium_browser.new_page()
+    page.goto(fuzzy_url, wait_until="load")
+    _load(page)
+    result = page.evaluate(
+        """() => ({
+          astralQuery: __fuzzy.highlightRanges('𝐀R', '𝐀'),
+          astralText: __fuzzy.highlightRanges('𝐀R', 'R'),
+          lengthChangingLower: __fuzzy.highlightRanges('İtemRarity', 'IR'),
+        })"""
+    )
+    # 代理对整体命中（旧实现返回 [[0, 1]]，劈开 𝐀）
+    assert result["astralQuery"] == [[0, 2]]
+    assert result["astralText"] == [[2, 3]]
+    # İ 变长小写不再使后续下标漂移：I 命中 İ 本身，R 仍在原位
+    assert result["lengthChangingLower"] == [[0, 1], [4, 5]]

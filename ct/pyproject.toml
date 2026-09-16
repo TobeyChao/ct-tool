@@ -35,7 +35,6 @@ include = ["ct*"]
     "static/js/*",
     "static/js/*/*",
     "static/styles/*",
-    "static/vendor/*",
 ]
 
 [tool.pytest.ini_options]

@@ -17,15 +17,20 @@ export function fuzzyScore(text, query) {
   return matched ? gaps + cursor - lower.length + text.length : Infinity;
 }
 
-/* Returns [0-based start, end) ranges of matched characters for highlighting. */
+/* Returns [0-based start, end) code-unit ranges in `text` for highlighting.
+   匹配在码位（code point）级别进行：返回的下标永远落在原文码位边界上，
+   不会劈开代理对，也不受 toLowerCase 变长（如 İ → i̇）造成的下标漂移影响。 */
 export function highlightRanges(text, query) {
   if (!query) return [];
-  const lower = text.toLowerCase();
-  const q = query.toLowerCase();
+  const points = Array.from(text);
+  const lower = points.map((p) => p.toLowerCase());
   const ranges = [];
   let cursor = 0;
-  for (const ch of q) {
-    const at = lower.indexOf(ch, cursor);
+  for (const ch of Array.from(query.toLowerCase())) {
+    let at = -1;
+    for (let i = cursor; i < lower.length; i++) {
+      if (lower[i].startsWith(ch)) { at = i; break; }
+    }
     if (at < 0) return [];
     if (ranges.length && at === ranges[ranges.length - 1][1]) {
       ranges[ranges.length - 1][1] = at + 1;
@@ -34,7 +39,12 @@ export function highlightRanges(text, query) {
     }
     cursor = at + 1;
   }
-  return ranges;
+  // 码位下标 → 原文 UTF-16 下标
+  const offsets = [];
+  let unit = 0;
+  for (const p of points) { offsets.push(unit); unit += p.length; }
+  offsets.push(unit);
+  return ranges.map(([s, e]) => [offsets[s], offsets[e]]);
 }
 
 /* Rank + deterministic tie-break by name. */
