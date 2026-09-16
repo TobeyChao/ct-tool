@@ -15,7 +15,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from ct.app.canonical_workspace import CanonicalWorkspace
-from ct.app.data_preparation import prepare_tables, records_map
+from ct.app.data_preparation import enums_map, prepare_tables, records_map
 from ct.cache.canonical_state import (
     CanonicalCacheState,
     load_state,
@@ -28,7 +28,9 @@ from ct.excel.canonical_template import generate_canonical_template
 from ct.excel.layout import Column, Layout, build_layout
 from ct.excel.layout_manifest import LayoutManifest, save_manifest
 from ct.excel.planning import plan_excel_migration
+from ct.export.canonical_binary import probe_row_layout
 from ct.schema.hashing import compute_schema_hash
+from ct.schema.resources import TableResource
 from ct.storage.publication import FilePublisher, PublicationError
 
 
@@ -141,6 +143,26 @@ def _load_manifest(manifest_dir: Path, table: str) -> LayoutManifest | None:
     from ct.excel.layout_manifest import load_manifest
 
     return load_manifest(manifest_dir, table)
+
+
+def _manifest_layout_info(
+    table: TableResource, ws: CanonicalWorkspace
+) -> dict[str, object] | None:
+    """模板路径要写入的 ``slot_offsets``（定宽表）——**与导出路径同源**。
+
+    manifest 的六个字段都是 schema 的纯函数（`excel-processing` 规格），定宽表的
+    表级 slot→offset 由 ``plan_object_layout`` 直接从 schema 推导，不需要任何数据。
+    导出路径通过 ``TableBuild.to_layout_info`` 带上它；模板路径少这一步就会把
+    offsets 写空 —— 同一份 schema 下「只生成模板」将产出导出绝不会写的内容，且
+    ``uniform: false`` 才是唯一该写空偏移的情况。
+    """
+    if not table.uniform:
+        return None
+    return {
+        "slot_offsets": probe_row_layout(
+            table, records=records_map(ws), enums=enums_map(ws)
+        )
+    }
 
 
 def _layout_from_manifest(table_id: str, manifest: LayoutManifest) -> Layout:
@@ -353,6 +375,7 @@ def canonical_gen_template(
         )
         out_path = excel_dir / (table.excel_file or f"{table.table}.xlsx")
         old_manifest = _load_manifest(manifest_dir, table.table)
+        layout_info = _manifest_layout_info(table, ws)
         if out_path.exists() and old_manifest is not None:
             old_layout = _layout_from_manifest(table.resource_id, old_manifest)
             # Create the candidate directly under excel_dir so it receives the
@@ -385,7 +408,7 @@ def canonical_gen_template(
             save_manifest(
                 manifest_dir,
                 table.table,
-                LayoutManifest.from_layout(layout),
+                LayoutManifest.from_layout(layout, layout_info=layout_info),
             )
         else:
             if out_path.exists() and old_manifest is None:
@@ -396,7 +419,11 @@ def canonical_gen_template(
             generate_canonical_template(
                 layout, out_path, enums={e.name: e for e in ws.enums}, primary=table.primary
             )
-            save_manifest(manifest_dir, table.table, LayoutManifest.from_layout(layout))
+            save_manifest(
+                manifest_dir,
+                table.table,
+                LayoutManifest.from_layout(layout, layout_info=layout_info),
+            )
         messages.append(f"模板已生成: {table.table}")
     if targets:
         state = load_state(cache_dir) or CanonicalCacheState()

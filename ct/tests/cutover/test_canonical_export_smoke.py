@@ -138,6 +138,26 @@ def test_data_edit_does_not_touch_manifest(tmp_path: Path) -> None:
     assert manifest.read_bytes() == before
 
 
+def test_gen_template_writes_the_same_manifest_as_export(tmp_path: Path) -> None:
+    """两条写 manifest 的路径同源：导出后只生成模板，manifest 逐字节不变。
+
+    定宽表的 ``slot_offsets`` 是 schema 的纯函数（`plan_object_layout` 直接推导，
+    不需要探针数据）。模板路径若忘记带上它，就会把 offsets 写空 —— 同一份 schema
+    下产出导出绝不会写的内容，且违反「只有 ``uniform: false`` 才写空偏移」的规格。
+    """
+    from ct.app.canonical_commands import canonical_gen_template
+
+    workspace = _export_fixture(tmp_path)
+    manifests_dir = workspace / "excel" / "layout_manifests"
+    before = {path.name: path.read_bytes() for path in manifests_dir.glob("*.json")}
+    assert dict(json.loads(before["Item.json"])["slot_offsets"]), "前置：定宽表应有偏移"
+
+    canonical_gen_template(workspace, all_tables=True)
+
+    for name, content in before.items():
+        assert (manifests_dir / name).read_bytes() == content, name
+
+
 def test_uniform_table_accessor_has_no_offset_table(tmp_path: Path) -> None:
     workspace = _export_fixture(tmp_path)
     generated = workspace / "output" / "generated" / "csharp"
