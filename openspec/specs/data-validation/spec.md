@@ -43,7 +43,7 @@
 - **THEN** 不对 `CodeName` 施加非空/唯一约束（它只是一个普通字段）
 
 ### Requirement: Validate cross-table references
-工具 SHALL 按拓扑顺序处理，校验 `ref` 字段的值在目标表的主键集合中存在。
+工具 SHALL 按拓扑顺序处理，校验 `ref` 字段的值在目标表的主键集合中存在。`ref` 只能指向目标表主键（由加载/候选校验保证，非主键声明在加载阶段即被拒绝），因此值域校验恒定等于「目标表主键集合」，不随声明里的字段段变化。
 
 #### Scenario: Valid reference
 - **WHEN** `Item.ItemTypeId = 3`，且 ItemType 表中 id=3 存在

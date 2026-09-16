@@ -20,11 +20,23 @@
 - **THEN** 工具报错指明冲突的文件名，终止执行
 
 ### Requirement: Build cross-table reference dependency graph
-工具 SHALL 分析所有 schema 中的 `ref` 字段，构建有向依赖图，用于确定导出和校验顺序。
+工具 SHALL 分析所有 schema 中的 `ref` 字段，构建有向依赖图，用于确定导出和校验顺序。`ref` 是主键外键，其值 SHALL 为 `目标表.目标表主键`；目标表与目标字段 SHALL 在加载与候选校验阶段一起校验，缺失或非主键都在该阶段报错，并指明 owner 字段路径与当前声明值。
 
 #### Scenario: Valid reference graph
 - **WHEN** Item 的 `ItemTypeId` 字段引用 `ItemType.Id`
 - **THEN** 依赖图中 Item → ItemType 存在边，ItemType 先于 Item 处理
+
+#### Scenario: Reference target is not the target primary key
+- **WHEN** Item 的字段声明 `ref: ItemType.CodeName`，而 ItemType 的主键是 `Id`
+- **THEN** 加载/候选校验报错 `table:Item/<字段>: ref 目标必须是目标表主键 'ItemType.Id'（当前 'ItemType.CodeName'）`，终止执行
+
+#### Scenario: Reference target field is a typo
+- **WHEN** 字段声明 `ref: ItemType.Nope`，ItemType 存在但没有 `Nope` 字段
+- **THEN** 命中同一条主键规则并报错，不静默接受无法校验的字段名
+
+#### Scenario: Referenced table missing
+- **WHEN** 字段声明 `ref: Nope.Id`，工作区没有 Nope 表
+- **THEN** 报错指明 owner 字段路径与缺失表名，终止执行
 
 #### Scenario: Circular reference detected
 - **WHEN** 表 A 引用表 B，表 B 引用表 A

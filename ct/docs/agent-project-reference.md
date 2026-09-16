@@ -128,7 +128,7 @@ launcher/tool/build_windows.ps1
 - macOS：`launcher/build/macos/Build/Products/Release/ct_launcher.app`（内置 `Contents/Resources/runtime/`）
 - Windows：`launcher/build/windows/x64/runner/Release/`（`ct_launcher.exe` + 同级 `runtime\`）
 
-launcher 启动优先级：内置运行时 → 设置中的工具目录（venv）→ 报错并引导配置。游戏仓库（如 fabulous-game）消费方式：把编译好的应用放入仓库（如 `Config/launcher-apps/`），用户双击启动后，在设置页把工作区指向 `Config/gd` 即可，无需配置工具目录。
+launcher 启动优先级：内置运行时 → 设置中的工具目录（venv）→ 报错并引导配置。只改 ct、外壳未变时不必重建整个应用：重新冻结运行时并覆盖包内 `runtime/` 即可（步骤见 `launcher/README.md` 的「只刷新内置运行时」）。游戏仓库（如 fabulous-game）消费方式：把编译好的应用放入仓库（如 `Config/launcher-apps/`），用户双击启动后，在设置页把工作区指向 `Config/gd` 即可，无需配置工具目录。
 
 ---
 
@@ -254,7 +254,7 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 | `ct/schema/naming.py` / `name_validation.py` | 命名校验（首字符大写、不以 `_` 开头/结尾；WYSIWYG 恒等域） |
 | `ct/schema/indexes.py` / `identity.py` | 查询索引（仅 `kind: codename`，固定指向字段 `CodeName`）/ 字段稳定身份 |
 | `ct/excel/layout.py` | `Layout`：字段→Excel 列的唯一映射真源（stable_path/group/depth/annotation） |
-| `ct/excel/layout_manifest.py` | Layout manifest 落 cache（schema_hash + 列布局） |
+| `ct/excel/layout_manifest.py` | Layout manifest 落 `excel/layout_manifests/<table>.json`（schema_hash + 列布局） |
 | `ct/excel/canonical_reader.py` | 按 Layout 读 Excel，重建 canonical 行（record→dict、展开 vector<Record>→按组读） |
 | `ct/excel/canonical_template.py` | 生成模板工作簿（表头文本规则对闸门公开：`segments_for`） |
 | `ct/excel/reading_compat.py` | 读取兼容性闸门：manifest 列映射 + 真实受管表头 vs 当前布局，读取前证明可安全解释数据 |
@@ -262,7 +262,7 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 | `ct/export/canonical_fbs.py` | 共享 `types.fbs` + 各表 FBS + 校验 |
 | `ct/export/canonical_binary.py` | 手写 FlatBuffers bytes + `DataBundle` |
 | `ct/export/canonical_json.py` | `{json_key: rows}` JSON 序列化 |
-| `ct/export/canonical_accessor.py` / `_model.py` | C#/Lua 共享 `AccessorModel` + 生成 |
+| `ct/export/canonical_accessor.py` / `canonical_accessor_model.py` | C#/Lua 共享 `AccessorModel` + 生成 |
 | `ct/export/index_query.py` | FNV-1a 64 哈希 + 精确字符串 bucket 查询助手（不生成 Code/Group 查询 API） |
 | `ct/export/deploy.py` | 同步产物到 Unity Assets（`deploy(config, for_build, reporter)`） |
 | `ct/export/i18n/state.py` | 翻译状态机（纯函数） |
@@ -273,7 +273,7 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 | `ct/web/app.py` | Flask 薄封装 + canonical JSON API |
 | `ct/web/tasks.py` | `CanonicalExportTask` 后台导出任务（阶段上报 + 历史） |
 | `ct/web/schema_workspace_api.py` | Draft/Candidate/Save 结构化 JSON API（不接受前端 YAML 文本；无持久化计划与 TTL） |
-| `ct/web/history.py` / `logs.py` / `task_state.py` | 面板历史 / 日志缓冲 / 任务状态 |
+| `ct/web/history.py` / `logs.py` / `task_state.py` | 面板历史 / 日志缓冲（`PANEL_MODULES` = 导出·校验·i18n·模板·系统，任务显式 `log_buffer.add`，库层按 `ct.web.<模块>` logger 名归类）/ 任务状态 |
 | `ct/web/static/` | 原生 JavaScript 前端（无构建，ES modules 按 `js/core`、`js/modules` 与 `styles` 分层） |
 
 ### 关键设计决策
@@ -286,7 +286,7 @@ config/schemas/*.yaml + config/types/*.yaml  ──►  YamlResourceRepository �
 
 **可恢复发布与工作区锁**：全部生成与 FBS/定宽检查通过后，才在**一个可恢复事务**里改写正式输出与 `excel/layout_manifests/`（含全量导出的陈旧文件删除）；``.ct/export-publication.json`` 记录 prepared→backed_up→publishing→committed 四阶段，备份完成前不改写正式目标，中断后下次 export/deploy 先幂等恢复。同一规范化 root 的 export/deploy 由 `.ct/export.lock` 排他（系统 advisory lock，进程死亡自动释放；文件存在 ≠ 已加锁）。生成缓存 `cache/artifacts/` 可丢弃，成功账本 `cache/state.json` 只在发布（CLI 下还包括部署）成功后推进 —— 二者不可混为一谈。
 
-**Schema 依赖排序**：`ref` 字段定义跨表外键（`ref: 目标表.字段`）、命名类型引用定义 named 依赖；`resource_graph` 做拓扑排序（命名类型先于依赖它的 Table，被引用表先于引用表），并提供反向引用与删除保护。
+**Schema 依赖排序**：`ref` 字段定义跨表主键外键（`ref: 目标表.主键`，目标表与字段两段都在加载/候选校验阶段校验）、命名类型引用定义 named 依赖；`resource_graph` 做拓扑排序（命名类型先于依赖它的 Table，被引用表先于引用表），并提供反向引用与删除保护。
 
 **Excel 表头布局**：表头共 **2 × 嵌套深度** 行——每个深度一层「注释行 + 字段行」：第 `2d-1` 行是注释行（默认 30pt，按换行估算增长、上限 60pt），第 `2d` 行是字段行（固定 38pt）。每个字段格用富文本堆两段：字段名 Aptos 11pt 加粗 `172033`，类型注解 Consolas 9pt 节点强调色。`vector<Record>` 按 `excel_columns` 展开为连续列组。权威描述见 `openspec/specs/excel-template-styling/spec.md`。
 
@@ -305,7 +305,7 @@ canonical 资源分两类目录：
 - `config/schemas/*.yaml` — 每文件一张 `Table`
 - `config/types/*.yaml` — 每文件一个具名 `Record`（`kind: record`）或 `Enum`（`kind: enum`），可被多张表复用
 
-字段类型使用**统一类型表达式**：12 种标量 `int8`/`uint8`/`int16`/`uint16`/`int32`/`uint32`/`int64`/`uint64`/`float`/`double`/`bool`/`string`、具名类型（`ItemRarity`、`DropReward`）、`vector<DropReward>`。`ref: Table.Field` 定义跨表外键。`i18n` 与 `server_only` 不可同时标记，`i18n` 仅限 Table 顶层 `string` 字段，`server_only` 仅限 Table 顶层字段。字段不写 `separator`（已移除且会被解析器拒绝）。
+字段类型使用**统一类型表达式**：12 种标量 `int8`/`uint8`/`int16`/`uint16`/`int32`/`uint32`/`int64`/`uint64`/`float`/`double`/`bool`/`string`、具名类型（`ItemRarity`、`DropReward`）、`vector<DropReward>`。`ref: 目标表.主键` 定义跨表外键（非主键目标被拒绝）。`i18n` 与 `server_only` 不可同时标记，`i18n` 仅限 Table 顶层 `string` 字段，`server_only` 仅限 Table 顶层字段。字段不写 `separator`（已移除且会被解析器拒绝）。
 
 ```yaml
 # config/schemas/Item.yaml
@@ -321,7 +321,7 @@ fields:
     i18n: true               # 提取为翻译源字符串
   - name: ItemTypeId
     type: int32
-    ref: ItemType.Id         # 跨表外键；值须存在于 ItemType 主键集
+    ref: ItemType.Id         # 跨表主键外键；值须存在于 ItemType 主键集
   - name: Rarity
     type: ItemRarity         # 具名 Enum（config/types/ItemRarity.yaml）
   - name: DropRange

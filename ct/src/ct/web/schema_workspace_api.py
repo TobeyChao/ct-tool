@@ -9,6 +9,7 @@ apply endpoint any more.
 
 from __future__ import annotations
 
+import logging
 import time
 from functools import wraps
 from pathlib import Path
@@ -51,6 +52,9 @@ from ct.storage.workspace_lock import WorkspaceBusyError
 from ct.storage.workspace_transaction import workspace_transaction
 
 schema_workspace_api = Blueprint("schema_workspace", __name__)
+
+#: 模板生成的面板日志：模块名由 logger 名（含 ``template``）归类到日志页的模板分类。
+logger = logging.getLogger("ct.web.template")
 
 
 def json_errors(fn):
@@ -274,10 +278,13 @@ def workspace_gen_template():
     try:
         messages = canonical_gen_template(_root(), table_filter=table)
     except UnknownTableError:
+        logger.error("生成模板失败：未找到表 %s", table)
         # 保持既有 404 契约（`canonical_gen_template` 现在对未知表名一律报错）
         return jsonify({"ok": False, "error": f"未找到表: {table}"}), 404
     except (ValueError, OSError) as exc:
+        logger.error("生成模板失败：%s · %s", table, exc)
         return jsonify({"ok": False, "error": str(exc)}), 400
+    logger.info("生成模板：%s（%s 张表）", table, len(messages))
     return jsonify({"ok": True, "data": {"messages": messages}})
 
 

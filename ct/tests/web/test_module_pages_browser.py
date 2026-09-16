@@ -535,6 +535,14 @@ def test_i18n_fullscreen_editor_saves_and_cancels(module_url: str, chromium_brow
     page.locator("[data-full-cancel]").click()
     page.wait_for_timeout(300)
     assert "不应保存" not in page.locator("#page-i18n").text_content()
+
+    # 保存进日志页的 i18n 分类：该分类不再是「有按钮没人产出」的空壳
+    page.locator('.ct-sitem[data-module="logs"]').click()
+    page.wait_for_selector("#page-logs [data-module='i18n']")
+    page.locator("#page-logs [data-module='i18n']").click()
+    saved_row = page.locator("#page-logs tr", has_text="翻译已保存")
+    saved_row.first.wait_for(timeout=3_000)
+    assert "Item" in saved_row.first.text_content()
     page.close()
 
 

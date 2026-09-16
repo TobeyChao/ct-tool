@@ -19,7 +19,15 @@ from ct.app.exporting.service import run_export
 from ct.contracts import CancelledError, CancelToken, ProgressReporter
 from ct.config import load_config
 from ct.web.history import append_history, make_entry
-from ct.web.logs import log_buffer
+from ct.web.logs import (
+    LEVEL_ERROR,
+    LEVEL_INFO,
+    LEVEL_WARN,
+    MODULE_EXPORT,
+    MODULE_SYSTEM,
+    MODULE_VALIDATE,
+    log_buffer,
+)
 
 #: 失败任务在右下角任务栏停留的时长：超时后不再投影（日志页保留完整记录）。
 ERROR_HOLD_SECONDS = 15.0
@@ -82,7 +90,9 @@ class _BaseTask:
         with self._lock:
             if self.status == "running":
                 self._token.cancel()
-                log_buffer.add("导出", "WARN", "收到取消请求，将在当前步骤结束后停止")
+                log_buffer.add(
+                    MODULE_EXPORT, LEVEL_WARN, "收到取消请求，将在当前步骤结束后停止"
+                )
 
     def progress(self) -> dict:
         with self._lock:
@@ -151,7 +161,7 @@ class _BaseTask:
             self.cancelled = True
             self.message = "导出已取消（未提交新缓存）"
             self._settled_at = time.monotonic()
-        log_buffer.add("导出", "WARN", "导出已取消")
+        log_buffer.add(MODULE_EXPORT, LEVEL_WARN, "导出已取消")
 
     def _finish_ok(
         self, *, cache_dir: Path, scope: str, tables: int, elapsed: float
@@ -171,7 +181,9 @@ class _BaseTask:
             self.elapsed = elapsed
             self._settled_at = time.monotonic()
         log_buffer.add(
-            "导出", "INFO", f"导出完成：{tables} 张表（{round(elapsed, 2)}s）"
+            MODULE_EXPORT,
+            LEVEL_INFO,
+            f"导出完成：{tables} 张表（{round(elapsed, 2)}s）",
         )
 
     def _fail(self, message: str, errors: list[str] | None = None) -> None:
@@ -186,7 +198,7 @@ class _BaseTask:
         with self._lock:
             self.step_index = self.steps.index(step) if step in self.steps else -1
             self.step_name = step
-        log_buffer.add("导出", "INFO", f"步骤：{step}")
+        log_buffer.add(MODULE_EXPORT, LEVEL_INFO, f"步骤：{step}")
 
     def _finish_step(self) -> None:
         pass
@@ -221,14 +233,14 @@ class CanonicalExportTask(_BaseTask):
                 elapsed=result.elapsed,
             )
         except FileNotFoundError as e:
-            log_buffer.add("系统", "ERROR", f"导出异常: {e}")
+            log_buffer.add(MODULE_SYSTEM, LEVEL_ERROR, f"导出异常: {e}")
             self._fail(f"文件不存在: {e}")
         except CanonicalValidationError as e:
             for issue in e.issues:
-                log_buffer.add("校验", "ERROR", issue.render())
+                log_buffer.add(MODULE_VALIDATE, LEVEL_ERROR, issue.render())
             self._fail("校验未通过，导出中止", [issue.render() for issue in e.issues])
         except Exception as e:  # noqa: BLE001
-            log_buffer.add("系统", "ERROR", f"导出异常: {e}")
+            log_buffer.add(MODULE_SYSTEM, LEVEL_ERROR, f"导出异常: {e}")
             self._fail(f"导出异常: {e}")
 
 
@@ -245,7 +257,7 @@ class PanelProgressReporter:
         self._task._finish_step()
 
     def log(self, line: str, *, err: bool = False) -> None:
-        log_buffer.add("导出", "ERROR" if err else "INFO", line)
+        log_buffer.add(MODULE_EXPORT, LEVEL_ERROR if err else LEVEL_INFO, line)
 
 
 # 模块级单例（Web 触发入口，与线程安全状态机绑定）

@@ -4,7 +4,9 @@ Two edge families are analysed:
 
 - named-type edges: a Table/Record field whose Type Expression references a
   named Record/Enum (transitively through ``vector<...>``);
-- cross-table ``ref`` edges: a Table field ``ref: Target.Field``.
+- cross-table ``ref`` edges: a Table field ``ref: Target.Primary`` (a primary-key
+  foreign key; ``_validated_ref_target`` is the single place that enforces both
+  segments).
 
 Only the canonical resource graph is analysed here; no raw type-string
 parsing happens at this layer (consumers already hold TypeExpression nodes).
@@ -16,6 +18,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 from ct.schema.resources import (
+    FieldDef,
     RecordResource,
     SchemaResource,
     TableResource,
@@ -46,12 +49,39 @@ def named_dependency_edges(
     return {key: tuple(values) for key, values in sorted(graph.items())}
 
 
+def _validated_ref_target(
+    owner: str, field: FieldDef, tables: dict[str, TableResource]
+) -> TableResource:
+    """Resolve ``field.ref`` to its target table, enforcing the primary-key rule.
+
+    ``ref`` declares a foreign key, so it is spelled ``Target.Primary`` and both
+    segments are checked here. Every other consumer keys off the table segment
+    alone (``ByID`` accessor, value gate against the target primary-key set), so
+    an unchecked field segment would silently turn a typo — or a non-primary
+    target — into an FK that no gate ever verifies.
+    """
+    ref = field.ref or ""
+    target_table, _, target_field = ref.partition(".")
+    target = tables.get(f"table:{target_table}")
+    if target is None:
+        raise ValueError(
+            f"{owner}/{field.name}: 引用的表 '{target_table}' 不存在"
+        )
+    if target_field != target.primary:
+        raise ValueError(
+            f"{owner}/{field.name}: ref 目标必须是目标表主键 "
+            f"'{target_table}.{target.primary}'（当前 '{ref}'）"
+        )
+    return target
+
+
 def cross_table_ref_edges(
     resources: Iterable[SchemaResource],
 ) -> dict[str, tuple[str, ...]]:
     """Map a table resource id to the sorted target table ids it references."""
-    table_ids = {
-        resource.resource_id
+    resources = tuple(resources)
+    tables = {
+        resource.resource_id: resource
         for resource in resources
         if isinstance(resource, TableResource)
     }
@@ -63,14 +93,9 @@ def cross_table_ref_edges(
         for field in resource.fields:
             if not field.ref:
                 continue
-            target_table = field.ref.partition(".")[0]
-            target_id = f"table:{target_table}"
-            if target_id not in table_ids:
-                raise ValueError(
-                    f"{resource.resource_id}/{field.name}: "
-                    f"引用的表 '{target_table}' 不存在"
-                )
-            targets.append(target_id)
+            targets.append(
+                _validated_ref_target(resource.resource_id, field, tables).resource_id
+            )
         edges[resource.resource_id] = tuple(sorted(set(targets)))
     return {key: values for key, values in sorted(edges.items())}
 
@@ -78,7 +103,12 @@ def cross_table_ref_edges(
 def reverse_references(
     resources: Iterable[SchemaResource],
 ) -> dict[str, tuple[Reference, ...]]:
-    """Map a resource id to every place that references it."""
+    """Map a resource id to every place that references it.
+
+    Pure query over the given resources: it does not validate ``ref`` targets
+    (``cross_table_ref_edges`` owns that, and every load/candidate path runs the
+    topological order first).
+    """
     references: dict[str, list[Reference]] = {}
     for resource in resources:
         owner = resource.resource_id

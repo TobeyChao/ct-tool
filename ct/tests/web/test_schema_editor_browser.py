@@ -228,6 +228,8 @@ def test_add_field_code_codename_locks_fields(editor_url: str, chromium_browser:
     assert page.locator("[data-af-name]").is_disabled()
     assert page.locator('[data-af-name] ~ .ct-dlg-err').count() >= 0
     assert page.locator('.ct-dialog input[name="af-role"][value="i18n"]').is_disabled()
+    # Server-only 角色不在前端提供入口：选项应从添加字段弹窗消失
+    assert page.locator('.ct-dialog input[name="af-role"][value="server"]').count() == 0
     assert page.locator("[data-af-vec]").is_disabled()
     page.locator("[data-af-add]").click()
     page.wait_for_timeout(300)
@@ -678,7 +680,7 @@ def test_record_editor_hides_table_only_field_options(
     editor_url: str, chromium_browser: Any, tmp_path: Path
 ) -> None:
     """Record 字段表不展示「角色与约束」列；Record 添加字段弹窗隐藏
-    角色行、禁用 I18N/Server-only/Code，仅保留 vector。"""
+    角色行、禁用 I18N/Code，仅保留 vector。"""
     import threading as _t
     from werkzeug.serving import make_server as _ms
     from web_helpers import build_project as _bvp
@@ -720,7 +722,7 @@ def test_record_editor_hides_table_only_field_options(
         page.wait_for_selector(".ct-dialog-mask.open")
         assert page.locator("[data-af-role-row]").is_hidden()
         assert page.locator('[data-af-role-row] input[name="af-role"][value="i18n"]').is_disabled()
-        assert page.locator('[data-af-role-row] input[name="af-role"][value="server"]').is_disabled()
+        assert page.locator('[data-af-role-row] input[name="af-role"][value="server"]').count() == 0
         assert page.locator("[data-af-code]").is_disabled()
         assert page.locator("[data-af-vec]").is_enabled()
         page.locator(".ct-dialog-mask.open [data-cancel]").click()
@@ -1096,6 +1098,10 @@ def test_save_refreshes_template_status_without_rebuilding(
     page.locator('.banner-gen-template[data-table="Item"]').click()
     page.wait_for_selector('.banner-gen-template[data-table="Item"]', state="detached")
     assert (item_book.read_bytes(), item_book.stat().st_mtime_ns) != before
+    # 成功反馈只弹 toast：不写横幅，也不挂到底栏状态行
+    playwright_api.expect(page.locator("#ct-toast")).to_be_visible()
+    playwright_api.expect(page.locator("#ct-toast")).to_contain_text("模板已更新：Item")
+    assert page.locator("#ct-draftbar").is_hidden()
     context.close()
 
 

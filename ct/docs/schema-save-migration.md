@@ -1,12 +1,14 @@
 # Schema 保存迁移说明（YAML-only save）
 
-本文件是 `openspec/changes/simplify-schema-yaml-save` 的交付说明：**回滚步骤**与
+本文件是已归档 change `openspec/changes/archive/2026-09-14-simplify-schema-yaml-save` 的交付说明：**回滚步骤**与
 **旧 Apply 事务材料处置**。面向运维/发版同学，不涉及实现细节。
 
 ## 变更边界
 
 - 保存只写**配置目录内实际变化的 YAML**：不动 Excel、layout manifest、翻译文件、
   导出产物与成功账本；零差异请求不写任何业务文件。
+- 新增资源由保存事务创建 YAML；删除/改名资源在同一事务内移除旧文件（写新路径、
+  删旧路径）——全部只发生在配置目录内。
 - 一次保存 = 一个请求：`POST /api/schema-workspace/save`
   （`schemaRevision` + `commands`（cursor 前缀）+ `candidateHash`）。
 - 已删除：`change-plan`、`prepare-apply`、`apply`、`recover` 端点，以及

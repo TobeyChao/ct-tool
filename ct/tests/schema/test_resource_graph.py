@@ -100,6 +100,75 @@ def test_missing_ref_target_reports_owner_path(tmp_path) -> None:
         CanonicalWorkspace.load(root)
 
 
+def test_ref_target_must_be_the_target_primary_key(tmp_path) -> None:
+    """ref 是主键外键：目标字段必须等于目标表主键，不能是任意字段。"""
+    item_type = {
+        "table": "ItemType",
+        "primary": "Id",
+        "fields": [
+            {"name": "Id", "type": "int32"},
+            {"name": "CodeName", "type": "string"},
+        ],
+    }
+    bad = {
+        "table": "Bad",
+        "primary": "Id",
+        "fields": [
+            {"name": "Id", "type": "int32"},
+            {"name": "X", "type": "string", "ref": "ItemType.CodeName"},
+        ],
+    }
+    root = build_project(tmp_path / "gd", schemas=[item_type, bad], types=None)
+    with pytest.raises(
+        ValueError, match="table:Bad/X.*必须是目标表主键 'ItemType.Id'.*ItemType.CodeName"
+    ):
+        CanonicalWorkspace.load(root)
+
+
+def test_ref_target_field_typo_is_rejected(tmp_path) -> None:
+    """字段段打错（不存在的字段）同样命中主键规则，不再静默通过。"""
+    item_type = {
+        "table": "ItemType",
+        "primary": "Id",
+        "fields": [{"name": "Id", "type": "int32"}],
+    }
+    bad = {
+        "table": "Bad",
+        "primary": "Id",
+        "fields": [
+            {"name": "Id", "type": "int32"},
+            {"name": "X", "type": "int32", "ref": "ItemType.Nope"},
+        ],
+    }
+    root = build_project(tmp_path / "gd", schemas=[item_type, bad], types=None)
+    with pytest.raises(ValueError, match="table:Bad/X.*必须是目标表主键 'ItemType.Id'"):
+        CanonicalWorkspace.load(root)
+
+
+def test_ref_to_a_primary_key_not_named_id_is_accepted(tmp_path) -> None:
+    """规则是「目标表主键」而不是字面量 `.Id`：主键叫 TypeId 时 ref 合法。"""
+    item_type = {
+        "table": "ItemType",
+        "primary": "TypeId",
+        "fields": [{"name": "TypeId", "type": "int32"}],
+    }
+    item = {
+        "table": "Item",
+        "primary": "Id",
+        "fields": [
+            {"name": "Id", "type": "int32"},
+            {"name": "ItemTypeId", "type": "int32", "ref": "ItemType.TypeId"},
+        ],
+    }
+    root = build_project(tmp_path / "gd", schemas=[item_type, item], types=None)
+    ws = CanonicalWorkspace.load(root)
+    assert cross_table_ref_edges(ws.resources.resources)["table:Item"] == ("table:ItemType",)
+    assert ("table:Item", "table:Item/ItemTypeId") in {
+        (reference.owner, reference.field_path)
+        for reference in reverse_references(ws.resources.resources)["table:ItemType/TypeId"]
+    }
+
+
 def test_record_cycle_is_rejected_with_path(tmp_path) -> None:
     a = {
         "kind": "record",

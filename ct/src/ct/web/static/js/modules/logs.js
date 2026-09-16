@@ -2,7 +2,10 @@
 import { api } from "../core/api.js";
 import { escapeHtml } from "../core/dom.js";
 
+// 分类按钮必须与后端 ct/web/logs.py 的 PANEL_MODULES 一致（含顺序）；
+// ct/tests/web/test_logs.py 会比对两份列表，避免再出现「按钮没人产出」的死分类。
 const MODULES = ["all", "导出", "校验", "i18n", "模板", "系统"];
+// 后端写入的级别名已归一化为 WARN（stdlib 的 WARNING 不会漏到筛选之外）。
 const LEVELS = ["all", "INFO", "WARN", "ERROR"];
 const LOG_BOTTOM_THRESHOLD = 8;
 const _state = {};

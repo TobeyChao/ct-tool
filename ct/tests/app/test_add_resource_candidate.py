@@ -107,6 +107,32 @@ def test_ref_to_a_newly_created_table_is_allowed(tmp_path: Path) -> None:
     assert _issues(log) == ()
 
 
+def test_ref_to_a_non_primary_field_is_reported_with_location(tmp_path: Path) -> None:
+    """候选校验同样只认目标表主键：ref 指向普通字段必须报错。"""
+    _root, workspace = _workspace(tmp_path)  # Item 有 Id（主键）与 Name
+    log = _log(workspace)
+    log.execute(
+        _add(
+            "table",
+            {
+                "table": "Drop",
+                "primary": "Id",
+                "fields": [
+                    {"name": "Id", "type": "int32"},
+                    {"name": "TypeName", "type": "string", "ref": "Item.Name"},
+                ],
+            },
+        )
+    )
+    issues = _issues(log)
+    # 依赖图错误带 owner/字段路径前缀（与循环依赖一致，location 为空）
+    assert any(
+        "table:Drop/TypeName" in issue.message
+        and "必须是目标表主键 'Item.Id'" in issue.message
+        for issue in issues
+    )
+
+
 def test_missing_named_reference_is_reported_with_location(tmp_path: Path) -> None:
     _root, workspace = _workspace(tmp_path)
     log = _log(workspace)

@@ -21,10 +21,21 @@ from ct.app.canonical_commands import (
 )
 from ct.config import load_config
 from ct.web.history import load_history
-from ct.web.logs import PanelLogHandler, log_buffer
+from ct.web.logs import LEVEL_ERROR, MODULE_SYSTEM, attach_panel_handler, log_buffer
 from ct.web.schema_workspace_api import register_schema_workspace_api
 from ct.web.task_state import task_state
 from ct.web.tasks import canonical_export_task
+
+#: 翻译流程的面板日志：模块名由 logger 名（含 ``i18n``）归类到日志页的 i18n 分类。
+logger = logging.getLogger("ct.web.i18n")
+
+#: 翻译条目状态（``ct.export.i18n.state``）→ 面板里可读的中文标签。
+_I18N_STATUS_LABELS = {
+    "translated": "已确认",
+    "stale": "待确认",
+    "missing": "缺失",
+    "orphan": "无主",
+}
 
 
 class PanelError(Exception):
@@ -55,7 +66,7 @@ def safe(fn: Callable):
         except ValueError as e:
             return err(str(e), 400)
         except Exception as e:  # noqa: BLE001
-            log_buffer.add("系统", "ERROR", f"API 异常: {e}")
+            log_buffer.add(MODULE_SYSTEM, LEVEL_ERROR, f"API 异常: {e}")
             return err(f"内部错误: {e}", 500)
 
     return wrapper
@@ -63,6 +74,38 @@ def safe(fn: Callable):
 
 def _root(app: Flask) -> Path:
     return Path(app.config["ROOT"]).resolve()
+
+
+def _log_i18n_sync(table: str | None, messages: list[str]) -> None:
+    """同步/抽取骨架：逐表消息的最后一条是汇总，取它当日志正文。"""
+    scope = table or "全部表"
+    summary = messages[-1] if messages else "没有含 i18n 字段的表"
+    logger.info("同步翻译骨架：%s · %s", scope, summary)
+
+
+def _log_i18n_compact(table: str | None, result: dict[str, Any]) -> None:
+    scope = table or "全部表"
+    removed = int(result.get("total_removed", 0))
+    touched = int(result.get("touched", 0))
+    if result.get("dry_run"):
+        logger.info(
+            "翻译整理预览：%s · 待删除 %s 条无主条目（%s 个文件）", scope, removed, touched
+        )
+    elif removed:
+        logger.info(
+            "翻译整理完成：%s · 删除 %s 条无主条目（%s 个文件）", scope, removed, touched
+        )
+    else:
+        logger.info("翻译整理：%s · 没有无主条目", scope)
+
+
+def _log_i18n_entry(table: str, lang: str, key: str, entry: dict[str, Any]) -> None:
+    status = _I18N_STATUS_LABELS.get(str(entry.get("status", "")), "未知状态")
+    if not str(entry.get("text", "")).strip():
+        # 清空译文是有效操作，但结果一定是空缺，值得在日志里留一条 WARN
+        logger.warning("翻译未填写内容：%s/%s/%s（%s）", table, lang, key, status)
+    else:
+        logger.info("翻译已保存：%s/%s/%s（%s）", table, lang, key, status)
 
 
 def create_app(
@@ -73,7 +116,7 @@ def create_app(
     app = Flask(__name__, static_folder=str(static_dir), static_url_path="/static")
     app.config["ROOT"] = Path(root or Path(".")).resolve()
 
-    logging.getLogger("ct").addHandler(PanelLogHandler(log_buffer))
+    attach_panel_handler(logging.getLogger("ct"), log_buffer)
     register_schema_workspace_api(app)
 
     @app.get("/api/tasks")
@@ -160,7 +203,9 @@ def create_app(
     @safe
     def i18n_sync():
         data = request.get_json(silent=True) or {}
-        messages = canonical_i18n_sync(_root(app), table_filter=data.get("table"))
+        table = data.get("table")
+        messages = canonical_i18n_sync(_root(app), table_filter=table)
+        _log_i18n_sync(table, messages)
         return ok({"synced": messages})
 
     @app.get("/api/i18n/entries")
@@ -174,25 +219,31 @@ def create_app(
     @safe
     def i18n_entry_save():
         data = request.get_json(silent=True) or {}
+        table = str(data.get("table", ""))
+        lang = str(data.get("lang", ""))
+        key = str(data.get("key", ""))
         entry = canonical_i18n_save_entry(
             _root(app),
-            str(data.get("table", "")),
-            str(data.get("lang", "")),
-            str(data.get("key", "")),
+            table,
+            lang,
+            key,
             str(data.get("text", "")),
             bool(data.get("confirmed", False)),
         )
+        _log_i18n_entry(table, lang, key, entry)
         return ok(entry)
 
     @app.post("/api/i18n/compact")
     @safe
     def i18n_compact():
         data = request.get_json(silent=True) or {}
+        table = data.get("table")
         result = canonical_i18n_compact(
             _root(app),
-            table_filter=data.get("table"),
+            table_filter=table,
             dry_run=bool(data.get("dry_run", False)),
         )
+        _log_i18n_compact(table, result)
         return ok(result)
 
     # ---------------- 日志与历史 ----------------

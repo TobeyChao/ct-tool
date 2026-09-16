@@ -125,7 +125,14 @@ def rename_field(
     old_field: str,
     new_field: str,
 ) -> RenameResult:
-    """Rename a field on its owner and update cross-table ``ref`` targets."""
+    """Rename a non-primary field on its owner.
+
+    A Table's primary field is not renameable: ``primary`` is a fixed name that
+    the Excel layout, ``ByID(int)`` accessor and cross-table ``ref`` targets all
+    key off, so renaming only the field would leave the table inconsistent. The
+    ``ref`` rewrite below therefore cannot fire for a valid workspace today; it
+    is kept so relaxing the primary-key rule cannot silently strand refs.
+    """
     field_error = validate_name(new_field)
     if field_error:
         raise ValueError(f"新字段名 {new_field}: {field_error}")
@@ -139,6 +146,8 @@ def rename_field(
     fields = getattr(owner, "fields", ())
     if not any(field.name == old_field for field in fields):
         raise ValueError(f"{owner_id}/{old_field} 不存在")
+    if isinstance(owner, TableResource) and owner.primary == old_field:
+        raise ValueError(f"{owner_id}/{old_field}: 主键字段不可改名")
     if any(field.name == new_field for field in fields) and new_field != old_field:
         raise ValueError(f"{owner_id}/{new_field} 已存在")
 

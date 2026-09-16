@@ -58,7 +58,7 @@
 - **THEN** 类型系统在进入草稿前拒绝
 
 ### Requirement: Named reference integrity
-系统 SHALL 为 named 类型与跨表 `ref` 建立正向依赖和反向引用；删除被引用资源或字段默认阻止，改名 SHALL 作为显式命令原子更新所有引用，并在净差异摘要中按最终身份保留旧名到新名映射及生成 API 影响。
+系统 SHALL 为 named 类型与跨表 `ref` 建立正向依赖和反向引用；删除被引用资源或字段默认阻止，改名 SHALL 作为显式命令原子更新所有引用，并在净差异摘要中按最终身份保留旧名到新名映射及生成 API 影响。跨表 `ref` SHALL 只指向目标表主键：编辑器引用选择器 SHALL 只列出各表主键（`Table.Primary`），候选校验 SHALL 拒绝非主键或不存在字段的目标。
 
 #### Scenario: Delete a referenced record
 - **WHEN** 用户尝试删除仍被 Item.Rewards 与 Quest.Rewards 引用的 DropReward
@@ -67,6 +67,14 @@
 #### Scenario: Rename a named enum
 - **WHEN** 用户将 ItemRarity 显式改名为 RarityCode
 - **THEN** Candidate Workspace 原子更新所有引用，净差异摘要按最终身份显示旧名到新名映射及生成 API 影响
+
+#### Scenario: Reference picker lists primary keys only
+- **WHEN** 用户为字段开启引用并打开引用选择器，候选工作区中 Item 有 Id（主键）与 Name
+- **THEN** 列表只包含 `Item.Id`，不包含 `Item.Name`
+
+#### Scenario: Non-primary ref target rejected before save
+- **WHEN** 草稿中出现 `ref: Item.Name`，而 Item 的主键是 Id
+- **THEN** 候选校验报错指明字段路径与合法目标 `Item.Id`，草稿保留但不可保存
 
 ### Requirement: Type and name constraints
 资源名、字段名和生成的 FlatBuffers 类型名 SHALL 在候选工作区中执行确定性校验；Record 与 Enum 名称不得造成生成器的类型/字段撞名，错误 SHALL 在保存前报告完整冲突位置。

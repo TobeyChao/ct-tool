@@ -1,6 +1,7 @@
 # fabulous-game ↔ ct-tool 对齐清单
 
-> 📁 `ct/docs/TODO/` · 2026-09-12 整理归档（本文此前未入库）。
+> 📁 `ct/docs/archive/`（2026-09-17 自 `ct/docs/TODO/` 移入：清单内 ct-tool 侧条目 C0–C7 均已完成，
+> 未结事项在 fabulous-game 侧跟踪）· 2026-09-12 整理归档（本文此前未入库）。
 > **时效提醒**：本文主体核实于 **2026-09-09/10**。此后 ct-tool 与 fabulous-game 两侧都大幅推进，
 > 最关键的是 **§七 的「ByID 仍走二分」已不成立** —— 2026-09-12 两侧都已落哈希（原生 `gd_index_hash`），
 > **二分查找已从读路径彻底移除**。**现状以 fabulous-game 侧《开工方案.md》为准**（其 §〇.1 为已完成清单）。
@@ -9,6 +10,20 @@
 > ⚠️ 本文正文里凡出现 `ByCode` / `ByGroupKey` / `codeIndex` / `groupIndex` / `groupHash` 的段落，
 > 都是 **2026-09-09/10 的历史快照**，不代表当前状态。当前状态：
 > - 主键 `ByID` 与 CodeName 索引**都走哈希**，读路径无二分；
+> - **定宽布局已改为 schema 显式声明 `uniform`**（缺省 `true`，2026-09-13，ct-tool 提交 7109e0f）：
+>   §〇/C5 里「按填充率自动决策（阈值 0.75）」的描述已被取代 —— `UNIFORM_FILL_THRESHOLD` 已删除，
+>   填充率只是导出日志里的诊断数字（动机：数据派生会让改 Excel 静默翻转二进制布局）；
+> - **Schema 保存模型已演进**：§二 的「Draft→ChangePlan→Apply 事务模型」已被
+>   **Draft → 服务端候选/净差异 → YAML-only 保存** 取代（2026-09-14，plan/apply 已删除）；
+> - 2026-09-13 流水线重构后 `_merge_i18n` 与索引消费的落点已从 `canonical_export.py`
+>   移至 `app/exporting/build.py` / `export/canonical_binary.py`（canonical_export 仅为兼容层，
+>   §〇/§一 的行号引用按此理解）；
+> - C7 所指的 `gd/output/fbs/*_i18n.fbs` 陈旧文件**已不存在**；
+> - fabulous-game 侧两份文档已移位：《定宽布局落地方案》→ `Docs/TODO/方案/`、
+>   《ByID查询性能实测-二分vs哈希》→ `Docs/TODO/实测/`；
+> - §七 横幅「IndexSearch 均已删除」指 **fabulous-game 侧运行时**；本仓
+>   `test-proj/ConfigAccessorBench` 基准工程仍保留 `IndexSearch` 作为 `_hashMask==0`
+>   时的回退（基准工件，非生产读路径）；
 > - **Group 索引整个删除**——它从未被任何表声明、Lua 侧始终是占位 stub，且导出器会静默丢掉
 >   「group 列留空」的行（它们读出来是默认值 `0`，却不在 key `0` 的组里）。容器 slot 4/5 随之空出。
 >   重新引入的计划记在 fabulous-game 侧 `Docs/TODO/开工方案.md`。

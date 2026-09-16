@@ -94,13 +94,21 @@ def test_table_rename_updates_cross_table_refs(tmp_path) -> None:
     assert ref.ref == "ItemCategory.Id"
 
 
-def test_field_rename_updates_cross_table_ref_targets(tmp_path) -> None:
+def test_primary_field_rename_is_rejected(tmp_path) -> None:
+    """主键字段不可改名：primary 是固定名，改名会让表与 ref 目标不一致。"""
     ws = _ws(tmp_path, schemas=[ITEM, ITEMTYPE], types=[DROPreWARD, RARITY])
-    result = rename_field(ws.resources.resources, "table:ItemType", "Id", "TypeId")
-    assert result.mapping == {"table:ItemType/Id": "table:ItemType/TypeId"}
+    with pytest.raises(ValueError, match="table:ItemType/Id: 主键字段不可改名"):
+        rename_field(ws.resources.resources, "table:ItemType", "Id", "TypeId")
+
+
+def test_non_primary_field_rename_keeps_cross_table_ref_targets(tmp_path) -> None:
+    """非主键字段改名不动任何 ref：ref 只指向目标表主键。"""
+    ws = _ws(tmp_path, schemas=[ITEM, ITEMTYPE], types=[DROPreWARD, RARITY])
+    result = rename_field(ws.resources.resources, "table:Item", "ItemTypeId", "TypeRef")
+    assert result.mapping == {"table:Item/ItemTypeId": "table:Item/TypeRef"}
     item = next(r for r in result.resources if r.resource_id == "table:Item")
-    ref = next(field for field in item.fields if field.name == "ItemTypeId")
-    assert ref.ref == "ItemType.TypeId"
+    ref = next(field for field in item.fields if field.name == "TypeRef")
+    assert ref.ref == "ItemType.Id"
 
 
 def test_rename_then_undo_restores_original_workspace(tmp_path) -> None:

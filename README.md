@@ -21,27 +21,30 @@ ct --help
 
 | 命令 | 说明 |
 |------|------|
-| `ct export` | 全量导出（无增量模式；配置 deploy 后自动同步到 Unity Assets） |
-| `ct export --all` | no-op：导出恒全量重建，`--all` 仅为兼容旧流水线保留 |
+| `ct export` | 增量导出：完整校验后默认复用未变更产物（配置 deploy 后自动同步到 Unity Assets） |
+| `ct export --all` | 强制重建所有选中产物，跳过增量缓存 |
 | `ct export --for-build` | 导出并追加构建目标（如 StreamingAssets/Config） |
 | `ct deploy` | 只部署当前产物到 Unity Assets，不触发导出 |
 | `ct export --table Item --lang en` | 只导出指定表（单个精确表名）、指定语言 |
 | `ct validate` | 只校验不产出（适合 CI） |
-| `ct status` | 查看哪些表有变更 / 模板漂移 |
+| `ct status` | 查看数据变更 / 模板漂移 / 缺失文件及未完成的发布 |
 | `ct gen-template --all` | 根据 Schema 生成 Excel 模板 |
+| `ct panel` | 启动本地面板（浏览器打开即用） |
 | `ct i18n sync` | 刷新翻译骨架 |
 | `ct i18n status` | 翻译进度统计 |
+| `ct i18n compact` | 物理移除 lang 文件中的 orphan 条目 |
 
 ## 目录结构
 
 | 目录 | 说明 |
 |------|------|
 | `ct/` | 配表工具（自包含 Python 项目） |
-| `gd/` | 游戏数据工作空间（`--root` 默认目录） |
+| `gd/` | 游戏数据工作空间（`--root` 默认当前目录，通常 cd 到这里运行） |
 | `gd/config/` | 全局配置 + 表 Schema 定义 |
 | `gd/excel/` | 策划填写的 Excel 数据表 |
 | `gd/output/` | 导出产物（JSON / FBS / Binary / C# / Lua） |
 | `gd/i18n/` | 国际化翻译文件 |
+| `launcher/` | Flutter 桌面启动器（内置 ct 运行时） |
 | `openspec/` | 设计文档和任务列表 |
 
 ## 部署到 Unity（deploy）
@@ -66,14 +69,16 @@ deploy:
 
 - 路径语义：`source` 相对 `gd/`（项目根），`dest` 相对 `unity_project`。
 - 未配置或 `enabled: false` 时导表行为不变（不部署）。
-- 部署失败会使导表以非 0 退出；部署状态与目标路径的查询**未实现**（`ct status` 只报数据变更 / 模板漂移 / 缺失文件三类）。
+- 部署失败会使导表以非 0 退出；部署状态与目标路径的查询**未实现**（`ct status` 报数据变更 / 模板漂移 / 缺失文件及未完成的发布，不含部署状态）。
 
 ## 依赖
 
-Python >= 3.10。二进制由 `ct/export/canonical_binary.py` 直接构建（无需 flatc）。
+Python >= 3.10。二进制由 `ct/src/ct/export/canonical_binary.py` 直接构建（无需 flatc）。
 
 详细文档见 [`ct/docs/README.md`](ct/docs/README.md)。
 
 ## 待办（Known TODOs）
 
-- **增量导出尚未接线**：`ct/cache/fingerprints.py` 的分层指纹（schema/data/i18n/bundle）与 `decide_artifact_reuse` 已实现，但没有接到 `ct/app/canonical_export.py` 的 `run_canonical_export`，所以导出**恒全量重建**（`--all` 是 no-op）。`cache/state.json` 目前只服务 `ct status` 的「待导出」判断，不参与跳过。
+- 跨项目（fabulous-game 侧 reader / 运行时）的剩余工作见
+  [`ct/docs/archive/fabulous-game-对齐清单.md`](ct/docs/archive/fabulous-game-对齐清单.md)
+  （ct-tool 侧条目均已完成，该清单已归档）；增量导出语义见 [`ct/docs/README.md`](ct/docs/README.md) 的「`ct export` 的增量语义」。

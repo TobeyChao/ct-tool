@@ -848,8 +848,11 @@ export async function mount(container) {
       await api("/api/schema-workspace/gen-template", {
         method: "POST", body: JSON.stringify({ table }),
       });
+      // 成功只弹 toast：不占横幅，也不让底栏挂出「无未保存修改 · 模板已更新」
       state.templateError = null;
-      state.notice = `模板已更新：${table}`;
+      window.dispatchEvent(new CustomEvent("ct:draft", { detail: {
+        successText: `模板已更新：${table}`,
+      } }));
     } catch (e) {
       // 模板失败独立展示：不能反过来把已成功的 YAML 保存标成失败
       state.templateError = e;
@@ -1023,7 +1026,7 @@ export async function mount(container) {
         const selected = state.selectedField === f.name;
         const isPrimary = f.name === resource.primary;
         return `<tr class="${selected ? "ct-row-selected" : ""}" data-field="${escapeHtml(f.name)}">
-          <td><button class="ct-inline-btn" data-act="rename" title="改名">${escapeHtml(f.name)}</button>
+          <td><button class="ct-inline-btn" data-act="rename" ${isPrimary ? "disabled" : ""} title="${isPrimary ? "主键字段不可改名" : "改名"}">${escapeHtml(f.name)}</button>
               ${roleMark(f)}</td>
           <td>${renderTypeExpression(typeExpr)}</td>
           <td class="ct-mono">${f.excel_columns ? `expanded × ${f.excel_columns}` : "1 column"}</td>

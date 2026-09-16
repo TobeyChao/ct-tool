@@ -172,9 +172,6 @@ export function promptEnumValue(ctx, resource, values) {
   const commentEl = handle.el.querySelector("[data-aev-comment]");
   const msgEl = handle.el.querySelector("[data-aev-msg]");
   const showMsg = (text) => { msgEl.hidden = !text; msgEl.textContent = text || ""; };
-  let refTarget = "";
-  let refType = "int32";
-  const isRefMode = () => Boolean(refEl && refEl.checked);
   nameEl.addEventListener("input", () => { nameEl.classList.remove("invalid"); showMsg(""); });
   nameEl.addEventListener("keydown", (e) => {
     if (e.key === "Enter") handle.el.querySelector("[data-submit]").click();
@@ -304,27 +301,30 @@ export function openTypePicker(ctx, { role = "", onPick }) {
   });
 }
 
-/* 引用目标（Table.Field）：Table 只能作为 ref 目标出现，不进类型列表。 */
+/* 引用目标（Table.Primary）：ref 是主键外键，只列每张表的主键。
+   Table 只能作为 ref 目标出现，不进类型列表。 */
 export function openRefPicker(ctx, { onPick }) {
   const pool = ctx.candidatePool ? ctx.candidatePool() : (ctx.state.resources || []);
   const rows = pool
     .filter((resource) => resourceKind(resource) === "table")
-    .flatMap((table) =>
-      (table.fields || [])
-        .filter((field) => !field.server_only)
-        .map((field) => ({
-          ref: `${table.name || table.table}.${field.name}`,
+    .flatMap((table) => {
+      const primary = (table.fields || []).find((field) => field.name === table.primary);
+      if (!primary) return [];
+      return [
+        {
+          ref: `${table.name || table.table}.${primary.name}`,
           table: table.name || table.table,
-          field,
-        }))
-    );
+          field: primary,
+        },
+      ];
+    });
   const handle = openDialog({
     title: "选择引用目标",
     variant: "sm",
     initialFocusSelector: "[data-ref-search]",
-    body: `<input class="ct-dlg-input" data-ref-search placeholder="搜索 Table.Field…" autocomplete="off">
+    body: `<input class="ct-dlg-input" data-ref-search placeholder="搜索 Table.Primary…" autocomplete="off">
       <div class="ct-dlg-list" data-ref-list style="margin-top:10px"></div>
-      <div class="ct-dlg-hint">引用值必须存在于目标表主键/字段集合；不支持 vector 引用。</div>`,
+      <div class="ct-dlg-hint">ref 是主键外键：只能引用目标表主键（Table.Primary），不支持 vector 引用。</div>`,
     footer: `<button class="ct-btn ct-btn-ghost" data-cancel>取消</button>`,
   });
   handle.el.querySelector("[data-cancel]").addEventListener("click", () => handle.close());
@@ -446,6 +446,8 @@ export function openFieldTypeEditor(ctx, field, onApply) {
 }
 
 /* ---- F1 添加字段（角色×约束互斥 + Code 固定名 + vector 修饰符） ---- */
+// Server-only 角色不在前端提供入口：既有 server_only 字段仍按 YAML 原样展示
+// （字段表 SERVER 标记 / Inspector 只读旗标），但不再从界面新建。
 export function openAddField(ctx, resource) {
   let typeSel = "int32";
   let fixedVector = false;
@@ -475,14 +477,13 @@ export function openAddField(ctx, resource) {
           <div class="ct-opt-chips">
             <label class="ct-chip"><input type="radio" name="af-role" value="" checked><span>无</span></label>
             <label class="ct-chip"><input type="radio" name="af-role" value="i18n" ${isRecord ? "disabled" : ""}><span>I18N</span></label>
-            <label class="ct-chip"><input type="radio" name="af-role" value="server" ${isRecord ? "disabled" : ""}><span>Server-only</span></label>
           </div>
         </div>
         <div class="ct-opt-row"><span class="ct-opt-label">约束</span>
           <div class="ct-opt-chips">
             <label class="ct-chip"><input type="checkbox" data-af-code ${hasCode || isRecord ? "disabled" : ""}><span>代号（Code）</span></label>
             <label class="ct-chip"><input type="checkbox" data-af-vec><span>vector</span></label>
-            <label class="ct-chip"><input type="checkbox" data-af-ref><span>引用</span></label>
+            <label class="ct-chip"><input type="checkbox" data-af-ref ${isRecord ? "disabled" : ""}><span>引用</span></label>
           </div>
         </div>
         <div class="ct-opt-row" data-af-vec-row hidden><span class="ct-opt-label">形态</span>
@@ -491,7 +492,7 @@ export function openAddField(ctx, resource) {
             <label><input type="radio" name="af-flavor" data-af-flavor-fix><span>定长</span></label>
           </div>
         </div>
-        ${isRecord ? '<div class="ct-opt-sub">Record 不支持 I18N / Server-only / 代号（Code），仅支持普通字段与 vector</div>' : ""}
+        ${isRecord ? '<div class="ct-opt-sub">Record 不支持 I18N / 代号（Code）/ 引用，仅支持普通字段与 vector</div>' : ""}
         ${hasCode ? '<div class="ct-opt-sub">该表已有代号字段 Code，一表至多一个</div>' : ""}
         <div class="ct-opt-sub" data-af-sep-note hidden>变长 · 分隔符工具内置（,）</div>
         <div class="ct-opt-sub" data-af-cols-row hidden>定长 · 固定展开列组　展开组数 <input class="ct-dlg-input" data-af-cols value="3"> 组</div>
@@ -521,17 +522,17 @@ export function openAddField(ctx, resource) {
   const showMsg = (text) => { msgEl.hidden = !text; msgEl.textContent = text || ""; };
   let refTarget = "";
   let refType = "int32";
-  const isRefMode = () => Boolean(refEl && refEl.checked);
+  const isRefMode = () => Boolean(refEl && refEl.checked) && !isRecord;
   const setFlavor = (fix) => { flavorFix.checked = fix; colsRow.hidden = !fix; sepNote.hidden = fix; };
   function syncControls() {
     const codeOn = codeEl.checked;
     nameEl.disabled = codeOn;
     typeEl.disabled = codeOn || isRefMode();
-    if (refEl) refEl.disabled = codeOn;
+    if (refEl) refEl.disabled = codeOn || isRecord;
     roleEls.forEach((r) => {
-      if (r.value === "i18n" || r.value === "server") r.disabled = codeOn || isRecord;
+      if (r.value === "i18n") r.disabled = codeOn || isRecord;
     });
-    vecEl.disabled = codeOn || role() === "i18n" || role() === "server" || isRefText(typeSel);
+    vecEl.disabled = codeOn || role() === "i18n" || isRefText(typeSel);
   }
   function syncVec() {
     const vecOn = vecEl.checked;
@@ -548,7 +549,7 @@ export function openAddField(ctx, resource) {
     setFlavor(fixedVector);
   }
   function updateMsg() {
-    if (isRefMode()) { showMsg(refTarget ? `引用 ${refTarget}（类型 ${refType}）` : "请选择引用目标 Table.Field"); return; }
+    if (isRefMode()) { showMsg(refTarget ? `引用 ${refTarget}（类型 ${refType}）` : "请选择引用目标 Table.Primary（主键）"); return; }
     if (codeEl.checked) { showMsg("Code 索引要求：非空 · 表内唯一 · 非 i18n string（程序引用键）"); return; }
     if (vecEl.checked && isRefText(typeSel)) { showMsg("ref 字段不支持 vector"); return; }
     if (vecEl.checked && fixedVector) { showMsg("定长 vector 使用固定展开列数，需配置展开组数"); return; }
@@ -621,11 +622,10 @@ export function openAddField(ctx, resource) {
     const fieldType = isRefMode() ? refType : (vecOn ? `vector<${typeSel}>` : typeSel);
     const field = { name: value, type: fieldType };
     if (isRefMode()) {
-      if (!refTarget) { showMsg("请选择引用目标 Table.Field"); return; }
+      if (!refTarget) { showMsg("请选择引用目标 Table.Primary（主键）"); return; }
       field.ref = refTarget;
     }
     if (currentRole === "i18n") field.i18n = true;
-    if (currentRole === "server") field.server_only = true;
     if (vecOn && fixedVector) {
       const cols = parseInt(colsEl.value, 10);
       if (!Number.isFinite(cols) || cols < 1) { showMsg("展开组数须为正整数"); return; }
@@ -663,7 +663,6 @@ const CREATE_HINTS = {
 export function openCreateResource(ctx, { kind = "", onCreated = null } = {}) {
   let selectedKind = ["table", "record", "enum"].includes(kind) ? kind : "table";
   let firstType = "int32";
-  let firstRef = "";
   let submitting = false;
 
   const handle = openDialog({
@@ -688,7 +687,6 @@ export function openCreateResource(ctx, { kind = "", onCreated = null } = {}) {
         <label class="ct-dlg-label">首个字段</label>
         <input class="ct-dlg-input" data-cr-field-name placeholder="Min" autocomplete="off">
         <button type="button" class="ct-btn ct-btn-ghost ct-btn-sm" data-cr-field-type style="margin-top:6px">类型：<span class="ct-mono" data-cr-field-type-text>${firstType}</span></button>
-        <button type="button" class="ct-btn ct-btn-ghost ct-btn-sm" data-cr-ref style="margin-top:6px">引用…</button>
       </div>
       <div class="ct-dlg-field" data-cr-item hidden>
         <label class="ct-dlg-label">首个枚举项</label>
@@ -741,18 +739,8 @@ export function openCreateResource(ctx, { kind = "", onCreated = null } = {}) {
   el.querySelector("[data-cr-field-type]").addEventListener("click", () => {
     openTypePicker(ctx, {
       onPick: (type) => {
-        firstRef = "";
         firstType = type;
         fieldTypeText.textContent = type;
-      },
-    });
-  });
-  el.querySelector("[data-cr-ref]").addEventListener("click", () => {
-    openRefPicker(ctx, {
-      onPick: (ref, typeText) => {
-        firstRef = ref;
-        firstType = typeText || "int32";
-        fieldTypeText.textContent = ref;
       },
     });
   });
@@ -779,7 +767,6 @@ export function openCreateResource(ctx, { kind = "", onCreated = null } = {}) {
         return { error: "首个字段名需以大写字母开头，只含字母/数字/下划线，且不以 _ 结尾" };
       }
       const firstField = { name: fieldName, type: firstType };
-      if (firstRef) firstField.ref = firstRef;
       const resource = { kind: "record", name, fields: [firstField] };
       if (comment) resource.comment = comment;
       return { command: { type: "add_resource", payload: { kind: "record", resource } } };

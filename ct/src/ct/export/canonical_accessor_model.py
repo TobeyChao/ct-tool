@@ -49,8 +49,7 @@ class AccessorField:
     record: RecordResource | None = None  # nested record (kind=record, or vector-of-record)
     element_kind: str | None = None  # for vector: scalar | enum | record | string
     element_type: str = ""  # for vector: element type text (int32 / string / enum name / record name)
-    ref_table: str | None = None  # cross-table ref 目标表名（field.ref 的 `.` 前）
-    ref_field: str | None = None  # cross-table ref 目标字段名（默认主键）
+    ref_table: str | None = None  # cross-table ref 目标表名（ref 只能是「目标表.主键」）
 
     @property
     def record_name(self) -> str | None:
@@ -161,7 +160,6 @@ def _build_field(
             i18n=field.i18n,
             record=rec,
             ref_table=_ref_table(field),
-            ref_field=_ref_field(field, rec),
         )
     if isinstance(type_expr, ScalarType):
         return AccessorField(
@@ -171,7 +169,6 @@ def _build_field(
             type_text=text,
             i18n=field.i18n,
             ref_table=_ref_table(field),
-            ref_field=_ref_field(field, None),
         )
     return AccessorField(
         name=field.name,
@@ -223,13 +220,6 @@ def _ref_table(field) -> str | None:
     if not field.ref:
         return None
     return field.ref.partition(".")[0] or None
-
-
-def _ref_field(field, rec) -> str | None:
-    if not field.ref:
-        return None
-    _table, _sep, fld = field.ref.partition(".")
-    return fld or (rec.name if rec else None)
 
 
 def build_accessor_model(

@@ -6,7 +6,7 @@
 ## Requirements
 
 ### Requirement: Schema workbench resource editing
-Schema 工作台 SHALL 在同一工作区提供 Tables、Records、Enums 三类资源导航；Table 与 Record 使用字段结构编辑器，Enum 使用值编辑器；Enum item SHALL 显示不可编辑的当前 ordinal、可编辑 name 与 comment，并支持追加、重命名、删除和显式重排；可能改变数据或 wire ordinal 的操作 SHALL 在保存前的净差异摘要中呈现风险。命名类型与 ref 引用链接（`Table.Field` 形式）跳转 SHALL 复用主编辑区而不是叠加编辑模态。
+Schema 工作台 SHALL 在同一工作区提供 Tables、Records、Enums 三类资源导航；Table 与 Record 使用字段结构编辑器，Enum 使用值编辑器；Enum item SHALL 显示不可编辑的当前 ordinal、可编辑 name 与 comment，并支持追加、重命名、删除和显式重排；可能改变数据或 wire ordinal 的操作 SHALL 在保存前的净差异摘要中呈现风险。命名类型与 ref 引用链接（`Table.Primary` 形式）跳转 SHALL 复用主编辑区而不是叠加编辑模态。
 
 #### Scenario: Navigate to named record definition
 - **WHEN** 用户点击 `vector<DropReward>` 中的 DropReward
@@ -119,11 +119,19 @@ Schema 工作台 SHALL 在同一工作区提供 Tables、Records、Enums 三类�
 - **THEN** 覆盖 1600×900、1360×768、1280×720、960×640、720×460、390×844 及 100%/125%/150% 缩放，并验证无错位、遮挡和状态重置
 
 ### Requirement: Add-field role and constraint mutual exclusion
-添加字段流程 SHALL 依据真实 schema 功能联动「角色」「约束」与「类型修饰」，禁止产出非法或客户端不可用的字段配置；主键字段 `Id` 为固定必有不通过添加字段指派，代号字段 `CodeName` 为可选固定名字段，`vector` 为可选类型修饰符；变长 scalar/Enum/string vector 使用内置 `[...]` 逗号文法且不提供 separator，定长形态使用 `excel_columns` 表示最大槽位数，Record vector 仅允许定长展开，ref 不允许 vector；无真实语义的约束只作信息提示，不进入草稿命令。
+添加字段流程 SHALL 依据真实 schema 功能联动「角色」「约束」与「类型修饰」，禁止产出非法或客户端不可用的字段配置；主键字段 `Id` 为固定必有不通过添加字段指派，代号字段 `CodeName` 为可选固定名字段，`vector` 为可选类型修饰符；变长 scalar/Enum/string vector 使用内置 `[...]` 逗号文法且不提供 separator，定长形态使用 `excel_columns` 表示最大槽位数，Record vector 仅允许定长展开，ref 不允许 vector 且仅对 Table 字段开放（Record 字段不提供引用入口）；无真实语义的约束只作信息提示，不进入草稿命令。
 
 #### Scenario: Primary key field is fixed and not offered in add-field
 - **WHEN** 用户打开添加字段流程
 - **THEN** 不提供「主键」指派（主键是固定字段 `Id`，由表定义与固定字段编辑维护；其类型 `int32`、非 `i18n`、非 `server_only` 由模型校验保障——主键在索引向量、`idHash` 与生成的 `ByID(int)` 上均以 32 位承载，故除 `int32` 外的整数标量在保存时同样被模型拒绝）
+
+#### Scenario: Primary key field is not renameable
+- **WHEN** 用户在字段结构表查看主键字段，或在草稿中发出针对主键字段的 `rename_field`
+- **THEN** 主键行的改名入口禁用并提示「主键字段不可改名」，命令层同样拒绝（`primary` 是 Excel 布局、`ByID(int)` 与跨表 ref 共同依赖的固定名，只改字段名会让表自相矛盾）
+
+#### Scenario: Ref constraint is table-only
+- **WHEN** 用户在 Record 的添加字段弹窗中查找引用入口
+- **THEN** 「引用」约束禁用（ref 是表级主键外键，Record 字段没有引用语义）
 
 #### Scenario: I18N role restricted to string type
 - **WHEN** 角色选择 I18N 后选择非 `string` 类型（含勾选 vector）
@@ -177,7 +185,7 @@ Table 创建 SHALL 自动包含固定 `primary: Id` 和 `Id: int32`，不自动�
 
 #### Scenario: Minimal Record
 - **WHEN** 用户创建 DropReward 并填写首个字段 Min、类型 int32
-- **THEN** 草稿 Record 包含 Min 且不包含自动生成的 Id；未填写首字段时不能提交
+- **THEN** 草稿 Record 包含 Min 且不包含自动生成的 Id；未填写首字段时不能提交；表单不提供「引用…」入口（ref 是表级主键外键，Record 字段没有引用语义）
 
 #### Scenario: Minimal Enum
 - **WHEN** 用户创建 ItemRarity 并填写首项 Common、注释「普通」

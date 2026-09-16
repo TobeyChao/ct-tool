@@ -26,10 +26,10 @@
 
 ```bash
 cd ct/
-python -m venv .venv && .venv/bin/pip install -e .     # 依赖：openpyxl / flatbuffers / typer / pydantic / pyyaml
+python -m venv .venv && .venv/bin/pip install -e .     # 依赖：openpyxl / flatbuffers / typer / pydantic / pyyaml / flask
 
 cd <工作区>              # 含 config/ excel/ 等，如 fabulous-game 的 Config/gd
-ct export --all          # 全量导出
+ct export                # 增量导出（默认复用未变更产物；--all 强制全量重建）
 ct status                # 看哪些表待导出
 ```
 
@@ -154,7 +154,7 @@ fields:
 |---|---|---|
 | `comment` | 任意 | 生成到模板表头与产物注释 |
 | `i18n: true` | **仅顶层标量 `string`** | 提取到翻译源；导出时生成稀疏 i18n 表。⚠️ record 字段与 `vector<string>` 都**不允许**标 |
-| `ref` | 标量 | 跨表引用，`目标表.目标字段`（如 `ItemType.Id`） |
+| `ref` | 标量 | 跨表主键外键，`目标表.主键`（如 `ItemType.Id`）；目标不是该表主键（含字段名打错）在加载/候选校验阶段报错 |
 | `server_only: true` | 任意 | 排除出客户端二进制；⚠️ 主键不能标，且不能与 `i18n` 同标 |
 | `excel_columns: N` | `vector<T>` | 定长展开 N 组列（`vector<Record>` 必填） |
 
@@ -258,15 +258,16 @@ Web 面板的 Schema 页可以在不手写 YAML 的前提下新建 Table / Recor
 
 // 预检：commands 是当前草稿前缀 + 拟新增命令
 POST /api/schema-workspace/candidate  {"commands":[ ... ]}
-// → {"ok":true,"data":{"resources":[...],"issues":[...],"netDiff":{...},"candidateHash":"..."}}
+// → {"ok":true,"data":{"resources":[...],"issues":[...],"netDiff":{...},"candidateHash":"...","schemaRevision":"..."}}
 
 // 保存：只写实际变化的 YAML
 POST /api/schema-workspace/save
   {"schemaRevision":"<快照基线>","commands":[ ... ],"candidateHash":"<预检得到的 hash>"}
-// → 200 {"isNoOp":false,"written":["/…/config/types/ItemRarity.yaml"],"deleted":[],
-//          "notes":[...],"schemaRevision":"<新基线>","resources":[...]}
+// → 200 {"ok":true,"data":{"isNoOp":false,"written":["/…/config/types/ItemRarity.yaml"],"deleted":[],
+//          "notes":[...],"schemaRevision":"<新基线>","resources":[...]}}（data 内还有 unchanged / changedResources / netDiff / recovery 等键）
 // → 400 结构问题（issues 带 commands[i].payload.resource.… 定位）
-// → 409 conflict.kind ∈ schema-revision | candidate-hash | target | legacy-apply | busy
+// → 409 conflict.kind ∈ schema-revision | candidate-hash | target | legacy-apply | legacy-apply-recovered；
+//    工作区忙时同样返回 409，但响应只带 "busy": true（无 conflict 对象）
 
 // 模板（显式、按表）：新 Table 保存后才能生成
 POST /api/schema-workspace/gen-template  {"table":"Quest"}
@@ -339,7 +340,7 @@ output/
           #if CONFIG_DEBUG || UNITY_EDITOR || DEVELOPMENT_BUILD
           TableVersion.Check(_version);
           #endif
-          return WireReader.I32(_row, 4);
+          return WireReader.I32At(_row, 4);
       }
   }
   ```
@@ -392,8 +393,8 @@ manifest 的字段集合是 schema 的纯函数，改 Excel 数据不会让它�
 ## 部署到 Unity
 
 `config/global.yaml` 里配 `deploy:` 后，CLI 的 `ct export` 在导出完成后自动同步
-（由 `ct/src/ct/cli.py` 的 `_run_deploy()` 在导出之后单独触发；**web 面板的导出不会部署**，
-它只导出产物到 `output/`）：
+（由 `ct/src/ct/cli.py` 的 `_deploy_for_service` 回调在导出之后触发，`_run_deploy()` 是独立
+`ct deploy` 命令的入口；**web 面板的导出不会部署**，它只导出产物到 `output/`）：
 
 ```yaml
 deploy:                            # 可选；整段不配 或 enabled: false ⇒ 导表行为与没有 deploy 时完全一致
@@ -434,7 +435,7 @@ deploy:                            # 可选；整段不配 或 enabled: false �
 | `ct deploy` | 只把**当前产物**同步到 Unity，不触发导出 |
 | `ct validate` | 只解析校验，不产出 |
 | `ct gen-template` | 按 schema 生成 Excel 模板表头 |
-| `ct status` | 列出数据变更 / 模板漂移 / 缺失（三类） |
+| `ct status` | 列出缺失 / 数据变更 / 模板漂移；另有「未完成的发布」提示（非空才打印） |
 | `ct panel` | 启本地面板（浏览器打开即用） |
 | `ct i18n sync` | 刷新 source + 生成/更新各语言骨架 |
 | `ct i18n status` | 报告翻译进度 |

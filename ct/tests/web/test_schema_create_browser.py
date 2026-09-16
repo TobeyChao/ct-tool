@@ -296,6 +296,8 @@ def test_create_and_reference_without_saving(create_server, chromium_browser) ->
     # 引用列表来自候选：刚创建的 Table 立即可选
     refs = [row.get_attribute("data-ref") for row in page.locator("[data-ref-list] [data-ref]").all()]
     assert "Quest.Id" in refs and "Item.Id" in refs
+    # ref 是主键外键：引用列表只列主键，普通字段（Item.Name）不再可选
+    assert "Item.Name" not in refs
     page.locator("[data-ref-list] [data-ref='Quest.Id']").click()
     page.locator("[data-af-add]").click()
     page.wait_for_timeout(300)
@@ -427,6 +429,12 @@ def test_template_entry_survives_reload(create_server, chromium_browser) -> None
     page.locator('.banner-gen-template[data-table="Quest"]').click()
     page.wait_for_selector('.banner-gen-template[data-table="Quest"]', state="detached")
     assert (workspace / "excel" / "Quest.xlsx").exists()
+
+    # 模板生成进日志页的「模板」分类：该分类不再是「有按钮没人产出」的空壳
+    page.locator('.ct-sitem[data-module="logs"]').click()
+    page.wait_for_selector("#page-logs [data-module='模板']")
+    page.locator("#page-logs [data-module='模板']").click()
+    page.locator("#page-logs tr", has_text="生成模板：Quest").first.wait_for(timeout=3_000)
     context.close()
 
 
@@ -486,4 +494,40 @@ def test_create_flow_keyboard_and_narrow_viewport(create_server, chromium_browse
     page.wait_for_selector(".ct-dialog-mask", state="detached", timeout=8000)
     _wait_draftbar(page, "1 个资源有未保存修改")
     assert page.evaluate("() => document.documentElement.scrollWidth <= window.innerWidth + 1")
+    context.close()
+
+
+def test_record_ref_entry_removed_and_primary_rename_blocked(
+    create_server, chromium_browser
+) -> None:
+    """ref 是表级主键外键：Record 不再有引用入口；表主键字段不可改名。"""
+    url, _workspace = create_server
+    context = chromium_browser.new_context(viewport={"width": 1600, "height": 900})
+    page = context.new_page()
+    _open_schema(page, url)
+
+    # 新增 Record：首字段不再提供「引用…」入口
+    page.locator("#page-schema #head-create-resource").click()
+    page.wait_for_selector("[data-cr-name]")
+    page.locator('[data-cr-kind="record"]').click()
+    assert page.locator("[data-cr-ref]").count() == 0
+    _close_dialog(page)
+
+    # Record 添加字段：引用约束不提供入口
+    _create(page, "record", "DropReward", field="Min")
+    page.wait_for_function("() => document.querySelector('#editor-title').textContent === 'DropReward'")
+    page.locator("#page-schema #add-field").click()
+    page.wait_for_selector("[data-af-name]")
+    assert page.locator("[data-af-ref]").is_disabled()
+    _close_dialog(page)
+
+    # Table 字段表：主键不可改名，普通字段仍可改名
+    _open_pane(page)
+    page.locator('#page-schema .ct-resource-row[data-name="Item"]').first.click()
+    page.wait_for_function("() => document.querySelector('#editor-title').textContent === 'Item'")
+    primary_rename = page.locator('#page-schema tr[data-field="Id"] [data-act="rename"]')
+    assert primary_rename.is_disabled()
+    assert primary_rename.get_attribute("title") == "主键字段不可改名"
+    normal_rename = page.locator('#page-schema tr[data-field="Name"] [data-act="rename"]')
+    assert normal_rename.is_enabled()
     context.close()
