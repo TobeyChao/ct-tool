@@ -2,8 +2,10 @@
 
 This example covers every currently supported canonical field shape without
 changing the active `gd` workspace. Copy the referenced `types/*.yaml` into
-`gd/config/types/` and the body below into
-`gd/config/schemas/ComplexShowcase.yaml` when a real table is needed.
+`gd/config/types/` and the body below into a **new** table schema
+(`gd/config/schemas/<Table>.yaml`). Note: the real `ComplexShowcase.yaml`
+already exists in this workspace with a different field set — do not
+overwrite it with this example.
 
 Covered features: scalars, a named enum, a nested Record, scalar / Enum /
 Record vectors, fixed Excel expansion via `excel_columns`, cross-table `ref`,
@@ -58,3 +60,7 @@ indexes:
 唯一，否则 `ct export` 的「解析校验」阶段与 `ct validate` 都会以
 `IssueCode.DUPLICATE_CODENAME` 失败（空值报 `type`）；未声明该索引时，
 `CodeName` 只是一个普通字段。
+
+其他表级可选键同样有效：`json_key` / `excel_file`（缺省 `{Table}s` / `{Table}.xlsx`）、
+`uniform`（定宽布局声明，缺省 `true`，`uniform: false` 退回变长读 —— 定宽与否
+由 schema 决定，填充率只是导出日志里的诊断数字）。
