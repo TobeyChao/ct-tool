@@ -323,6 +323,14 @@ def test_logs_keep_reading_position_and_offer_jump_to_bottom(module_url: str, ch
         timeout=2_000,
     )
     assert viewport.evaluate("node => node.scrollHeight - node.clientHeight - node.scrollTop") <= 8
+    # 平滑滚动由合成器线程执行：wait_for_function 读到 scrollTop<=8 时，主线程
+    # 最后一次 scroll 事件（驱动 #logs-jump-bottom 隐藏）可能仍在排队；CI 高负载
+    # 下瞬时 is_hidden() 会与事件派发竞争。这里等按钮真正隐藏，避免瞬态可见误报；
+    # 若按钮始终不隐藏仍会以超时失败（真实回归不被掩盖）。
+    page.wait_for_function(
+        "() => { const b = document.querySelector('#page-logs #logs-jump-bottom'); return !!b && b.hidden; }",
+        timeout=5_000,
+    )
     assert jump.is_hidden()
     page.close()
 
