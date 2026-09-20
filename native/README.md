@@ -1,7 +1,7 @@
 # ct 原生内核
 
 Rust 内核提供 CLI、原生 Web 服务和 stdio worker，三者复用 `ct-app` 用例。
-main 保留浏览器 Web 界面及原有 Flutter 启动壳；没有迁入分支中的 Flutter 工作台。
+浏览器 Web 界面由 `ct panel` 提供；Flutter 桌面工作台通过 `ct worker` 的 NDJSON 协议复用同一套内核用例。
 
 当前交付支持 macOS；Windows 迁移与发行验收延后，Linux 不纳入支持或 CI。
 

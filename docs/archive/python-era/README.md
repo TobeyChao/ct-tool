@@ -5,6 +5,13 @@
 > 本文 2026-09-12 按**当前实现**重写。此前版本多处与实现不符（小写 schema、`type: array` + `separator`、
 > 内联 `struct`、JSON/生成物路径、`binary_writer`），已全部更正。
 > 格式契约的权威来源是 `openspec/specs/flatbuffers-export/spec.md`。
+>
+> **本目录（`ct/`）现在是 Python 参照实现**：只用于产物格式与性能的对照基线，
+> 生产入口是 `native/` 的 Rust 内核（`native/target/release/ct`，或 `cargo run -p ct-xtask -- dist`
+> 生成的独立运行时包）。原生入口不依赖 Python，也不回退到本目录；`ct panel` 已退役，
+> 原生 `ct panel` 只打印迁移指引。两侧入口的区分见 `native/README.md` 的「开发/测试入口」。
+> 测试入口保持隔离：`ct/.venv` 只服务本目录的对照测试，原生内核测试用临时工作区夹具，
+> 两边都不把 `gd/` 当夹具。
 
 ## 目录
 
@@ -436,7 +443,7 @@ deploy:                            # 可选；整段不配 或 enabled: false �
 | `ct validate` | 只解析校验，不产出 |
 | `ct gen-template` | 按 schema 生成 Excel 模板表头 |
 | `ct status` | 列出缺失 / 数据变更 / 模板漂移；另有「未完成的发布」提示（非空才打印） |
-| `ct panel` | 启本地面板（浏览器打开即用） |
+| `ct panel` | （旧对照入口）启本地面板；原生 `ct panel` 已改为只打印迁移指引 |
 | `ct i18n sync` | 刷新 source + 生成/更新各语言骨架 |
 | `ct i18n status` | 报告翻译进度 |
 | `ct i18n compact` | 物理移除 `orphan` 条目 |
@@ -449,7 +456,7 @@ ct deploy [--for-build] [--root DIR]
 ct validate [--table T] [--verbose] [--root DIR]
 ct gen-template (--all | --table T) [--root DIR]
 ct status [--root DIR]
-ct panel [--host 127.0.0.1] [--port 8000] [--no-browser] [--root DIR]
+ct panel [--host 127.0.0.1] [--port 8000] [--no-browser] [--root DIR]   # 仅旧对照实现
 ct i18n sync    [--lang L] [--table T] [--verbose] [--root DIR]
 ct i18n status  [--lang L] [--by-table] [--json] [--root DIR]
 ct i18n compact [--lang L] [--table T] [--dry-run] [--root DIR]

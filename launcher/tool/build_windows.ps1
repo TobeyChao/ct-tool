@@ -71,7 +71,7 @@ if (-not (Test-Path $ReleaseDir)) {
   exit 1
 }
 
-# 3) 嵌入 runtime（PanelService 期望 <exe 同级>\runtime\ct.exe）
+# 3) 嵌入 runtime（NativeRuntimeLocator 期望 <exe 同级>\runtime\ct.exe）
 Write-Host "[3/4] 嵌入 runtime"
 $RuntimeTarget = Join-Path $ReleaseDir "runtime"
 if (Test-Path $RuntimeTarget) { Remove-Item -Recurse -Force $RuntimeTarget }

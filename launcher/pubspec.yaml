@@ -21,6 +21,9 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # 任务 5.2：profile/release 真机帧时间测量（integration_test/ui_responsiveness_test.dart）
+  integration_test:
+    sdk: flutter
   flutter_lints: ^6.0.0
 
 flutter:

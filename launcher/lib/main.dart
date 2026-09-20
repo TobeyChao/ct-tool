@@ -6,6 +6,7 @@ import 'package:window_manager/window_manager.dart';
 import 'app.dart';
 import 'services/settings_store.dart';
 import 'services/single_instance_lock.dart';
+import 'services/window_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,24 +14,18 @@ Future<void> main() async {
 
   // 单实例：已有实例在运行时直接退出（对齐 FlClash）。
   if (!await SingleInstanceLock().acquire()) {
+    // 已有实例在跑：直接退出，**不会**再启动第二个 worker 进程。
+    stderr.writeln('检测到已有 ct 工作台实例在运行，本次启动退出。');
     exit(0);
   }
 
   final settings = SettingsStore();
   await settings.load();
 
-  final windowOptions = WindowOptions(
-    // 按内容适配：左侧导航 176 + 内容区 ~540，高度容纳概览/设置页并给日志留足空间
-    size: Size(720, 460),
-    minimumSize: Size(720, 460),
-    center: true,
-    title: 'ct Launcher',
-    // 对齐 FlClash：macOS 隐藏标题栏条（保留系统红绿灯），内容顶到顶部；
-    // Windows 暂用系统标题栏，后续再对齐自绘方案。
-    titleBarStyle: Platform.isMacOS ? TitleBarStyle.hidden : TitleBarStyle.normal,
-  );
+  // 可调原生工作台：默认 1280×800、最小 1024×700（任务 2.5，参数见 window_options.dart）
+  final windowOptions = desktopWindowOptions();
   await windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.setResizable(false);
+    await windowManager.setResizable(true);
     // 对齐 FlClash：启动阶段就拦截关闭事件，关闭行为由 app 层决策。
     await windowManager.setPreventClose(true);
     await windowManager.show();

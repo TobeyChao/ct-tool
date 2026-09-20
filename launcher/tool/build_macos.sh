@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 构建「内置原生 Rust 运行时」的 macOS launcher（native Web 桌面壳）。
+# 构建「内置原生 Rust 运行时」的 macOS launcher（Flutter 原生工作台）。
 #
 # 前置：Flutter SDK（可用 FLUTTER 环境变量指定，默认取 PATH 中的 flutter）、
 #       Rust 工具链 + Xcode + CocoaPods。**不再需要 Python/ct/.venv**：

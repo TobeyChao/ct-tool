@@ -1,13 +1,13 @@
 # ct Launcher
 
-main 的 Flutter 桌面壳负责工作区、端口、日志、托盘与自启，启动原生 `ct panel` 并在服务就绪后打开浏览器。
-业务界面保留在 Web；没有引入完整 Flutter 工作台。
+Flutter 桌面工作台通过原生 `ct worker` 的 stdio NDJSON 协议提供 Schema 编辑、翻译、模板、校验、导出与部署，并管理工作区、日志、任务、托盘与自启。
+CLI、Web 和桌面工作台复用 Rust 内核用例；桌面端直接连接 worker。
 
 本轮支持 macOS；Windows 构建与验收延后，Linux 不提供支持或发行包。
 
 运行时按“应用包内置 → 设置中的原生 ct 路径”查找，不回退 Python 或 venv。
-旧工作区、端口、托盘和自启偏好保留，旧 Python 工具目录不会作为原生路径迁移；新安装不默认绑定 `gd/`。
-停止/退出会通过 stdin EOF 等待服务完成当前发布，不做超时强杀。
+旧工作区、托盘和自启偏好保留；main 保存的 `native_runtime_path` 迁移为工作台的 `runtime_path`，旧 Python 工具目录与端口等面板偏好清除。新安装不默认绑定 `gd/`。
+停止/退出先请求 worker shutdown，再通过 stdin EOF 等待发布收尾和进程退出，不做超时强杀。
 
 ## 开发与验证
 

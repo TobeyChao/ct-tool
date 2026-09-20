@@ -1,9 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../../services/panel_service.dart';
 import '../../theme.dart';
 
 /// 页面共享的排版常量
@@ -16,45 +14,6 @@ const TextStyle ctPageTitleStyle = TextStyle(
   fontSize: 14,
   fontWeight: FontWeight.w600,
 );
-
-/// 面板状态的展示信息（唯一 switch 来源，侧栏与概览页共用）
-({Color dot, String title, String sub, String hint}) panelStatusPresentation(
-  PanelStatus status,
-  String? failureReason,
-) {
-  return switch (status) {
-    PanelStatus.stopped => (
-      dot: ctInk3,
-      title: '已停止',
-      sub: '点击开关启动面板，启动后自动打开',
-      hint: '未运行',
-    ),
-    PanelStatus.starting => (
-      dot: ctGold,
-      title: '正在启动',
-      sub: '正在拉起本地服务，稍候…',
-      hint: '连接中',
-    ),
-    PanelStatus.stopping => (
-      dot: ctGold,
-      title: '正在停止',
-      sub: '等待正在执行的写入完成…',
-      hint: '安全退出中',
-    ),
-    PanelStatus.running => (
-      dot: ctAccent,
-      title: '运行中',
-      sub: '面板服务运行中 · 点击开关可暂停',
-      hint: '点击地址可复制',
-    ),
-    PanelStatus.failed => (
-      dot: ctDanger,
-      title: '启动失败',
-      sub: failureReason ?? '请检查下方日志后重试',
-      hint: '服务未启动',
-    ),
-  };
-}
 
 /// 全局轻提示（深绿浮层，替代页面内重复的 SnackBar 拼装）
 void showCtToast(BuildContext context, String message) {
@@ -69,15 +28,6 @@ void showCtToast(BuildContext context, String message) {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
-}
-
-/// 用系统默认浏览器打开面板地址（概览页与托盘共用）
-Future<void> openPanelInBrowser(String url) async {
-  final uri = Uri.parse(url);
-  if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-    // 失败提示交给调用方，这里只返回失败信号
-    throw StateError('无法打开 $url');
-  }
 }
 
 /// 用系统文件管理器打开目录（macOS / Windows）

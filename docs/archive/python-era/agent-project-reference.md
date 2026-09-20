@@ -32,7 +32,7 @@
 │   ├── docs/             #   工具文档与设计稿
 │   ├── pyproject.toml    #   打包配置（src layout + package-data）
 │   └── .venv/            #   虚拟环境
-├── launcher/             # Flutter 桌面启动器（独立构建单元；运行时优先用包内冻结 ct，开发者可回退配置 ct/.venv）
+├── launcher/             # Flutter 桌面工作台（独立构建单元；运行时只来自包内原生 ct，无 Python 回退）
 │   ├── lib/              #   Dart 源码（壳 + 概览/日志/设置三页签）
 │   ├── macos|windows/    #   平台工程（macOS Swift 集成 / Windows 构建）
 │   └── docs/design/      #   启动器设计稿
@@ -113,15 +113,29 @@ pytest -p no:warnings
 
 ## launcher 打包与分发
 
-launcher（Flutter 桌面壳）构建时会把 ct CLI 用 PyInstaller 冻结成独立运行时（onedir）并嵌入应用包，用户无需安装 Python 或拉取本仓库即可使用。
+launcher（Flutter 桌面壳）嵌入的是 **Rust 原生运行时**（`ct worker` 的 NDJSON stdio 协议），
+不再冻结任何 Python 面板：任务 5.6 已删除构建脚本里的 PyInstaller 过渡开关，正式入口只剩一条路。
+用户既不需要 Python，也不需要拉取本仓库。
 
 ```bash
+# 1) 先产出自检过的原生运行时包（Windows；含无 Python 环境真跑自检）
+cd native && cargo run -p ct-xtask --release -- dist
+
+# 2) 构建桌面负载（默认取 native/dist 下最新的 ct-native-*windows* 包）
+launcher/tool/build_windows.ps1        # 需在 Windows 机器执行，需 Flutter + VS 桌面开发负载
+
+# 3) 复核负载：不得含 Python/Flask 痕迹，且内置 ct.exe 要在「PATH 只剩负载目录、
+#    PYTHON* 变量全清」的环境里真跑只读命令
+launcher/tool/check_payload.ps1
+
 # macOS（需 Flutter、Xcode + CocoaPods；可用 FLUTTER=/path/to/flutter 指定 SDK）
 launcher/tool/build_macos.sh
-
-# Windows（需在 Windows 机器执行，需 Flutter + VS 桌面开发负载）
-launcher/tool/build_windows.ps1
 ```
+
+2026-09-19 实测：Release 负载 **27 个文件**（`ct_launcher.exe` + Flutter 运行库 + `runtime\ct.exe`
+6,657,536 字节与 `VERSION.json`/`RUNTIME-CHECK.txt`/`README.md`），Python/Flask 痕迹 **0 处**；
+内置 `ct 0.0.0` 在隔离环境下 `ct status --root gd`、`ct validate --root gd` 均 **exit 0**，
+真实 `gd/` 全程零改动。`.github/workflows/native.yml` 的桌面壳 job 已把 1)/2)/3) 串成强制步骤。
 
 产物位置：
 

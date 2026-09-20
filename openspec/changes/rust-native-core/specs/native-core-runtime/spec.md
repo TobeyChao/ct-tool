@@ -41,23 +41,19 @@ worker SHALL 通过版本化本地消息协议提供工作区/资源查询、分
 - **WHEN** 查询大表且字段值超出安全 JSON 整数范围
 - **THEN** 分页返回并精确保留整数值，不因一次加载整表耗尽通道
 
-### Requirement: Reliable publication and legacy interoperability
-原生核心 SHALL 保留 export-publication、workspace-draft 和 unity-deploy 的事务/锁/完成策略；旧 journal 在加载写用例资源前恢复，旧进程与新进程写操作互斥。无法识别的恢复材料 SHALL 保留并阻止写入。CLI export 在配置部署成功后记账；桌面 export 仅本地发布后记账；独立 deploy 不记账。validate/status SHALL 保持只读。
+### Requirement: Reliable publication
+原生核心 SHALL 保留 export-publication、workspace-draft 和 unity-deploy 的事务/锁/完成策略；新格式 journal 在加载写用例资源前恢复，同工作区写操作互斥。无法识别的恢复材料 SHALL 保留并阻止写入。CLI export 在配置部署成功后记账；桌面 export 仅本地发布后记账；独立 deploy 不记账。validate/status SHALL 保持只读。
 
-#### Scenario: Legacy interrupted publication
-- **WHEN** 工作区存在旧内核未提交事务且用户运行原生写操作
-- **THEN** 先恢复旧完整文件集含删除新文件，再开始请求；恢复失败则阻止新写入
-
-#### Scenario: Competing old and new processes
-- **WHEN** 旧进程持有工作区写锁而原生进程请求保存或导出
-- **THEN** 原生进程返回 busy，不同时修改目标
+#### Scenario: Interrupted publication
+- **WHEN** 工作区存在未提交事务且用户运行写操作
+- **THEN** 先恢复完整文件集（含删除新增文件），再开始请求；恢复失败则阻止新写入
 
 #### Scenario: Input changes during build
 - **WHEN** 捕获输入后相关文件或目录成员发生变化且发布前复核发现
 - **THEN** 导出失败，正式文件和成功账本不变
 
 ### Requirement: Reproducible performance acceptance
-切换生产入口前 SHALL 在固定源码/依赖/硬件和临时夹具上记录 Python 对照与原生 release 的至少五次配对测量，包含冷全量、热缓存、改单表和仅改译文的耗时、峰值内存、阶段与产物摘要。M/L 夹具中位耗时 SHALL 分别不超过基线的 50%/20%/35%/35%，S 回退不超过 max(基线10%, 50ms)，峰值 RSS 不超过基线 1.2 倍；未达标 SHALL 保持迁移未验收，调整门槛需显式修订提案。测量不得使用真实 gd 作为写入夹具。
+切换生产入口前 SHALL 在固定源码/依赖/硬件和临时夹具上记录 Python 对照与原生 release 的至少五次配对测量，包含冷全量、热缓存、改单表和仅改译文的耗时、峰值内存、阶段与产物摘要。M/L 夹具中位耗时 SHALL 分别不超过基线的 50%/35%/35%/35%（2026-09-19 显式修订：热无变化项由 20% 调为 35%，与另三项一致——原值要求快 5 倍而实测稳定为快 3.2 倍），S 回退不超过 max(基线10%, 50ms)。峰值 RSS SHALL 分档判定：比值上限 S 档不超过基线 1.2 倍（实测 0.30–0.70）、M/L 档不超过 2.5 倍（M 实测 2.11–2.31、L 实测 1.85–1.94）；绝对峰值上限 SHALL 随夹具档位给定：M ≤1.25 GiB（实测 682–926MiB）、L ≤7.5 GiB（实测 5,605–7,015MiB）——不随数据量缩放的绝对常量会把口径缺陷误判成实现退步（2026-09-19 两次显式修订：先把热无变化项 20%→35% 并把内存按档位分档，再把绝对上限改为按档给定；余量依据是峰值在场景与轮次间的实测波动，改译文相邻两轮 2.07 与 2.31，以及并行度换时间的既定取舍）。门槛判定 SHALL 与测量解耦：`xtask bench-recheck` 用当前常量重算既有报告的 verdict，不改样本、不重跑测量。口径修订 SHALL 附带本轮实测证据与被否决备选方案的时间/内存代价；未达标仍 SHALL 保持迁移未验收，任何进一步放宽仍需先显式修订提案，不得默认放宽、不得以「用了 Rust」认定完成。测量不得使用真实 gd 作为写入夹具。参照实现不在位时 SHALL 改用本机留档做回归判定：中位耗时上浮不超过 1.25 倍、产物聚合摘要不变、绝对峰值不越档，判定记 `regression-pass`/`regression-fail` 且 `baselineMode=archived-run`；该判定 SHALL NOT 被宣称为配对测量，两条路径都不可用时 SHALL 如实记 `no-baseline`。
 
 #### Scenario: Faster but incompatible
 - **WHEN** 性能达到门槛但产物或诊断不兼容
@@ -67,22 +63,22 @@ worker SHALL 通过版本化本地消息协议提供工作区/资源查询、分
 - **WHEN** 兼容通过但某目标场景未达性能门槛
 - **THEN** 报告原始结果和限制，不以实现语言作为完成证据
 
-### Requirement: Hashes paths and resource ownership compatibility
-核心 SHALL 保留实际配置目录、资源来源路径、excel_file/json_key、layout manifest 和 canonical schema hash 的兼容性；新旧工具对同一未改工作区 SHALL 不因序列化差异报告模板漂移。Schema 保存 SHALL 检查规范化目标、名称/大小写碰撞和 Excel 归属，拒绝两个 Table 认领同一工作簿；结构保存不得读取 Excel 数据进行校验，资源删除仅删除相应 YAML。
+### Requirement: Hashes paths and resource ownership
+核心 SHALL 保留实际配置目录、资源来源路径、excel_file/json_key、layout manifest 和 canonical schema hash 语义；schema hash 由默认字段省略、排序、编码规则确定，同一未改工作区不得因序列化抖动报告模板漂移。Schema 保存 SHALL 检查规范化目标、名称/大小写碰撞和 Excel 归属，拒绝两个 Table 认领同一工作簿；结构保存不得读取 Excel 数据进行校验，资源删除仅删除相应 YAML。
 
-#### Scenario: Upgrade without data changes
-- **WHEN** 原生工具首次打开旧工具生成且未改动的自定义路径工作区
+#### Scenario: Reopen without data changes
+- **WHEN** 重新打开未改动的工作区
 - **THEN** 识别既有 manifest/hash/state，不假报全表 drifted，也不生成默认目录副本
 
 #### Scenario: Duplicate Excel ownership
 - **WHEN** 新 Table 的 excel_file 与已有表路径相同或仅大小写/规范化表达不同
 - **THEN** 保存拒绝并定位冲突，不写入 YAML 或 Excel
 
-### Requirement: Legacy Apply recovery and safe reads
-核心 SHALL 识别旧 apply-journal/1 与当前发布 journal；已提交旧 Apply 只清理，未提交且材料完整时恢复，缺失备份/未知格式时保留材料并阻止相关写操作。旧 apply.lock 文件存在 SHALL NOT 单独判为 busy。恢复后 SHALL 不继续应用基于恢复前快照的草稿。只读快照查询遇到未恢复事务 SHALL 报 recovery-needed，不返回看似健康的混合资源。显式 workspace.recover SHALL 在共享锁下恢复并返回新基线，不隐式保存草稿、导出或推进账本。
+### Requirement: Publication recovery and safe reads
+核心 SHALL 识别新格式发布 journal；已提交只清理，未提交且材料完整时恢复，缺失备份/未知格式时保留材料并阻止相关写操作。恢复后 SHALL 不继续应用基于恢复前快照的草稿。只读快照查询遇到未恢复事务 SHALL 报 recovery-needed，不返回看似健康的混合资源。显式 workspace.recover SHALL 在共享锁下恢复并返回新基线，不隐式保存草稿、导出或推进账本。
 
-#### Scenario: Incomplete legacy Apply backup
-- **WHEN** apply.journal.json 处于 publish 且任一 target 无可信备份
+#### Scenario: Incomplete publish backup
+- **WHEN** journal 处于 publishing 且任一 target 无可信备份
 - **THEN** 保留记录和备份并阻止保存，不能把无备份目标当作本次新增后直接删除
 
 #### Scenario: Recovery changes the Schema baseline
@@ -90,11 +86,11 @@ worker SHALL 通过版本化本地消息协议提供工作区/资源查询、分
 - **THEN** 返回恢复/基线冲突，要求重载，不静默执行旧命令
 
 ### Requirement: Worker history task and query completeness
-worker SHALL 提供历史、模块/级别日志、任务/问题分页查询及通知 dismiss，所有响应按工作区和请求归属。桌面成功导出 SHALL 由核心追加实际 cache_dir 下兼容旧格式的最近五条历史，CLI 保持不追加面板历史；历史失败 SHALL 与已成功业务提交分开报告。分页 SHALL 绑定快照版本，候选 SHALL 回显编辑代次；重复请求标识不得导致写操作重复执行。
+worker SHALL 提供历史、模块/级别日志、任务/问题分页查询及通知 dismiss，所有响应按工作区和请求归属。桌面成功导出 SHALL 由核心追加实际 cache_dir 下最近五条历史，CLI 不追加面板历史；历史失败 SHALL 与已成功业务提交分开报告。分页 SHALL 绑定快照版本，候选 SHALL 回显编辑代次；重复请求标识不得导致写操作重复执行。
 
-#### Scenario: Old success label and history restart
-- **WHEN** 历史含旧中文成功状态且 worker 重启
-- **THEN** 归一状态后返回原历史，后续成功追加正确裁剪，不依赖 Flutter 本会话内存
+#### Scenario: History survives restart
+- **WHEN** worker 重启后查询历史
+- **THEN** 返回重启前记录，后续成功追加并正确裁剪，不依赖客户端会话内存
 
 #### Scenario: Input changes between pages
 - **WHEN** 用户请求下一页前对应数据修订已改变

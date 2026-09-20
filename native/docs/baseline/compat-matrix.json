@@ -191,19 +191,15 @@
       "owner": "ui",
       "capability": "schema-editor/workbench；fuzzy/schema browser tests",
       "behaviors": "三类编辑器、Enum item/ordinal 风险、引用跳转、全局 Quick Open、搜索折叠恢复、类型/索引/依赖视图",
-      "change": "native-web-python-retirement",
+      "change": "界面 3.1–3.2、3.7",
       "pythonTests": [],
-      "nativeTests": [],
+      "nativeTests": [
+        "launcher/test/workbench_test.dart",
+        "launcher/test/workbench_golden_test.dart"
+      ],
       "nativeAnchors": [],
       "status": "ui-change",
-      "note": "属于 native-flutter-workbench；本次内核验收只保证协议与数据可用。 main 接管：保留 Web 桌面壳；上述 Flutter 工作台测试仅保留来源。Web UI 完整验收见 web-parity.json，尚未通过 G1。",
-      "historicalNativeTests": {
-        "commit": "2d7dfc9",
-        "paths": [
-          "launcher/test/workbench_test.dart",
-          "launcher/test/workbench_golden_test.dart"
-        ]
-      }
+      "note": "属于 native-flutter-workbench；本次内核验收只保证协议与数据可用。"
     },
     {
       "id": "excel-processing",
@@ -459,11 +455,12 @@
       "owner": "ui",
       "capability": "web-panel",
       "behaviors": "翻译表选择器只含i18n、状态筛选/列显隐/长文本、同步和进度、模板状态、模块日志与五条历史",
-      "change": "native-web-python-retirement",
+      "change": "界面 4.1–4.8；内核 6.10",
       "pythonTests": [],
       "nativeTests": [
         "native/tests/compat/tests/desktop_history.rs",
-        "native/tests/protocol/tests/desktop_state.rs"
+        "native/tests/protocol/tests/desktop_state.rs",
+        "launcher/test/workbench_test.dart"
       ],
       "nativeAnchors": [
         "native/tests/compat/tests/desktop_history.rs::history_appends_newest_first_and_trims_to_five",
@@ -471,13 +468,7 @@
         "native/tests/protocol/tests/desktop_state.rs::task_issues_page_and_dismiss_are_connection_scoped"
       ],
       "status": "partial",
-      "note": "内核侧历史/日志/任务问题分页已验收；工作台视觉与交互由 native-flutter-workbench 承接。 main 接管：保留 Web 桌面壳；上述 Flutter 工作台测试仅保留来源。Web UI 完整验收见 web-parity.json，尚未通过 G1。",
-      "historicalNativeTests": {
-        "commit": "2d7dfc9",
-        "paths": [
-          "launcher/test/workbench_test.dart"
-        ]
-      }
+      "note": "内核侧历史/日志/任务问题分页已验收；工作台视觉与交互由 native-flutter-workbench 承接。"
     },
     {
       "id": "web-panel-design-system",
@@ -485,19 +476,15 @@
       "owner": "ui",
       "capability": "web-panel-design-system",
       "behaviors": "统一视觉、跨模块草稿/任务、持续错误、危险确认、help/about/docs、保存响应不清后续编辑",
-      "change": "native-web-python-retirement",
+      "change": "界面 1.2–1.4、3.8–3.9、4.8–4.9",
       "pythonTests": [],
-      "nativeTests": [],
+      "nativeTests": [
+        "launcher/test/workbench_test.dart",
+        "launcher/test/workbench_golden_test.dart"
+      ],
       "nativeAnchors": [],
       "status": "ui-change",
-      "note": "设计令牌与页面回归在 native-flutter-workbench 验收。 main 接管：保留 Web 桌面壳；上述 Flutter 工作台测试仅保留来源。Web UI 完整验收见 web-parity.json，尚未通过 G1。",
-      "historicalNativeTests": {
-        "commit": "2d7dfc9",
-        "paths": [
-          "launcher/test/workbench_test.dart",
-          "launcher/test/workbench_golden_test.dart"
-        ]
-      }
+      "note": "设计令牌与页面回归在 native-flutter-workbench 验收。"
     },
     {
       "id": "launcher",
@@ -505,20 +492,14 @@
       "owner": "ui",
       "capability": "launcher；main.dart/settings/auto_launch/tray/single_instance",
       "behaviors": "单实例、自启/托盘、窗口生命周期、偏好迁移、内置运行时、安装路径",
-      "change": "native-web-python-retirement",
+      "change": "界面 2.2–2.5、4.7、5.3",
       "pythonTests": [],
       "nativeTests": [
-        "launcher/test/panel_service_test.dart"
+        "launcher/test/protocol/wire_cases_test.dart"
       ],
       "nativeAnchors": [],
       "status": "environment-limited",
-      "note": "Dart 协议侧在 Windows 已跑（launcher/test/protocol）；macOS 托盘/自启与安装路径需真机验收。 main 接管：保留 Web 桌面壳；上述 Flutter 工作台测试仅保留来源。Web UI 完整验收见 web-parity.json，尚未通过 G1。",
-      "historicalNativeTests": {
-        "commit": "2d7dfc9",
-        "paths": [
-          "launcher/test/protocol/wire_cases_test.dart"
-        ]
-      }
+      "note": "Dart 协议侧在 Windows 已跑（launcher/test/protocol）；macOS 托盘/自启与安装路径需真机验收。"
     },
     {
       "id": "worker-protocol",

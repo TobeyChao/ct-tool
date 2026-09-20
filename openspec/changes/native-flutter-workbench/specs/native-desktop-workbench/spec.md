@@ -75,7 +75,7 @@
 - **THEN** 明确标识模拟，不能据此勾选真实导出或完整迁移验收任务
 
 ### Requirement: Full Schema navigation and Enum editing
-原生工作台 SHALL 保留 schema-editor/workbench 的非浏览器业务交互：全局 Cmd/Ctrl+P、空查询最近资源、fuzzy 搜索及键盘选择、类型/ref 链接主区跳转与来源导航、Enum item 追加/显式改名/删除/重排、wire type 与引用显示。Enum 显式改名 SHALL 保留 originalOrdinal 身份；净差异 SHALL 展示受影响项旧/新 ordinal 和 API 名称风险，不能把改名猜成删除新增。
+原生工作台 SHALL 保留 schema-editor/workbench 的非浏览器业务交互：全局 Cmd/Ctrl+P、空查询最近资源、fuzzy 搜索及键盘选择、类型/ref 链接主区跳转与来源导航、Enum item 追加/显式改名/删除/重排、wire type 与引用显示。Enum 显式改名 SHALL 保留 originalOrdinal 身份；净差异 SHALL 展示受影响项旧/新 ordinal 和 API 名称风险，不能把改名猜成删除新增。字段与枚举成员的基线清单 SHALL 取自内核 `resources.list`（`fields`/`values`/`primary`，成员顺序即 ordinal），界面 SHALL NOT 用预览表头或名字推断枚举顺序。
 
 #### Scenario: Quick Open from export
 - **WHEN** 用户在导出页且资源区关闭时按 Cmd/Ctrl+P
