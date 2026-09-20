@@ -40,12 +40,21 @@ const double ctRowMd = 36; // 导航项、任务行、面板头
 const double ctRowLg = 44; // 表单行
 const double ctToolbarHeight = 44;
 
+/// 顶栏高度（web 的 --ct-topbar-h = 52px）
+const double ctTopbarHeight = 52;
+
 // ---- 边框与焦点 ----
 const double ctBorderWidth = 1;
 const double ctFocusBorderWidth = 1.5;
 
-// ---- 工作台布局 ----
+// ---- 工作台布局（宽度取自 web 的 tokens.css） ----
 const double ctNavRailWidth = 56;
+
+/// 文字侧栏宽度（web 的 --ct-sidebar-w = 236px）
+const double ctSidebarWidth = 236;
+const double ctSidebarMinWidth = 200;
+const double ctSidebarMaxWidth = 300;
+
 const double ctResourcePanelDefault = 240;
 const double ctResourcePanelMin = 180;
 const double ctResourcePanelMax = 380;
