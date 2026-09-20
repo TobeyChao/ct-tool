@@ -33,6 +33,8 @@ jobs:
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
       # 任务 1.1：基线源码树指纹必须与提交的源码一致（环境字段不参与判定）
+      - name: gd 未被写入守卫（任务 5.2 排查中固化）
+        run: node native/tools/gd-guard.mjs --status
       - name: 基线源码树指纹自检
         run: cargo run -p ct-xtask -- fingerprint --check
       - run: cargo build --release -p ct-cli

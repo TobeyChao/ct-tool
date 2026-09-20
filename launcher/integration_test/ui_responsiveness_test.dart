@@ -73,7 +73,9 @@ void main() {
         ..runtimePath = File(binary).absolute.path,
       connect: () async => transport,
     );
-    await worker.start();
+    // 必须显式传 root：drive 跑时 SharedPreferences.setMockInitialValues 是空操作，
+    // SettingsStore 会退到 _inferDefaults() 猜中的**真实 gd/**，那等于让 worker 打开真实工作区。
+    await worker.start(workspaceRoot: ws.path);
     repo = WorkbenchRepository(worker: worker);
     await repo.switchWorkspace(ws.path);
     runner = ExportRunner(worker: worker, workspaceRoot: ws.path);
@@ -100,6 +102,7 @@ void main() {
   });
 
   testWidgets('大字段表 / 分页预览 / 持续日志的帧时间', (tester) async {
+    // drive 环境下这行不生效，因此下面所有仓库对象都显式带 ws.path，绝不依赖偏好推断。
     SharedPreferences.setMockInitialValues({'workspace_path': ws.path});
     final settings = SettingsStore();
     await settings.load();
