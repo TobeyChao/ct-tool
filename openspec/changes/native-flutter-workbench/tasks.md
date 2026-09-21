@@ -418,8 +418,25 @@
   - 使用文档同步：`ct/docs/agent-project-reference.md`「launcher 打包与分发」原写「用 PyInstaller 冻结
     ct CLI 嵌入应用包」——已失效，改写为原生运行时三步流程 + 本轮实测数字；`native/README.md`
     桌面壳一节补上 5.6 的构建与负载复核入口。
-  - 未勾选原因：本项前半句是「核对内核 change 兼容与性能验收**通过后**」才切换收口；内核侧 6.5 仍缺
-    macOS/Linux 真机与 L 档配对测量、6.7 未收口，故构建入口与文档先落地，勾选留到该前置成立。
+  - 本轮（2026-09-21，HEAD `62951c9`）把「正式入口 + 使用文档 + 负载确认」三句补齐并实跑：
+    `cargo run -p ct-xtask -- dist` 重产运行时包（zip 2,687,301 字节，`VERSION.json` 记
+    `commit=62951c9`、`dirtyPaths=0`、`pythonRuntimeRequired=false`）→ `build_windows.ps1`
+    （`flutter build windows --release` 35.4s，嵌 `runtime\ct.exe` 6,657,536 字节
+    sha256 `7d4bb388e8d6…`）→ `check_payload.ps1` 在 gd 守卫下复跑：负载 **27 个文件 / Python·Flask
+    痕迹 0 处**，隔离环境（PATH 只剩包内 runtime、`PYTHON*`/`VIRTUAL_ENV`/`CONDA_PREFIX` 全清）里
+    `ct --version`、`status --root gd`、`validate --root gd` 全 **exit 0**，跑完 `gd/` 仍 0 行改动。
+    桌面壳内核对运行时来源只有「包内 `runtime/ct(.exe)` → 设置里的显式路径」两条，代码里已无任何
+    Python/venv 回退（`rg -i python launcher/lib` 只剩「不回退 Python」的说明文案与废弃偏好键清理）。
+  - 使用文档：`launcher/README.md` 整篇是迁移前的旧流程（教人用 PyInstaller 冻结面板、引用已删除的
+    `panel_service.dart`）——改写为「`xtask dist` → 构建脚本嵌入 → `check_payload.ps1` 复核」三步、
+    只刷新运行时的 `-SkipFlutterBuild` 路径、macOS 覆盖后必须重签、发行包与开发运行都不自动绑定 `gd/`、
+    以及 `gd-guard` 用法。可分发产物同步刷新到桌面（`ct-launcher-0.1.0-windows-x64-62951c9`，含更新后的
+    运行说明；旧 `…-ecb7de4` 已移除）。
+  - 未勾选原因（只剩前置，不是本项未做）：前半句要求「内核 change 兼容与性能验收**通过后**」才宣布切换，
+    而内核侧目前只缺 6.5 的 macOS/Linux 真机配对测量与 6.6 的对应运行时包（用户已认领后续自行补）；
+    L 档已在 Windows 完成，6.7 的「删除 Python 实现」按 2026-09-19 决定改为「保留 `ct/`、
+    验收路径零依赖」且已落地。本项自身的三句（切入口、改文档、确认安装包不含/不启动 Flask·Python）
+    都已闭环并留下可复算的命令与数字。
 
 - [x] 5.7 逐行完成 coverage.md 的界面映射并补充截图/测试证据，验证所有非默认配置目录的概览、预览和历史都由内核提供，无 StatsService 硬编码扫描。
   - 逐行核销表已补：`coverage.md` 第 6 节把基线 21 行逐行标成「已核销 / 内核侧 / 部分待真机」，
