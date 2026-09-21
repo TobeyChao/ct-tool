@@ -301,7 +301,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
       onUndo: () => widget.draft?.undoDraft(),
       onRedo: () => widget.draft?.redoDraft(),
       onNetDiff: _showNetDiff,
-      onHelp: _showAbout,
+      onHelp: _showHelp,
       child: Scaffold(
         backgroundColor: ctBg,
         body: LayoutBuilder(
@@ -311,14 +311,13 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
             return Column(
               children: [
                 _MockBanner(label: widget.bannerLabel),
-                if (widget.draft != null)
-                  WorkbenchDraftBar(
-                    data: widget.data,
-                    repo: widget.draft,
-                    onSave: _saveViaBar,
-                    onQuickOpen: _openQuickOpen,
-                    onHelp: _showAbout,
-                  ),
+                // 全局草稿条：没有草稿时自己收成 0 高度（与 web 同口径）
+                WorkbenchDraftBar(
+                  data: widget.data,
+                  repo: widget.draft,
+                  onSave: _saveViaBar,
+                  onQuickOpen: _openQuickOpen,
+                ),
                 Expanded(
                   child: Row(
                     children: [
@@ -419,13 +418,15 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
     await _saveDraft(draft);
   }
 
+  Future<void> _showHelp() => showWorkbenchHelp(context);
+
   Future<void> _showNetDiff() async {
     final draft = widget.draft;
     if (draft == null) {
       showCtToast(context, '样板数据没有内核候选，接内核后才能看净差异');
       return;
     }
-    await _showCandidateDialog(draft);
+    await showWorkbenchDraftSheet(context, data: widget.data, repo: draft);
   }
 
   Future<void> _showAbout() async {
@@ -518,7 +519,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
                 _sideFoot(
                   '帮助与反馈',
                   Icons.help_outline,
-                  _showAbout,
+                  _showHelp,
                   key: 'wb.helpEntry',
                 ),
                 _sideFoot(
@@ -568,8 +569,8 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
           const Spacer(),
           _iconBtn(
             Icons.help_outline,
-            '帮助与关于（F1）',
-            _showAbout,
+            '帮助与快捷键（F1）',
+            _showHelp,
             key: const ValueKey('wb.helpEntry'),
           ),
           const SizedBox(height: ctGapMd),
@@ -1136,16 +1137,17 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
               ),
             ),
           ],
-          const SizedBox(width: ctGapSm),
-          CtButton.accent(
-            '保存',
-            key: const ValueKey('wb.save'),
-            onPressed: !canSave
-                ? null
-                : draft == null
-                ? () => showCtToast(context, '样板未接入内核：保存在任务 3.4 接入')
-                : () => unawaited(_saveDraft(draft)),
-          ),
+          // 接了内核就只保留顶部草稿条那一个保存入口；样板模式没有草稿条，页面内留占位
+          if (draft == null) ...[
+            const SizedBox(width: ctGapSm),
+            CtButton.accent(
+              '保存',
+              key: const ValueKey('wb.save'),
+              onPressed: !canSave
+                  ? null
+                  : () => showCtToast(context, '样板未接入内核：保存在任务 3.4 接入'),
+            ),
+          ],
         ],
       ),
     );
@@ -1166,8 +1168,6 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
   }
 
   /// 候选与净差异：与全局草稿条共用同一份实现，内容全部取自内核回包。
-  Future<void> _showCandidateDialog(WorkbenchRepository draft) =>
-      showWorkbenchNetDiff(context, data: widget.data, repo: draft);
 
   Widget _conflictBanner() {
     final d = widget.data;

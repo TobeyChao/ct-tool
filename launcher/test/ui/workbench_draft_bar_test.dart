@@ -165,20 +165,29 @@ void main() {
 
   testWidgets('草稿条常驻跨模块：草稿步数与净差异计数都来自内核', (tester) async {
     await pumpBar(tester);
-    expect(find.byKey(const ValueKey('wb.draftBar')), findsOneWidget);
     Text summary() =>
         tester.widget<Text>(find.byKey(const ValueKey('wb.draftSummary')));
 
-    expect(summary().data, contains('净差异未计算'));
+    // 无草稿、无撤销历史时整条不占位（与 web 的 hidden 同口径）
+    expect(find.byKey(const ValueKey('wb.draftSummary')), findsNothing);
+
     repo.createTable('Hero');
     await tester.pump();
     expect(summary().data, contains('草稿 1 步'));
-    expect(summary().data, contains('净差异未计算'));
+    expect(summary().data, contains('无未保存修改'), reason: '候选还没算，不能凭空报资源数');
 
-    await tester.tap(find.byKey(const ValueKey('wb.draftDiff')));
+    // 摘要点开弹层：净差异那个 Tab 会自己找内核要候选
+    await tester.tap(find.byKey(const ValueKey('wb.draftSummaryTap')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('wb.draftSheet')), findsOneWidget);
+    await tester.tap(find.text('净差异'));
     await tester.pumpAndSettle();
     expect(gateway.candidates, hasLength(1));
-    expect(summary().data, contains('净差异 2 个资源'));
+    expect(
+      summary().data,
+      contains('2 个资源有未保存修改'),
+      reason: '假网关的 netDiff 是 1 新增 + 1 修改',
+    );
     expect(summary().data, isNot(contains('未落盘')));
   });
 
@@ -186,7 +195,9 @@ void main() {
     await pumpBar(tester);
     repo.renameEnumItem('Quality', 'Mythic', 'Legendary', 1);
     await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('wb.draftDiff')));
+    await tester.tap(find.byKey(const ValueKey('wb.draftSummaryTap')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('净差异'));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('wb.candidateHash')), findsOneWidget);
@@ -235,19 +246,20 @@ void main() {
     await tester.pump();
     expect(repo.cursor, 2);
 
-    await tester.tap(find.byKey(const ValueKey('wb.draftHistory')));
+    await tester.tap(find.byKey(const ValueKey('wb.draftSummaryTap')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('wb.draftStep.1')), findsOneWidget);
     expect(find.byKey(const ValueKey('wb.draftStep.2')), findsOneWidget);
+    // 弹层不因为一次撤销就关闭：同一层里继续点「回到基线」
     await tester.tap(find.byKey(const ValueKey('wb.draftSteps.stop.1')));
     await tester.pumpAndSettle();
     expect(repo.cursor, 1);
 
-    await tester.tap(find.byKey(const ValueKey('wb.draftHistory')));
-    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('wb.draftSteps.baseline')));
     await tester.pumpAndSettle();
     expect(repo.cursor, 0);
+    await tester.tap(find.text('关闭'));
+    await tester.pumpAndSettle();
     expect(repo.commands, hasLength(2), reason: '撤销只动游标，命令历史保留可重做');
   });
 
@@ -359,12 +371,11 @@ void main() {
     expect(find.byKey(const ValueKey('wb.quickOpen.empty')), findsOneWidget);
   });
 
-  testWidgets('F1 帮助与关于：真实版本、真实键位表、外部文档入口', (tester) async {
+  testWidgets('F1 打开帮助：真实键位表与外部文档入口；关于里是真实版本', (tester) async {
     await pumpBar(tester);
     await focusWorkbench(tester);
     await _press(tester, LogicalKeyboardKey.f1);
-    expect(find.byKey(const ValueKey('wb.about.title')), findsOneWidget);
-    expect(find.textContaining('core 0.9.0-test'), findsOneWidget);
+    expect(find.byKey(const ValueKey('wb.help.title')), findsOneWidget);
     for (final binding in wbShortcutBindings()) {
       expect(
         find.byKey(ValueKey('wb.about.shortcut.${binding.label}')),
@@ -380,6 +391,13 @@ void main() {
     );
     expect(note.data, contains('文档：'));
     expect(note.data, isNot(contains('已在系统默认浏览器打开')));
+    // 「关于」里才是内核事实
+    await tester.tap(find.text('关闭'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wb.aboutEntry')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('wb.about.title')), findsOneWidget);
+    expect(find.textContaining('core 0.9.0-test'), findsOneWidget);
     await tester.tap(find.text('关闭'));
     await tester.pumpAndSettle();
   });
@@ -401,7 +419,9 @@ void main() {
     );
     await tester.pump();
     await tester.pump();
-    expect(find.byKey(const ValueKey('wb.draftBar')), findsNothing);
+    // 样板模式没有内核草稿：条体只留 0 高度占位，不放一排灰按钮
+    expect(find.byKey(const ValueKey('wb.draftSummary')), findsNothing);
+    expect(find.byKey(const ValueKey('wb.draftSave')), findsNothing);
     expect(find.byKey(const ValueKey('wb.helpEntry')), findsOneWidget);
   });
 }

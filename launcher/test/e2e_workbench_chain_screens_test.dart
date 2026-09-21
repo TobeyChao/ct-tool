@@ -222,33 +222,29 @@ void main() {
       'Schema 模块：资源清单与只读预览都来自内核 resources.list / table.preview。',
     );
 
-    // 草稿：加一张表，看草稿条与步骤面板（游标、逐步撤销）。
+    // 草稿：加一张表，看草稿条与「步骤 / 净差异」弹层（游标、逐步撤销、资源级净差异）。
     repo.createTable('E2ETable');
     await settle(tester);
     await act(
       tester,
-      () => tester.tap(find.byKey(const ValueKey('wb.draftHistory'))),
+      () => tester.tap(find.byKey(const ValueKey('wb.draftSummaryTap'))),
     );
     await settle(tester, rounds: 60);
     await shot(
       tester,
       'chain-02-draft-steps',
-      '草稿步骤面板：命令日志 + 游标 + 「停在此处」逐步撤销（内核只认前缀）。',
+      '未保存修改弹层「步骤」页：命令日志 + 游标 + 「停在此处」逐步撤销（内核只认前缀）。',
     );
-    await tester.tap(find.text('关闭'));
-    await settle(tester, rounds: 60);
-
-    // 净差异：由 schema.candidate 计算，含字段级明细。
     await act(
       tester,
-      () => tester.tap(find.byKey(const ValueKey('wb.draftDiff'))),
+      () => tester.tap(find.text('净差异')),
       done: () => repo.candidate != null || !repo.candidateBusy,
     );
     await settle(tester, rounds: 120);
     await shot(
       tester,
       'chain-03-netdiff',
-      '净差异对话框：新增/修改/删除条目与阻塞问题计数，全部取自内核回包。',
+      '同一弹层的「净差异」页：新增/修改/删除条目与阻塞问题计数，全部取自内核回包。',
     );
     await tester.tap(find.text('关闭'));
     await settle(tester, rounds: 60);

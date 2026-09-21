@@ -4,7 +4,6 @@ import 'package:ct_launcher/services/worker_service.dart';
 import 'package:ct_launcher/state/workbench_repository.dart';
 import 'package:ct_launcher/theme.dart';
 import 'package:ct_launcher/ui/workbench/workbench_screen.dart';
-import 'package:ct_launcher/ui/widgets/common.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -208,14 +207,14 @@ void main() {
     repo.createTable('Hero');
     await tester.pump();
 
-    CtButton saveButton() =>
-        tester.widget<CtButton>(find.byKey(const ValueKey('wb.save')));
+    TextButton saveButton() =>
+        tester.widget<TextButton>(find.byKey(const ValueKey('wb.draftSave')));
     expect(saveButton().onPressed, isNull, reason: '还没算候选时不得允许保存');
 
     await repo.requestCandidate();
     await tester.pump();
     expect(saveButton().onPressed, isNotNull);
-    await tester.tap(find.byKey(const ValueKey('wb.save')));
+    await tester.tap(find.byKey(const ValueKey('wb.draftSave')));
     await tester.pumpAndSettle();
 
     final sent = gateway.saves.single;
@@ -232,7 +231,9 @@ void main() {
     repo.createTable('Hero');
     await tester.pump();
     // 差异入口已收进全局草稿条（工具条不再放第二份）
-    await tester.tap(find.byKey(const ValueKey('wb.draftDiff')));
+    await tester.tap(find.byKey(const ValueKey('wb.draftSummaryTap')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('净差异'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('wb.candidateHash')), findsOneWidget);
     expect(find.textContaining('candidateHash hash-edit'), findsOneWidget);
