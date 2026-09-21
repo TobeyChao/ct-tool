@@ -231,7 +231,8 @@ void main() {
     await pumpEditor(tester);
     repo.createTable('Hero');
     await tester.pump();
-    await tester.tap(find.text('差异'));
+    // 差异入口已收进全局草稿条（工具条不再放第二份）
+    await tester.tap(find.byKey(const ValueKey('wb.draftDiff')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('wb.candidateHash')), findsOneWidget);
     expect(find.textContaining('candidateHash hash-edit'), findsOneWidget);

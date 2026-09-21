@@ -78,20 +78,19 @@ void main() {
   // 1024x700 下手动展开全部辅助区（长文本场景，验证截断而非遮挡）
   testWidgets('workbench 1024x700 panels expanded longText', (tester) async {
     await pumpAt(tester, MockScenario.longText, const Size(1024, 700), 1.0);
-    await tester.tap(
-      find.descendant(
-        of: find.byKey(const ValueKey('wb.strip.resource')),
-        matching: find.byType(IconButton),
-      ),
-    );
-    await tester.pump();
-    await tester.tap(
-      find.descendant(
-        of: find.byKey(const ValueKey('wb.strip.inspector')),
-        matching: find.byType(IconButton),
-      ),
-    );
-    await tester.pump();
+    // 断点按整窗宽度：1024 下资源区保持展开、属性区折叠。把确实折叠掉的区逐个点开，
+    // 目标是「全部展开时长文本只截断不遮挡」。
+    for (final zone in const ['resource', 'inspector']) {
+      final strip = find.byKey(ValueKey('wb.strip.$zone'));
+      if (strip.evaluate().isNotEmpty) {
+        await tester.tap(
+          find.descendant(of: strip, matching: find.byType(IconButton)),
+        );
+        await tester.pump();
+      }
+    }
+    expect(find.byKey(const ValueKey('wb.resourcePanel')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wb.inspectorPanel')), findsOneWidget);
     await expectLater(
       find.byType(WorkbenchScreen),
       matchesGoldenFile('goldens/workbench_1024x700_expanded_longtext.png'),

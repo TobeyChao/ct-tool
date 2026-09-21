@@ -90,7 +90,7 @@ Future<void> showWorkbenchAbout(
                       '打开外部文档',
                       key: const ValueKey('wb.about.docs'),
                       onPressed: () async {
-                        final note = await _openExternalDocs();
+                        final note = await openWorkbenchDocs();
                         setState(() => docsResult = note);
                       },
                     ),
@@ -129,6 +129,9 @@ const List<String> kWbScopeLines = [
   '类型、主键、ref、枚举 ordinal 等合法性一律以内核回包为准，界面不重复实现第二套业务判断。',
   '草稿存在用户目录（按工作区与基线隔离）：崩溃或异基线重启只提示不套用，也不静默删除。',
 ];
+
+/// 外部文档入口：侧栏「导出文档」与关于对话框共用同一实现与同一 URL。
+Future<String> openWorkbenchDocs() => _openExternalDocs();
 
 Future<String> _openExternalDocs() async {
   final uri = Uri.parse(kWbDocsUrl);

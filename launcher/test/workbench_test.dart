@@ -10,7 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<void> pumpWorkbench(
   WidgetTester tester,
   MockWorkspaceData data, {
-  Size size = const Size(1280, 800),
+  // 默认按受支持的最大档量测：侧栏 236 + 资源 240 + 属性 300 要 1440 才全展开
+  Size size = const Size(1440, 900),
   double scale = 1.0,
   String workspaceKey = 'mock-test',
 }) async {
@@ -140,24 +141,31 @@ void main() {
     expect(save.onPressed, isNull);
   });
 
-  testWidgets('最小窗口 1024x700 + 150% 缩放 + 长文本：无溢出且辅助区自动折叠', (tester) async {
+  testWidgets('1024x700 + 150% 缩放 + 长文本：无溢出，属性区按整窗宽度自动折叠', (tester) async {
     await pumpWorkbench(
       tester,
       mockWorkspaceFor(MockScenario.longText),
       size: const Size(1024, 700),
       scale: 1.5,
+      workspaceKey: 'mock-1024',
     );
-    // 窄窗口首帧自动折叠资源区与属性区
-    expect(find.byKey(const ValueKey('wb.strip.resource')), findsOneWidget);
-    expect(find.byKey(const ValueKey('wb.strip.inspector')), findsOneWidget);
-    // 手动展开后仍不得溢出（FlutterError 会使测试失败）
-    await tester.tap(
-      find.descendant(
-        of: find.byKey(const ValueKey('wb.strip.resource')),
-        matching: find.byType(IconButton),
-      ),
+    // 断点按**整窗宽度**算（与 web 的 CSS 断点同义）：1024 折属性区、保留资源区
+    expect(
+      find.byKey(const ValueKey('wb.strip.inspector')),
+      findsOneWidget,
+      reason: '窗口 1024 < 1180：属性区应自动折叠',
     );
-    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('wb.resourcePanel')),
+      findsOneWidget,
+      reason: '窗口 1024 ≥ 980：资源区不该被挤掉',
+    );
+    expect(
+      find.byKey(const ValueKey('wb.sidebar')),
+      findsOneWidget,
+      reason: '窗口 1024 ≥ 740：侧栏保持文字形态',
+    );
+    // 手动展开属性区后仍不得溢出（FlutterError 会让本用例直接失败）
     await tester.tap(
       find.descendant(
         of: find.byKey(const ValueKey('wb.strip.inspector')),
@@ -165,13 +173,39 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.byKey(const ValueKey('wb.resourcePanel')), findsOneWidget);
     await tester.tap(
       find
           .text('英雄配置表_超长名称_hero_config_with_a_very_long_english_suffix_v2')
           .first,
     );
     await tester.pump();
+  });
+
+  testWidgets('900 宽折资源区、700 宽侧栏收成图标栏（断点按整窗宽度）', (tester) async {
+    await pumpWorkbench(
+      tester,
+      mockWorkspaceFor(MockScenario.longText),
+      size: const Size(900, 700),
+      workspaceKey: 'mock-900',
+    );
+    expect(find.byKey(const ValueKey('wb.strip.resource')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wb.sidebar')), findsOneWidget);
+
+    await pumpWorkbench(
+      tester,
+      mockWorkspaceFor(MockScenario.longText),
+      size: const Size(700, 700),
+      workspaceKey: 'mock-700',
+    );
+    expect(
+      find.byKey(const ValueKey('wb.iconRail')),
+      findsOneWidget,
+      reason: '窗口 700 < 740：侧栏收成 56px 图标栏（web 的抽屉断点）',
+    );
+    await tester.tap(find.byKey(const ValueKey('wb.expand.sidebar')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('wb.sidebar')), findsOneWidget);
+    expect(find.text('导出文档'), findsOneWidget);
   });
 
   testWidgets('1280x800 + 125% 缩放：全部场景渲染无溢出', (tester) async {

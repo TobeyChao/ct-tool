@@ -21,8 +21,8 @@ import 'workbench_schema_editor.dart';
 import 'workbench_desktop_panel.dart';
 import 'workbench_export_view.dart';
 import 'workbench_i18n_view.dart';
-import 'workbench_draft_banners.dart';
 import 'workbench_about_dialog.dart';
+import 'workbench_draft_banners.dart';
 import 'workbench_draft_bar.dart';
 import 'workbench_quick_open.dart';
 import 'workbench_shortcuts.dart';
@@ -138,8 +138,11 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
   bool _inspectorCollapsed = false;
   bool _taskCollapsed = false;
   bool _layoutLoaded = false;
-  bool _hadPersistedLayout = false;
-  bool _autoCollapseApplied = false;
+
+  /// 折叠意图：用户手动动过的区不再被断点覆盖；其余按整窗宽度同帧决定
+  final Map<String, bool> _userCollapse = {};
+  double _lastWidth = 0;
+  bool _sidebarCollapsed = false;
   String _query = '';
 
   /// Quick Open 的最近打开清单，按工作区键持久化（任务 3.7）。
@@ -202,18 +205,16 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     final k = _prefsKey;
-    final persisted = prefs.getDouble('$k.resourceWidth') != null;
     setState(() {
       _resourceWidth = prefs.getDouble('$k.resourceWidth') ?? _resourceWidth;
       _inspectorWidth = prefs.getDouble('$k.inspectorWidth') ?? _inspectorWidth;
       _taskHeight = prefs.getDouble('$k.taskHeight') ?? _taskHeight;
-      _resourceCollapsed = prefs.getBool('$k.resourceCollapsed') ?? false;
-      _inspectorCollapsed = prefs.getBool('$k.inspectorCollapsed') ?? false;
+      _rememberCollapse('resource', prefs.getBool('$k.resourceCollapsed'));
+      _rememberCollapse('inspector', prefs.getBool('$k.inspectorCollapsed'));
       _taskCollapsed = prefs.getBool('$k.taskCollapsed') ?? false;
       _recentResources
         ..clear()
         ..addAll(prefs.getStringList('$k.recents') ?? const []);
-      _hadPersistedLayout = persisted;
       _layoutLoaded = true;
     });
   }
@@ -225,26 +226,38 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
     await prefs.setDouble('$k.resourceWidth', _resourceWidth);
     await prefs.setDouble('$k.inspectorWidth', _inspectorWidth);
     await prefs.setDouble('$k.taskHeight', _taskHeight);
-    await prefs.setBool('$k.resourceCollapsed', _resourceCollapsed);
-    await prefs.setBool('$k.inspectorCollapsed', _inspectorCollapsed);
+    await prefs.setBool(
+      '$k.resourceCollapsed',
+      _userCollapse['resource'] ?? _resourceCollapsed,
+    );
+    await prefs.setBool(
+      '$k.inspectorCollapsed',
+      _userCollapse['inspector'] ?? _inspectorCollapsed,
+    );
     await prefs.setBool('$k.taskCollapsed', _taskCollapsed);
     await prefs.setStringList('$k.recents', _recentResources);
   }
 
-  /// 窄窗口首帧自动折叠辅助区（design 决策 1）；已有持久化布局时不覆盖。
-  void _applyAutoCollapse(double width) {
-    if (_autoCollapseApplied || !_layoutLoaded || _hadPersistedLayout) return;
-    _autoCollapseApplied = true;
-    final collapseInspector = width < 1180;
-    final collapseResource = width < 980;
-    if (!collapseInspector && !collapseResource) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      setState(() {
-        if (collapseInspector) _inspectorCollapsed = true;
-        if (collapseResource) _resourceCollapsed = true;
-      });
+  /// 折叠态在**同一帧**决定（design 决策 1）。旧实现走 postFrame，窄窗口首帧会先溢出
+  /// 再折叠（实测报过 RenderFlex overflow）；用户手动动过的区不再被断点覆盖。
+  void _applyBreakpoints(double width) {
+    _sidebarCollapsed = _userCollapse['sidebar'] ?? width < 740;
+    _resourceCollapsed = _userCollapse['resource'] ?? width < 980;
+    _inspectorCollapsed = _userCollapse['inspector'] ?? width < 1180;
+  }
+
+  void _rememberCollapse(String zone, bool? value) {
+    if (value != null) {
+      _userCollapse[zone] = value;
+    }
+  }
+
+  void _setCollapse(String zone, bool collapsed) {
+    setState(() {
+      _userCollapse[zone] = collapsed;
+      _applyBreakpoints(_lastWidth);
     });
+    _saveLayout();
   }
 
   MockResource? get _currentResource {
@@ -291,47 +304,54 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
       onHelp: _showAbout,
       child: Scaffold(
         backgroundColor: ctBg,
-        body: Column(
-          children: [
-            _MockBanner(label: widget.bannerLabel),
-            if (widget.draft != null)
-              WorkbenchDraftBar(
-                data: widget.data,
-                repo: widget.draft,
-                onSave: _saveViaBar,
-                onQuickOpen: _openQuickOpen,
-                onHelp: _showAbout,
-              ),
-            Expanded(
-              child: Row(
-                children: [
-                  _buildModuleRail(),
-                  Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        _applyAutoCollapse(constraints.maxWidth);
-                        return Column(
-                          children: [
-                            Expanded(child: _buildModuleBody()),
-                            if (_module == 1) ...[
-                              if (!_taskCollapsed)
-                                _ResizeHandle(
-                                  vertical: true,
-                                  handleKey: const ValueKey('wb.handle.task'),
-                                  onDrag: (dy) =>
-                                      _setTaskHeight(_taskHeight - dy),
-                                ),
-                              _buildTaskPanel(),
-                            ],
-                          ],
-                        );
-                      },
-                    ),
+        body: LayoutBuilder(
+          builder: (context, box) {
+            _lastWidth = box.maxWidth;
+            _applyBreakpoints(box.maxWidth);
+            return Column(
+              children: [
+                _MockBanner(label: widget.bannerLabel),
+                if (widget.draft != null)
+                  WorkbenchDraftBar(
+                    data: widget.data,
+                    repo: widget.draft,
+                    onSave: _saveViaBar,
+                    onQuickOpen: _openQuickOpen,
+                    onHelp: _showAbout,
                   ),
-                ],
-              ),
-            ),
-          ],
+                Expanded(
+                  child: Row(
+                    children: [
+                      _buildModuleRail(),
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return Column(
+                              children: [
+                                Expanded(child: _buildModuleBody()),
+                                if (_module == 1) ...[
+                                  if (!_taskCollapsed)
+                                    _ResizeHandle(
+                                      vertical: true,
+                                      handleKey: const ValueKey(
+                                        'wb.handle.task',
+                                      ),
+                                      onDrag: (dy) =>
+                                          _setTaskHeight(_taskHeight - dy),
+                                    ),
+                                  _buildTaskPanel(),
+                                ],
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -420,8 +440,106 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
 
   // ---- 模块导航 ----
 
+  /// 文字侧栏（对齐 web 的 `.ct-sidebar`：236px、「模块」分组、图标+名称行、底部固定三项）。
   Widget _buildModuleRail() {
+    if (_sidebarCollapsed) return _buildIconRail();
     return Container(
+      key: const ValueKey('wb.sidebar'),
+      width: ctSidebarWidth,
+      decoration: const BoxDecoration(
+        color: ctSurface,
+        border: Border(right: BorderSide(color: ctBorder)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: ctGapMd),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(ctGapLg, 0, ctGapSm, ctGapMd),
+            child: Row(
+              children: [
+                const CtBrandMark(),
+                const SizedBox(width: ctGapMd),
+                const Expanded(
+                  child: Text(
+                    'ct 配表工作台',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: ctInk,
+                    ),
+                  ),
+                ),
+                _iconBtn(
+                  Icons.chevron_left,
+                  '折叠侧栏（窄窗口会自动折叠）',
+                  () => _setCollapse('sidebar', true),
+                  key: const ValueKey('wb.collapse.sidebar'),
+                ),
+              ],
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(ctGapMd, ctGapSm, ctGapSm, ctGapXs),
+            child: Text(
+              '模块',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+                color: ctInk3,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(ctGapMd, 0, ctGapMd, ctGapSm),
+              children: [
+                for (var i = 0; i < _modules.length; i++)
+                  _railItem(i, _modules[i].$1, _modules[i].$2),
+              ],
+            ),
+          ),
+          Container(
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: ctBorder)),
+            ),
+            padding: const EdgeInsets.all(ctGapMd),
+            child: Column(
+              children: [
+                _sideFoot(
+                  '导出文档',
+                  Icons.open_in_new,
+                  _openDocs,
+                  key: 'wb.docsEntry',
+                ),
+                _sideFoot(
+                  '帮助与反馈',
+                  Icons.help_outline,
+                  _showAbout,
+                  key: 'wb.helpEntry',
+                ),
+                _sideFoot(
+                  '关于',
+                  Icons.info_outline,
+                  _showAbout,
+                  key: 'wb.aboutEntry',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: ctGapSm),
+        ],
+      ),
+    );
+  }
+
+  /// 窄窗口的 56px 图标栏：只留图标与 tooltip，顶部给展开按钮。
+  Widget _buildIconRail() {
+    return Container(
+      key: const ValueKey('wb.iconRail'),
       width: ctNavRailWidth,
       decoration: const BoxDecoration(
         color: ctSurface,
@@ -430,22 +548,29 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
       child: Column(
         children: [
           const SizedBox(height: ctGapMd),
-          const CtBrandMark(),
-          const SizedBox(height: ctGapLg),
+          _iconBtn(
+            Icons.chevron_right,
+            '展开侧栏',
+            () => _setCollapse('sidebar', false),
+            key: const ValueKey('wb.expand.sidebar'),
+          ),
+          const SizedBox(height: ctGapSm),
           for (var i = 0; i < _modules.length; i++)
-            _railItem(i, _modules[i].$1, _modules[i].$2),
-          const Spacer(),
-          Tooltip(
-            message: '帮助与关于（F1）',
-            child: InkWell(
-              key: const ValueKey('wb.helpEntry'),
-              onTap: _showAbout,
-              borderRadius: ctRadiusMdAll,
-              child: const SizedBox(
-                height: 48,
-                child: Icon(Icons.help_outline, size: 17, color: ctInk3),
+            Tooltip(
+              message: _modules[i].$2,
+              child: _railItem(
+                i,
+                _modules[i].$1,
+                _modules[i].$2,
+                compact: true,
               ),
             ),
+          const Spacer(),
+          _iconBtn(
+            Icons.help_outline,
+            '帮助与关于（F1）',
+            _showAbout,
+            key: const ValueKey('wb.helpEntry'),
           ),
           const SizedBox(height: ctGapMd),
         ],
@@ -453,32 +578,78 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
     );
   }
 
-  Widget _railItem(int index, IconData icon, String label) {
+  Widget _sideFoot(
+    String label,
+    IconData icon,
+    VoidCallback onTap, {
+    String? key,
+  }) => TextButton.icon(
+    key: key == null ? null : ValueKey(key),
+    onPressed: onTap,
+    icon: Icon(icon, size: 15, color: ctInk3),
+    label: Text(
+      label,
+      style: ctText(size: ctFontSm, color: ctInk2),
+    ),
+    style: TextButton.styleFrom(
+      alignment: Alignment.centerLeft,
+      minimumSize: const Size.fromHeight(ctRowSm),
+      padding: const EdgeInsets.symmetric(horizontal: ctGapSm),
+      foregroundColor: ctInk2,
+    ),
+  );
+
+  Future<void> _openDocs() async {
+    final note = await openWorkbenchDocs();
+    if (!mounted) return;
+    showCtToast(context, note);
+  }
+
+  Widget _railItem(
+    int index,
+    IconData icon,
+    String label, {
+    bool compact = false,
+  }) {
     final selected = _module == index;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.only(bottom: 2),
       child: Material(
+        key: ValueKey('wb.nav.$label'),
         color: selected ? ctAccentSofter : Colors.transparent,
         borderRadius: ctRadiusMdAll,
         child: InkWell(
+          key: ValueKey('wb.navTap.$label'),
           onTap: () => setState(() => _module = index),
           borderRadius: ctRadiusMdAll,
-          child: SizedBox(
-            height: 48,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 17, color: selected ? ctPrimary : ctInk3),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  maxLines: 1,
-                  style: ctText(
-                    size: 10,
-                    color: selected ? ctPrimary : ctInk3,
-                    weight: selected ? FontWeight.w600 : FontWeight.w400,
+          child: Padding(
+            padding: compact
+                ? const EdgeInsets.symmetric(vertical: ctGapSm + 3)
+                : const EdgeInsets.symmetric(
+                    horizontal: ctGapSm + 3,
+                    vertical: ctGapSm + 1,
                   ),
-                ),
+            child: Row(
+              mainAxisAlignment: compact
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
+              children: [
+                Icon(icon, size: 16, color: selected ? ctPrimary : ctInk3),
+                if (!compact) ...[
+                  const SizedBox(width: ctGapSm + 3),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: ctText(
+                        size: ctFontMd,
+                        color: selected ? ctPrimary : ctInk2,
+                        weight: selected ? FontWeight.w600 : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -684,7 +855,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
             tooltip: '展开资源区',
             end: false,
             onExpand: () {
-              setState(() => _resourceCollapsed = false);
+              _setCollapse('resource', false);
               _saveLayout();
             },
           )
@@ -708,7 +879,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
             tooltip: '展开属性区',
             end: true,
             onExpand: () {
-              setState(() => _inspectorCollapsed = false);
+              _setCollapse('inspector', false);
               _saveLayout();
             },
           )
@@ -746,7 +917,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
               showCtToast(context, '样板未接入内核：资源创建在任务 3.1 接入');
             }),
             _iconBtn(Icons.chevron_left, '折叠资源区', () {
-              setState(() => _resourceCollapsed = true);
+              _setCollapse('resource', true);
               _saveLayout();
             }, key: const ValueKey('wb.collapse.resource')),
           ]),
@@ -943,39 +1114,8 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
               _backToSource,
               key: const ValueKey('wb.navBack'),
             ),
-          if (d.draftCount > 0) ...[
-            const SizedBox(width: ctGapSm),
-            CtStatusBadge(
-              label: '草稿 · ${d.draftCount}',
-              tone: CtBadgeTone.info,
-              dot: false,
-            ),
-          ],
-          const SizedBox(width: ctGapSm),
-          _iconBtn(
-            Icons.undo,
-            draft == null ? '撤销（样板，任务 3.3 接入）' : '撤销草稿命令',
-            draft == null ? null : (draft.canUndo ? draft.undoDraft : null),
-          ),
-          _iconBtn(
-            Icons.redo,
-            draft == null ? '重做（样板，任务 3.3 接入）' : '重做草稿命令',
-            draft == null ? null : (draft.canRedo ? draft.redoDraft : null),
-          ),
-          CtButton.ghost(
-            '差异',
-            onPressed: () {
-              if (draft == null) {
-                showCtToast(context, '样板未接入内核：候选差异在任务 3.3 接入');
-                return;
-              }
-              if (!draft.hasDraft) {
-                showCtToast(context, '草稿为空，没有可对比的净差异');
-                return;
-              }
-              unawaited(_showCandidateDialog(draft));
-            },
-          ),
+          // 全局草稿动作（撤销/重做/差异/放弃/保存）只在顶部草稿条出现一次；
+          // 样板模式没有内核草稿条，页面内保留一个禁用保存占位，避免"看起来能点"。
           if (res != null &&
               res.kind == WorkbenchResourceKind.enumType &&
               draft != null) ...[
@@ -1237,19 +1377,22 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
             color: ctSurface,
             border: Border(bottom: BorderSide(color: ctBorder)),
           ),
-          child: Row(
-            children: [
-              _MiniTab(
-                label: '字段 · ${res.fields.length}',
-                selected: _editorTab == 0,
-                onTap: () => setState(() => _editorTab = 0),
-              ),
-              _MiniTab(
-                label: '数据预览',
-                selected: _editorTab == 1,
-                onTap: () => setState(() => _editorTab = 1),
-              ),
-            ],
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _MiniTab(
+                  label: '字段 · ${res.fields.length}',
+                  selected: _editorTab == 0,
+                  onTap: () => setState(() => _editorTab = 0),
+                ),
+                _MiniTab(
+                  label: '数据预览',
+                  selected: _editorTab == 1,
+                  onTap: () => setState(() => _editorTab = 1),
+                ),
+              ],
+            ),
           ),
         ),
         Expanded(
@@ -1590,7 +1733,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
         children: [
           _panelHeader('属性', [
             _iconBtn(Icons.chevron_right, '折叠属性区', () {
-              setState(() => _inspectorCollapsed = true);
+              _setCollapse('inspector', true);
               _saveLayout();
             }, key: const ValueKey('wb.collapse.inspector')),
           ]),
@@ -1668,7 +1811,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
         children: [
           _panelHeader('属性', [
             _iconBtn(Icons.chevron_right, '折叠属性区', () {
-              setState(() => _inspectorCollapsed = true);
+              _setCollapse('inspector', true);
               _saveLayout();
             }, key: const ValueKey('wb.collapse.inspector')),
           ]),

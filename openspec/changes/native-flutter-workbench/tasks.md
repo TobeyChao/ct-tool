@@ -13,6 +13,16 @@
     17 张 golden 截图、Rust **270 passed**；复算命令写在 coverage.md 第 5 节。
 
 - [x] 1.2 整理现有深林绿令牌与基础控件，交付按钮、字段行、状态、焦点和中英文字体样板并人工检查一致性。
+  - 2026-09-21 追加（用户反馈「界面不如 web」后按 web 逐值对齐）：`lib/theme.dart` 的 22 个颜色常量
+    改为与 `ct/src/ct/web/static/styles/tokens.css` 完全一致（ink-3 `#8B948E→#626C66`、bg/surface-2/
+    border/primary/accent-*/danger/warn 等）；导航从 56px 图标栏换成 web 的 **236px 文字侧栏**
+    （「模块」分组标题 + 图标加名称行 + 底部固定「导出文档 / 帮助与反馈 / 关于」），整窗 <740 自动收成
+    图标栏并可点开展开。折叠时机从 postFrame 改为**同帧按整窗宽度**决定（旧实现窄窗口首帧先溢出再折叠，
+    实测报过 RenderFlex overflow），并区分用户手动意图与断点（`_userCollapse` + `_applyBreakpoints`）。
+    编辑器工具条不再重复放全局草稿动作（撤销/重做/差异归顶部草稿条）、去掉重复的「草稿 · N」徽标、
+    页签行改横向滚动——1024×700 最小窗口下这些正是溢出源。
+    测试：`workbench_test` 的断点用例改成整窗口径并新增 900/700 两档；golden 17 张重生成；
+    `flutter test` 313 全绿、`flutter analyze` 0 issues、`dart format` 0 changed。
 - [x] 1.3 实现工作台壳、资源区、主编辑区、可调属性区和底部任务区，使用明确标识的模拟数据运行桌面样板。
 - [x] 1.4 补齐空态、错误、长文本、忙碌与冲突状态，在规定尺寸/缩放矩阵保存截图并修复遮挡、错位及溢出。
 - [x] 1.5 接收 rust-native-core 第 1 阶段产出的协议 v1 和样例，建立 Dart DTO/传输接口，验证能解析同源消息与大整数标签。
