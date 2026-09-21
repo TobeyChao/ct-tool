@@ -118,6 +118,20 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
 
   bool get _locked => widget.disabled;
 
+  /// 分组标题：把一屏散行收成「资源 / 字段属性 / 表级索引 / 危险操作」几段。
+  Widget _groupTitle(String text, {required String key}) => Padding(
+    padding: const EdgeInsets.fromLTRB(ctGapMd, ctGapMd, ctGapMd, ctGapXs),
+    child: Text(
+      text,
+      key: ValueKey(key),
+      style: ctText(
+        size: ctFontXs + 0.5,
+        color: ctInk3,
+        weight: FontWeight.w700,
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final field = widget.field;
@@ -141,6 +155,7 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
     final res = widget.resource;
     final primary = _primaryOf(res);
     return [
+      _groupTitle('资源', key: 'wb.group.resource'),
       _row('名称', res.name, mono: true),
       _row('类别', res.kind.label),
       _row('资源 ID', widget.ownerId, mono: true),
@@ -178,6 +193,7 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
     final ordinal = widget.fieldOrdinal ?? 0;
     final lastOrdinal = widget.resource.fields.length - 1;
     return [
+      _groupTitle('枚举成员', key: 'wb.group.enum'),
       _row('枚举', widget.resource.name, mono: true),
       _row('成员', field.name, mono: true),
       _labeled(
@@ -197,6 +213,7 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
         ),
       ),
       _note('改名带 originalOrdinal：与内核当前顺序不一致时会被直接拒绝。'),
+      _groupTitle('危险操作（顺序即 ordinal，会改既有数据 wire 值）', key: 'wb.group.danger'),
       Wrap(
         spacing: ctGapSm,
         children: [
@@ -233,6 +250,7 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
   List<Widget> _fieldRows(WorkbenchField field) {
     final ordinal = widget.fieldOrdinal ?? 0;
     return [
+      _groupTitle('字段属性', key: 'wb.group.fields'),
       _row('字段', field.name, mono: true),
       _row('角色', field.role == 'primary' ? '主键' : '普通字段'),
       _labeled(
@@ -330,6 +348,7 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
         ),
       ),
       _note('展开组数只适用于 vector<T>；类型不符时内核候选会报错并阻止保存。'),
+      _groupTitle('危险操作（顺序影响 wire 与 ordinal）', key: 'wb.group.danger'),
       Wrap(
         spacing: ctGapSm,
         children: [

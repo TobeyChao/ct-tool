@@ -301,6 +301,8 @@ void main() {
     repo.createTable('Hero');
     await tester.pump();
     // 打开改名对话框：焦点在输入框里。
+    await tester.tap(find.byKey(const ValueKey('wb.resourceMenu')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('wb.renameResource')));
     await tester.pumpAndSettle();
     expect(WorkbenchShortcuts.textEditingFocused(), isTrue);

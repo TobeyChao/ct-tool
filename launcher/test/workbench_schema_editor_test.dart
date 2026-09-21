@@ -4,6 +4,7 @@ import 'package:ct_launcher/services/worker_service.dart';
 import 'package:ct_launcher/state/workbench_repository.dart';
 import 'package:ct_launcher/theme.dart';
 import 'package:ct_launcher/ui/workbench/workbench_screen.dart';
+import 'package:ct_launcher/ui/workbench/workbench_schema_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -117,20 +118,39 @@ void main() {
 
   tearDown(() => repo.dispose());
 
-  testWidgets('资源区挂着编辑面板，未选中资源时改名/删除禁用', (tester) async {
+  bool menuEnabled(WidgetTester tester, String keyName) => tester
+      .widget<PopupMenuButton<String>>(find.byKey(ValueKey(keyName)))
+      .enabled;
+
+  testWidgets('资源区挂着编辑面板，首个资源自动选中后上下文菜单可用', (tester) async {
     await pumpEditor(tester);
     expect(find.byKey(const ValueKey('wb.schemaEditor')), findsOneWidget);
     expect(find.text('草稿 0 条'), findsOneWidget);
+    // 动作收进菜单后：清单非空时首个资源自动选中，两个菜单都可用
+    expect(menuEnabled(tester, 'wb.newMenu'), isTrue);
+    expect(menuEnabled(tester, 'wb.resourceMenu'), isTrue);
+  });
+
+  testWidgets('没有选中资源时上下文菜单整体禁用', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCtTheme(),
+        home: Scaffold(body: WorkbenchSchemaEditor(repo: repo)),
+      ),
+    );
+    await tester.pump();
+    expect(menuEnabled(tester, 'wb.newMenu'), isTrue);
     expect(
-      tester
-          .widget<ActionChip>(find.byKey(const ValueKey('wb.newTable')))
-          .onPressed,
-      isNotNull,
+      menuEnabled(tester, 'wb.resourceMenu'),
+      isFalse,
+      reason: '没有选中资源时不该能改名/删除/加字段（避免把空 owner 送进内核）',
     );
   });
 
   testWidgets('新建 Table 走对话框入草稿，清单立刻出现草稿资源', (tester) async {
     await pumpEditor(tester);
+    await tester.tap(find.byKey(const ValueKey('wb.newMenu')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('wb.newTable')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('wb.nameField')), findsOneWidget);
@@ -183,6 +203,8 @@ void main() {
   testWidgets('改名作用于选中资源，删除走内核 id', (tester) async {
     await pumpEditor(tester);
     // 默认选中清单里第一个资源（Item）
+    await tester.tap(find.byKey(const ValueKey('wb.resourceMenu')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('wb.renameResource')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const ValueKey('wb.nameField')), 'Gear');

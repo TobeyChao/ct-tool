@@ -173,6 +173,11 @@ void main() {
     await openWorkbench(tester, field: 'Id');
     expect(buttonOf(tester, 'wb.fieldDelete').onPressed, isNull);
     expect(buttonOf(tester, 'wb.fieldDown').onPressed, isNull);
+    await tester.drag(
+      find.byKey(const ValueKey('wb.fieldEditor')),
+      const Offset(0, -240),
+    );
+    await tester.pumpAndSettle();
     expect(find.textContaining('主键不可删除'), findsOneWidget);
   });
 
@@ -194,6 +199,12 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const ValueKey('wb.candidate')));
+    await tester.pumpAndSettle();
+    // 分组后问题块可能被挤出视口：ListView 懒加载，先滚到底再断言
+    await tester.drag(
+      find.byKey(const ValueKey('wb.fieldEditor')),
+      const Offset(0, -260),
+    );
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('wb.fieldProblems')), findsOneWidget);
     final block = find.byKey(const ValueKey('wb.fieldProblems'));

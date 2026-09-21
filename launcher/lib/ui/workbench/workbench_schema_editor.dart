@@ -23,57 +23,47 @@ class WorkbenchSchemaEditor extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: ctGapSm,
-            runSpacing: ctGapSm,
+          Row(
             children: [
-              _chip(
+              _menu(
                 context,
-                Icons.add,
-                '表',
-                'wb.newTable',
-                () => _create(context, 'table'),
+                keyName: 'wb.newMenu',
+                label: '新建',
+                tooltip: '新建资源（只入草稿，保存前不写文件）',
+                items: [
+                  ('table', Icons.add, '表', 'wb.newTable'),
+                  ('record', Icons.data_object, '记录', 'wb.newRecord'),
+                  ('enum', Icons.category, '枚举', 'wb.newEnum'),
+                ],
+                onPick: (value) => _create(context, value),
               ),
-              _chip(
+              const SizedBox(width: ctGapSm),
+              _menu(
                 context,
-                Icons.data_object,
-                '记录',
-                'wb.newRecord',
-                () => _create(context, 'record'),
-              ),
-              _chip(
-                context,
-                Icons.category,
-                '枚举',
-                'wb.newEnum',
-                () => _create(context, 'enum'),
-              ),
-            ],
-          ),
-          const SizedBox(height: ctGapSm),
-          Wrap(
-            spacing: ctGapSm,
-            children: [
-              _chip(
-                context,
-                Icons.drive_file_rename_outline,
-                '改名',
-                'wb.renameResource',
-                () => _renameResource(context),
-              ),
-              _chip(
-                context,
-                Icons.delete_outline,
-                '删除',
-                'wb.deleteResource',
-                () => _deleteResource(context),
-              ),
-              _chip(
-                context,
-                Icons.playlist_add,
-                '加字段',
-                'wb.addField',
-                () => _addField(context),
+                keyName: 'wb.resourceMenu',
+                label: selected == null ? '选中资源后可用' : '选中资源',
+                tooltip: '对当前选中资源做什么（改名 / 删除 / 加字段）',
+                enabled: selected != null,
+                items: [
+                  (
+                    'rename',
+                    Icons.drive_file_rename_outline,
+                    '改名',
+                    'wb.renameResource',
+                  ),
+                  ('delete', Icons.delete_outline, '删除', 'wb.deleteResource'),
+                  ('field', Icons.playlist_add, '加字段', 'wb.addField'),
+                ],
+                onPick: (value) {
+                  switch (value) {
+                    case 'rename':
+                      _renameResource(context);
+                    case 'delete':
+                      _deleteResource(context);
+                    default:
+                      _addField(context);
+                  }
+                },
               ),
             ],
           ),
@@ -85,28 +75,60 @@ class WorkbenchSchemaEditor extends StatelessWidget {
     );
   }
 
-  /// 需要选中资源的操作在没有选中时禁用（避免把空 owner 送进内核）。
-  bool _needsSelection(String keyName) => const {
-    'wb.renameResource',
-    'wb.deleteResource',
-    'wb.addField',
-  }.contains(keyName);
-
-  Widget _chip(
-    BuildContext context,
-    IconData icon,
-    String label,
-    String keyName,
-    VoidCallback onTap,
-  ) {
-    final blocked = _needsSelection(keyName) && selected == null;
-    return ActionChip(
-      key: Key(keyName),
-      avatar: Icon(icon, size: 15, color: ctPrimary),
-      label: Text(label, style: ctText(size: ctFontSm)),
-      onPressed: blocked ? null : onTap,
-    );
-  }
+  /// 收进菜单的动作项：keyName 挂在条目文字上，菜单打开后可被测试/键盘定位。
+  Widget _menu(
+    BuildContext context, {
+    required String keyName,
+    required String label,
+    required String tooltip,
+    required List<(String, IconData, String, String)> items,
+    required void Function(String) onPick,
+    bool enabled = true,
+  }) => PopupMenuButton<String>(
+    key: ValueKey(keyName),
+    enabled: enabled,
+    tooltip: tooltip,
+    position: PopupMenuPosition.under,
+    itemBuilder: (context) => [
+      for (final (value, icon, text, itemKey) in items)
+        PopupMenuItem<String>(
+          value: value,
+          child: Row(
+            children: [
+              Icon(icon, size: 15, color: ctPrimary),
+              const SizedBox(width: ctGapSm),
+              Text(
+                text,
+                key: ValueKey(itemKey),
+                style: ctText(size: ctFontSm),
+              ),
+            ],
+          ),
+        ),
+    ],
+    onSelected: onPick,
+    child: Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: ctGapSm + 2,
+        vertical: ctGapSm,
+      ),
+      decoration: BoxDecoration(
+        border: Border.all(color: enabled ? ctBorderStrong : ctBorder),
+        borderRadius: ctRadiusSmAll,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.more_horiz, size: 15, color: enabled ? ctPrimary : ctInk3),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: ctText(size: ctFontSm, color: enabled ? ctInk : ctInk3),
+          ),
+        ],
+      ),
+    ),
+  );
 
   Widget _draftRow(BuildContext context) {
     return Column(
