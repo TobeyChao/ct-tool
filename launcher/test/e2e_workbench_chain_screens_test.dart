@@ -380,4 +380,82 @@ void main() {
       reason: '导出确实产生过模块日志',
     );
   }, skip: !available);
+
+  /// 模块矩阵（任务 5.5 的窗口/缩放矩阵部分）：逐模块在最窄窗口 1024x700 的 100% 与 150%
+  /// 缩放下各拍一张。这里不比对像素——溢出会作为异常让用例直接红，截图只是留证；
+  /// 缩放走 MaterialApp 外层的 MediaQuery（与 1.4 金标同一做法）。
+  testWidgets('模块矩阵：1024x700 的 100%/150% 逐模块截图', (tester) async {
+    SharedPreferences.setMockInitialValues({'workspace_path': ws.path});
+    final settings = SettingsStore();
+    await settings.load();
+    tester.view.physicalSize = const Size(1024, 700);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    Future<void> pumpAt(double scale) async {
+      await tester.pumpWidget(
+        RepaintBoundary(
+          key: const ValueKey('shots-root'),
+          child: MediaQuery(
+            data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+            child: MaterialApp(
+              theme: buildCtTheme(),
+              home: WorkbenchScreen(
+                data: repo,
+                refresh: repo,
+                draft: repo,
+                runner: runner,
+                validate: validate,
+                translations: translations,
+                template: template,
+                desktop: desktop,
+                settings: settings,
+                onResourceSelected: (name) => repo.loadPreview(name),
+                onExitRequested: () {},
+                workspaceKey: 'matrix',
+                bannerLabel: '已连接原生内核（矩阵截图）',
+              ),
+            ),
+          ),
+        ),
+      );
+      await settle(tester, rounds: 40);
+    }
+
+    const modules = <(String, String)>[
+      ('总览', 'overview'),
+      ('Schema', 'schema'),
+      ('翻译', 'i18n'),
+      ('导出', 'export'),
+      ('历史', 'history'),
+      ('设置', 'settings'),
+    ];
+
+    for (final (label, tag) in modules) {
+      await pumpAt(1.0);
+      await act(
+        tester,
+        () => tester.tap(find.byKey(ValueKey('wb.navTap.$label'))),
+      );
+      await settle(tester, rounds: 30);
+      await shot(
+        tester,
+        'matrix-1024x700-s100-$tag',
+        '模块「$label」@1024x700 100%：内容全部来自内核（无 mock）。',
+      );
+    }
+    for (final (label, tag) in modules) {
+      await pumpAt(1.5);
+      await act(
+        tester,
+        () => tester.tap(find.byKey(ValueKey('wb.navTap.$label'))),
+      );
+      await settle(tester, rounds: 30);
+      await shot(
+        tester,
+        'matrix-1024x700-s150-$tag',
+        '模块「$label」@1024x700 150%：缩放后仍不得溢出/遮挡（溢出会让本用例失败）。',
+      );
+    }
+  }, skip: !available);
 }

@@ -27,6 +27,10 @@ flutter run -d macos
 - macOS：`bash launcher/tool/build_macos.sh`（Flutter、Xcode、CocoaPods）。
 - Windows 脚本保留作后续材料，本轮不作为受支持发行入口。
 
+发行说明与已知限制（交付形态、安装/卸载、快捷键、验证边界）：[`docs/release-notes.md`](docs/release-notes.md)。
+
+工作台经 stdio 拉起内置 `ct worker`，握手校验协议版本与能力；版本不匹配时写入入口保持禁用并在横幅说明原因。
+
 macOS 将原生二进制放到 `.app/Contents/Resources/runtime/ct`，生成 ad-hoc 签名的 `.app` 和 DMG；
 已保留的 Windows 实现布局是 `Release/runtime/ct.exe`，尚未完成本轮验收。没有 PyInstaller/解释器负载。
 打包脚本可用 `RUNTIME_PACKAGE`（macOS）或 `-RuntimePackage`（Windows）指定原生包。

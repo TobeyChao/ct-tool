@@ -403,6 +403,16 @@
   - 未勾选原因：本项还要求"填写夹具"的真实 Excel 人工填行与**真机截图**归档，需与 5.1/5.2/5.3 一并在
     release 构建上采集；不用 mock 或样板截图代替。。
 - [ ] 5.5 完成窗口/缩放矩阵、异常退出、旧设置迁移和旧版本回滚演练，形成已知限制及发行说明。
+  - 本轮推进两块（其余仍需真机，本项不勾选）：
+    1. 窗口/缩放矩阵从「只有 Schema 模块」扩到**六个模块**：`test/e2e_workbench_chain_screens_test.dart`
+       新增一条用例，在最窄 1024x700 的 100% 与 150% 缩放下逐模块（总览/Schema/翻译/导出/历史/设置）
+       各拍一张，共 12 张 `test/evidence/matrix-*.png`，可见文字与内核事实同步进 `chain-text-log.md`。
+       结论：**无 RenderFlex 溢出、无遮挡**（溢出会让用例直接红，不是靠人眼看过去）。
+    2. 发行说明与已知限制成文：`launcher/docs/release-notes.md`（交付形态、安装/卸载与用户数据位置、
+       快捷键、本版界面变化、已验证到什么程度、9 条如实限制），并从 `launcher/README.md` 链入。
+  - 未勾选原因：异常退出与旧版本回滚仍需在真机 release 包上演练（内核侧中断恢复已留档
+    `native/docs/baseline/recovery-drill.md`）；旧设置迁移目前只到「清除废弃键并一次性提示」；
+    输入法/焦点遍历/减少动态效果与自启托盘分别属 5.1、2.5 的真机项。
 - [ ] 5.6 核对内核 change 兼容与性能验收通过后切换正式桌面构建入口；更新使用文档并确认安装包不再包含/启动 Flask 或 Python。
   - 正式桌面构建入口已切净：`launcher/tool/build_windows.ps1` 删掉 PyInstaller 过渡开关（脚本自留的
     「迁到 ct worker 后删除此开关」条件已满足），只剩「定位 `xtask dist` 原生包 → flutter build → 嵌
