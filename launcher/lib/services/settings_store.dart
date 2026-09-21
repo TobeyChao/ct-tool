@@ -89,6 +89,64 @@ class SettingsStore extends ChangeNotifier {
     return legacyKeys.every((key) => !prefs.containsKey(key));
   }
 
+  /// 默认工作区推断：**只有发行包才推断**，自动化跑一律返回空。
+  ///
+  /// 规则：从可执行文件上溯找到 launcher 包（有 pubspec.yaml 且有 lib/），取其同级 `gd/`。
+  /// 但 `flutter build / drive / test integration_test` 用的产物就住在该包的 `build/` 之下，
+  /// 上溯必然命中——那等于让 CI 与集成跑默认打开**真实 gd/**（本轮排查里真出过一次）。
+  /// 所以：可执行文件位于包内 build/ 之下，或环境带 FLUTTER_TEST/CT_INTEGRATION_TEST，
+  /// 一律不推断，界面显示「未绑定工作区」，必须由调用方显式传 root。
+  /// 依据与守卫见 native/docs/baseline/handoff-macos-linux.md。
+  @visibleForTesting
+  static String inferWorkspacePath({
+    required String executablePath,
+    Map<String, String> environment = const {},
+    bool Function(String path)? fileExists,
+    bool Function(String path)? dirExists,
+  }) {
+    final hasFile = fileExists ?? _defaultFileExists;
+    final hasDir = dirExists ?? _defaultDirExists;
+    if (environment.containsKey('FLUTTER_TEST') ||
+        environment.containsKey('CT_INTEGRATION_TEST')) {
+      return '';
+    }
+    var dir = File(executablePath).parent;
+    for (var i = 0; i < 12; i++) {
+      if (hasFile('${dir.path}/pubspec.yaml') && hasDir('${dir.path}/lib')) {
+        if (_isUnderBuild(executablePath, dir.path)) return '';
+        final workspace = normalizePath('${dir.parent.path}/gd');
+        return hasDir(workspace) ? workspace : '';
+      }
+      dir = dir.parent;
+    }
+    return '';
+  }
+
+  /// 路径归一：正斜杠、折叠 `.` 与 `..`、小写。用于判断「是否在包内 build/ 之下」。
+  @visibleForTesting
+  static String normalizePath(String path) {
+    final parts = <String>[];
+    for (final segment in path.split(RegExp(r'[/\\]+'))) {
+      if (segment.isEmpty || segment == '.') continue;
+      if (segment == '..' && parts.isNotEmpty && parts.last != '..') {
+        parts.removeLast();
+        continue;
+      }
+      parts.add(segment);
+    }
+    return parts.join('/').toLowerCase();
+  }
+
+  static bool _isUnderBuild(String executablePath, String packageDir) {
+    final exe = normalizePath(executablePath);
+    final build = normalizePath('$packageDir/build');
+    return exe.startsWith('$build/');
+  }
+
+  static bool _defaultFileExists(String path) => File(path).existsSync();
+
+  static bool _defaultDirExists(String path) => Directory(path).existsSync();
+
   /// 开发期原生运行时：`native/target/{release,debug}/ct[.exe]`。
   static String _inferNativeRuntime() {
     final exeName = Platform.isWindows ? 'ct.exe' : 'ct';

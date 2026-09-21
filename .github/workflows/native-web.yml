@@ -12,11 +12,24 @@ jobs:
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
+      - name: Verify real workspace is clean before acceptance
+        run: node native/tools/gd-guard.mjs --status
+      - name: Rust formatting and static analysis
+        run: |
+          cargo fmt --manifest-path native/Cargo.toml --all -- --check
+          cargo clippy --manifest-path native/Cargo.toml --workspace --all-targets --locked -- -D warnings
+      - name: Verify source fingerprint and test inventory
+        run: cargo run --manifest-path native/Cargo.toml -p ct-xtask --locked -- fingerprint --check
       - name: Verify Python retirement scope and active documentation
         run: |
           node native/tools/check-retirement.mjs --after-deletion
@@ -53,13 +66,16 @@ jobs:
           node native/tools/check-package.mjs --package "$(dirname "$(dirname "$PACKAGE")")" --out native/dist/payload-check.json
           echo "CT_WEB_BIN=$GITHUB_WORKSPACE/$PACKAGE" >> "$GITHUB_ENV"
           echo "CT_LAUNCHER_TEST_BIN=$GITHUB_WORKSPACE/$PACKAGE" >> "$GITHUB_ENV"
+          echo "CT_WORKER_BIN=$GITHUB_WORKSPACE/$PACKAGE" >> "$GITHUB_ENV"
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-      - name: Launcher lifecycle and static analysis
+      - name: Flutter workbench, native worker, and static analysis
+        working-directory: launcher
         run: |
-          cd launcher
+          flutter pub get
+          dart format --output=none --set-exit-if-changed lib test
           flutter test
           flutter analyze
       - name: Package macOS launcher with checked native runtime
@@ -72,6 +88,9 @@ jobs:
       - name: Browser acceptance against native panel
         run: npm test
         working-directory: web
+      - name: Verify acceptance did not modify the real workspace
+        if: always()
+        run: node native/tools/gd-guard.mjs --status
       - uses: actions/upload-artifact@v4
         if: always()
         with:

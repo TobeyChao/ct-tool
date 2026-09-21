@@ -54,6 +54,74 @@ void main() {
     }
   });
 
+  group('默认工作区推断：自动化跑绝不打开真实 gd', () {
+    const packageDir = 'E:/Proj/ct-tool/launcher';
+    bool hasFile(String path) => path == '$packageDir/pubspec.yaml';
+    bool hasDir(String path) =>
+        path == '$packageDir/lib' ||
+        path == 'e:/proj/ct-tool/gd' ||
+        path == 'e:/proj/ct-tool/launcher/build';
+
+    test('包内 build/ 下的构建产物（flutter build/drive/integration）不推断', () {
+      expect(
+        SettingsStore.inferWorkspacePath(
+          executablePath:
+              '$packageDir/build/windows/x64/runner/Release/ct_launcher.exe',
+          fileExists: hasFile,
+          dirExists: hasDir,
+        ),
+        isEmpty,
+        reason: '集成跑用的 exe 上溯必然命中 launcher 包，必须拒绝推断',
+      );
+    });
+
+    test('环境带 FLUTTER_TEST / CT_INTEGRATION_TEST 时不推断', () {
+      for (final env in [
+        const {'FLUTTER_TEST': 'true'},
+        const {'CT_INTEGRATION_TEST': '1'},
+      ]) {
+        expect(
+          SettingsStore.inferWorkspacePath(
+            executablePath: '$packageDir/tool/ct_launcher.exe',
+            environment: env,
+            fileExists: hasFile,
+            dirExists: hasDir,
+          ),
+          isEmpty,
+          reason: '${env.keys.first} 在位说明这是自动化环境',
+        );
+      }
+    });
+
+    test('源码树内、非 build 下的可执行文件仍推断同级 gd', () {
+      expect(
+        SettingsStore.inferWorkspacePath(
+          executablePath: '$packageDir/tool/ct_launcher.exe',
+          fileExists: hasFile,
+          dirExists: hasDir,
+        ),
+        'e:/proj/ct-tool/gd',
+      );
+    });
+
+    test('同级没有 gd 时不硬猜', () {
+      expect(
+        SettingsStore.inferWorkspacePath(
+          executablePath: '$packageDir/tool/ct_launcher.exe',
+          fileExists: (path) => path == '$packageDir/pubspec.yaml',
+          dirExists: (path) => path == '$packageDir/lib',
+        ),
+        isEmpty,
+      );
+    });
+
+    test('normalizePath 折叠反斜杠、. 与 ..', () {
+      expect(
+        SettingsStore.normalizePath(r'E:\Proj\ct-tool\launcher\build\..\x'),
+        'e:/proj/ct-tool/launcher/x',
+      );
+    });
+  });
   const legacy = {'tool_dir': 'E:/repo/ct', 'port': 8123, 'host': '127.0.0.1'};
 
   test('旧 Python/端口配置被清除，工作区与桌面偏好保留', () async {
