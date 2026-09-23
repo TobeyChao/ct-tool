@@ -46,6 +46,11 @@ void main() {
     );
     expect(options.center, isTrue);
     expect(options.title, isNotEmpty);
+    if (Platform.isWindows || Platform.isMacOS) {
+      expect(options.titleBarStyle!.name, 'hidden');
+    } else {
+      expect(options.titleBarStyle!.name, 'normal');
+    }
   });
 
   test('旧面板时代的固定尺寸窗口偏好被清除且不被读取', () async {

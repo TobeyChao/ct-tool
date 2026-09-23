@@ -26,7 +26,7 @@ golden 截图 17 张（`launcher/test/goldens/`）；协议方法 25 个。
 | i18n-pipeline | `workbench_i18n_view.dart`、`state/translation_repository.dart` | `i18n.query/save/sync/status/compact` | Translation and template workflow parity / Edit long translation | `test/state/translation_kernel_test.dart`(6)、`test/state/translation_repository_test.dart`(9)、`test/workbench_i18n_view_test.dart`(6) |
 | incremental-export | 导出结果区（阶段/耗时/缓存统计） | `export` | Responsive export and process lifecycle | `test/state/export_runner_kernel_test.dart`(4)、`test/workbench_export_view_test.dart`(7) |
 | export-publication | 无界面入口；界面只做取消与恢复呈现 | `cancel`、`workspace.recover` | Cancel during publication、Disk write fails then user exits | `test/state/export_runner_test.dart`(10)、`test/state/draft_store_faults_test.dart`(7)、内核故障注入 270 例 |
-| unity-deploy | 导出面板「独立部署」 | `deploy` | Responsive export and process lifecycle | `test/state/export_runner_kernel_test.dart`(4)：导出请求里不含 deploy；`test/e2e_workbench_chain_kernel_test.dart` 真把文件送进 Unity 目录 |
+| unity-deploy | 桌面导出页已按 Web 收敛，不提供部署入口 | `deploy`（仅状态层/CLI） | Responsive export and process lifecycle | `test/state/export_runner_kernel_test.dart`(4)：导出请求里不含 deploy；部署仍由内核显式操作验证 |
 | web-panel | 翻译/历史/日志/任务四个面板 | `i18n.*`、`history.list`、`logs.list`、`tasks.*` | Durable history and actionable diagnostics / Dismiss failure and navigate、Restart after upgrade | `test/state/desktop_state_kernel_test.dart`(2)、`test/state/desktop_state_test.dart`(9)、`test/workbench_desktop_panel_test.dart`(4) |
 | web-panel-design-system | `ui/tokens.dart`、`widgets/`、`workbench_draft_bar.dart`、`workbench_about_dialog.dart` | 无（纯呈现） | Native visual and interaction quality / Resize while editing、Keyboard and input method | 17 张 golden + `test/workbench_golden_test.dart`(17 例)、`test/workbench_draft_banners_test.dart`(5) |
 | launcher | `main.dart`、`services/window_options.dart`、`single_instance_lock.dart`、`tray_service.dart`、`exit_guard.dart` | `shutdown` | Desktop lifecycle… / Duplicate launch and login start | `test/services/desktop_shell_test.dart`(3)、`test/services/exit_guard_test.dart`(7)；双进程/真注册表未勾（归 5.5） |
@@ -42,11 +42,11 @@ golden 截图 17 张（`launcher/test/goldens/`）；协议方法 25 个。
 | `i18n.save` | 单条译文 | 行内 `wb.i18nEditText`（失焦/回车提交，Esc 取消） | 文本未变不发请求；范围与条目由内核回包 | `test/state/translation_repository_test.dart`(9) |
 | `i18n.sync` | 补骨架 | `wb.i18nSync`、`wb.i18nSyncTable` | 全库/单表两档，进度取 `i18n.status` | `test/state/translation_kernel_test.dart`(6) |
 | `i18n.compact` | 删孤立条目 | `wb.i18nCompactPlan` → `wb.i18nCompactPreview` → `wb.i18nCompactApply` | 先 dry-run 再确认；orphan 范围由内核判定 | 同上（6 例内含「预检不写盘」） |
-| `export` | 写产物+账本 | `wb.exportRun`/`wb.exportAll`/`wb.exportTable`/`wb.exportLang` | 忙时禁重复提交；断连终态标未知、不自动重放；导出不顺带部署 | `test/state/export_runner_kernel_test.dart`(4)、`test/workbench_export_view_test.dart`(7) |
-| `deploy` | 写 Unity 目录 | `wb.deployRun` | 独立入口，参数由内核解析；未配置目标时如实 0 同步 | 同上 + e2e 链真落盘 |
+| `export` | 写产物+账本 | `wb.exportRun`/`wb.exportForce`/`wb.exportCancel` | 忙时禁重复提交；断连终态标未知、不自动重放；导出不顺带部署 | `test/state/export_runner_kernel_test.dart`(4)、`test/workbench_export_view_test.dart`(6) |
+| `deploy` | 写 Unity 目录 | 无桌面入口（Web 对齐） | 部署仍由内核显式操作；桌面导出页不内嵌 | `test/state/export_runner_kernel_test.dart`(4) |
 | `cancel` | 终止写任务 | `wb.exportCancel` | 终态以内核为准，发布后取消不误报 | `test/state/export_runner_test.dart`(10) |
 | `tasks.dismiss` | 关通知 | 任务行关闭按钮 | 已关闭不复活 | `test/state/desktop_state_test.dart`(9) |
-| `validate` | 不改文件（只读闸门） | 导出页 `wb.validateRun` | 有写任务在跑时禁用并说明原因；`ok`/`issues` 全取内核回包，界面不判 | `test/state/validate_runner_kernel_test.dart`(4)、`test/ui/workbench_validate_panel_test.dart`(3) |
+| `validate` | 不改文件（只读闸门） | 无桌面入口（导出由内核发布前校验） | 保留状态层能力；Web 对齐后不单独展示校验按钮 | `test/state/validate_runner_kernel_test.dart`(4) |
 | `workspace.recover` | 还原/清理 | `wb.recover`（`wb.recoveryBanner`） | 恢复必须先于加载资源；既还原旧文件也清理本事务新增 | `test/state/workbench_recovery_test.dart`(4)、`test/workbench_recovery_banner_test.dart`(2) |
 
 结论：**保存、模板、i18n、部署四类写入口无遗漏**，且每一类都只有内核一个裁决方（界面没有第二条写路径）。
@@ -76,8 +76,8 @@ golden 截图 17 张（`launcher/test/goldens/`）；协议方法 25 个。
 
 ## 4. 缺口与去向（写清楚，不含糊）
 
-1. ~~`validate` 无桌面按钮~~ **已补**（任务 5.4）：`state/validate_runner.dart` + 导出页「校验」按钮，
-   结论与问题逐条取自内核 `validate`，写任务进行中禁用；内核证据 4 例（含「坏 schema 必须不通过」）。
+1. `validate` 状态层能力保留；导出页已按 Web 收敛，不再单独提供校验按钮。导出发布前仍由内核统一校验，
+   内核证据 4 例保留（含「坏 schema 必须不通过」）。
 2. `workspace.snapshot` / `workspace.status` 无调用者：总览计数由 `resources.list` 的清单算出
    （`test/state/workbench_custom_dirs_kernel_test.dart` 4 例钉住「非默认目录下分类计数不扫目录」），
    `workspace.status` 属 CLI 语义。**处置：确认为不接，已按「无界面入口」核销（见第 6 节）。**
@@ -115,13 +115,13 @@ cargo run -p ct-xtask -- fingerprint --check                             # 1145 
 | 7 | schema-editor/workbench | 已核销 | `test/ui/workbench_draft_bar_test.dart`(10)、`test/ui/workbench_navigation_test.dart`(5)、`test/ui/workbench_preview_paging_test.dart`(2) |
 | 8 | excel-processing | 内核侧 | 内核 `tests/compat`（270+ 例）；桌面只走 `template.*`：`test/state/template_kernel_test.dart`(3) |
 | 9 | excel-template-styling | 内核侧 | 样式夹具在内核；桌面证据 `test/evidence/chain-04/05-template-*.png` |
-| 10 | data-validation | 已核销 | `test/state/validate_runner_kernel_test.dart`(4) + `test/evidence/chain-06-validate.png` |
+| 10 | data-validation | 已核销（内核） | `test/state/validate_runner_kernel_test.dart`(4) |
 | 11 | json-export / 单记录一行 | 内核侧 | `native/docs/baseline/parity-report.md` 第 2 节（12 golden 逐字节） |
 | 12 | flatbuffers / C#·Lua 读取端 | 内核侧 | 同上；桌面产物证据 `test/e2e_workbench_chain_kernel_test.dart` 第 5 步 |
 | 13 | i18n-pipeline | 已核销 | `test/state/translation_kernel_test.dart`(6)、`test/workbench_i18n_view_test.dart`(6)、`test/evidence/chain-09-i18n.png` |
 | 14 | incremental-export | 已核销（界面侧） | `test/state/export_runner_kernel_test.dart`(4) 第二次导出报缓存命中 |
 | 15 | export-publication | 已核销（界面侧） | `test/state/export_runner_test.dart`(10) 取消/断连；恢复横幅 `test/workbench_recovery_banner_test.dart`(2) |
-| 16 | unity-deploy | 已核销 | `test/e2e_workbench_chain_kernel_test.dart` 第 7 步真送文件；`test/evidence/chain-08-deploy.png` |
+| 16 | unity-deploy | 已核销（内核） | `test/e2e_workbench_chain_kernel_test.dart` 第 7 步真送文件 |
 | 17 | web-panel（翻译/历史/日志/任务） | 已核销 | `test/state/desktop_state_test.dart`(9)、`test/workbench_desktop_panel_test.dart`(4) |
 | 18 | web-panel-design-system | 已核销 | 17 张 golden（`test/goldens/`）+ `test/workbench_golden_test.dart`(17)；帧时间 `test/evidence/responsiveness-profile.md` |
 | 19 | launcher（单实例/自启/托盘/窗口） | 部分待真机 | `test/services/desktop_shell_test.dart`(3)、`test/services/exit_guard_test.dart`(7)；双进程与真注册表归 2.5/5.5 |

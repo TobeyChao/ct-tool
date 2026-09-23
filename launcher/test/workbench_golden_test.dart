@@ -86,7 +86,7 @@ void main() {
         await tester.tap(
           find.descendant(of: strip, matching: find.byType(IconButton)),
         );
-        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
       }
     }
     expect(find.byKey(const ValueKey('wb.resourcePanel')), findsOneWidget);

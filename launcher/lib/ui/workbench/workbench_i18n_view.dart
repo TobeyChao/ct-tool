@@ -33,11 +33,15 @@ class WorkbenchI18nView extends StatefulWidget {
 }
 
 class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
+  final Map<String, GlobalKey<_EditableCellState>> _cellKeys = {};
+
+  GlobalKey<_EditableCellState> _cellKey(String key) =>
+      _cellKeys.putIfAbsent(key, () => GlobalKey<_EditableCellState>());
+
   @override
   void initState() {
     super.initState();
     widget.repo.addListener(_changed);
-    // 首屏预选第一张表（与资源区一致）：不预选就永远停在空态。
     if (widget.repo.table.isEmpty && widget.tables.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) widget.repo.selectTable(widget.tables.first);
@@ -58,149 +62,427 @@ class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
   @override
   Widget build(BuildContext context) {
     final repo = widget.repo;
-    return SingleChildScrollView(
+    return LayoutBuilder(
       key: const ValueKey('wb.i18nView'),
-      padding: const EdgeInsets.all(ctGapXl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('翻译', style: ctPageTitleStyle),
-          const SizedBox(height: ctGapSm),
-          _filters(repo),
-          const SizedBox(height: ctGapMd),
-          _progress(repo),
-          const SizedBox(height: ctGapMd),
-          _notices(repo),
-          const SizedBox(height: ctGapSm),
-          _table(repo),
-          const SizedBox(height: ctGapMd),
-          _pagination(repo),
+      builder: (context, bounds) {
+        final header = Padding(
+          padding: const EdgeInsets.fromLTRB(
+            ctGapLg,
+            ctGapMd,
+            ctGapLg,
+            ctGapSm,
+          ),
+          child: CtPageHeader(
+            title: '翻译',
+            subtitle: '逐条校对译文；长文案可打开专注编辑。',
+            trailing: _operationState(repo),
+          ),
+        );
+        final controls = Padding(
+          padding: const EdgeInsets.symmetric(horizontal: ctGapLg),
+          child: _filters(repo),
+        );
+        final progress = Padding(
+          padding: const EdgeInsets.symmetric(horizontal: ctGapLg),
+          child: _progress(repo),
+        );
+        final notices = Padding(
+          padding: const EdgeInsets.symmetric(horizontal: ctGapLg),
+          child: _notices(repo),
+        );
+        final rows = Padding(
+          padding: const EdgeInsets.fromLTRB(
+            ctGapLg,
+            ctGapSm,
+            ctGapLg,
+            ctGapLg,
+          ),
+          child: _table(repo),
+        );
+        if (bounds.maxHeight < 590) {
+          // 高缩放/矮窗口时让整页可滚动，表格仍保持自己的有限高度。
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                header,
+                controls,
+                progress,
+                notices,
+                SizedBox(height: 320, child: rows),
+              ],
+            ),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            header,
+            controls,
+            progress,
+            notices,
+            Expanded(child: rows),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<bool> _confirmDraftChange(TranslationRepository repo) async {
+    if (!repo.draftDirty) return true;
+    final action = await showDialog<_DraftAction>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        key: const ValueKey('wb.i18nDraftPrompt'),
+        title: const Text('有未保存的译文'),
+        content: Text('${repo.selectedKey ?? '当前条目'} 的修改尚未保存。'),
+        actions: [
+          CtButton.ghost(
+            '取消',
+            onPressed: () => Navigator.pop(dialogContext, _DraftAction.cancel),
+          ),
+          CtButton.ghost(
+            '放弃修改',
+            key: const ValueKey('wb.i18nDraftDiscard'),
+            onPressed: () => Navigator.pop(dialogContext, _DraftAction.discard),
+          ),
+          CtButton.accent(
+            '保存并继续',
+            key: const ValueKey('wb.i18nDraftSave'),
+            onPressed: () => Navigator.pop(dialogContext, _DraftAction.save),
+          ),
         ],
       ),
     );
+    if (!mounted) return false;
+    switch (action) {
+      case _DraftAction.save:
+        return repo.saveDraft();
+      case _DraftAction.discard:
+        repo.discardDraft();
+        return true;
+      case _DraftAction.cancel:
+      case null:
+        return false;
+    }
+  }
+
+  Future<bool> _commitInlineEdits(TranslationRepository repo) async {
+    for (final entry in repo.entries) {
+      final state = _cellKeys[entry.key]?.currentState;
+      if (state != null && !await state.commit()) return false;
+    }
+    return true;
+  }
+
+  Future<void> _openFocusedEditor(
+    TranslationRepository repo,
+    I18nEntry entry,
+  ) async {
+    if (!await (_cellKeys[entry.key]?.currentState?.commit() ??
+            Future.value(true)) ||
+        !mounted) {
+      return;
+    }
+    if (!await _confirmDraftChange(repo) || !mounted) return;
+    repo.selectEntry(entry.key);
+    if (repo.selectedKey != entry.key) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => Dialog(
+        key: const ValueKey('wb.i18nFocusDialog'),
+        child: SizedBox(
+          width: 820,
+          height: MediaQuery.sizeOf(dialogContext).height * 0.78,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  ctGapLg,
+                  ctGapSm,
+                  ctGapSm,
+                  0,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '专注编辑',
+                        style: ctText(size: ctFontMd, weight: FontWeight.w600),
+                      ),
+                    ),
+                    IconButton(
+                      key: const ValueKey('wb.i18nFocusClose'),
+                      tooltip: '关闭专注编辑',
+                      icon: const Icon(Icons.close),
+                      onPressed: () async {
+                        if (await _confirmDraftChange(repo) &&
+                            dialogContext.mounted) {
+                          Navigator.pop(dialogContext);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(ctGapLg),
+                  child: _focusedEditor(repo),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmRow(TranslationRepository repo, I18nEntry entry) async {
+    if (!await (_cellKeys[entry.key]?.currentState?.commit() ??
+            Future.value(true)) ||
+        !mounted) {
+      return;
+    }
+    final current = repo.entries
+        .where((item) => item.key == entry.key)
+        .firstOrNull;
+    if (current == null) return;
+    await repo.saveRow(
+      key: current.key,
+      text: current.text,
+      confirmed: !current.confirmed,
+    );
+  }
+
+  Future<void> _changeTable(TranslationRepository repo, String value) async {
+    if (value == repo.table || !await _commitInlineEdits(repo)) return;
+    if (!await _confirmDraftChange(repo) || !mounted) return;
+    await repo.selectTable(value);
+  }
+
+  Future<void> _changeLang(TranslationRepository repo, String value) async {
+    if (value == repo.lang || !await _commitInlineEdits(repo)) return;
+    if (!await _confirmDraftChange(repo) || !mounted) return;
+    await repo.selectLang(value);
+  }
+
+  Future<void> _changeFilter(
+    TranslationRepository repo,
+    TranslationFilter value,
+  ) async {
+    if (value == repo.filter || !await _commitInlineEdits(repo)) return;
+    if (!await _confirmDraftChange(repo) || !mounted) return;
+    await repo.selectFilter(value);
+  }
+
+  Future<void> _refresh(TranslationRepository repo) async {
+    if (!await _commitInlineEdits(repo) || !mounted) return;
+    if (!await _confirmDraftChange(repo) || !mounted) return;
+    await repo.refresh();
   }
 
   // ---- 筛选与操作 ----
 
-  Widget _filters(TranslationRepository repo) {
-    return Container(
-      key: const ValueKey('wb.i18nFilters'),
-      padding: const EdgeInsets.all(ctGapMd),
-      decoration: BoxDecoration(
-        color: ctSurface,
-        borderRadius: ctRadiusMdAll,
-        border: Border.all(color: ctBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: ctGapLg,
-            runSpacing: ctGapSm,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _labelled(
-                '表',
-                170,
-                _dropdown<String>(
-                  key: 'wb.i18nTable',
-                  value: repo.table,
-                  items: [
-                    const DropdownMenuItem(value: '', child: Text('（未选择）')),
-                    for (final name in widget.tables)
-                      DropdownMenuItem(value: name, child: Text(name)),
-                  ],
-                  onChanged: repo.busy
-                      ? null
-                      : (v) => repo.selectTable(v ?? ''),
-                ),
-              ),
-              _labelled(
-                '语言',
-                130,
-                _dropdown<String>(
-                  key: 'wb.i18nLang',
-                  value: repo.lang,
-                  items: [
-                    const DropdownMenuItem(value: '', child: Text('（未选择）')),
-                    for (final name in repo.langNames)
-                      DropdownMenuItem(value: name, child: Text(name)),
-                  ],
-                  onChanged: repo.busy ? null : (v) => repo.selectLang(v ?? ''),
-                ),
-              ),
-              _labelled(
-                '状态',
-                130,
-                _dropdown<TranslationFilter>(
-                  key: 'wb.i18nStatus',
-                  value: repo.filter,
-                  items: [
-                    for (final item in TranslationFilter.values)
-                      DropdownMenuItem(value: item, child: Text(item.label)),
-                  ],
-                  onChanged: repo.busy
-                      ? null
-                      : (v) => repo.selectFilter(v ?? TranslationFilter.all),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: ctGapSm),
-          Wrap(
-            spacing: ctGapSm,
-            runSpacing: ctGapXs,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(
-                '列显隐',
-                style: ctText(size: ctFontXs, color: ctInk2),
-              ),
-              for (final column in const [
-                'source',
-                'text',
-                'confirmed',
-                'status',
-              ])
-                FilterChip(
-                  key: ValueKey('wb.i18nColumn.$column'),
-                  label: Text(_columnLabel(column)),
-                  selected: repo.shown(column),
-                  onSelected: (_) => repo.toggleColumn(column),
-                ),
-              const SizedBox(width: ctGapMd),
-              CtButton.ghost(
-                '刷新',
-                key: const ValueKey('wb.i18nRefresh'),
-                onPressed: repo.busy ? null : () => repo.refresh(),
-              ),
-              CtButton.ghost(
-                '同步全库',
-                key: const ValueKey('wb.i18nSync'),
-                onPressed: repo.busy || !repo.canQuery
-                    ? null
-                    : () => repo.sync(),
-              ),
-              CtButton.ghost(
-                '同步本表',
-                key: const ValueKey('wb.i18nSyncTable'),
-                onPressed: repo.busy || !repo.canQuery
-                    ? null
-                    : () => repo.sync(scopedToTable: true),
-              ),
-              CtButton.ghost(
-                '清理孤立预检',
-                key: const ValueKey('wb.i18nCompactPreview'),
-                onPressed: repo.busy || !repo.canQuery
-                    ? null
-                    : () => _previewCompact(repo),
-              ),
-            ],
-          ),
-        ],
-      ),
+  Widget _operationState(TranslationRepository repo) {
+    if (!repo.busy) {
+      return const CtStatusBadge(label: '就绪', tone: CtBadgeTone.ok, dot: false);
+    }
+    final label = repo.saving
+        ? '正在保存译文'
+        : repo.syncing
+        ? '正在同步语言键'
+        : '正在读取译文';
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        const SizedBox(width: ctGapSm),
+        Text(
+          label,
+          style: ctText(size: ctFontXs, color: ctInk2),
+        ),
+      ],
     );
   }
+
+  Widget _filters(TranslationRepository repo) => Container(
+    key: const ValueKey('wb.i18nFilters'),
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: ctGapMd, vertical: ctGapSm),
+    decoration: BoxDecoration(
+      color: ctSurface,
+      borderRadius: ctRadiusMdAll,
+      border: Border.all(color: ctBorder),
+    ),
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final selectors = Wrap(
+          spacing: ctGapMd,
+          runSpacing: ctGapXs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _labelled(
+              '表',
+              170,
+              _dropdown<String>(
+                key: 'wb.i18nTable',
+                value: repo.table,
+                items: [
+                  const DropdownMenuItem(value: '', child: Text('（未选择）')),
+                  for (final name in widget.tables)
+                    DropdownMenuItem(value: name, child: Text(name)),
+                ],
+                onChanged: repo.busy
+                    ? null
+                    : (v) => _changeTable(repo, v ?? ''),
+              ),
+            ),
+            _labelled(
+              '语言',
+              130,
+              _dropdown<String>(
+                key: 'wb.i18nLang',
+                value: repo.lang,
+                items: [
+                  const DropdownMenuItem(value: '', child: Text('（未选择）')),
+                  for (final name in repo.langNames)
+                    DropdownMenuItem(value: name, child: Text(name)),
+                ],
+                onChanged: repo.busy ? null : (v) => _changeLang(repo, v ?? ''),
+              ),
+            ),
+            _labelled(
+              '状态',
+              130,
+              _dropdown<TranslationFilter>(
+                key: 'wb.i18nStatus',
+                value: repo.filter,
+                items: [
+                  for (final item in TranslationFilter.values)
+                    DropdownMenuItem(value: item, child: Text(item.label)),
+                ],
+                onChanged: repo.busy
+                    ? null
+                    : (v) => _changeFilter(repo, v ?? TranslationFilter.all),
+              ),
+            ),
+          ],
+        );
+        final actions = _toolbarActions(repo);
+        if (constraints.maxWidth >= 1060) {
+          return Row(
+            children: [
+              Expanded(child: selectors),
+              const SizedBox(width: ctGapMd),
+              actions,
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            selectors,
+            const SizedBox(height: ctGapXs),
+            Align(alignment: Alignment.centerRight, child: actions),
+          ],
+        );
+      },
+    ),
+  );
+
+  static const double _actionWidth = 92;
+  static const double _actionHeight = 40;
+
+  Widget _toolbarActions(TranslationRepository repo) => Wrap(
+    spacing: ctGapXs,
+    runSpacing: ctGapXs,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    children: [
+      SizedBox(
+        width: _actionWidth,
+        height: _actionHeight,
+        child: CtButton.ghost(
+          '刷新',
+          key: const ValueKey('wb.i18nRefresh'),
+          onPressed: repo.busy ? null : () => _refresh(repo),
+        ),
+      ),
+      SizedBox(
+        width: _actionWidth,
+        height: _actionHeight,
+        child: CtButton.ghost(
+          '同步本表',
+          key: const ValueKey('wb.i18nSyncTable'),
+          onPressed: repo.busy || !repo.canQuery
+              ? null
+              : () async {
+                  if (await _commitInlineEdits(repo)) {
+                    await repo.sync(scopedToTable: true);
+                  }
+                },
+        ),
+      ),
+      SizedBox(
+        width: _actionWidth,
+        height: _actionHeight,
+        child: PopupMenuButton<String>(
+          key: const ValueKey('wb.i18nColumnsMenu'),
+          tooltip: '选择列表显示内容',
+          onSelected: repo.toggleColumn,
+          itemBuilder: (context) => [
+            for (final column in const [
+              'source',
+              'text',
+              'confirmed',
+              'status',
+            ])
+              CheckedPopupMenuItem<String>(
+                key: ValueKey('wb.i18nColumn.$column'),
+                value: column,
+                checked: repo.shown(column),
+                child: Text(_columnLabel(column)),
+              ),
+          ],
+          child: const _ToolbarMenuLabel('列'),
+        ),
+      ),
+      SizedBox(
+        width: _actionWidth,
+        height: _actionHeight,
+        child: PopupMenuButton<String>(
+          key: const ValueKey('wb.i18nActionsMenu'),
+          tooltip: '更多翻译操作',
+          enabled: !repo.busy && repo.canQuery,
+          onSelected: (value) async {
+            if (!await _commitInlineEdits(repo)) return;
+            switch (value) {
+              case 'sync':
+                await repo.sync();
+              case 'compact':
+                await _previewCompact(repo);
+            }
+          },
+          itemBuilder: (context) => const [
+            PopupMenuItem<String>(
+              value: 'sync',
+              child: Text('同步全库', key: ValueKey('wb.i18nSync')),
+            ),
+            PopupMenuItem<String>(
+              value: 'compact',
+              child: Text('清理孤立预检', key: ValueKey('wb.i18nCompactPreview')),
+            ),
+          ],
+          child: _ToolbarMenuLabel('更多', enabled: !repo.busy && repo.canQuery),
+        ),
+      ),
+    ],
+  );
 
   String _columnLabel(String column) => switch (column) {
     'source' => '原文',
@@ -240,29 +522,23 @@ class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
     if (repo.langs.isEmpty) return const SizedBox.shrink();
     return Container(
       key: const ValueKey('wb.i18nProgress'),
-      padding: const EdgeInsets.all(ctGapMd),
-      decoration: BoxDecoration(
-        color: ctSurface,
-        borderRadius: ctRadiusMdAll,
-        border: Border.all(color: ctBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: ctGapSm, horizontal: 2),
+      child: Wrap(
+        spacing: ctGapLg,
+        runSpacing: ctGapXs,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(
-            '语言进度',
-            style: ctText(size: ctFontSm, weight: FontWeight.w600),
+            '全库进度',
+            style: ctText(size: ctFontXs, color: ctInk3),
           ),
-          const SizedBox(height: ctGapSm),
           for (final lang in repo.langs)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: Text(
-                '${lang.lang}　已翻译 ${lang.translated}　缺失 ${lang.missing}'
-                '　过期 ${lang.stale}　孤立 ${lang.orphan}',
-                key: ValueKey('wb.i18nProgress.${lang.lang}'),
-                style: ctMono.copyWith(fontSize: ctFontXs),
-              ),
+            Text(
+              '${lang.lang}　已翻译 ${lang.translated}　缺失 ${lang.missing}'
+              '　过期 ${lang.stale}　孤立 ${lang.orphan}',
+              key: ValueKey('wb.i18nProgress.${lang.lang}'),
+              style: ctMono.copyWith(fontSize: ctFontXs, color: ctInk2),
             ),
         ],
       ),
@@ -340,96 +616,194 @@ class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
 
   // ---- 译文表 ----
 
-  Widget _table(TranslationRepository repo) {
-    if (!repo.canQuery) {
-      return _hint('选择表与语言后由内核返回译文（筛选与分页都在内核执行）');
-    }
-    if (repo.entries.isEmpty && !repo.loading) {
-      return _hint('当前筛选下没有条目', key: 'wb.i18nEmpty');
-    }
-    final rows = <DataRow>[];
-    for (final entry in repo.entries) {
-      rows.add(_row(repo, entry));
-    }
-    return Container(
-      key: const ValueKey('wb.i18nRows'),
-      decoration: BoxDecoration(
-        color: ctSurface,
-        borderRadius: ctRadiusMdAll,
-        border: Border.all(color: ctBorder),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columnSpacing: ctGapLg,
-          dataRowMinHeight: ctRowSm,
-          headingRowHeight: ctRowMd,
-          columns: [
-            const DataColumn(label: Text('键')),
-            if (repo.shown('source')) const DataColumn(label: Text('原文')),
-            if (repo.shown('text')) const DataColumn(label: Text('译文')),
-            if (repo.shown('confirmed')) const DataColumn(label: Text('确认')),
-            if (repo.shown('status')) const DataColumn(label: Text('状态')),
-            const DataColumn(label: Text('对照')),
-          ],
-          rows: rows,
+  Widget _table(TranslationRepository repo) => LayoutBuilder(
+    builder: (context, bounds) {
+      final compact = bounds.maxWidth < 900;
+      final stacked = bounds.maxWidth < 530;
+      return Container(
+        key: const ValueKey('wb.i18nRows'),
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: ctSurface,
+          borderRadius: ctRadiusMdAll,
+          border: Border.all(color: ctBorder),
         ),
-      ),
-    );
-  }
-
-  DataRow _row(TranslationRepository repo, I18nEntry entry) {
-    return DataRow(
-      key: ValueKey('wb.i18nRow.${entry.key}'),
-      cells: [
-        DataCell(
-          SizedBox(
-            width: 150,
-            child: Text(
-              entry.key,
-              style: ctMono.copyWith(fontSize: ctFontXs),
-              overflow: TextOverflow.ellipsis,
+        child: Column(
+          children: [
+            if (!compact && repo.canQuery) _tableHeader(repo),
+            Expanded(
+              child: !repo.canQuery
+                  ? Center(child: _hint('选择表与语言后开始翻译'))
+                  : repo.entries.isEmpty && !repo.loading
+                  ? Center(child: _hint('当前筛选下没有条目', key: 'wb.i18nEmpty'))
+                  : ListView.builder(
+                      itemCount: repo.entries.length,
+                      itemBuilder: (context, index) => _row(
+                        repo,
+                        repo.entries[index],
+                        compact: compact,
+                        stacked: stacked,
+                      ),
+                    ),
             ),
+            if (repo.canQuery) _pagination(repo),
+          ],
+        ),
+      );
+    },
+  );
+
+  Widget _tableHeader(TranslationRepository repo) => Container(
+    height: ctRowMd,
+    padding: const EdgeInsets.symmetric(horizontal: ctGapMd),
+    decoration: const BoxDecoration(
+      color: ctSurface2,
+      border: Border(bottom: BorderSide(color: ctBorder)),
+    ),
+    child: Row(
+      children: [
+        SizedBox(
+          width: 180,
+          child: Text(
+            '键',
+            style: ctText(size: ctFontXs, color: ctInk2),
           ),
         ),
         if (repo.shown('source'))
-          DataCell(
-            SizedBox(
-              width: 150,
-              child: Text(entry.source, style: ctText(size: ctFontSm)),
+          Expanded(
+            flex: 3,
+            child: Text(
+              '原文',
+              style: ctText(size: ctFontXs, color: ctInk2),
             ),
           ),
         if (repo.shown('text'))
-          DataCell(SizedBox(width: 200, child: _translationCell(repo, entry))),
-        if (repo.shown('confirmed'))
-          DataCell(
-            Checkbox(
-              key: ValueKey('wb.i18nConfirmed.${entry.key}'),
-              value: entry.confirmed,
-              onChanged: repo.busy
-                  ? null
-                  : (v) => repo.saveRow(
-                      key: entry.key,
-                      text: entry.text,
-                      confirmed: v ?? false,
-                    ),
+          Expanded(
+            flex: 4,
+            child: Text(
+              '译文',
+              style: ctText(size: ctFontXs, color: ctInk2),
             ),
           ),
-        if (repo.shown('status')) DataCell(_statusBadge(entry.status)),
-        DataCell(
-          CtButton.ghost(
-            '对照',
-            key: ValueKey('wb.i18nCompare.${entry.key}'),
-            onPressed: () => _showCompare(entry),
-          ),
-        ),
+        const SizedBox(width: 172, child: Text('状态 / 操作')),
       ],
+    ),
+  );
+
+  Widget _row(
+    TranslationRepository repo,
+    I18nEntry entry, {
+    required bool compact,
+    required bool stacked,
+  }) {
+    final source = Text(
+      entry.source,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: ctText(size: ctFontSm),
+    );
+    final target = _translationCell(repo, entry);
+    return Container(
+      key: ValueKey('wb.i18nRow.${entry.key}'),
+      decoration: BoxDecoration(
+        color: repo.selectedKey == entry.key ? ctAccentSofter : null,
+        border: const Border(bottom: BorderSide(color: ctBorder)),
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: ctGapMd,
+        vertical: ctGapXs,
+      ),
+      child: compact
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: _keyLabel(repo, entry)),
+                    _rowActions(repo, entry),
+                  ],
+                ),
+                if (repo.shown('source') || repo.shown('text')) ...[
+                  const SizedBox(height: ctGapXs),
+                  if (stacked)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (repo.shown('source')) source,
+                        if (repo.shown('text')) target,
+                      ],
+                    )
+                  else
+                    Row(
+                      children: [
+                        if (repo.shown('source'))
+                          Expanded(flex: 3, child: source),
+                        if (repo.shown('source') && repo.shown('text'))
+                          const SizedBox(width: ctGapMd),
+                        if (repo.shown('text'))
+                          Expanded(flex: 4, child: target),
+                      ],
+                    ),
+                ],
+              ],
+            )
+          : Row(
+              children: [
+                SizedBox(width: 180, child: _keyLabel(repo, entry)),
+                if (repo.shown('source')) Expanded(flex: 3, child: source),
+                if (repo.shown('text')) Expanded(flex: 4, child: target),
+                _rowActions(repo, entry),
+              ],
+            ),
     );
   }
 
+  Widget _keyLabel(TranslationRepository repo, I18nEntry entry) => InkWell(
+    onTap: repo.busy ? null : () => _openFocusedEditor(repo, entry),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: ctGapSm),
+      child: Text(
+        entry.key,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: ctMono.copyWith(fontSize: ctFontXs, color: ctPrimary),
+      ),
+    ),
+  );
+
+  Widget _rowActions(TranslationRepository repo, I18nEntry entry) => SizedBox(
+    width: 172,
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        if (repo.shown('status')) _statusBadge(entry.status),
+        if (repo.shown('confirmed'))
+          Tooltip(
+            message: entry.confirmed ? '取消确认' : '确认译文',
+            child: IconButton(
+              key: ValueKey('wb.i18nConfirmed.${entry.key}'),
+              icon: Icon(
+                entry.confirmed ? Icons.verified : Icons.check_circle_outline,
+                size: 19,
+                color: entry.confirmed ? ctAccent : ctInk3,
+              ),
+              onPressed: repo.busy ? null : () => _confirmRow(repo, entry),
+            ),
+          ),
+        IconButton(
+          key: ValueKey('wb.i18nEdit.${entry.key}'),
+          tooltip: '专注编辑',
+          icon: const Icon(Icons.open_in_full, size: 17),
+          onPressed: repo.busy ? null : () => _openFocusedEditor(repo, entry),
+        ),
+      ],
+    ),
+  );
+
   Widget _translationCell(TranslationRepository repo, I18nEntry entry) =>
       _EditableCell(
-        key: ValueKey('wb.i18nCell.${entry.key}'),
+        key: _cellKey(entry.key),
+        textKey: 'wb.i18nCell.${entry.key}',
         initial: entry.text,
         enabled: !repo.busy,
         onSave: (text) => repo.saveRow(
@@ -450,22 +824,33 @@ class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
     return CtStatusBadge(label: label, tone: tone, dot: false);
   }
 
-  Widget _pagination(TranslationRepository repo) => Row(
-    children: [
-      Text(
-        '已取 ${repo.shownCount} 条（代次 ${repo.revision}）',
-        key: const ValueKey('wb.i18nCount'),
-        style: ctText(size: ctFontSm, color: ctInk2),
-      ),
-      const SizedBox(width: ctGapMd),
-      CtButton.ghost(
-        '加载更多',
-        key: const ValueKey('wb.i18nMore'),
-        onPressed: repo.canLoadMore && !repo.busy
-            ? () => repo.loadMore()
-            : null,
-      ),
-    ],
+  Widget _pagination(TranslationRepository repo) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: ctGapMd, vertical: ctGapXs),
+    decoration: const BoxDecoration(
+      border: Border(top: BorderSide(color: ctBorder)),
+    ),
+    child: Wrap(
+      spacing: ctGapMd,
+      runSpacing: ctGapXs,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Text(
+          '已取 ${repo.shownCount} 条（代次 ${repo.revision}）',
+          key: const ValueKey('wb.i18nCount'),
+          style: ctText(size: ctFontSm, color: ctInk2),
+        ),
+        CtButton.ghost(
+          '加载更多',
+          key: const ValueKey('wb.i18nMore'),
+          onPressed: repo.canLoadMore && !repo.busy
+              ? () async {
+                  if (await _commitInlineEdits(repo)) await repo.loadMore();
+                }
+              : null,
+        ),
+      ],
+    ),
   );
 
   Widget _hint(String text, {String? key}) => Container(
@@ -479,38 +864,31 @@ class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
     ),
   );
 
-  // ---- 长文本对照与清理确认 ----
+  // ---- 专注编辑器与清理确认 ----
 
-  Future<void> _showCompare(I18nEntry entry) => showDialog<void>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      key: const ValueKey('wb.i18nCompareDialog'),
-      title: Text(entry.key, style: ctMono.copyWith(fontSize: ctFontMd)),
-      content: SizedBox(
-        width: 520,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '原文',
-              style: ctText(size: ctFontXs, color: ctInk3),
-            ),
-            SelectableText(entry.source, style: ctText(size: ctFontMd)),
-            const SizedBox(height: ctGapMd),
-            Text(
-              '译文',
-              style: ctText(size: ctFontXs, color: ctInk3),
-            ),
-            SelectableText(entry.text, style: ctText(size: ctFontMd)),
-          ],
-        ),
+  Widget _focusedEditor(TranslationRepository repo) {
+    if (!repo.canQuery) {
+      return _hint('选择表与语言后即可编辑译文');
+    }
+    final entry = repo.selectedEntry;
+    if (entry == null) {
+      return _hint('选择一个条目开始专注编辑', key: 'wb.i18nEditorEmpty');
+    }
+    return Container(
+      key: const ValueKey('wb.i18nEditor'),
+      padding: const EdgeInsets.all(ctGapMd),
+      decoration: BoxDecoration(
+        color: ctSurface,
+        borderRadius: ctRadiusMdAll,
+        border: Border.all(color: ctBorder),
       ),
-      actions: [
-        CtButton.ghost('关闭', onPressed: () => Navigator.pop(dialogContext)),
-      ],
-    ),
-  );
+      child: _FocusedEditor(
+        key: ValueKey('wb.i18nEditor.${entry.key}'),
+        repo: repo,
+        entry: entry,
+      ),
+    );
+  }
 
   Future<void> _previewCompact(TranslationRepository repo) async {
     final plan = await repo.compactPreview();
@@ -556,12 +934,14 @@ class _EditableCell extends StatefulWidget {
   const _EditableCell({
     super.key,
     required this.initial,
+    required this.textKey,
     required this.enabled,
     required this.onSave,
     this.onCancelEdit,
   });
 
   final String initial;
+  final String textKey;
   final bool enabled;
   final Future<bool> Function(String text) onSave;
   final VoidCallback? onCancelEdit;
@@ -576,6 +956,7 @@ class _EditableCellState extends State<_EditableCell> {
   );
   final FocusNode _focus = FocusNode();
   bool _dirty = false;
+  Future<bool>? _pendingSave;
 
   @override
   void initState() {
@@ -593,13 +974,25 @@ class _EditableCellState extends State<_EditableCell> {
   }
 
   void _onFocusChange() {
-    if (!_focus.hasFocus && _dirty) _submit();
+    if (!_focus.hasFocus && _dirty) commit();
   }
 
-  Future<void> _submit() async {
-    if (!_dirty) return;
-    _dirty = false;
-    await widget.onSave(_controller.text);
+  Future<bool> commit() {
+    if (_pendingSave case final pending?) return pending;
+    if (!_dirty) return Future.value(true);
+    final pending = _submit();
+    _pendingSave = pending;
+    pending.whenComplete(() => _pendingSave = null);
+    return pending;
+  }
+
+  Future<bool> _submit() async {
+    final text = _controller.text;
+    final saved = await widget.onSave(text);
+    if (!mounted) return saved;
+    // 失败时保留输入；保存期间又有输入时不能误标记为已保存。
+    setState(() => _dirty = !saved || _controller.text != text);
+    return !_dirty;
   }
 
   void _cancel() {
@@ -612,7 +1005,8 @@ class _EditableCellState extends State<_EditableCell> {
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
-    if (event.logicalKey != LogicalKeyboardKey.escape) {
+    if (_controller.value.composing.isValid ||
+        event.logicalKey != LogicalKeyboardKey.escape) {
       return KeyEventResult.ignored;
     }
     _cancel();
@@ -633,17 +1027,314 @@ class _EditableCellState extends State<_EditableCell> {
       canRequestFocus: false,
       onKeyEvent: _onKey,
       child: TextField(
-        key: const ValueKey('wb.i18nEditText'),
+        key: ValueKey(widget.textKey),
         controller: _controller,
         focusNode: _focus,
         enabled: widget.enabled,
         style: ctText(size: ctFontSm),
-        decoration: const InputDecoration(isDense: true),
+        decoration: const InputDecoration(
+          isDense: true,
+          hintText: '输入译文…',
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: ctGapSm,
+            vertical: ctGapSm,
+          ),
+          border: OutlineInputBorder(),
+        ),
         onChanged: (value) => setState(() {
           _dirty = value != widget.initial;
         }),
-        onSubmitted: (_) => _submit(),
+        onSubmitted: (_) => commit(),
       ),
     );
   }
+}
+
+class _ToolbarMenuLabel extends StatelessWidget {
+  const _ToolbarMenuLabel(this.label, {this.enabled = true});
+  final String label;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: _WorkbenchI18nViewState._actionWidth,
+    height: _WorkbenchI18nViewState._actionHeight,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      border: Border.all(color: enabled ? ctBorderStrong : ctBorder),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          label,
+          style: ctText(
+            size: 13,
+            color: enabled ? ctInk2 : ctInk3,
+            weight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Icon(Icons.expand_more, size: 15, color: enabled ? ctInk2 : ctInk3),
+      ],
+    ),
+  );
+}
+
+enum _DraftAction { save, discard, cancel }
+
+/// 专注编辑多条译文；保存只在显式按钮或 Ctrl/Cmd+Enter 时发生。
+class _FocusedEditor extends StatefulWidget {
+  const _FocusedEditor({super.key, required this.repo, required this.entry});
+
+  final TranslationRepository repo;
+  final I18nEntry entry;
+
+  @override
+  State<_FocusedEditor> createState() => _FocusedEditorState();
+}
+
+class _FocusedEditorState extends State<_FocusedEditor> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.repo.draftText,
+  );
+  final FocusNode _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.repo.addListener(_onRepositoryChanged);
+  }
+
+  void _onRepositoryChanged() {
+    if (!mounted) return;
+    _syncController();
+    setState(() {});
+  }
+
+  @override
+  void didUpdateWidget(covariant _FocusedEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.entry.key != widget.entry.key ||
+        _controller.text != widget.repo.draftText) {
+      _syncController();
+    }
+  }
+
+  void _syncController() {
+    final text = widget.repo.draftText;
+    if (_controller.text == text) return;
+    _controller.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
+  Future<void> _save() async {
+    if (widget.repo.busy) return;
+    await widget.repo.saveDraft();
+    if (mounted) _focus.requestFocus();
+  }
+
+  void _cancel() {
+    widget.repo.discardDraft();
+    if (mounted) _focus.requestFocus();
+  }
+
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (_controller.value.composing.isValid) {
+      return KeyEventResult.ignored;
+    }
+    final enter =
+        event.logicalKey == LogicalKeyboardKey.enter ||
+        event.logicalKey == LogicalKeyboardKey.numpadEnter;
+    final modifier =
+        HardwareKeyboard.instance.isControlPressed ||
+        HardwareKeyboard.instance.isMetaPressed;
+    if (enter && modifier) {
+      _save();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      _cancel();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  @override
+  void dispose() {
+    widget.repo.removeListener(_onRepositoryChanged);
+    _focus.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final repo = widget.repo;
+    final dirty = repo.draftDirty;
+    return Focus(
+      canRequestFocus: false,
+      onKeyEvent: _onKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '专注编辑',
+                      style: ctText(size: ctFontSm, weight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: ctGapXs),
+                    Text(
+                      widget.entry.key,
+                      key: const ValueKey('wb.i18nEditorKey'),
+                      style: ctMono.copyWith(fontSize: ctFontXs),
+                    ),
+                    const SizedBox(height: ctGapXs),
+                    Text(
+                      '${repo.table} · ${repo.lang}',
+                      key: const ValueKey('wb.i18nEditorContext'),
+                      style: ctText(size: ctFontXs, color: ctInk3),
+                    ),
+                  ],
+                ),
+              ),
+              CtStatusBadge(
+                label: dirty
+                    ? '未保存'
+                    : widget.entry.confirmed
+                    ? '已确认'
+                    : '待确认',
+                tone: dirty || !widget.entry.confirmed
+                    ? CtBadgeTone.warn
+                    : CtBadgeTone.ok,
+                dot: false,
+              ),
+            ],
+          ),
+          const SizedBox(height: ctGapMd),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final source = _sourceBlock();
+              final target = _targetBlock();
+              if (constraints.maxWidth >= 560) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: source),
+                    const SizedBox(width: ctGapLg),
+                    Expanded(child: target),
+                  ],
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  source,
+                  const SizedBox(height: ctGapMd),
+                  target,
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: ctGapMd),
+          Wrap(
+            spacing: ctGapSm,
+            runSpacing: ctGapXs,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              CtButton.ghost(
+                '取消',
+                key: const ValueKey('wb.i18nEditorCancel'),
+                onPressed: repo.busy || !dirty ? null : _cancel,
+              ),
+              CtButton.accent(
+                '保存并确认',
+                key: const ValueKey('wb.i18nEditorSave'),
+                onPressed:
+                    repo.busy ||
+                        (repo.selectedEntry?.confirmed == true && !dirty)
+                    ? null
+                    : _save,
+              ),
+              Text(
+                'Ctrl/Cmd+Enter 保存',
+                style: ctText(size: ctFontXs, color: ctInk3),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sourceBlock() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        '原文',
+        style: ctText(size: ctFontXs, color: ctInk3),
+      ),
+      const SizedBox(height: ctGapXs),
+      Container(
+        key: const ValueKey('wb.i18nEditorSource'),
+        width: double.infinity,
+        height: 160,
+        padding: const EdgeInsets.all(ctGapSm + 2),
+        decoration: BoxDecoration(
+          color: ctSurface2,
+          borderRadius: ctRadiusSmAll,
+          border: Border.all(color: ctBorder),
+        ),
+        child: SingleChildScrollView(
+          child: SelectableText(
+            widget.entry.source,
+            style: ctText(size: ctFontSm),
+          ),
+        ),
+      ),
+    ],
+  );
+
+  Widget _targetBlock() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        '译文',
+        style: ctText(size: ctFontXs, color: ctInk3),
+      ),
+      const SizedBox(height: ctGapXs),
+      SizedBox(
+        height: 160,
+        child: TextField(
+          key: const ValueKey('wb.i18nEditorText'),
+          controller: _controller,
+          focusNode: _focus,
+          readOnly: widget.repo.busy,
+          keyboardType: TextInputType.multiline,
+          textInputAction: TextInputAction.newline,
+          expands: true,
+          minLines: null,
+          maxLines: null,
+          textAlignVertical: TextAlignVertical.top,
+          style: ctText(size: ctFontSm),
+          decoration: ctInputDecoration().copyWith(
+            contentPadding: const EdgeInsets.all(ctGapSm + 2),
+            hintText: '输入译文，支持多行…',
+          ),
+          onChanged: widget.repo.updateDraft,
+        ),
+      ),
+    ],
+  );
 }

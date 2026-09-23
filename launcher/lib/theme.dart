@@ -30,6 +30,25 @@ const Color ctLogText = Color(0xFFB9C9C0);
 const Color ctNav = Color(0xFF102219);
 const Color ctNavRail = Color(0xFF19271F);
 
+// ---- 字体 ----
+// Noto Sans SC 同时覆盖中英文，避免 Windows/macOS 使用不同中文字体导致基线漂移。
+// 字体与 SIL OFL 许可随应用内置，macOS 不依赖用户额外安装。
+const String ctSansFamily = 'NotoSansSC';
+const String ctMonoFamily = 'CascadiaMono';
+const List<String> ctSansFallback = [
+  'Microsoft YaHei UI',
+  'Microsoft YaHei',
+  'PingFang SC',
+  'Segoe UI',
+];
+const List<String> ctMonoFallback = [
+  'Cascadia Mono',
+  'Consolas',
+  'SF Mono',
+  'Menlo',
+  ctSansFamily,
+];
+
 ThemeData buildCtTheme() {
   final scheme = ColorScheme.fromSeed(
     seedColor: ctPrimary,
@@ -41,6 +60,7 @@ ThemeData buildCtTheme() {
     useMaterial3: true,
     colorScheme: scheme,
     scaffoldBackgroundColor: const Color(0xFFE8EBE5),
-    fontFamilyFallback: const ['PingFang SC', 'Microsoft YaHei', 'Segoe UI'],
+    fontFamily: ctSansFamily,
+    fontFamilyFallback: ctSansFallback,
   );
 }

@@ -3,6 +3,7 @@ import 'dart:ui' show Size;
 
 import 'package:window_manager/window_manager.dart';
 
+import '../theme.dart';
 import '../ui/tokens.dart';
 
 /// 原生工作台的窗口参数（任务 2.5）——唯一来源，便于直接断言。
@@ -11,15 +12,19 @@ import '../ui/tokens.dart';
 /// 固定尺寸偏好（`window_width/height/x/y/resizable/maximized` 会在
 /// `SettingsStore.load()` 里作为废弃键清除）。
 WindowOptions desktopWindowOptions({String title = 'ct 工作台'}) {
+  final hideNativeTitleBar = Platform.isWindows || Platform.isMacOS;
   return WindowOptions(
     size: const Size(ctWindowDefaultWidth, ctWindowDefaultHeight),
     minimumSize: const Size(ctWindowMinWidth, ctWindowMinHeight),
     center: true,
     title: title,
-    // macOS 隐藏标题栏条（保留系统红绿灯），Windows 暂用系统标题栏。
-    titleBarStyle: Platform.isMacOS
+    backgroundColor: ctSurface2,
+    // Windows/macOS 去掉系统标题栏，由 WorkbenchScreen 绘制应用内标题栏。
+    // macOS 继续保留原生交通灯；Windows 使用自绘最小化/最大化/关闭按钮。
+    titleBarStyle: hideNativeTitleBar
         ? TitleBarStyle.hidden
         : TitleBarStyle.normal,
+    windowButtonVisibility: Platform.isMacOS,
   );
 }
 

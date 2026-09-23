@@ -61,6 +61,11 @@ class TranslationRepository extends ChangeNotifier {
   I18nCompactResult? lastCompact;
   String? editedKey;
 
+  /// 专注编辑器的选中条目、草稿与未保存状态。
+  String? _selectedKey;
+  String _draftText = '';
+  bool _draftDirty = false;
+
   bool get busy => loading || saving || syncing;
 
   /// 内核按工作区归属分配的 id（用于确认数据不是上一个工作区的回声）。
@@ -78,6 +83,23 @@ class TranslationRepository extends ChangeNotifier {
 
   bool get sampleData => false;
 
+  String? get selectedKey => _selectedKey;
+
+  String get draftText => _draftText;
+
+  bool get draftDirty => _draftDirty;
+
+  bool get hasDirtyDraft => _draftDirty;
+
+  I18nEntry? get selectedEntry {
+    final key = _selectedKey;
+    if (key == null) return null;
+    for (final entry in entries) {
+      if (entry.key == key) return entry;
+    }
+    return null;
+  }
+
   /// 绑定工作区：先取各语言进度（语言下拉与进度总览的唯一来源）。
   Future<void> bind(String root) async {
     final generation = ++_generation;
@@ -90,6 +112,7 @@ class TranslationRepository extends ChangeNotifier {
     lastCompact = null;
     error = null;
     notice = null;
+    _clearSelectionInternal();
     if (root.isEmpty) {
       notifyListeners();
       return;
@@ -104,27 +127,55 @@ class TranslationRepository extends ChangeNotifier {
     }
   }
 
-  Future<void> refresh() => _guard((generation) async {
-    await _loadStatus(generation);
-    await _loadPage(generation, reset: true);
-  });
+  Future<void> refresh({bool discardDraft = false}) async {
+    if (_draftDirty && !discardDraft) {
+      _draftGuard();
+      return;
+    }
+    if (_draftDirty) _discardDraftInternal();
+    await _guard((generation) async {
+      await _loadStatus(generation);
+      await _loadPage(generation, reset: true);
+    });
+  }
 
   /// 切表/切语言/改筛选：只重置分页，筛选与列显隐保留（任务 4.1 的验收点）。
-  Future<void> selectTable(String name) async {
+  Future<void> selectTable(String name, {bool discardDraft = false}) async {
     if (table == name) return;
+    if (_draftDirty && !discardDraft) {
+      _draftGuard();
+      return;
+    }
+    if (_draftDirty) _discardDraftInternal();
     table = name;
+    _clearSelectionInternal();
     await _reloadKeepingFilters();
   }
 
-  Future<void> selectLang(String name) async {
+  Future<void> selectLang(String name, {bool discardDraft = false}) async {
     if (lang == name) return;
+    if (_draftDirty && !discardDraft) {
+      _draftGuard();
+      return;
+    }
+    if (_draftDirty) _discardDraftInternal();
     lang = name;
+    _clearSelectionInternal();
     await _reloadKeepingFilters();
   }
 
-  Future<void> selectFilter(TranslationFilter value) async {
+  Future<void> selectFilter(
+    TranslationFilter value, {
+    bool discardDraft = false,
+  }) async {
     if (filter == value) return;
+    if (_draftDirty && !discardDraft) {
+      _draftGuard();
+      return;
+    }
+    if (_draftDirty) _discardDraftInternal();
     filter = value;
+    _clearSelectionInternal();
     await _reloadKeepingFilters();
   }
 
@@ -137,6 +188,55 @@ class TranslationRepository extends ChangeNotifier {
 
   Future<void> loadMore() =>
       _guard((generation) => _loadPage(generation, reset: false));
+
+  /// 选中条目的专注编辑器入口；未保存草稿不会被静默替换。
+  void selectEntry(String key) {
+    if (_selectedKey == key) return;
+    if (_draftDirty) {
+      _draftGuard();
+      return;
+    }
+    final entry = _findEntry(key);
+    if (entry == null) return;
+    _selectedKey = key;
+    _draftText = entry.text;
+    _draftDirty = false;
+    error = null;
+    notifyListeners();
+  }
+
+  /// 专注编辑器输入只更新草稿，不触发内核写入。
+  void updateDraft(String text) {
+    if (_selectedKey == null || _draftText == text) return;
+    _draftText = text;
+    _draftDirty = selectedEntry?.text != text;
+    error = null;
+    notifyListeners();
+  }
+
+  /// 显式保存专注编辑器草稿；保存失败时保留草稿与选中项。
+  Future<bool> saveDraft() async {
+    final key = _selectedKey;
+    if (key == null || selectedEntry == null) return false;
+    // 文本未变但尚未确认仍是一次状态修改，必须送内核。
+    if (!_draftDirty && selectedEntry!.confirmed) return true;
+    final ok = await saveRow(key: key, text: _draftText, confirmed: true);
+    if (!ok || _selectedKey != key) return false;
+    final saved = selectedEntry;
+    if (saved != null) {
+      _draftText = saved.text;
+      _draftDirty = false;
+      notifyListeners();
+    }
+    return true;
+  }
+
+  /// 放弃专注编辑器草稿，恢复最近一次已保存的文本。
+  void discardDraft() {
+    if (_selectedKey == null) return;
+    _discardDraftInternal();
+    notifyListeners();
+  }
 
   Future<void> _reloadKeepingFilters() =>
       _guard((generation) => _loadPage(generation, reset: true));
@@ -178,6 +278,9 @@ class TranslationRepository extends ChangeNotifier {
         confirmed: confirmed,
         status: result.status,
       );
+      if (_selectedKey == key && !_draftDirty) {
+        _draftText = text;
+      }
       notice = '$key → ${result.status.wire}';
       return true;
     } on WorkerRequestException catch (e) {
@@ -357,7 +460,48 @@ class TranslationRepository extends ChangeNotifier {
     entries.addAll(result.entries);
     revision = result.revision;
     _nextCursor = result.nextCursor;
+    _syncSelectionAfterLoad();
     error = null;
+  }
+
+  I18nEntry? _findEntry(String key) {
+    for (final entry in entries) {
+      if (entry.key == key) return entry;
+    }
+    return null;
+  }
+
+  void _syncSelectionAfterLoad() {
+    final key = _selectedKey;
+    if (key == null) return;
+    final entry = _findEntry(key);
+    if (entry == null) {
+      _clearSelectionInternal();
+      return;
+    }
+    if (!_draftDirty) _draftText = entry.text;
+  }
+
+  void _draftGuard() {
+    error = '当前译文有未保存修改，请先保存或放弃';
+    notifyListeners();
+  }
+
+  void _discardDraftInternal() {
+    final entry = selectedEntry;
+    if (entry == null) {
+      _clearSelectionInternal();
+      return;
+    }
+    _draftText = entry.text;
+    _draftDirty = false;
+    error = null;
+  }
+
+  void _clearSelectionInternal() {
+    _selectedKey = null;
+    _draftText = '';
+    _draftDirty = false;
   }
 
   bool _isCurrent(int generation) => generation == _generation;

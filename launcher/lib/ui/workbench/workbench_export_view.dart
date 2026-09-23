@@ -2,369 +2,169 @@ import 'package:flutter/material.dart';
 
 import '../../services/protocol/protocol.dart';
 import '../../state/export_runner.dart';
-import '../../state/validate_runner.dart';
 import '../../theme.dart';
 import '../tokens.dart';
 import '../widgets/common.dart';
 import '../widgets/status_badge.dart';
 
-/// 导出模块（native-flutter-workbench 任务 4.4/4.6）。
+/// 导出模块（2026-09-22：按 Web 导出页收敛信息层级）。
 ///
-/// 过滤条件一比一映射内核 `export` 参数：`table`/`lang` 是可选过滤（都不填即全量），
-/// `all` 是**强制重建**（绕过解析/校验/生成缓存），不是「全部表」。
-/// 导出不带部署：「独立部署」是另一个按钮、另一条 `deploy` 请求。
-class WorkbenchExportView extends StatefulWidget {
+/// 页面只保留 Web 同款三类内容：标题区的状态与动作、执行进度、本次导出上下文。
+/// 表/语言过滤、独立校验、独立部署和运行日志不再出现在本页；导出仍由内核在发布前
+/// 完整校验，失败问题直接归入执行进度。
+class WorkbenchExportView extends StatelessWidget {
   const WorkbenchExportView({
     super.key,
     required this.runner,
-    this.validate,
-    required this.tables,
-    this.languages = const [],
     this.blockReason,
-    this.onLocateIssue,
   });
 
   final ExportRunner runner;
 
-  /// 只读校验运行器（任务 5.4 前置）：为 null 时不显示校验入口。
-  final ValidateRunner? validate;
-
-  /// 可过滤的表名（来自内核 `resources.list` 的 table 类资源）。
-  final List<String> tables;
-
-  /// 可选语言码（来自 `i18n.status`）；为空时退回自由输入。
-  final List<String> languages;
-
   /// 写入口不可用的原因（内核未就绪/协议不兼容/能力缺失）；null 表示可用。
   final String? blockReason;
 
-  /// 点击问题行的「定位」：交由壳层切资源/滚动到行。
-  final void Function(Issue issue)? onLocateIssue;
-
-  @override
-  State<WorkbenchExportView> createState() => _WorkbenchExportViewState();
-}
-
-class _WorkbenchExportViewState extends State<WorkbenchExportView> {
-  late final TextEditingController _langText;
-
-  @override
-  void initState() {
-    super.initState();
-    _langText = TextEditingController(text: widget.runner.lang ?? '');
-    widget.runner.addListener(_onChanged);
-    widget.validate?.addListener(_onChanged);
-  }
-
-  @override
-  void didUpdateWidget(covariant WorkbenchExportView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.runner, widget.runner)) {
-      oldWidget.runner.removeListener(_onChanged);
-      widget.runner.addListener(_onChanged);
-    }
-    if (!identical(oldWidget.validate, widget.validate)) {
-      oldWidget.validate?.removeListener(_onChanged);
-      widget.validate?.addListener(_onChanged);
-    }
-  }
-
-  void _onChanged() {
-    if (mounted) setState(() {});
-  }
-
-  @override
-  void dispose() {
-    widget.runner.removeListener(_onChanged);
-    widget.validate?.removeListener(_onChanged);
-    _langText.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final runner = widget.runner;
-    return SingleChildScrollView(
-      key: const ValueKey('wb.exportView'),
-      padding: const EdgeInsets.all(ctGapXl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return AnimatedBuilder(
+      animation: runner,
+      builder: (context, _) {
+        return CtPageContent(
+          key: const ValueKey('wb.exportView'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('导出', style: ctPageTitleStyle),
-              const SizedBox(width: ctGapMd),
-              _phaseBadge(runner.phase),
+              _header(),
+              if (_hasHints) ...[const SizedBox(height: ctGapMd), _hints()],
+              const SizedBox(height: ctGapLg),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final progress = _progressCard();
+                  final contextCard = _contextCard();
+                  if (constraints.maxWidth >= 880) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: progress),
+                        const SizedBox(width: ctGapLg),
+                        SizedBox(width: 280, child: contextCard),
+                      ],
+                    );
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      progress,
+                      const SizedBox(height: ctGapMd),
+                      contextCard,
+                    ],
+                  );
+                },
+              ),
             ],
           ),
-          const SizedBox(height: ctGapXs),
-          Text(
-            '导出只做本地发布与记账，不会顺带部署；部署用下面的「独立部署」。',
-            style: ctText(size: ctFontSm, color: ctInk3),
-          ),
-          const SizedBox(height: ctGapLg),
-          _filters(runner),
-          const SizedBox(height: ctGapMd),
-          _actions(runner),
-          const SizedBox(height: ctGapMd),
-          _validation(),
-          const SizedBox(height: ctGapMd),
-          _hints(runner),
-          const SizedBox(height: ctGapMd),
-          _progress(runner),
-          const SizedBox(height: ctGapMd),
-          _result(runner),
-          const SizedBox(height: ctGapMd),
-          _issues(runner),
-          const SizedBox(height: ctGapMd),
-          _runLog(runner),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _phaseBadge(RunnerPhase phase, {String key = 'wb.exportPhase'}) {
-    final tone = switch (phase) {
-      RunnerPhase.running => CtBadgeTone.busy,
-      RunnerPhase.succeeded => CtBadgeTone.ok,
-      RunnerPhase.cancelled => CtBadgeTone.neutral,
-      RunnerPhase.failed => CtBadgeTone.danger,
-      RunnerPhase.unknown => CtBadgeTone.warn,
-      RunnerPhase.idle => CtBadgeTone.info,
+  Widget _header() {
+    final heading = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('导出', style: ctPageTitleStyle),
+        const SizedBox(height: ctGapXs),
+        Text(
+          '增量导出：校验通过后复用未变化产物，生成 JSON、FBS、Binary 与 C#/Lua Accessor。',
+          style: ctPageSubtitleStyle,
+        ),
+      ],
+    );
+    final actions = _actionBar();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= 820) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: heading),
+              const SizedBox(width: ctGapLg),
+              actions,
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            heading,
+            const SizedBox(height: ctGapMd),
+            actions,
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _actionBar() {
+    final blocked = blockReason != null;
+    final running = runner.running;
+    return Wrap(
+      spacing: ctGapSm,
+      runSpacing: ctGapSm,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _phaseBadge(),
+        if (running)
+          CtButton.ghost(
+            '取消',
+            key: const ValueKey('wb.exportCancel'),
+            onPressed: runner.runningRequestId == null ? null : runner.cancel,
+          ),
+        CtButton.ghost(
+          '强制全量重建',
+          key: const ValueKey('wb.exportForce'),
+          onPressed: blocked || running
+              ? null
+              : () => runner.startExport(forced: true),
+        ),
+        CtButton.accent(
+          runner.last == null ? '开始导出' : '重新导出',
+          key: const ValueKey('wb.exportRun'),
+          onPressed: blocked || running
+              ? null
+              : () => runner.startExport(forced: false),
+        ),
+      ],
+    );
+  }
+
+  Widget _phaseBadge() {
+    final (label, tone) = switch (runner.phase) {
+      RunnerPhase.idle => ('准备就绪', CtBadgeTone.info),
+      RunnerPhase.running => ('导出中', CtBadgeTone.busy),
+      RunnerPhase.succeeded => ('导出成功', CtBadgeTone.ok),
+      RunnerPhase.cancelled => ('已取消', CtBadgeTone.neutral),
+      RunnerPhase.failed => ('导出中止', CtBadgeTone.danger),
+      RunnerPhase.unknown => ('终态未知', CtBadgeTone.warn),
     };
     return CtStatusBadge(
-      key: ValueKey(key),
-      label: phase.label,
+      key: const ValueKey('wb.exportPhase'),
+      label: label,
       tone: tone,
       dot: false,
     );
   }
 
-  Widget _filters(ExportRunner runner) {
-    return _card(
-      key: const ValueKey('wb.exportFilters'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '过滤条件',
-            style: ctText(size: ctFontSm, weight: FontWeight.w600),
-          ),
-          const SizedBox(height: ctGapSm),
-          Wrap(
-            spacing: ctGapLg,
-            runSpacing: ctGapSm,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _labelled('表', 180, _tableDropdown(runner)),
-              _labelled('语言', 180, _langControl(runner)),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Checkbox(
-                    key: const ValueKey('wb.exportAll'),
-                    visualDensity: VisualDensity.compact,
-                    value: runner.all,
-                    onChanged: runner.running
-                        ? null
-                        : (v) => setState(() => runner.all = v ?? false),
-                  ),
-                  Text(
-                    '强制重建（绕过缓存）',
-                    style: ctText(size: ctFontSm, color: ctInk2),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  bool get _hasHints =>
+      blockReason != null || runner.needsUserDecision || runner.error != null;
 
-  Widget _labelled(String label, double width, Widget child) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: ctText(size: ctFontSm, color: ctInk2),
-        ),
-        const SizedBox(width: ctGapSm),
-        SizedBox(width: width, child: child),
-      ],
-    );
-  }
-
-  Widget _tableDropdown(ExportRunner runner) {
-    final value = runner.table ?? '';
-    final items = <DropdownMenuItem<String>>[
-      const DropdownMenuItem(value: '', child: Text('（不限定）')),
-      for (final name in widget.tables)
-        DropdownMenuItem(value: name, child: Text(name)),
-    ];
-    return DropdownButton<String>(
-      key: const ValueKey('wb.exportTable'),
-      isExpanded: true,
-      value: items.any((e) => e.value == value) ? value : '',
-      items: items,
-      onChanged: runner.running
-          ? null
-          : (v) => setState(
-              () => runner.table = (v == null || v.isEmpty) ? null : v,
-            ),
-    );
-  }
-
-  Widget _langControl(ExportRunner runner) {
-    if (widget.languages.isEmpty) {
-      return TextField(
-        key: const ValueKey('wb.exportLangText'),
-        controller: _langText,
-        enabled: !runner.running,
-        style: ctText(size: ctFontSm),
-        decoration: const InputDecoration(isDense: true, hintText: '语言码，如 en'),
-        onChanged: (v) => runner.lang = v.trim().isEmpty ? null : v.trim(),
-      );
-    }
-    final value = runner.lang ?? '';
-    final items = <DropdownMenuItem<String>>[
-      const DropdownMenuItem(value: '', child: Text('（全部语言）')),
-      for (final lang in widget.languages)
-        DropdownMenuItem(value: lang, child: Text(lang)),
-    ];
-    return DropdownButton<String>(
-      key: const ValueKey('wb.exportLang'),
-      isExpanded: true,
-      value: items.any((e) => e.value == value) ? value : '',
-      items: items,
-      onChanged: runner.running
-          ? null
-          : (v) => setState(
-              () => runner.lang = (v == null || v.isEmpty) ? null : v,
-            ),
-    );
-  }
-
-  Widget _actions(ExportRunner runner) {
-    final blocked = widget.blockReason != null;
-    return Row(
-      children: [
-        CtButton.accent(
-          runner.running ? '导出中…' : '导出',
-          key: const ValueKey('wb.exportRun'),
-          onPressed: blocked || runner.running
-              ? null
-              : () => runner.startExport(),
-        ),
-        const SizedBox(width: ctGapSm),
-        CtButton.ghost(
-          '独立部署',
-          key: const ValueKey('wb.deployRun'),
-          onPressed: blocked || runner.running
-              ? null
-              : () => runner.startDeploy(),
-        ),
-        const SizedBox(width: ctGapSm),
-        CtButton.ghost(
-          '取消',
-          key: const ValueKey('wb.exportCancel'),
-          onPressed: runner.running && runner.runningRequestId != null
-              ? () => runner.cancel()
-              : null,
-        ),
-        const SizedBox(width: ctGapMd),
-        if (runner.running && runner.runningRequestId == null)
-          Text(
-            '取消要等内核回首个事件（带 requestId）后可用',
-            style: ctText(size: ctFontXs, color: ctInk3),
-          ),
-      ],
-    );
-  }
-
-  /// 校验入口与结果：按钮、内核摘要、问题定位（逐条取自 `validate` 回包）。
-  Widget _validation() {
-    final v = widget.validate;
-    if (v == null) return const SizedBox.shrink();
-    final runner = widget.runner;
-    final blocked = widget.blockReason != null;
-    final issues = v.last?.issues ?? const <Issue>[];
-    return Column(
-      key: const ValueKey('wb.validatePanel'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            CtButton.ghost(
-              v.busy ? '校验中…' : '校验',
-              key: const ValueKey('wb.validateRun'),
-              onPressed: v.busy || runner.running || blocked
-                  ? null
-                  : () => v.run(),
-            ),
-            const SizedBox(width: ctGapSm),
-            Flexible(
-              child: Text(
-                v.summaryLabel,
-                key: const ValueKey('wb.validateResult'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: ctText(
-                  size: ctFontSm,
-                  color: v.error != null
-                      ? ctDanger
-                      : (v.last?.ok ?? false)
-                      ? ctAccent
-                      : ctInk2,
-                ),
-              ),
-            ),
-          ],
-        ),
-        if (runner.running)
-          Text(
-            '写任务进行中：校验先禁用，避免与导出抢工作区锁。',
-            key: const ValueKey('wb.validateQueued'),
-            style: ctText(size: ctFontXs, color: ctInk3),
-          ),
-        for (final entry in issues.take(5).indexed)
-          Row(
-            key: ValueKey('wb.validateIssue.${entry.$1}'),
-            children: [
-              Expanded(
-                child: Text(
-                  '${entry.$2.resource ?? ''} ${entry.$2.message}',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: ctText(size: ctFontXs, color: ctDanger),
-                ),
-              ),
-              if (widget.onLocateIssue != null &&
-                  (entry.$2.resource ?? '').isNotEmpty)
-                TextButton(
-                  onPressed: () => widget.onLocateIssue!(entry.$2),
-                  child: const Text('定位'),
-                ),
-            ],
-          ),
-        if (issues.length > 5)
-          Text(
-            '其余 ${issues.length - 5} 个问题见「历史」模块的任务问题列表。',
-            key: const ValueKey('wb.validateMore'),
-            style: ctText(size: ctFontXs, color: ctInk3),
-          ),
-      ],
-    );
-  }
-
-  Widget _hints(ExportRunner runner) {
+  Widget _hints() {
     final blocks = <Widget>[];
-    if (widget.blockReason != null) {
+    if (blockReason != null) {
       blocks.add(
         _banner(
           key: const ValueKey('wb.exportBlocked'),
-          text: widget.blockReason!,
+          text: blockReason!,
           fg: ctWarn,
           bg: ctWarnSoft,
         ),
@@ -376,7 +176,7 @@ class _WorkbenchExportViewState extends State<WorkbenchExportView> {
           key: const ValueKey('wb.exportUnknown'),
           text:
               '连接断开，上一次任务终态未知：没有自动重放写请求。'
-              '请先在「历史/任务」确认结果，再决定是否重试。',
+              '请先在「历史」确认结果，再决定是否重试。',
           fg: ctDanger,
           bg: ctDangerSoft,
         ),
@@ -392,23 +192,28 @@ class _WorkbenchExportViewState extends State<WorkbenchExportView> {
         ),
       );
     }
-    if (blocks.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final b in blocks)
+        for (final block in blocks)
           Padding(
             padding: const EdgeInsets.only(bottom: ctGapSm),
-            child: b,
+            child: block,
           ),
       ],
     );
   }
 
-  Widget _progress(ExportRunner runner) {
-    final event = runner.progress;
-    if (event == null) return const SizedBox.shrink();
-    final ratio = event.total > 0 ? event.done / event.total : null;
+  Widget _progressCard() {
+    final progress = runner.progress;
+    final result = runner.running ? null : runner.result;
+    final issues = runner.running
+        ? <Issue>[for (final event in runner.liveIssues) event.issue]
+        : runner.issues;
+    final lastStage = result != null && result.stages.isNotEmpty
+        ? result.stages.last.name
+        : '—';
+
     return _card(
       key: const ValueKey('wb.exportProgress'),
       child: Column(
@@ -417,94 +222,263 @@ class _WorkbenchExportViewState extends State<WorkbenchExportView> {
           Row(
             children: [
               Text(
-                '${event.stage} ${event.done}/${event.total}',
+                '执行进度',
                 style: ctText(size: ctFontSm, weight: FontWeight.w600),
               ),
               const Spacer(),
               Text(
-                '请求 #${event.requestId}',
-                style: ctMono.copyWith(fontSize: ctFontXs, color: ctInk3),
+                '任务状态自动更新',
+                style: ctText(size: ctFontXs, color: ctInk3),
               ),
             ],
           ),
           const SizedBox(height: ctGapSm),
-          if (ratio == null)
-            const LinearProgressIndicator(minHeight: 4)
-          else
-            LinearProgressIndicator(value: ratio, minHeight: 4),
+          Text(
+            _progressMessage(progress, result),
+            key: const ValueKey('wb.exportMessage'),
+            style: ctText(size: ctFontSm, color: ctInk2),
+          ),
+          if (runner.running) ...[
+            const SizedBox(height: ctGapMd),
+            if (progress == null || progress.total <= 0)
+              const LinearProgressIndicator(minHeight: 4)
+            else
+              LinearProgressIndicator(
+                value: progress.done / progress.total,
+                minHeight: 4,
+              ),
+          ],
+          if (progress != null && runner.running) ...[
+            const SizedBox(height: ctGapMd),
+            _stageCell(
+              index: 1,
+              label: '${progress.stage} ${progress.done}/${progress.total}',
+              active: true,
+            ),
+          ] else if (result != null && result.stages.isNotEmpty) ...[
+            const SizedBox(height: ctGapMd),
+            Wrap(
+              spacing: ctGapSm,
+              runSpacing: ctGapSm,
+              children: [
+                for (final (index, stage) in result.stages.indexed)
+                  _stageCell(
+                    index: index + 1,
+                    label: stage.name,
+                    done: true,
+                    elapsedMs: stage.elapsedMs,
+                  ),
+              ],
+            ),
+          ],
+          if (issues.isNotEmpty) ...[
+            const SizedBox(height: ctGapMd),
+            for (final (index, issue) in issues.take(5).indexed)
+              Padding(
+                padding: const EdgeInsets.only(bottom: ctGapXs),
+                child: Text(
+                  '${issue.code}：${issue.message}',
+                  key: ValueKey('wb.exportIssue.$index'),
+                  style: ctText(size: ctFontSm, color: ctDanger),
+                ),
+              ),
+            if (issues.length > 5)
+              Text(
+                '其余 ${issues.length - 5} 个问题可在「历史」查看。',
+                style: ctText(size: ctFontXs, color: ctInk3),
+              ),
+          ],
+          if (runner.running || result != null) ...[
+            const SizedBox(height: ctGapMd),
+            Wrap(
+              spacing: ctGapLg,
+              runSpacing: ctGapXs,
+              children: [
+                _stat('已导出', '${result?.tables ?? 0} 张表'),
+                _stat('当前阶段', progress?.stage ?? lastStage),
+                _stat('耗时', _elapsed(result?.durationMs)),
+              ],
+            ),
+          ],
+          if (!runner.running &&
+              result == null &&
+              runner.phase == RunnerPhase.idle)
+            Padding(
+              padding: const EdgeInsets.only(top: ctGapMd),
+              child: Text(
+                '还没有导出记录',
+                key: const ValueKey('wb.exportEmpty'),
+                style: ctText(size: ctFontSm, color: ctInk3),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _result(ExportRunner runner) {
-    final last = runner.last;
-    if (last == null) return const SizedBox.shrink();
-    final result = last.result;
-    final deploy = last.deploy;
+  String _progressMessage(ProgressEvent? progress, ExportResult? result) {
+    if (runner.running) {
+      return progress == null
+          ? '正在准备导出…'
+          : '${progress.stage} · ${progress.done}/${progress.total}';
+    }
+    if (result != null) {
+      return '导出完成：${result.tables} 张表 · ${_elapsed(result.durationMs)}';
+    }
+    if (runner.needsUserDecision) return '连接已断开，任务终态未知';
+    if (runner.phase == RunnerPhase.cancelled) return '本次导出已取消';
+    if (runner.phase == RunnerPhase.failed) {
+      return runner.last?.message ?? runner.error ?? '导出中止';
+    }
+    return '完成首次导出后，这里会保留阶段结果';
+  }
+
+  Widget _stageCell({
+    required int index,
+    required String label,
+    bool active = false,
+    bool done = false,
+    int? elapsedMs,
+  }) {
+    final tone = active
+        ? ctAccent
+        : done
+        ? ctPrimary
+        : ctBorderStrong;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: ctGapSm, vertical: 6),
+      decoration: BoxDecoration(
+        color: active ? ctAccentSoft : ctSurface2,
+        borderRadius: ctRadiusSmAll,
+        border: Border.all(color: tone),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 18,
+            height: 18,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: active ? ctAccent : ctSurface,
+              shape: BoxShape.circle,
+              border: Border.all(color: tone),
+            ),
+            child: Text(
+              '$index',
+              style: ctText(
+                size: 10,
+                weight: FontWeight.w600,
+                color: active ? Colors.white : ctInk2,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: ctText(size: ctFontXs, color: ctInk2),
+          ),
+          if (elapsedMs != null) ...[
+            const SizedBox(width: 6),
+            Text(
+              '${elapsedMs}ms',
+              style: ctMono.copyWith(fontSize: ctFontXs, color: ctInk3),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _contextCard() {
+    final result = runner.result;
+    final output = runner.workspaceRoot.isEmpty
+        ? '—'
+        : '${runner.workspaceRoot}/output';
     return _card(
-      key: const ValueKey('wb.exportResult'),
+      key: const ValueKey('wb.exportContext'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                last.kind == Methods.deploy ? '部署结果' : '导出结果',
-                style: ctText(size: ctFontSm, weight: FontWeight.w600),
-              ),
-              const SizedBox(width: ctGapSm),
-              _phaseBadge(last.phase, key: 'wb.resultPhase'),
-            ],
+          Text(
+            '本次导出',
+            style: ctText(size: ctFontSm, weight: FontWeight.w700, height: 1.2),
           ),
-          const SizedBox(height: ctGapSm),
-          Wrap(
-            spacing: ctGapLg,
-            runSpacing: ctGapXs,
-            children: [
-              if (result != null) ...[
-                _stat('表', '${result.tables}'),
-                _stat('耗时', '${result.durationMs}ms'),
-                _stat(
-                  '缓存命中',
-                  result.cache == null
-                      ? '不适用'
-                      : '${result.cache!.hits} / ${result.cache!.misses}',
-                ),
-              ],
-              if (deploy != null) ...[
-                _stat('同步文件', '${deploy.synced}'),
-                _stat('是否已有最新', deploy.unchanged ? '是（未写入）' : '否'),
-              ],
-            ],
-          ),
-          if (last.message != null && result == null)
-            Padding(
-              padding: const EdgeInsets.only(top: ctGapSm),
-              child: Text(last.message!, style: ctText(size: ctFontSm)),
+          const SizedBox(height: 10),
+          _contextRow('构建模式', runner.all ? '强制全量重建' : '增量导出'),
+          _contextRow('执行结果', _resultLabel(result)),
+          _contextRow('产物目录', output, path: true),
+        ],
+      ),
+    );
+  }
+
+  String _resultLabel(ExportResult? result) {
+    if (runner.running) {
+      return runner.progress == null
+          ? '准备中'
+          : '进行中 · ${runner.progress!.stage}';
+    }
+    if (result != null) {
+      return '成功 · ${result.tables} 张表 · ${_elapsed(result.durationMs)}';
+    }
+    return switch (runner.phase) {
+      RunnerPhase.cancelled => '已取消',
+      RunnerPhase.failed => runner.last?.message ?? '导出中止',
+      RunnerPhase.unknown => '终态未知',
+      _ => '暂无记录',
+    };
+  }
+
+  Widget _contextRow(String label, String value, {bool path = false}) {
+    final decoration = const BoxDecoration(
+      border: Border(top: BorderSide(color: ctBorder)),
+    );
+    if (path) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        decoration: decoration,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: ctText(size: ctFontXs, color: ctInk3, height: 1.4),
             ),
-          if (result != null && result.stages.isNotEmpty) ...[
-            const SizedBox(height: ctGapSm),
-            for (final stage in result.stages)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 160,
-                      child: Text(
-                        stage.name,
-                        style: ctMono.copyWith(fontSize: ctFontXs),
-                      ),
-                    ),
-                    Text(
-                      '${stage.elapsedMs}ms',
-                      style: ctText(size: ctFontXs, color: ctInk2),
-                    ),
-                  ],
-                ),
-              ),
+            const SizedBox(height: ctGapXs),
+            Text(
+              value,
+              style: ctMono.copyWith(fontSize: 11, height: 1.55, color: ctInk2),
+            ),
           ],
+        ),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      decoration: decoration,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 82,
+            child: Text(
+              label,
+              style: ctText(size: ctFontXs, color: ctInk3, height: 1.4),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              value,
+              style: ctText(
+                size: ctFontSm,
+                weight: FontWeight.w600,
+                color: ctInk,
+                height: 1.4,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -526,90 +500,8 @@ class _WorkbenchExportViewState extends State<WorkbenchExportView> {
     );
   }
 
-  Widget _issues(ExportRunner runner) {
-    final issues = <Issue>[
-      for (final event in runner.liveIssues) event.issue,
-      ...runner.issues,
-    ];
-    if (issues.isEmpty) return const SizedBox.shrink();
-    return _card(
-      key: const ValueKey('wb.exportIssues'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '问题 ${issues.length} 条',
-            style: ctText(size: ctFontSm, weight: FontWeight.w600),
-          ),
-          const SizedBox(height: ctGapSm),
-          for (var i = 0; i < issues.length; i++) _issueRow(issues[i], i),
-        ],
-      ),
-    );
-  }
-
-  Widget _issueRow(Issue issue, int index) {
-    final where = <String>[
-      if (issue.resource != null) issue.resource!,
-      if (issue.fieldPath != null) issue.fieldPath!,
-      if (issue.excelRow != null) '第 ${issue.excelRow} 行',
-      if (issue.file != null) issue.file!,
-    ].join(' · ');
-    return Padding(
-      padding: const EdgeInsets.only(bottom: ctGapXs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${issue.code}：${issue.message}',
-                  key: ValueKey('wb.exportIssue.$index'),
-                  style: ctText(size: ctFontSm, color: ctDanger),
-                ),
-                if (where.isNotEmpty)
-                  Text(
-                    where,
-                    style: ctMono.copyWith(fontSize: ctFontXs, color: ctInk3),
-                  ),
-              ],
-            ),
-          ),
-          CtButton.ghost(
-            '定位',
-            key: ValueKey('wb.exportLocate.$index'),
-            onPressed: widget.onLocateIssue == null || issue.resource == null
-                ? null
-                : () => widget.onLocateIssue!(issue),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _runLog(ExportRunner runner) {
-    if (runner.logLines.isEmpty) return const SizedBox.shrink();
-    return _card(
-      key: const ValueKey('wb.exportLog'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '本次运行（最多 ${ExportRunner.logHistory} 行）',
-            style: ctText(size: ctFontSm, weight: FontWeight.w600),
-          ),
-          const SizedBox(height: ctGapXs),
-          for (final line in runner.logLines)
-            Text(
-              line,
-              style: ctMono.copyWith(fontSize: ctFontXs, color: ctInk2),
-            ),
-        ],
-      ),
-    );
-  }
+  String _elapsed(int? milliseconds) =>
+      '${((milliseconds ?? 0) / 1000).toStringAsFixed(2)}s';
 
   Widget _card({Key? key, required Widget child}) {
     return Container(

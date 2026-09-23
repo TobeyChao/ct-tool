@@ -30,6 +30,19 @@ abstract final class Methods {
   static const cancel = 'cancel';
   static const shutdown = 'shutdown';
 
+  /// 需要工作区锁、可能产生事件流的写方法；终态需要进入广播流。
+  static const write = <String>{
+    workspaceRecover,
+    schemaSave,
+    templateGenerate,
+    export,
+    deploy,
+    i18nSave,
+    i18nSync,
+    i18nCompact,
+    tasksDismiss,
+  };
+
   static const all = <String>[
     workspaceOpen,
     workspaceSnapshot,

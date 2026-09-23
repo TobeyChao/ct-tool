@@ -147,13 +147,14 @@ class WorkerService extends ChangeNotifier implements KernelGateway {
   StdioWorkerTransport? _stdio;
   WorkerTransport? _transport;
   final Map<int, Completer<Message>> _pending = {};
+  final Map<int, String> _pendingMethods = {};
   final Set<int> _sentIds = {};
   int _nextRequestId = 0;
   bool _stopping = false;
   Future<void>? _starting;
   Future<void>? _stopFuture;
 
-  /// progress/log/issue 事件流（终态消息不会进这里）。
+  /// progress/log/issue 事件流；写方法终态也进入这里以驱动任务/历史刷新。
   Stream<Message> get events => _events.stream;
 
   bool get isRunning => status == WorkerStatus.ready;
@@ -291,6 +292,7 @@ class WorkerService extends ChangeNotifier implements KernelGateway {
       }
     }
     _pending.clear();
+    _pendingMethods.clear();
   }
 
   /// 本次握手的 hello 投递点；每次 [start] 重建，避免重启后卡在旧 completer。
@@ -320,13 +322,21 @@ class WorkerService extends ChangeNotifier implements KernelGateway {
         _append(LogLevel.warn, '问题：${issue.issue.message}');
         _events.add(issue);
       case final ResultMessage result:
+        // 只广播写方法终态；只读终态不得再次触发刷新，否则会形成请求回环。
+        if (Methods.write.contains(_pendingMethods[result.requestId])) {
+          _events.add(result);
+        }
         _settle(result.requestId, result);
       case final ErrorMessage error:
         final id = error.requestId;
         if (id == null) {
           // 连接级错误：没有 requestId，只能整体上报。
+          _events.add(error);
           _fail('连接级协议错误：${error.error.code} ${error.error.message}');
           return;
+        }
+        if (Methods.write.contains(_pendingMethods[id])) {
+          _events.add(error);
         }
         _settle(id, error);
       case Request():
@@ -360,6 +370,7 @@ class WorkerService extends ChangeNotifier implements KernelGateway {
   };
 
   void _settle(int requestId, Message message) {
+    _pendingMethods.remove(requestId);
     final completer = _pending.remove(requestId);
     if (completer != null && !completer.isCompleted) {
       completer.complete(message);
@@ -389,6 +400,7 @@ class WorkerService extends ChangeNotifier implements KernelGateway {
     final id = _newRequestId();
     final completer = Completer<Message>();
     _pending[id] = completer;
+    _pendingMethods[id] = method;
     transport.send(
       Request(
         requestId: id,

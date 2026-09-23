@@ -263,19 +263,16 @@
     预检列出它且文件不变；执行后只少它一条，1001.Name 仍在）与「source 缺失时内核不肯清理」；
     test/workbench_i18n_view_test.dart「清理孤立必须先预检，确认后才执行写操作」「取消预检不会执行
     任何写操作」「同步与进度总览显示内核给出的数字」。
-- [x] 4.4 接入导出过滤、阶段/耗时/缓存统计和可定位错误，验证桌面导出不自动部署、独立部署可用。
-  - 证据：`launcher/lib/state/export_runner.dart` 把界面过滤条件一比一拼成 `export` 参数
-    （`table`/`lang` 只在非空时送、`all` 始终显式送；`all` 按内核语义是**强制重建绕过缓存**，
-    不是「全部表」，界面文案照此写），终态直接采用内核 `ExportResult`：`outcome/tables/durationMs/`
-    `stages[].elapsedMs`/`cache.hits|misses`/`issues[]`；部署是另一条显式 `deploy` 请求
-    （`forBuild` 参数），桌面导出不自动部署。`launcher/lib/ui/workbench/workbench_export_view.dart`
-    渲染阶段进度条（`progress` 事件）、结果卡（表数/耗时/缓存命中比/逐阶段耗时）、问题卡与运行日志；
-    问题「定位」把内核给的 `Issue.resource` 原样交给壳层 `_locateIssue`，切到 Schema 模块并选中该资源。
+- [x] 4.4 接入导出运行、阶段/耗时反馈和取消；2026-09-22 按 Web 页面收敛桌面入口。
+  - 证据：`launcher/lib/state/export_runner.dart` 仍完整承接内核 `export` 参数、`progress/issue` 事件与
+    取消语义，终态直接采用内核 `ExportResult`。`launcher/lib/ui/workbench/workbench_export_view.dart`
+    只渲染「标题动作 + 执行进度 + 本次导出」：强制全量重建、开始/重新导出、运行中取消，以及阶段与耗时。
+    表/语言过滤、单独校验、独立部署、结果卡和运行日志不再出现在导出页。
   - 测试：`test/state/export_runner_test.dart` 10 例（参数拼装、导出不得顺带部署、progress/issue 按
     requestId 与 seq 单调汇入、取消只转达意图、busy 不覆盖状态、断连不重放）；
-    `test/workbench_export_view_test.dart` 7 例界面侧；`test/state/export_runner_kernel_test.dart` 4 例
+    `test/workbench_export_view_test.dart` 6 例界面侧；`test/state/export_runner_kernel_test.dart` 4 例
     **直连真实 ct worker**（阶段/耗时/缓存非哑值、`tasks.list` 里从未出现 deploy、单表过滤 tables=1、
-    未知表名/语言由内核拒绝并交出错误文本。
+    未知表名/语言由内核拒绝并交出错误文本）。
 - [x] 4.5 实现有界日志列表和最近五次导出历史，验证大量事件可滚动且结果按任务归属。
   - 证据：`lib/state/desktop_state.dart` 用 `logs.list` 的 `page.limit=200` 分页 + `nextCursor`
     续拉（界面是有界 `ListView`，滚到底给「加载更多日志」入口，列表项数即已取条数），
@@ -383,15 +380,15 @@
     逐步断言产物与账本（保存只改 YAML、模板迁移保住既有 2 行、导出产出 JSON+Accessor、增量命中缓存、
     独立部署真的送 5 个文件进 Unity 目录、无 `.ct-stage-*`/`.tmp` 残留）。
   - **界面截图证据补齐**：`test/e2e_workbench_chain_screens_test.dart` 用同一批真实内核对象驱动整个工作台，
-    10 步各出一张 PNG 到 `launcher/test/evidence/`（Schema 清单/草稿步骤面板/净差异对话框/模板预检/
-    模板生成/校验/导出/独立部署/翻译/Quick Open），并同步写 `chain-text-log.md` 记录每步界面上**真实渲染的
-    文本**与内核事实（草稿步数、候选 hash 与 +N/~N/-N、校验摘要、运行相位、部署同步数）。
+    各步骤出一张 PNG 到 `launcher/test/evidence/`（Schema 清单/草稿步骤面板/净差异对话框/模板预检/
+    模板生成/导出/翻译/Quick Open），并同步写 `chain-text-log.md` 记录每步界面上**真实渲染的
+    文本**与内核事实（草稿步数、候选 hash 与 +N/~N/-N、运行相位、导出表数与耗时）。
     截图不做像素比对：导出/部署面板含真实耗时，逐像素断言会把「数字变了」误报成「界面坏了」。
     已人工查看 PNG 确认布局与弹窗可见（flutter_tester 无 CJK 字体，中文为方块，与 1.4 矩阵同一限制）。
-  - 本项前置的桌面「校验」入口已补：`state/validate_runner.dart` + 导出页 `wb.validateRun`，
-    结论与问题逐条取自内核 `validate`（只读、不写盘）；写任务进行中禁用并说明原因。
-    测试：`test/state/validate_runner_test.dart`(5) + `test/state/validate_runner_kernel_test.dart`(4，真实 worker：
-    好夹具通过、单表范围、坏 schema 必须不通过且摘要不得写「校验通过」) + `test/ui/workbench_validate_panel_test.dart`(3)。
+  - `state/validate_runner.dart` 保留只读校验能力；Web 对齐后导出页不再单独展示校验按钮，发布前校验由
+    内核 `export` 流程统一执行。状态层测试保留：`test/state/validate_runner_test.dart`(5) +
+    `test/state/validate_runner_kernel_test.dart`(4，真实 worker：好夹具通过、单表范围、坏 schema
+    必须不通过且摘要不得写「校验通过」)。
   - 诚实边界：Excel 数据行由 openpyxl 夹具提供，「人手工往新列填数」不能从协议层完成——串测改为验证
     schema 迁移保住既有数据行并把新 i18n 列纳入 sync/翻译范围；真机鼠标与输入法操作仍留在 5.1/5.5。
   - 已自动化：`test/e2e_workbench_chain_kernel_test.dart` 10 例（真实 `ct worker`、临时工作区、零 mock）

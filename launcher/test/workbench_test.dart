@@ -10,10 +10,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<void> pumpWorkbench(
   WidgetTester tester,
   MockWorkspaceData data, {
-  // 默认按受支持的最大档量测：侧栏 236 + 资源 240 + 属性 300 要 1440 才全展开
+  // 默认按受支持的最大档量测：侧栏 248 + 资源 240 + 属性 300 要 1440 才全展开
   Size size = const Size(1440, 900),
   double scale = 1.0,
   String workspaceKey = 'mock-test',
+  bool showDesktopTitleBar = false,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -23,7 +24,12 @@ Future<void> pumpWorkbench(
       data: MediaQueryData(textScaler: TextScaler.linear(scale)),
       child: MaterialApp(
         theme: buildCtTheme(),
-        home: WorkbenchScreen(data: data, workspaceKey: workspaceKey),
+        home: WorkbenchScreen(
+          data: data,
+          workspaceKey: workspaceKey,
+          showDesktopTitleBar: showDesktopTitleBar,
+          showWindowControls: false,
+        ),
       ),
     ),
   );
@@ -39,15 +45,39 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('四区壳渲染：资源区/编辑区/属性区/任务区与 MOCK 标识', (tester) async {
+  testWidgets('三区壳渲染：资源区/编辑区/属性区', (tester) async {
     await pumpWorkbench(tester, mockWorkspaceFor(MockScenario.normal));
     expect(find.text('资源'), findsOneWidget);
     expect(find.text('属性'), findsOneWidget);
-    expect(find.text('任务'), findsOneWidget);
     expect(find.text('保存'), findsOneWidget);
-    expect(find.textContaining('模拟数据（MOCK）'), findsOneWidget);
+    expect(find.byKey(const ValueKey('wb.kernelStatus')), findsNothing);
+    expect(find.byKey(const ValueKey('wb.settingsDivider')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wb.moduleHeader')), findsNothing);
     expect(find.byKey(const ValueKey('wb.resourcePanel')), findsOneWidget);
     expect(find.byKey(const ValueKey('wb.inspectorPanel')), findsOneWidget);
+
+    final sidebar = tester.getRect(find.byKey(const ValueKey('wb.sidebar')));
+    final settings = tester.getRect(find.byKey(const ValueKey('wb.nav.设置')));
+    final leftGap = settings.left - sidebar.left;
+    final rightGap = sidebar.right - settings.right;
+    final bottomGap = sidebar.bottom - settings.bottom;
+    expect(leftGap, moreOrLessEquals(rightGap, epsilon: 0.1));
+    expect(leftGap, moreOrLessEquals(bottomGap, epsilon: 0.1));
+  });
+
+  testWidgets('生产标题栏不渲染旧菜单与侧栏品牌头', (tester) async {
+    await pumpWorkbench(
+      tester,
+      mockWorkspaceFor(MockScenario.normal),
+      showDesktopTitleBar: true,
+    );
+
+    expect(find.byKey(const ValueKey('ct.desktopTitleBar')), findsOneWidget);
+    for (final label in ['文件', '编辑', '视图', '帮助']) {
+      expect(find.text(label), findsNothing);
+    }
+    expect(find.byKey(const ValueKey('wb.collapse.sidebar')), findsNothing);
+    expect(find.text('工作流'), findsOneWidget);
   });
 
   testWidgets('选择资源与字段后属性区联动', (tester) async {
@@ -75,6 +105,28 @@ void main() {
     );
     await tester.pump();
     expect(find.byKey(const ValueKey('wb.resourcePanel')), findsOneWidget);
+  });
+
+  testWidgets('资源区折叠使用 200ms 过渡', (tester) async {
+    await pumpWorkbench(tester, mockWorkspaceFor(MockScenario.normal));
+
+    final expandedResourceWidth = tester
+        .getSize(find.byKey(const ValueKey('wb.resourcePanel')))
+        .width;
+    await tester.tap(find.byKey(const ValueKey('wb.collapse.resource')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    final resourceMotion = find
+        .ancestor(
+          of: find.byKey(const ValueKey('wb.strip.resource')),
+          matching: find.byType(AnimatedSize),
+        )
+        .first;
+    final midResourceWidth = tester.getSize(resourceMotion).width;
+    expect(midResourceWidth, lessThan(expandedResourceWidth));
+    expect(midResourceWidth, greaterThan(ctCollapsedStripWidth));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(resourceMotion).width, ctCollapsedStripWidth);
   });
 
   testWidgets('拖拽手柄调整资源区宽度并按工作区记忆', (tester) async {
@@ -105,7 +157,6 @@ void main() {
     expect(find.text('工作区还没有任何资源'), findsOneWidget);
     expect(find.text('新建资源'), findsOneWidget);
     expect(find.text('从左侧选择资源，或新建 Table / Record / Enum'), findsOneWidget);
-    expect(find.text('暂无任务'), findsOneWidget);
   });
 
   testWidgets('加载失败：错误面板与重试入口', (tester) async {
@@ -130,11 +181,10 @@ void main() {
     expect(save2.onPressed, isNull);
   });
 
-  testWidgets('忙碌：锁定提示与运行中任务进度', (tester) async {
+  testWidgets('忙碌：锁定写入口并提供查看导出入口', (tester) async {
     await pumpWorkbench(tester, mockWorkspaceFor(MockScenario.busy));
     expect(find.textContaining('导出进行中'), findsOneWidget);
-    expect(find.text('运行中'), findsOneWidget);
-    expect(find.text('1 进行中'), findsOneWidget);
+    expect(find.text('查看导出'), findsOneWidget);
     await tester.tap(find.text('hero').first);
     await tester.pump();
     final save = tester.widget<CtButton>(find.byKey(const ValueKey('wb.save')));
@@ -202,10 +252,23 @@ void main() {
       findsOneWidget,
       reason: '窗口 700 < 740：侧栏收成 56px 图标栏（web 的抽屉断点）',
     );
+    expect(find.byKey(const ValueKey('wb.nav.设置')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('wb.settingsDivider.compact')),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const ValueKey('wb.expand.sidebar')));
     await tester.pump();
     expect(find.byKey(const ValueKey('wb.sidebar')), findsOneWidget);
-    expect(find.text('导出文档'), findsOneWidget);
+    expect(find.byKey(const ValueKey('wb.kernelStatus')), findsNothing);
+    expect(find.byKey(const ValueKey('wb.kernelStatus.compact')), findsNothing);
+    expect(find.byKey(const ValueKey('wb.nav.设置')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wb.settingsDivider')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('wb.settingsDivider.compact')),
+      findsNothing,
+    );
+    expect(find.byKey(const ValueKey('wb.docsEntry')), findsNothing);
   });
 
   testWidgets('1280x800 + 125% 缩放：全部场景渲染无溢出', (tester) async {
@@ -216,19 +279,17 @@ void main() {
         scale: 1.25,
         workspaceKey: 'mock-test-$scenario',
       );
-      await tester.tap(find.text('任务'));
-      await tester.pump();
     }
   });
 
-  testWidgets('模块切换：未接入模块显示占位与计划任务号', (tester) async {
+  testWidgets('模块切换：未接入模块与无数据记录页都给出明确空态', (tester) async {
     await pumpWorkbench(tester, mockWorkspaceFor(MockScenario.normal));
     await tester.tap(find.text('翻译'));
     await tester.pump();
     expect(find.textContaining('需要接上内核数据源'), findsOneWidget);
     await tester.tap(find.text('历史'));
     await tester.pump();
-    expect(find.textContaining('任务 4.8'), findsOneWidget);
+    expect(find.textContaining('需要接上内核数据源'), findsOneWidget);
     await tester.tap(find.text('总览'));
     await tester.pump();
     expect(find.text('工作区总览'), findsOneWidget);

@@ -72,11 +72,16 @@ void main() {
       if (!available) return;
       final ctx = await open();
       await ctx.worker.request(Methods.export, workspaceRoot: ctx.ws.path);
-      // 等事件驱动的刷新落地
-      for (var i = 0; i < 40 && ctx.worker.lastWorkspaceId == null; i++) {
+      // 不手动 refresh：终态事件必须自己驱动任务/历史刷新。
+      for (
+        var i = 0;
+        i < 80 &&
+            !(ctx.state.tasks.any((task) => task.method == Methods.export) &&
+                ctx.state.history.isNotEmpty);
+        i++
+      ) {
         await Future<void>.delayed(const Duration(milliseconds: 50));
       }
-      await ctx.state.refresh();
 
       expect(
         ctx.state.tasks.map((task) => task.method).toList(),

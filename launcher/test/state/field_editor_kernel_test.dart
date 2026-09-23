@@ -133,6 +133,31 @@ void main() {
   );
 
   test(
+    '只移除 codename 索引也计入净差异并可保存',
+    () async {
+      if (!available) return;
+      final ctx = await open();
+      ctx.repo.setTableIndexes('table:Item', const []);
+
+      final candidate = await ctx.repo.requestCandidate();
+      expect(candidate, isNotNull, reason: ctx.repo.draftError ?? 'no error');
+      expect(
+        candidate!.netDiff.changed.map((r) => r.name),
+        contains('Item'),
+        reason: '索引也是候选结构的一部分，不能报零差异',
+      );
+      expect(ctx.repo.canSave, isTrue);
+
+      final saved = await ctx.repo.saveDraft();
+      expect(saved, isNotNull, reason: ctx.repo.saveError);
+      expect(readYaml(ctx.ws), isNot(contains('codename')));
+      await close(ctx);
+    },
+    skip: available ? false : skipReason,
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
+
+  test(
     '合法编辑保存只改 YAML：注释、类型与移除索引都落盘',
     () async {
       if (!available) return;

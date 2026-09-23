@@ -23,6 +23,9 @@ class WorkbenchSettingsPanel extends StatefulWidget {
     this.onUseInferredRuntime,
     this.onReload,
     this.onExit,
+    this.onOpenDocs,
+    this.onShowHelp,
+    this.onShowAbout,
   });
 
   final SettingsStore settings;
@@ -40,6 +43,11 @@ class WorkbenchSettingsPanel extends StatefulWidget {
 
   /// 显式退出（任务 4.7）：由壳层走退出守卫与安全 shutdown，不在面板里自己收尾。
   final VoidCallback? onExit;
+
+  /// 文档、快捷键帮助与版本信息统一收进设置页，避免侧栏 footer 堆叠入口。
+  final VoidCallback? onOpenDocs;
+  final VoidCallback? onShowHelp;
+  final VoidCallback? onShowAbout;
 
   @override
   State<WorkbenchSettingsPanel> createState() => _WorkbenchSettingsPanelState();
@@ -79,7 +87,6 @@ class _WorkbenchSettingsPanelState extends State<WorkbenchSettingsPanel> {
   }
 
   Future<void> _pickRuntime() async {
-    // 不限制扩展名：Linux/macOS 上运行时是裸可执行文件。
     final picked = await openFile();
     final path = picked?.path;
     if (path == null || path.isEmpty) return;
@@ -93,7 +100,6 @@ class _WorkbenchSettingsPanelState extends State<WorkbenchSettingsPanel> {
     if (_autostartBusy) return;
     setState(() => _autostartBusy = true);
     if (kDebugMode) {
-      // 调试构建不写登录项，避免污染系统（对齐 FlClash）。
       if (mounted) {
         setState(() => _autostartBusy = false);
         showCtToast(context, '调试模式不启用开机自启，正式构建下生效');
@@ -114,168 +120,236 @@ class _WorkbenchSettingsPanelState extends State<WorkbenchSettingsPanel> {
   @override
   Widget build(BuildContext context) {
     final s = widget.settings;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(ctGapXl),
+    return Padding(
+      padding: const EdgeInsets.all(ctGapLg),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('设置', style: ctPageTitleStyle),
-          const SizedBox(height: ctGapXs),
-          Text(
-            '偏好即时生效；重启后仍保留。',
-            style: TextStyle(fontSize: ctFontSm, color: ctInk3),
-          ),
-          const SizedBox(height: ctGapLg),
-          if (s.migratedFromLegacy)
-            _card(
-              title: '已迁移旧配置',
-              icon: Icons.update,
-              children: [
-                const Text(
-                  '旧版的面板端口/监听地址与 Python 工具目录配置已废弃并被清除：'
-                  '原生内核不监听端口，也不启动解释器。工作区与桌面偏好已保留。',
-                  key: ValueKey('settings.legacyNote'),
-                  style: TextStyle(fontSize: ctFontMd),
-                ),
-              ],
-            ),
-          _card(
-            title: '配表工作区',
-            icon: Icons.folder_outlined,
-            children: [
-              CtSettingRow(
-                label: '路径',
-                child: Text(
-                  widget.workspacePath.isEmpty ? '未选择' : widget.workspacePath,
-                  key: const ValueKey('settings.workspacePath'),
-                  style: ctMono.copyWith(fontSize: ctFontSm),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              CtSettingRow(
-                label: '',
-                child: Wrap(
-                  spacing: ctGapSm,
-                  children: [
-                    CtButton.ghost(
-                      '选择目录…',
-                      key: const ValueKey('settings.pickWorkspace'),
-                      onPressed: _pickWorkspace,
-                    ),
-                    CtButton.ghost(
-                      '重新读取',
-                      key: const ValueKey('settings.reloadWorkspace'),
-                      onPressed: widget.onReload,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: ctGapMd),
-          _card(
-            title: '原生内核运行时',
-            icon: Icons.memory,
-            children: [
-              for (final line in widget.kernelSummary)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
-                  child: Text(
-                    line,
-                    key: const ValueKey('settings.kernelSummary'),
-                    style: ctMono.copyWith(fontSize: ctFontSm),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: ctGapLg),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 880),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (s.migratedFromLegacy) ...[
+                        _settingsGroup(
+                          children: [
+                            _settingsItem(
+                              title: '迁移提示',
+                              description: '旧版面板配置已清理，工作区与桌面偏好继续保留。',
+                              detail: const Text(
+                                '面板端口、监听地址与 Python 工具目录配置不再使用；'
+                                '原生内核不监听端口，也不启动解释器。',
+                                key: ValueKey('settings.legacyNote'),
+                              ),
+                              divider: false,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: ctGapMd),
+                      ],
+                      _settingsGroup(
+                        key: const ValueKey('settings.workspaceCard'),
+                        children: [
+                          _settingsItem(
+                            title: '配表目录',
+                            description: '选择游戏数据目录；外部改动后可重新读取。',
+                            detail: Text(
+                              widget.workspacePath.isEmpty
+                                  ? '未选择'
+                                  : widget.workspacePath,
+                              key: const ValueKey('settings.workspacePath'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: ctMono.copyWith(
+                                fontSize: ctFontSm,
+                                color: ctInk2,
+                              ),
+                            ),
+                            trailing: Wrap(
+                              spacing: ctGapSm,
+                              children: [
+                                CtButton.ghost(
+                                  '选择目录…',
+                                  key: const ValueKey('settings.pickWorkspace'),
+                                  onPressed: _pickWorkspace,
+                                ),
+                                CtButton.ghost(
+                                  '重新读取',
+                                  key: const ValueKey(
+                                    'settings.reloadWorkspace',
+                                  ),
+                                  onPressed: widget.onReload,
+                                ),
+                              ],
+                            ),
+                            divider: false,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: ctGapMd),
+                      _settingsGroup(
+                        key: const ValueKey('settings.runtimeCard'),
+                        children: [
+                          _settingsItem(
+                            title: '内核状态',
+                            description: '以下信息来自 worker 握手回显。',
+                            detail: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (final line in widget.kernelSummary)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 3),
+                                    child: Text(
+                                      line,
+                                      key: const ValueKey(
+                                        'settings.kernelSummary',
+                                      ),
+                                      style: ctMono.copyWith(
+                                        fontSize: ctFontSm,
+                                        color: ctInk2,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            divider: false,
+                          ),
+                          _settingsItem(
+                            title: '运行时管理',
+                            description: '指定开发期 ct 可执行文件，或恢复自动推断。',
+                            trailing: Wrap(
+                              spacing: ctGapSm,
+                              children: [
+                                CtButton.ghost(
+                                  '指定 ct 可执行文件…',
+                                  key: const ValueKey('settings.pickRuntime'),
+                                  onPressed: _pickRuntime,
+                                ),
+                                CtButton.ghost(
+                                  '用自动推断',
+                                  key: const ValueKey(
+                                    'settings.inferredRuntime',
+                                  ),
+                                  onPressed: () async {
+                                    await s.useInferredRuntimePath();
+                                    widget.onUseInferredRuntime?.call();
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: ctGapMd),
+                      _settingsGroup(
+                        key: const ValueKey('settings.desktopCard'),
+                        children: [
+                          _settingsItem(
+                            title: '开机自启',
+                            description: '登录系统后自动启动 ct 工作台。',
+                            trailing: Switch(
+                              key: const ValueKey('settings.autostart'),
+                              value: _autostart,
+                              onChanged: _autostartBusy
+                                  ? null
+                                  : _toggleAutostart,
+                            ),
+                            divider: false,
+                          ),
+                          _settingsItem(
+                            title: '托盘常驻',
+                            description: '关闭窗口时隐藏到托盘，而不是退出应用。',
+                            trailing: Switch(
+                              key: const ValueKey('settings.trayResident'),
+                              value: s.trayResident,
+                              onChanged: (value) async {
+                                final messenger = ScaffoldMessenger.of(context);
+                                await s.setTrayResident(value);
+                                messenger
+                                  ..clearSnackBars()
+                                  ..showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        value ? '关闭窗口将隐藏到托盘' : '关闭窗口即退出',
+                                      ),
+                                      backgroundColor: ctPrimary,
+                                      behavior: SnackBarBehavior.floating,
+                                      duration: const Duration(
+                                        milliseconds: 1600,
+                                      ),
+                                    ),
+                                  );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: ctGapMd),
+                      _settingsGroup(
+                        key: const ValueKey('settings.helpCard'),
+                        children: [
+                          _settingsItem(
+                            title: '使用文档',
+                            description: '查看安装、CLI 与配表工作流说明。',
+                            trailing: CtButton.ghost(
+                              '打开文档',
+                              key: const ValueKey('settings.docs'),
+                              onPressed: widget.onOpenDocs,
+                            ),
+                            divider: false,
+                          ),
+                          _settingsItem(
+                            title: '帮助与快捷键',
+                            description: '查看支持范围、实际键位与反馈入口。',
+                            trailing: CtButton.ghost(
+                              '查看帮助',
+                              key: const ValueKey('settings.help'),
+                              onPressed: widget.onShowHelp,
+                            ),
+                          ),
+                          _settingsItem(
+                            title: '关于 ct 工作台',
+                            description: '查看版本、协议、内核能力与当前工作区。',
+                            trailing: CtButton.ghost(
+                              '查看版本',
+                              key: const ValueKey('settings.about'),
+                              onPressed: widget.onShowAbout,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: ctGapMd),
+                      _settingsGroup(
+                        children: [
+                          _settingsItem(
+                            title: '退出应用',
+                            description: '退出前会确认未保存草稿与运行中的写任务。',
+                            trailing: CtButton.ghost(
+                              '退出',
+                              key: const ValueKey('wb.exit'),
+                              onPressed: widget.onExit,
+                            ),
+                            divider: false,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: ctGapLg),
+                      CtFooterHint(
+                        child: Text(
+                          '保存 Schema、生成模板、翻译、导出与部署均由原生内核执行；'
+                          '本面板不需要 Python 相关配置。',
+                          style: TextStyle(fontSize: ctFontSm, color: ctInk2),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              CtSettingRow(
-                label: '',
-                child: Wrap(
-                  spacing: ctGapSm,
-                  children: [
-                    CtButton.ghost(
-                      '指定 ct 可执行文件…',
-                      key: const ValueKey('settings.pickRuntime'),
-                      onPressed: _pickRuntime,
-                    ),
-                    CtButton.ghost(
-                      '用自动推断',
-                      key: const ValueKey('settings.inferredRuntime'),
-                      onPressed: () async {
-                        await s.useInferredRuntimePath();
-                        widget.onUseInferredRuntime?.call();
-                      },
-                    ),
-                  ],
-                ),
               ),
-            ],
-          ),
-          const SizedBox(height: ctGapMd),
-          _card(
-            title: '桌面偏好',
-            icon: Icons.tune,
-            children: [
-              CtSettingRow(
-                label: '开机自启',
-                child: Switch(
-                  key: const ValueKey('settings.autostart'),
-                  value: _autostart,
-                  onChanged: _autostartBusy ? null : _toggleAutostart,
-                ),
-              ),
-              CtSettingRow(
-                label: '托盘常驻',
-                child: Switch(
-                  key: const ValueKey('settings.trayResident'),
-                  value: s.trayResident,
-                  onChanged: (value) async {
-                    // 先取 messenger，避免跨异步间隙使用 BuildContext。
-                    final messenger = ScaffoldMessenger.of(context);
-                    await s.setTrayResident(value);
-                    messenger
-                      ..clearSnackBars()
-                      ..showSnackBar(
-                        SnackBar(
-                          content: Text(value ? '关闭窗口将隐藏到托盘' : '关闭窗口即退出'),
-                          backgroundColor: ctPrimary,
-                          behavior: SnackBarBehavior.floating,
-                          duration: const Duration(milliseconds: 1600),
-                        ),
-                      );
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: ctGapMd),
-          _card(
-            title: '会话',
-            icon: Icons.logout,
-            children: [
-              CtSettingRow(
-                label: '退出',
-                child: Row(
-                  children: [
-                    CtButton.ghost(
-                      '退出应用',
-                      key: const ValueKey('wb.exit'),
-                      onPressed: widget.onExit,
-                    ),
-                    const SizedBox(width: ctGapSm),
-                    Text(
-                      '退出前会确认未保存草稿与运行中的写任务',
-                      style: ctText(size: ctFontXs, color: ctInk3),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: ctGapLg),
-          CtFooterHint(
-            child: Text(
-              '写操作（保存 Schema、模板、导出、翻译、部署）将在任务 3.x/4.x 逐项接入；'
-              '本面板不提供任何 Python 相关配置。',
-              style: TextStyle(fontSize: ctFontSm, color: ctInk2),
             ),
           ),
         ],
@@ -283,39 +357,68 @@ class _WorkbenchSettingsPanelState extends State<WorkbenchSettingsPanel> {
     );
   }
 
-  Widget _card({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
+  Widget _settingsGroup({Key? key, required List<Widget> children}) {
     return Container(
+      key: key,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: ctSurface,
         border: Border.all(color: ctBorder),
-        borderRadius: BorderRadius.circular(ctRadiusLg),
+        borderRadius: ctRadiusLgAll,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Column(children: children),
+    );
+  }
+
+  Widget _settingsItem({
+    required String title,
+    required String description,
+    Widget? detail,
+    Widget? trailing,
+    bool divider = true,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        border: divider ? const Border(top: BorderSide(color: ctBorder)) : null,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-            child: Row(
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(icon, size: 16, color: ctPrimary),
-                const SizedBox(width: ctGapSm),
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: ctFontMd,
-                    fontWeight: FontWeight.w600,
+                  style: ctText(
+                    size: ctFontMd,
                     color: ctInk,
+                    weight: FontWeight.w600,
                   ),
                 ),
+                const SizedBox(height: ctGapXs),
+                Text(
+                  description,
+                  style: ctText(size: ctFontXs, color: ctInk3, height: 1.4),
+                ),
+                if (detail != null) ...[
+                  const SizedBox(height: ctGapSm),
+                  DefaultTextStyle.merge(
+                    style: ctText(size: ctFontXs, color: ctInk2),
+                    child: detail,
+                  ),
+                ],
               ],
             ),
           ),
-          ...children,
-          const SizedBox(height: ctGapSm),
+          if (trailing != null) ...[
+            const SizedBox(width: ctGapXl),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 380),
+              child: trailing,
+            ),
+          ],
         ],
       ),
     );

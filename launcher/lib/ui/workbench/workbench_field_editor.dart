@@ -4,6 +4,7 @@ import '../../services/protocol/protocol.dart';
 import '../../theme.dart';
 import '../tokens.dart';
 import '../widgets/common.dart';
+import '../widgets/type_picker.dart';
 import 'workbench_models.dart';
 
 /// 属性区里的字段/资源编辑器（native-flutter-workbench 任务 3.2）。
@@ -18,8 +19,10 @@ class WorkbenchFieldEditor extends StatefulWidget {
     this.field,
     this.fieldOrdinal,
     this.namedTypes = const [],
+    this.referenceTargets = const [],
     this.problems = const [],
     this.disabled = false,
+    this.disabledHint,
     this.hint,
     this.onSetType,
     this.onSetProperty,
@@ -41,9 +44,15 @@ class WorkbenchFieldEditor extends StatefulWidget {
   /// 可引用的具名类型（取自内核清单里的 record/enum 名，不是客户端造的表）。
   final List<String> namedTypes;
 
+  /// 可设置的 `ref` 目标（表.主键，全部取自当前内核清单）。
+  final List<String> referenceTargets;
+
   /// 内核候选里属于当前资源/字段的问题（原文展示）。
   final List<Issue> problems;
   final bool disabled;
+
+  /// 禁用态的可解释原因：开关仍可见，但 hover 与开关下方都要说明为什么点不了。
+  final String? disabledHint;
   final String? hint;
 
   final void Function(String typeText)? onSetType;
@@ -58,14 +67,8 @@ class WorkbenchFieldEditor extends StatefulWidget {
 }
 
 class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
-  late final TextEditingController _type = TextEditingController(
-    text: widget.field?.type ?? '',
-  );
   late final TextEditingController _comment = TextEditingController(
     text: widget.field?.description ?? '',
-  );
-  late final TextEditingController _ref = TextEditingController(
-    text: widget.field?.constraints ?? '',
   );
   late final TextEditingController _columns = TextEditingController(
     text: widget.field?.excelColumns?.toString() ?? '',
@@ -73,13 +76,17 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
   late final TextEditingController _item = TextEditingController(
     text: widget.field?.name ?? '',
   );
+  late String _typeValue;
+  late String _refValue;
 
   @override
   void initState() {
     super.initState();
+    _typeValue = widget.field?.type ?? '';
+    _refValue = widget.field?.constraints ?? '';
     // 输入变化要立刻反映到「是否可提交」上，否则按钮会停在旧状态；
     // 这里只重绘本面板，不做任何校验——合法性始终由内核候选判定。
-    for (final c in [_type, _comment, _ref, _columns, _item]) {
+    for (final c in [_comment, _columns, _item]) {
       c.addListener(_refresh);
     }
   }
@@ -96,21 +103,19 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
         old.field?.name != widget.field?.name;
     if (!switched) return;
     final field = widget.field;
-    _type.text = field?.type ?? '';
+    _typeValue = field?.type ?? '';
     _comment.text = field?.description ?? '';
-    _ref.text = field?.constraints ?? '';
+    _refValue = field?.constraints ?? '';
     _columns.text = field?.excelColumns?.toString() ?? '';
     _item.text = field?.name ?? '';
   }
 
   @override
   void dispose() {
-    for (final c in [_type, _comment, _ref, _columns, _item]) {
+    for (final c in [_comment, _columns, _item]) {
       c.removeListener(_refresh);
     }
-    _type.dispose();
     _comment.dispose();
-    _ref.dispose();
     _columns.dispose();
     _item.dispose();
     super.dispose();
@@ -176,6 +181,7 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
           sub:
               '状态取自内核 resources.list；勾选是覆盖式声明，取消即提交移除。'
               '要求存在非 i18n 的 CodeName 字段。',
+          disabledHint: widget.disabledHint,
         ),
     ];
   }
@@ -253,20 +259,9 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
       _groupTitle('字段属性', key: 'wb.group.fields'),
       _row('字段', field.name, mono: true),
       _row('角色', field.role == 'primary' ? '主键' : '普通字段'),
-      _labeled(
-        '类型',
-        _type,
-        'wb.fieldType',
-        CtButton.ghost(
-          '改类型',
-          key: const ValueKey('wb.setFieldType'),
-          onPressed: _locked || _type.text.trim() == field.type
-              ? null
-              : () => widget.onSetType?.call(_type.text.trim()),
-        ),
-      ),
+      _typeRow(field),
       if (widget.namedTypes.isNotEmpty)
-        _note('具名类型可引用：${widget.namedTypes.join('、')}'),
+        _note('具名类型来自当前工作区清单；类型表达式只允许单层 vector<T>。'),
       _checkRow(
         key: 'wb.fieldI18n',
         label: '本地化（i18n）',
@@ -275,6 +270,7 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
             ? null
             : (v) => widget.onSetProperty?.call('i18n', v),
         sub: '只有 string 能标记，且与 server_only 互斥；由内核候选判定。',
+        disabledHint: widget.disabledHint,
       ),
       _checkRow(
         key: 'wb.fieldServerOnly',
@@ -283,6 +279,7 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
         onChanged: _locked
             ? null
             : (v) => widget.onSetProperty?.call('server_only', v),
+        disabledHint: widget.disabledHint,
       ),
       _labeled(
         '注释',
@@ -296,30 +293,7 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
               : () => widget.onSetProperty?.call('comment', _comment.text),
         ),
       ),
-      _labeled(
-        'ref',
-        _ref,
-        'wb.fieldRef',
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CtButton.ghost(
-              '设置',
-              key: const ValueKey('wb.setFieldRef'),
-              onPressed: _locked
-                  ? null
-                  : () => widget.onSetProperty?.call('ref', _ref.text.trim()),
-            ),
-            CtButton.ghost(
-              '清除',
-              key: const ValueKey('wb.clearFieldRef'),
-              onPressed: _locked || field.constraints.isEmpty
-                  ? null
-                  : () => widget.onSetProperty?.call('ref', ''),
-            ),
-          ],
-        ),
-      ),
+      _referenceRow(field),
       _labeled(
         '展开组数',
         _columns,
@@ -377,6 +351,89 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
       ),
       if (field.role == 'primary') _note('主键不可删除、不可调序；内核没有改主键命令，需要重建表。'),
     ];
+  }
+
+  Widget _typeRow(WorkbenchField field) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(ctGapLg, ctGapSm, ctGapLg, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '类型',
+            style: ctText(size: ctFontXs, color: ctInk2),
+          ),
+          const SizedBox(height: ctGapXs),
+          CtTypePicker(
+            value: _typeValue,
+            namedTypes: widget.namedTypes,
+            enabled: !_locked,
+            keyPrefix: 'wb.fieldType',
+            onChanged: (value) => setState(() => _typeValue = value),
+          ),
+          const SizedBox(height: ctGapXs),
+          Align(
+            alignment: Alignment.centerRight,
+            child: CtButton.ghost(
+              '改类型',
+              key: const ValueKey('wb.setFieldType'),
+              onPressed: _locked || _typeValue.trim() == field.type
+                  ? null
+                  : () => widget.onSetType?.call(_typeValue.trim()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _referenceRow(WorkbenchField field) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(ctGapLg, ctGapSm, ctGapLg, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'ref',
+            style: ctText(size: ctFontXs, color: ctInk2),
+          ),
+          const SizedBox(height: ctGapXs),
+          CtReferencePicker(
+            value: _refValue,
+            targets: widget.referenceTargets,
+            enabled: !_locked,
+            keyPrefix: 'wb.fieldRef',
+            onChanged: (value) => setState(() => _refValue = value),
+          ),
+          const SizedBox(height: ctGapXs),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              CtButton.ghost(
+                '清除',
+                key: const ValueKey('wb.clearFieldRef'),
+                onPressed: _locked || field.constraints.isEmpty
+                    ? null
+                    : () {
+                        setState(() => _refValue = '');
+                        widget.onSetProperty?.call('ref', '');
+                      },
+              ),
+              const SizedBox(width: ctGapSm),
+              CtButton.ghost(
+                '设置',
+                key: const ValueKey('wb.setFieldRef'),
+                onPressed: _locked || _refValue.trim() == field.constraints
+                    ? null
+                    : () => widget.onSetProperty?.call('ref', _refValue.trim()),
+              ),
+            ],
+          ),
+          if (widget.referenceTargets.isEmpty)
+            _note('当前工作区没有可引用的表.主键；ref 只接受内核清单里的目标。'),
+        ],
+      ),
+    );
   }
 
   Widget _problemBlock() {
@@ -450,14 +507,22 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
     );
   }
 
-  /// 复选行：属性区在 ColoredBox 内，用 ListTile 会触发 debug 断言。
+  /// 布尔行：用固定尺寸的 Switch 表达选中态，不引入对勾导致的宽度变化。
   Widget _checkRow({
     required String key,
     required String label,
     required bool value,
     required void Function(bool?)? onChanged,
     String? sub,
+    String? disabledHint,
   }) {
+    final lockHint = onChanged == null ? (disabledHint ?? '当前不可修改，稍后重试') : null;
+    final control = Switch(
+      key: ValueKey(key),
+      value: value,
+      onChanged: onChanged,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(ctGapLg, ctGapSm, ctGapLg, 0),
       child: Column(
@@ -465,7 +530,10 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
         children: [
           Row(
             children: [
-              Checkbox(key: ValueKey(key), value: value, onChanged: onChanged),
+              if (lockHint == null)
+                control
+              else
+                Tooltip(message: lockHint, child: control),
               const SizedBox(width: ctGapXs),
               Expanded(
                 child: Text(label, style: ctText(size: ctFontSm)),
@@ -478,6 +546,15 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
               child: Text(
                 sub,
                 style: ctText(size: ctFontXs, color: ctInk3),
+              ),
+            ),
+          if (lockHint != null)
+            Padding(
+              padding: const EdgeInsets.only(left: ctGapLg, top: 2),
+              child: Text(
+                '当前不可修改：$lockHint',
+                key: ValueKey('$key.disabledHint'),
+                style: ctText(size: ctFontXs, color: ctWarn),
               ),
             ),
         ],

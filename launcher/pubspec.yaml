@@ -28,5 +28,14 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: NotoSansSC
+      fonts:
+        - asset: assets/fonts/NotoSansSC-VF.ttf
+    - family: CascadiaMono
+      fonts:
+        - asset: assets/fonts/CascadiaMono.ttf
   assets:
     - assets/icons/
+    - assets/fonts/LICENSE-Cascadia.txt
+    - assets/fonts/LICENSE-Noto.txt

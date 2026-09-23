@@ -284,6 +284,93 @@ void main() {
     expect(gateway.of(Methods.i18nQuery).length, greaterThanOrEqualTo(2));
     repo.dispose();
   });
+  test('专注编辑器维护选中条目、多行草稿与取消', () async {
+    final gateway = _FakeGateway();
+    final repo = await opened(gateway);
+
+    repo.selectEntry('1002.Name');
+    expect(repo.selectedKey, '1002.Name');
+    expect(repo.draftText, '');
+    expect(repo.draftDirty, isFalse);
+
+    repo.updateDraft('第一行\n第二行');
+    expect(repo.draftText, '第一行\n第二行');
+    expect(repo.draftDirty, isTrue);
+
+    repo.discardDraft();
+    expect(repo.draftText, '');
+    expect(repo.draftDirty, isFalse);
+    repo.dispose();
+  });
+
+  test('专注编辑器显式保存固定 confirmed=true 并更新状态', () async {
+    final gateway = _FakeGateway();
+    final repo = await opened(gateway);
+    repo.selectEntry('1002.Name');
+    repo.updateDraft('Iron Shield\n第二行');
+    gateway.calls.clear();
+
+    expect(await repo.saveDraft(), isTrue);
+    final saves = gateway.of(Methods.i18nSave);
+    expect(saves, hasLength(1));
+    expect(saves.single.params, {
+      'table': 'Item',
+      'lang': 'en',
+      'key': '1002.Name',
+      'text': 'Iron Shield\n第二行',
+      'confirmed': true,
+    });
+    expect(repo.draftDirty, isFalse);
+    expect(repo.selectedEntry?.status, I18nStatus.translated);
+    repo.dispose();
+  });
+
+  test('未改译文仍能单独确认，已确认条目不重复写入', () async {
+    final gateway = _FakeGateway();
+    final repo = await opened(gateway);
+    repo.selectEntry('1002.Name');
+    gateway.calls.clear();
+
+    expect(await repo.saveDraft(), isTrue);
+    expect(gateway.of(Methods.i18nSave), hasLength(1));
+    expect(gateway.of(Methods.i18nSave).single.params['confirmed'], isTrue);
+    expect(repo.selectedEntry?.confirmed, isTrue);
+    expect(await repo.saveDraft(), isTrue);
+    expect(gateway.of(Methods.i18nSave), hasLength(1));
+    repo.dispose();
+  });
+
+  test('专注编辑器保存失败保留草稿和选中条目', () async {
+    final gateway = _FakeGateway(failWith: Methods.i18nSave);
+    final repo = await opened(gateway);
+    repo.selectEntry('1002.Name');
+    repo.updateDraft('不会丢');
+
+    expect(await repo.saveDraft(), isFalse);
+    expect(repo.selectedKey, '1002.Name');
+    expect(repo.draftText, '不会丢');
+    expect(repo.draftDirty, isTrue);
+    expect(repo.error, contains('busy'));
+    repo.dispose();
+  });
+
+  test('有未保存草稿时切换上下文被拒绝，放弃后可切换', () async {
+    final gateway = _FakeGateway();
+    final repo = await opened(gateway);
+    repo.selectEntry('1002.Name');
+    repo.updateDraft('未保存');
+
+    await repo.selectTable('Quest');
+    expect(repo.table, 'Item', reason: '未确认时不能静默切表');
+    expect(repo.selectedKey, '1002.Name');
+    expect(repo.error, contains('未保存'));
+
+    repo.discardDraft();
+    await repo.selectTable('Quest');
+    expect(repo.table, 'Quest');
+    expect(repo.selectedKey, isNull);
+    repo.dispose();
+  });
 }
 
 Future<void> pump() => Future<void>.delayed(Duration.zero);

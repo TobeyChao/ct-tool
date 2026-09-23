@@ -126,43 +126,21 @@ void main() {
     await state.bind('D:/game/gd');
   });
 
-  Future<void> pumpPanel(WidgetTester tester, {int initialTab = 0}) async {
+  Future<void> pumpPanel(WidgetTester tester, Widget child) async {
     tester.view.physicalSize = const Size(1200, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       MaterialApp(
         theme: buildCtTheme(),
-        home: Scaffold(
-          body: SizedBox(
-            height: 520,
-            child: WorkbenchDesktopPanel(state: state, initialTab: initialTab),
-          ),
-        ),
+        home: Scaffold(body: SizedBox(height: 520, child: child)),
       ),
     );
     await tester.pump();
   }
 
-  testWidgets('任务页：状态、问题按需分页与关闭通知', (tester) async {
-    await pumpPanel(tester);
-    expect(find.textContaining('export · 失败'), findsOneWidget);
-    expect(find.textContaining('校验失败'), findsOneWidget);
-    expect(gateway.issuesCalls, 0, reason: '未点问题不得预取明细');
-
-    await tester.tap(find.text('问题'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('问题 1 条（代次 5）'), findsOneWidget);
-    expect(find.textContaining('不在 Enum Rarity 的声明值中'), findsOneWidget);
-
-    await tester.tap(find.byKey(const ValueKey('wb.taskDismiss.task-9')));
-    await tester.pumpAndSettle();
-    expect(gateway.dismissals, 1);
-    expect(state.tasks.single.dismissed, isTrue);
-  });
-
   testWidgets('日志页有界分页：可滚动并继续加载，筛选由内核执行', (tester) async {
-    await pumpPanel(tester, initialTab: 1);
+    await pumpPanel(tester, WorkbenchLogView(state: state));
     expect(find.byKey(const ValueKey('wb.logList')), findsOneWidget);
     expect(state.logs.length, 120);
     expect(state.logsHasMore, isTrue);
@@ -192,7 +170,7 @@ void main() {
   });
 
   testWidgets('历史页显示最近记录并归一旧状态码', (tester) async {
-    await pumpPanel(tester, initialTab: 2);
+    await pumpPanel(tester, WorkbenchHistoryView(state: state));
     expect(find.textContaining('all · 2 张表'), findsOneWidget);
     expect(find.textContaining('成功'), findsWidgets);
     expect(
@@ -204,7 +182,7 @@ void main() {
     expect(find.textContaining('强制重建'), findsOneWidget);
   });
 
-  testWidgets('工作台底部任务区接入三张表，历史模块走内核账本', (tester) async {
+  testWidgets('工作台侧栏接入日志与历史模块', (tester) async {
     final workbench = WorkbenchRepository(worker: gateway);
     final settings = SettingsStore();
     await settings.load();
@@ -226,11 +204,12 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.byKey(const ValueKey('wb.desktopPanel')), findsOneWidget);
-    expect(find.byKey(const ValueKey('wb.desktopTabs')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('wb.navTap.日志')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('wb.logModule')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wb.logList')), findsOneWidget);
 
-    // 导航栏的「历史」与任务区页签同名，取先构建的导航栏那一个。
-    await tester.tap(find.text('历史').first);
+    await tester.tap(find.byKey(const ValueKey('wb.navTap.历史')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('wb.historyModule')), findsOneWidget);
     expect(find.textContaining('未知（ok）'), findsOneWidget);

@@ -136,6 +136,42 @@ void main() {
   });
 
   group('请求关联与终态', () {
+    test('只读终态不进入广播流，避免刷新请求回环', () async {
+      final transport = _FakeTransport();
+      final service = await _ready(transport);
+      final seen = <Message>[];
+      final subscription = service.events.listen(seen.add);
+      final pending = service.request(Methods.tasksList, params: const {});
+      final id = _sentRequestIds(transport).last;
+
+      transport.respond(id, {'tasks': <Object?>[]});
+
+      expect(await pending, {'tasks': <Object?>[]});
+      await Future<void>.delayed(Duration.zero);
+      expect(seen, isEmpty);
+      await subscription.cancel();
+      await service.stop();
+    });
+
+    test('终态同时进入广播流，供桌面自动刷新任务和历史', () async {
+      final transport = _FakeTransport();
+      final service = await _ready(transport);
+      final pending = service.request('export', params: const {});
+      final id = _sentRequestIds(transport).last;
+      final terminal = service.events.firstWhere(
+        (message) => message is ResultMessage && message.requestId == id,
+      );
+
+      transport.respond(id, {'outcome': 'succeeded'});
+
+      expect(await pending, {'outcome': 'succeeded'});
+      expect(
+        await terminal.timeout(const Duration(seconds: 1)),
+        isA<ResultMessage>(),
+      );
+      await service.stop();
+    });
+
     test('requestId 唯一、乱序终态各归其主', () async {
       final transport = _FakeTransport();
       final service = await _ready(transport);

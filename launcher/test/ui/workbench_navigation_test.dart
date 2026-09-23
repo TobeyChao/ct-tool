@@ -120,7 +120,6 @@ void main() {
           refresh: repo,
           draft: repo,
           settings: settings,
-          onResourceSelected: (name) => repo.loadPreview(name),
           workspaceKey: 'nav-test',
           bannerLabel: '已连接原生内核',
         ),

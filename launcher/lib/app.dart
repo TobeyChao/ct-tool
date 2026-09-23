@@ -13,11 +13,11 @@ import 'services/worker_service.dart';
 import 'state/desktop_state.dart';
 import 'state/draft_store.dart';
 import 'state/export_runner.dart';
-import 'state/validate_runner.dart';
 import 'state/template_service.dart';
 import 'state/translation_repository.dart';
 import 'state/workbench_repository.dart';
 import 'theme.dart';
+import 'ui/widgets/status_badge.dart';
 import 'ui/workbench/workbench_models.dart';
 import 'ui/workbench/workbench_screen.dart';
 
@@ -41,21 +41,18 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
 
   /// 导出运行器（任务 4.4/4.6）：与工作区一一对应，断连时标为终态未知。
   ExportRunner? _runner;
-  ValidateRunner? _validate;
 
   /// 翻译页数据源（任务 4.1-4.3）：筛选、分页与清理全部由内核执行。
   TemplateService? _template;
 
   late final TranslationRepository _translations;
 
-  /// 导出过滤用的语言清单（内核 `i18n.status`）。
-  List<String> _exportLanguages = const [];
-
   StreamSubscription<Message>? _eventSub;
   late final TrayService _tray;
   late final AppLifecycleListener _lifecycleListener;
   Future<void>? _shutdownFuture;
   bool _exiting = false;
+  bool _windowMaximized = false;
 
   @override
   void initState() {
@@ -83,6 +80,7 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
       },
     );
     windowManager.addListener(this);
+    unawaited(_syncWindowMaximized());
     _tray.init();
     _worker.addListener(_onWorkerChanged);
     _openWorkspace();
@@ -100,6 +98,29 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
     if (mounted) setState(() {});
   }
 
+  Future<void> _syncWindowMaximized() async {
+    try {
+      final maximized = await windowManager.isMaximized();
+      if (mounted && maximized != _windowMaximized) {
+        setState(() => _windowMaximized = maximized);
+      }
+    } catch (_) {
+      // 平台窗口尚未就绪时保持默认值，后续由窗口事件同步。
+    }
+  }
+
+  Future<void> _minimizeWindow() => windowManager.minimize();
+
+  Future<void> _toggleWindowMaximized() async {
+    if (_windowMaximized) {
+      await windowManager.unmaximize();
+    } else {
+      await windowManager.maximize();
+    }
+  }
+
+  Future<void> _closeWindow() => windowManager.close();
+
   /// 启动/重连内核并加载当前工作区。[force] 时先停旧连接再起。
   Future<void> _openWorkspace({bool force = false}) async {
     final root = widget.settings.workspacePath;
@@ -115,10 +136,10 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
     }
     await _worker.start(workspaceRoot: root);
     await _repo.switchWorkspace(root);
+    // 先建导出/模板运行器并刷新壳层，再加载日志与翻译；后两者失败不能把导出页卡在 MOCK。
+    _rebuildRunner(root);
     await _desktop.bind(root);
     await _translations.bind(root);
-    _rebuildRunner(root);
-    await _loadExportLanguages();
   }
 
   /// 运行器随工作区重建：上一个工作区的运行状态不带进新连接。
@@ -127,35 +148,11 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
     _runner = root.isEmpty
         ? null
         : ExportRunner(worker: _worker, workspaceRoot: root);
-    _validate?.dispose();
-    _validate = root.isEmpty
-        ? null
-        : ValidateRunner(worker: _worker, workspaceRoot: root);
     _template?.dispose();
     _template = root.isEmpty
         ? null
         : TemplateService(worker: _worker, workspaceRoot: root);
-  }
-
-  /// 导出过滤语言清单：取内核 `i18n.status`；拿不到就退回自由输入，不猜语言。
-  Future<void> _loadExportLanguages() async {
-    var langs = const <String>[];
-    try {
-      final payload = await _worker.query(
-        Methods.i18nStatus,
-        workspaceRoot: widget.settings.workspacePath,
-      );
-      if (payload is Map<String, Object?>) {
-        langs = [
-          for (final item in (payload['langs'] as List? ?? const []))
-            if (item is Map<String, Object?> && item['lang'] is String)
-              item['lang']! as String,
-        ];
-      }
-    } on Object catch (_) {
-      langs = const [];
-    }
-    if (mounted) setState(() => _exportLanguages = langs);
+    if (mounted) setState(() {});
   }
 
   Future<void> _reveal() async {
@@ -246,6 +243,16 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
   }
 
   @override
+  void onWindowMaximize() {
+    if (mounted) setState(() => _windowMaximized = true);
+  }
+
+  @override
+  void onWindowUnmaximize() {
+    if (mounted) setState(() => _windowMaximized = false);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final banner = _bannerLabel();
     return MaterialApp(
@@ -255,7 +262,6 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
       home: WorkbenchScreen(
         data: _repo,
         refresh: Listenable.merge([_repo, _worker, widget.settings]),
-        onResourceSelected: (name) => _repo.loadPreview(name),
         desktop: _desktop,
         settings: widget.settings,
         onWorkspaceChanged: (root) async {
@@ -271,15 +277,26 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
         kernelSummary: _kernelSummary(),
         draft: _repo,
         runner: _runner,
-        validate: _validate,
         translations: _translations,
         template: _template,
-        exportLanguages: _exportLanguages,
         writeBlockReason: _worker.writeBlockReason(method: Methods.export),
         bannerLabel: banner,
+        bannerTone: switch (_worker.status) {
+          WorkerStatus.ready => CtBadgeTone.ok,
+          WorkerStatus.starting => CtBadgeTone.busy,
+          WorkerStatus.failed => CtBadgeTone.danger,
+          WorkerStatus.stopped => CtBadgeTone.warn,
+        },
         workspaceKey: _repo.workspaceRoot.isEmpty
             ? 'unbound'
             : _repo.workspaceRoot,
+        showDesktopTitleBar: Platform.isWindows || Platform.isMacOS,
+        windowMaximized: _windowMaximized,
+        showWindowControls: Platform.isWindows,
+        titleBarLeadingInset: Platform.isMacOS ? 72 : 0,
+        onWindowMinimize: _minimizeWindow,
+        onWindowToggleMaximize: _toggleWindowMaximized,
+        onWindowClose: _closeWindow,
       ),
     );
   }
@@ -316,8 +333,7 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
   String _bannerLabel() {
     if (_repo.workspaceRoot.isEmpty) return '尚未绑定工作区 · 在「设置」里选择配表工作区';
     return switch (_worker.status) {
-      WorkerStatus.ready =>
-        '已连接原生内核 · ${_worker.coreVersion} · Schema 保存/导出/部署已接入',
+      WorkerStatus.ready => '原生内核已连接 · ${_worker.coreVersion} · 可保存、导出',
       WorkerStatus.starting => '正在连接原生内核…',
       WorkerStatus.failed => '内核未就绪：${_worker.failureReason ?? '未知原因'}',
       WorkerStatus.stopped => '内核已断开',

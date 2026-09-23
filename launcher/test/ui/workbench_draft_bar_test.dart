@@ -135,7 +135,6 @@ void main() {
           refresh: repo,
           draft: repo,
           settings: settings,
-          onResourceSelected: (name) => repo.loadPreview(name),
           kernelSummary: const ['内核状态：已连接（core 0.9.0-test）'],
           workspaceKey: 'bar-test',
           bannerLabel: '已连接原生内核',
@@ -172,11 +171,16 @@ void main() {
     expect(find.byKey(const ValueKey('wb.draftSummary')), findsNothing);
 
     repo.createTable('Hero');
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(summary().data, contains('草稿 1 步'));
-    expect(summary().data, contains('无未保存修改'), reason: '候选还没算，不能凭空报资源数');
+    expect(gateway.candidates, hasLength(1), reason: '编辑后必须自动向内核算候选');
+    expect(
+      summary().data,
+      contains('2 个资源有未保存修改'),
+      reason: '自动候选后摘要必须采用内核 netDiff，不猜资源数',
+    );
 
-    // 摘要点开弹层：净差异那个 Tab 会自己找内核要候选
+    // 已有候选时打开摘要不应重复请求内核。
     await tester.tap(find.byKey(const ValueKey('wb.draftSummaryTap')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('wb.draftSheet')), findsOneWidget);
@@ -396,10 +400,17 @@ void main() {
     // 「关于」里才是内核事实
     await tester.tap(find.text('关闭'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('wb.aboutEntry')));
+    await tester.tap(find.byKey(const ValueKey('wb.navTap.设置')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const ValueKey('settings.about')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('settings.about')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('wb.about.title')), findsOneWidget);
-    expect(find.textContaining('core 0.9.0-test'), findsOneWidget);
+    final kernelFact = tester.widget<Text>(
+      find.byKey(const ValueKey('wb.about.fact.0')),
+    );
+    expect(kernelFact.data, contains('core 0.9.0-test'));
     await tester.tap(find.text('关闭'));
     await tester.pumpAndSettle();
   });
@@ -424,6 +435,7 @@ void main() {
     // 样板模式没有内核草稿：条体只留 0 高度占位，不放一排灰按钮
     expect(find.byKey(const ValueKey('wb.draftSummary')), findsNothing);
     expect(find.byKey(const ValueKey('wb.draftSave')), findsNothing);
-    expect(find.byKey(const ValueKey('wb.helpEntry')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wb.nav.设置')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wb.helpEntry')), findsNothing);
   });
 }

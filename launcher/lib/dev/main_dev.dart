@@ -166,7 +166,7 @@ class _DevAppState extends State<DevApp> {
             style: ctText(
               size: ctFontSm,
               color: selected ? ctPrimary : ctInk2,
-              weight: selected ? FontWeight.w600 : FontWeight.w400,
+              weight: FontWeight.w500,
             ),
           ),
         ),

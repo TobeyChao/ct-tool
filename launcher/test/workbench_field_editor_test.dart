@@ -2,6 +2,8 @@ import 'package:ct_launcher/services/protocol/protocol.dart';
 import 'package:ct_launcher/services/worker_service.dart';
 import 'package:ct_launcher/state/workbench_repository.dart';
 import 'package:ct_launcher/theme.dart';
+import 'package:ct_launcher/ui/workbench/workbench_field_editor.dart';
+import 'package:ct_launcher/ui/workbench/workbench_models.dart';
 import 'package:ct_launcher/ui/workbench/workbench_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -46,6 +48,29 @@ class _FakeGateway implements KernelGateway {
             'kind': 'table',
             'sourcePath': 'config/schemas/item.yaml',
             'indexes': ['codename'],
+            'primary': 'Id',
+            'fields': [
+              {'name': 'Id', 'type': 'int32'},
+              {'name': 'Name', 'type': 'string', 'i18n': true},
+            ],
+          },
+          {
+            'name': 'Quest',
+            'kind': 'table',
+            'sourcePath': 'config/schemas/quest.yaml',
+            'primary': 'Id',
+            'fields': [
+              {'name': 'Id', 'type': 'int32'},
+            ],
+          },
+          {
+            'name': 'Rarity',
+            'kind': 'enum',
+            'sourcePath': 'config/schemas/rarity.yaml',
+            'values': [
+              {'name': 'Common'},
+              {'name': 'Rare'},
+            ],
           },
         ],
       },
@@ -111,18 +136,28 @@ void main() {
   setUp(() async {
     gateway = _FakeGateway();
     repo = WorkbenchRepository(worker: gateway);
-    // 与真实壳层同序：先开工作区，再按需拉预览（字段行与属性由它提供）。
+    // resources.list 自带的 fields 是字段行的唯一来源。
     await repo.switchWorkspace('D:/game/A');
-    await repo.loadPreview('Item');
   });
 
   tearDown(() => repo.dispose());
 
-  TextField fieldOf(WidgetTester tester, String key) =>
-      tester.widget<TextField>(find.byKey(ValueKey(key)));
+  DropdownButton<String> dropdownOf(WidgetTester tester, String key) =>
+      tester.widget<DropdownButton<String>>(find.byKey(ValueKey(key)));
 
-  Checkbox checkOf(WidgetTester tester, String key) =>
-      tester.widget<Checkbox>(find.byKey(ValueKey(key)));
+  Future<void> chooseDropdown(
+    WidgetTester tester,
+    String key,
+    String option,
+  ) async {
+    await tester.tap(find.byKey(ValueKey(key)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(option).last);
+    await tester.pumpAndSettle();
+  }
+
+  Switch switchOf(WidgetTester tester, String key) =>
+      tester.widget<Switch>(find.byKey(ValueKey(key)));
 
   TextButton buttonOf(WidgetTester tester, String key) =>
       tester.widget<TextButton>(
@@ -136,15 +171,72 @@ void main() {
     await openWorkbench(tester);
     expect(find.byKey(const ValueKey('wb.fieldEditor')), findsOneWidget);
     expect(find.text('table:Item'), findsOneWidget, reason: '资源 ID 要可见');
-    expect(checkOf(tester, 'wb.indexCodename').value, isTrue, reason: '内核报了索引');
+    expect(
+      switchOf(tester, 'wb.indexCodename').value,
+      isTrue,
+      reason: '内核报了索引',
+    );
     expect(find.text('主键'), findsOneWidget);
+  });
+
+  testWidgets('禁用开关会显示不可修改原因', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCtTheme(),
+        home: Scaffold(
+          body: WorkbenchFieldEditor(
+            resource: const WorkbenchResource(
+              name: 'Item',
+              kind: WorkbenchResourceKind.table,
+              path: 'config/schemas/item.yaml',
+              indexes: ['codename'],
+            ),
+            ownerId: 'table:Item',
+            disabled: true,
+            disabledHint: '保存进行中，暂不可修改',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<Switch>(find.byKey(const ValueKey('wb.indexCodename')))
+          .onChanged,
+      isNull,
+    );
+    expect(
+      find.byKey(const ValueKey('wb.indexCodename.disabledHint')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('当前不可修改：保存进行中'), findsOneWidget);
+  });
+
+  testWidgets('codename 索引开关可打开也可关闭', (tester) async {
+    await openWorkbench(tester);
+    final toggle = find.byKey(const ValueKey('wb.indexCodename'));
+
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(repo.draftCount, 1);
+    expect(repo.commands.last.kind, 'set_indexes');
+    expect(repo.resourceNamed('Item')!.indexes, isEmpty);
+    expect(switchOf(tester, 'wb.indexCodename').value, isFalse);
+
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(repo.draftCount, 2);
+    expect(repo.commands.last.kind, 'set_indexes');
+    expect(repo.resourceNamed('Item')!.indexes, ['codename']);
+    expect(switchOf(tester, 'wb.indexCodename').value, isTrue);
   });
 
   testWidgets('选中字段后可改类型与属性，改动只进草稿', (tester) async {
     await openWorkbench(tester, field: 'Name');
-    expect(fieldOf(tester, 'wb.fieldType').controller!.text, 'string');
+    expect(dropdownOf(tester, 'wb.fieldType.base').value, 'string');
     expect(
-      checkOf(tester, 'wb.fieldI18n').value,
+      switchOf(tester, 'wb.fieldI18n').value,
       isTrue,
       reason: 'i18n 开关回显内核状态',
     );
@@ -160,8 +252,7 @@ void main() {
     );
     expect(note.data, contains('草稿 1 条'), reason: '属性区自己也要报草稿条数');
 
-    await tester.enterText(find.byKey(const ValueKey('wb.fieldType')), 'int64');
-    await tester.pumpAndSettle();
+    await chooseDropdown(tester, 'wb.fieldType.base', 'int64');
     await tester.tap(find.byKey(const ValueKey('wb.setFieldType')));
     await tester.pumpAndSettle();
     expect(repo.draftCount, 2);
@@ -169,15 +260,66 @@ void main() {
     expect(repo.commands.last.payload['type_text'], 'int64');
   });
 
+  testWidgets('具名类型通过下拉选择，vector 开关拼成合法类型表达式', (tester) async {
+    await openWorkbench(tester, field: 'Name');
+    final values = dropdownOf(
+      tester,
+      'wb.fieldType.base',
+    ).items!.map((item) => item.value).whereType<String>();
+    expect(values, contains('Rarity'), reason: '枚举名必须来自内核资源清单');
+
+    await chooseDropdown(tester, 'wb.fieldType.base', 'Rarity');
+    final vector = find.byKey(const ValueKey('wb.fieldType.vector'));
+    final before = tester.getSize(vector);
+    await tester.tap(vector);
+    await tester.pumpAndSettle();
+    final after = tester.getSize(vector);
+    expect(after.width, before.width, reason: '选中态不得改变文字度量或按钮宽度');
+    expect(find.byKey(const ValueKey('wb.fieldType.preview')), findsOneWidget);
+    expect(find.text('实际写入：vector<Rarity>'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('wb.setFieldType')));
+    await tester.pumpAndSettle();
+    expect(repo.commands.last.kind, 'set_type');
+    expect(repo.commands.last.payload['type_text'], 'vector<Rarity>');
+  });
+
+  testWidgets('ref 只能从工作区表主键下拉选择', (tester) async {
+    await openWorkbench(tester, field: 'Name');
+    final picker = find.byKey(const ValueKey('wb.fieldRef.picker'));
+    await tester.scrollUntilVisible(
+      picker,
+      220,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('wb.fieldEditor')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await chooseDropdown(tester, 'wb.fieldRef.picker', 'Quest.Id');
+    await tester.tap(find.byKey(const ValueKey('wb.setFieldRef')));
+    await tester.pumpAndSettle();
+
+    expect(repo.commands.last.kind, 'set_property');
+    expect(repo.commands.last.payload['property'], 'ref');
+    expect(repo.commands.last.payload['value'], 'Quest.Id');
+  });
+
   testWidgets('主键字段不给删除与调序入口', (tester) async {
     await openWorkbench(tester, field: 'Id');
+    await tester.scrollUntilVisible(
+      find.textContaining('主键不可删除'),
+      220,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('wb.fieldEditor')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     expect(buttonOf(tester, 'wb.fieldDelete').onPressed, isNull);
     expect(buttonOf(tester, 'wb.fieldDown').onPressed, isNull);
-    await tester.drag(
-      find.byKey(const ValueKey('wb.fieldEditor')),
-      const Offset(0, -240),
-    );
-    await tester.pumpAndSettle();
     expect(find.textContaining('主键不可删除'), findsOneWidget);
   });
 
@@ -193,7 +335,6 @@ void main() {
     );
     repo = WorkbenchRepository(worker: gateway);
     await repo.switchWorkspace('D:/game/A');
-    await repo.loadPreview('Item');
     await openWorkbench(tester, field: 'Name');
     await tester.tap(find.byKey(const ValueKey('wb.fieldServerOnly')));
     await tester.pumpAndSettle();

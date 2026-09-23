@@ -12,7 +12,7 @@ import 'workbench_models.dart';
 /// 与 web 的 `ct-draftbar` 同口径：一个状态点 + 一句可点摘要（点开「步骤 / 净差异」弹层）
 /// + 撤销 / 重做 / 放弃草稿 / 保存变更；**没有草稿、没有撤销历史时整条不占位**。
 /// 数字全部来自内核：净变化资源数取自 `schema.candidate` 的 netDiff，候选没算过时直说未计算。
-class WorkbenchDraftBar extends StatelessWidget {
+class WorkbenchDraftBar extends StatefulWidget {
   const WorkbenchDraftBar({
     super.key,
     required this.data,
@@ -27,8 +27,68 @@ class WorkbenchDraftBar extends StatelessWidget {
   final VoidCallback? onQuickOpen;
 
   @override
+  State<WorkbenchDraftBar> createState() => _WorkbenchDraftBarState();
+}
+
+class _WorkbenchDraftBarState extends State<WorkbenchDraftBar> {
+  bool _candidateCheckScheduled = false;
+  String? _lastCandidateAttemptKey;
+
+  @override
+  void didUpdateWidget(covariant WorkbenchDraftBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.repo, widget.repo)) {
+      _lastCandidateAttemptKey = null;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final draft = repo;
+    _scheduleCandidateCheck();
+    return _buildBar(context);
+  }
+
+  /// 编辑只清候选，必须由这里立即向内核重算；否则「保存变更」会一直禁用，
+  /// 用户被迫先找侧栏里的「算候选」才能保存。
+  void _scheduleCandidateCheck() {
+    if (_candidateCheckScheduled) return;
+    _candidateCheckScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _candidateCheckScheduled = false;
+      if (mounted) _requestCandidateIfNeeded();
+    });
+  }
+
+  void _requestCandidateIfNeeded() {
+    final repo = widget.repo;
+    if (repo == null) return;
+    if (repo.candidate != null) {
+      _lastCandidateAttemptKey = null;
+      return;
+    }
+    if ((!repo.hasDraft && !repo.canUndo && !repo.canRedo) ||
+        repo.candidateBusy ||
+        repo.editingFrozen ||
+        repo.loading) {
+      return;
+    }
+    final key = _candidateAttemptKey(repo);
+    if (key == _lastCandidateAttemptKey) return;
+    _lastCandidateAttemptKey = key;
+    repo.requestCandidate();
+  }
+
+  /// 同一草稿只自动尝试一次；失败后保留错误，用户编辑或手动重试才会再请求。
+  String _candidateAttemptKey(WorkbenchRepository repo) {
+    final commands = repo.commands
+        .map((command) => '${command.kind}:${command.payload}')
+        .join('|');
+    return '${repo.workspaceRoot}|${repo.schemaBaseline}|'
+        '${repo.draftCursor}|$commands';
+  }
+
+  Widget _buildBar(BuildContext context) {
+    final draft = widget.repo;
     if (draft == null) {
       return const SizedBox.shrink(key: ValueKey('wb.draftBar'));
     }
@@ -47,14 +107,19 @@ class WorkbenchDraftBar extends StatelessWidget {
         !draft.editingFrozen) {
       return const SizedBox.shrink(key: ValueKey('wb.draftBar'));
     }
+    final candidatePending =
+        found == null && (draft.hasDraft || draft.canUndo || draft.canRedo);
     final notes = <String>[
       if (!draft.draftPersisted) '草稿未落盘',
-      if (found != null && found.problems.isNotEmpty) '存在阻塞项，无法保存',
+      if ((found?.problems.isNotEmpty ?? false) ||
+          (found == null && draft.candidateProblems.isNotEmpty))
+        '存在阻塞项，无法保存',
+      if (found == null && draft.draftError != null) '候选失败：${draft.draftError}',
       if (draft.editingFrozen) '保存中…',
-      if (draft.busy) '工作区忙，稍后重试',
+      if (draft.busy && !draft.candidateBusy && !draft.saving) '工作区忙，稍后重试',
     ];
     final summary =
-        '${draft.candidateBusy ? '正在计算未保存修改…' : (changed == 0 ? '无未保存修改' : '$changed 个资源有未保存修改')}'
+        '${draft.candidateBusy ? '正在计算未保存修改…' : (candidatePending ? '未保存修改（净差异未计算）' : (changed == 0 ? '无未保存修改' : '$changed 个资源有未保存修改'))}'
         '${notes.isEmpty ? '' : ' · ${notes.join(' · ')}'}'
         '${steps == 0 ? '' : ' · 草稿 $steps 步 · ${draft.draftPersistLabel}'}';
     return Container(
@@ -66,69 +131,109 @@ class WorkbenchDraftBar extends StatelessWidget {
         color: ctSurface2,
         border: Border(bottom: BorderSide(color: ctBorder)),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: (found != null && found.problems.isNotEmpty)
-                  ? ctDanger
-                  : (changed > 0 || steps > 0 || draft.candidateBusy)
-                  ? ctWarn
-                  : ctAccent,
-            ),
-          ),
-          const SizedBox(width: ctGapSm),
-          Expanded(
-            child: InkWell(
-              key: const ValueKey('wb.draftSummaryTap'),
-              onTap: () =>
-                  showWorkbenchDraftSheet(context, data: data, repo: draft),
-              child: Text(
-                summary,
-                key: const ValueKey('wb.draftSummary'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: ctText(size: ctFontSm, color: ctInk2),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // 窄内容区或高缩放时，文字按钮会吞掉摘要空间；保留图标与 tooltip，
+          // 让状态摘要始终可读（与 ZCode 的紧凑操作栏同一取舍）。
+          final compact = constraints.maxWidth < 960;
+          return Row(
+            children: [
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: (found != null && found.problems.isNotEmpty)
+                      ? ctDanger
+                      : (changed > 0 || steps > 0 || draft.candidateBusy)
+                      ? ctWarn
+                      : ctAccent,
+                ),
               ),
-            ),
-          ),
-          _icon(
-            keyName: 'wb.draftQuickOpen',
-            icon: Icons.search,
-            tooltip: 'Quick Open（Ctrl/Cmd+P）：按名字跳到资源',
-            onPressed: onQuickOpen,
-          ),
-          _button(
-            keyName: 'wb.draftUndo',
-            label: '撤销',
-            tooltip: '撤销一步草稿（Ctrl/Cmd+Z）',
-            onPressed: !draft.canUndo ? null : draft.undoDraft,
-          ),
-          _button(
-            keyName: 'wb.draftRedo',
-            label: '重做',
-            tooltip: '重做一步草稿（Ctrl/Cmd+Shift+Z）',
-            onPressed: !draft.canRedo ? null : draft.redoDraft,
-          ),
-          _button(
-            keyName: 'wb.draftDiscard',
-            label: '放弃草稿',
-            tooltip: '丢弃全部草稿命令（需确认，不改工作区文件）',
-            onPressed: !draft.hasDraft
-                ? null
-                : () => confirmWorkbenchDiscard(context, draft),
-          ),
-          _button(
-            keyName: 'wb.draftSave',
-            label: '保存变更',
-            tooltip: '保存草稿为 YAML（Ctrl/Cmd+S）：仅改 schema 文件',
-            accent: true,
-            onPressed: !draft.canSave ? null : onSave,
-          ),
-        ],
+              const SizedBox(width: ctGapSm),
+              Expanded(
+                child: InkWell(
+                  key: const ValueKey('wb.draftSummaryTap'),
+                  onTap: () => showWorkbenchDraftSheet(
+                    context,
+                    data: widget.data,
+                    repo: draft,
+                  ),
+                  child: Text(
+                    summary,
+                    key: const ValueKey('wb.draftSummary'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: ctText(size: ctFontSm, color: ctInk2),
+                  ),
+                ),
+              ),
+              _icon(
+                keyName: 'wb.draftQuickOpen',
+                icon: Icons.search,
+                tooltip: 'Quick Open（Ctrl/Cmd+P）：按名字跳到资源',
+                onPressed: widget.onQuickOpen,
+              ),
+              if (compact) ...[
+                _icon(
+                  keyName: 'wb.draftUndo',
+                  icon: Icons.undo,
+                  tooltip: '撤销一步草稿（Ctrl/Cmd+Z）',
+                  onPressed: !draft.canUndo ? null : draft.undoDraft,
+                ),
+                _icon(
+                  keyName: 'wb.draftRedo',
+                  icon: Icons.redo,
+                  tooltip: '重做一步草稿（Ctrl/Cmd+Shift+Z）',
+                  onPressed: !draft.canRedo ? null : draft.redoDraft,
+                ),
+                _icon(
+                  keyName: 'wb.draftDiscard',
+                  icon: Icons.delete_sweep_outlined,
+                  tooltip: '丢弃全部草稿命令（需确认，不改工作区文件）',
+                  onPressed: !draft.hasDraft
+                      ? null
+                      : () => confirmWorkbenchDiscard(context, draft),
+                ),
+                _icon(
+                  keyName: 'wb.draftSave',
+                  icon: Icons.save_outlined,
+                  tooltip: '保存草稿为 YAML（Ctrl/Cmd+S）：仅改 schema 文件',
+                  onPressed: !draft.canSave ? null : widget.onSave,
+                  accent: true,
+                ),
+              ] else ...[
+                _button(
+                  keyName: 'wb.draftUndo',
+                  label: '撤销',
+                  tooltip: '撤销一步草稿（Ctrl/Cmd+Z）',
+                  onPressed: !draft.canUndo ? null : draft.undoDraft,
+                ),
+                _button(
+                  keyName: 'wb.draftRedo',
+                  label: '重做',
+                  tooltip: '重做一步草稿（Ctrl/Cmd+Shift+Z）',
+                  onPressed: !draft.canRedo ? null : draft.redoDraft,
+                ),
+                _button(
+                  keyName: 'wb.draftDiscard',
+                  label: '放弃草稿',
+                  tooltip: '丢弃全部草稿命令（需确认，不改工作区文件）',
+                  onPressed: !draft.hasDraft
+                      ? null
+                      : () => confirmWorkbenchDiscard(context, draft),
+                ),
+                _button(
+                  keyName: 'wb.draftSave',
+                  label: '保存变更',
+                  tooltip: '保存草稿为 YAML（Ctrl/Cmd+S）：仅改 schema 文件',
+                  accent: true,
+                  onPressed: !draft.canSave ? null : widget.onSave,
+                ),
+              ],
+            ],
+          );
+        },
       ),
     );
   }
@@ -138,14 +243,16 @@ class WorkbenchDraftBar extends StatelessWidget {
     required IconData icon,
     required String tooltip,
     VoidCallback? onPressed,
+    bool accent = false,
   }) => IconButton(
     key: ValueKey(keyName),
-    icon: Icon(icon, size: 16),
+    icon: Icon(icon, size: 17),
     tooltip: tooltip,
     onPressed: onPressed,
     splashRadius: 16,
     padding: EdgeInsets.zero,
-    constraints: const BoxConstraints(minWidth: 30, minHeight: ctRowSm),
+    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+    color: accent && onPressed != null ? ctAccent : ctInk2,
   );
 
   Widget _button({
@@ -160,7 +267,7 @@ class WorkbenchDraftBar extends StatelessWidget {
       key: ValueKey(keyName),
       onPressed: onPressed,
       style: TextButton.styleFrom(
-        minimumSize: const Size(0, ctRowSm),
+        minimumSize: const Size(0, 40),
         padding: const EdgeInsets.symmetric(horizontal: ctGapSm),
         foregroundColor: accent && onPressed != null
             ? Colors.white

@@ -18,7 +18,6 @@ class WorkbenchTemplatePanel extends StatefulWidget {
     required this.service,
     required this.resource,
     this.blockReason,
-    this.onGenerated,
   });
 
   final TemplateService service;
@@ -26,9 +25,6 @@ class WorkbenchTemplatePanel extends StatefulWidget {
 
   /// 写入口不可用的原因（内核未就绪/协议不兼容等）。
   final String? blockReason;
-
-  /// 生成成功后的状态刷新钩子（内核模板已改，缓存的预览列必须重取）。
-  final Future<void> Function(String table)? onGenerated;
 
   @override
   State<WorkbenchTemplatePanel> createState() => _WorkbenchTemplatePanelState();
@@ -93,38 +89,53 @@ class _WorkbenchTemplatePanelState extends State<WorkbenchTemplatePanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.grid_on_outlined, size: 15, color: ctInk3),
-              const SizedBox(width: ctGapXs),
-              Text(
-                'Excel 模板',
-                style: ctText(size: ctFontSm, weight: FontWeight.w600),
-              ),
-              const SizedBox(width: ctGapSm),
-              _badge(service),
-              const Spacer(),
-              CtButton.ghost(
-                '迁移预检',
-                key: const ValueKey('wb.templatePlan'),
-                onPressed: service.busy || blocked
-                    ? null
-                    : () => service.runPlan(resource.name),
-              ),
-              const SizedBox(width: ctGapSm),
-              CtButton.accent(
-                service.busy ? '处理中…' : '生成模板',
-                key: const ValueKey('wb.templateGenerate'),
-                onPressed: service.canGenerate && !blocked
-                    ? () async {
-                        final done = await service.runGenerate();
-                        if (done != null) {
-                          await widget.onGenerated?.call(resource.name);
-                        }
-                      }
-                    : null,
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final title = Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.grid_on_outlined, size: 15, color: ctInk3),
+                  const SizedBox(width: ctGapXs),
+                  Text(
+                    'Excel 模板',
+                    style: ctText(size: ctFontSm, weight: FontWeight.w600),
+                  ),
+                  const SizedBox(width: ctGapSm),
+                  _badge(service),
+                ],
+              );
+              final actions = Wrap(
+                spacing: ctGapSm,
+                runSpacing: ctGapXs,
+                children: [
+                  CtButton.ghost(
+                    '迁移预检',
+                    key: const ValueKey('wb.templatePlan'),
+                    onPressed: service.busy || blocked
+                        ? null
+                        : () => service.runPlan(resource.name),
+                  ),
+                  CtButton.accent(
+                    service.busy ? '处理中…' : '生成模板',
+                    key: const ValueKey('wb.templateGenerate'),
+                    onPressed: service.canGenerate && !blocked
+                        ? service.runGenerate
+                        : null,
+                  ),
+                ],
+              );
+              if (constraints.maxWidth < 600) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    title,
+                    const SizedBox(height: ctGapSm),
+                    Align(alignment: Alignment.centerRight, child: actions),
+                  ],
+                );
+              }
+              return Row(children: [title, const Spacer(), actions]);
+            },
           ),
           if (blocked) _line(widget.blockReason!, CtBadgeTone.warn),
           if (service.error != null) _line(service.error!, CtBadgeTone.danger),

@@ -59,8 +59,9 @@ Future<void> _pumpLive(
   required _FakeGateway gateway,
   required VoidCallback onReload,
   VoidCallback? onExit,
+  Size size = const Size(1400, 900),
 }) async {
-  tester.view.physicalSize = const Size(1400, 900);
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
@@ -85,6 +86,11 @@ Future<void> _pumpLive(
   );
   await tester.pump();
   await tester.pump();
+}
+
+Future<void> _scrollSettingsTo(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -123,6 +129,59 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('D:/game/gd'), findsWidgets);
+
+    final card = tester.getRect(
+      find.byKey(const ValueKey('settings.workspaceCard')),
+    );
+    final pick = tester.getRect(
+      find.byKey(const ValueKey('settings.pickWorkspace')),
+    );
+    final reload = tester.getRect(
+      find.byKey(const ValueKey('settings.reloadWorkspace')),
+    );
+    expect(pick.right, lessThan(reload.left));
+    expect(card.right - reload.right, moreOrLessEquals(16, epsilon: 1));
+
+    await _scrollSettingsTo(
+      tester,
+      find.byKey(const ValueKey('settings.inferredRuntime')),
+    );
+    final runtimeCard = tester.getRect(
+      find.byKey(const ValueKey('settings.runtimeCard')),
+    );
+    final inferredRuntime = tester.getRect(
+      find.byKey(const ValueKey('settings.inferredRuntime')),
+    );
+    expect(
+      runtimeCard.right - inferredRuntime.right,
+      moreOrLessEquals(16, epsilon: 1),
+    );
+
+    await _scrollSettingsTo(
+      tester,
+      find.byKey(const ValueKey('settings.trayResident')),
+    );
+    final desktopCard = tester.getRect(
+      find.byKey(const ValueKey('settings.desktopCard')),
+    );
+    final trayResident = tester.getRect(
+      find.byKey(const ValueKey('settings.trayResident')),
+    );
+    expect(
+      desktopCard.right - trayResident.right,
+      moreOrLessEquals(16, epsilon: 1),
+    );
+
+    await _scrollSettingsTo(
+      tester,
+      find.byKey(const ValueKey('settings.about')),
+    );
+    final helpCard = tester.getRect(
+      find.byKey(const ValueKey('settings.helpCard')),
+    );
+    final about = tester.getRect(find.byKey(const ValueKey('settings.about')));
+    expect(helpCard.right - about.right, moreOrLessEquals(16, epsilon: 1));
+
     expect(
       find.textContaining('运行时来源：应用包内置'),
       findsOneWidget,
@@ -132,6 +191,9 @@ void main() {
     expect(find.text('端口'), findsNothing);
     expect(find.text('工具目录'), findsNothing);
     expect(find.textContaining('.venv'), findsNothing);
+    expect(find.byKey(const ValueKey('settings.docs')), findsOneWidget);
+    expect(find.byKey(const ValueKey('settings.help')), findsOneWidget);
+    expect(find.byKey(const ValueKey('settings.about')), findsOneWidget);
     repo.dispose();
   });
 
@@ -151,7 +213,7 @@ void main() {
     await tester.tap(find.text('设置'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('settings.legacyNote')), findsOneWidget);
-    expect(find.textContaining('已废弃并被清除'), findsOneWidget);
+    expect(find.textContaining('配置不再使用'), findsOneWidget);
     repo.dispose();
   });
 
@@ -170,6 +232,10 @@ void main() {
     );
     await tester.tap(find.text('设置'));
     await tester.pumpAndSettle();
+    await _scrollSettingsTo(
+      tester,
+      find.byKey(const ValueKey('settings.trayResident')),
+    );
     await tester.tap(find.byKey(const ValueKey('settings.trayResident')));
     await tester.pumpAndSettle();
 
@@ -220,9 +286,42 @@ void main() {
     await tester.tap(find.text('设置'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('wb.exit')), findsOneWidget);
+    await _scrollSettingsTo(tester, find.byKey(const ValueKey('wb.exit')));
     await tester.tap(find.byKey(const ValueKey('wb.exit')));
     await tester.pumpAndSettle();
     expect(exits, 1, reason: '面板不自己退出，只把意图交给壳层的退出守卫');
+    repo.dispose();
+  });
+
+  testWidgets('设置纵向堆叠在最小窗口下无溢出', (tester) async {
+    final settings = await loadStore({});
+    final gateway = _FakeGateway();
+    final repo = WorkbenchRepository(worker: gateway);
+    await repo.switchWorkspace('D:/game/gd');
+    await _pumpLive(
+      tester,
+      settings: settings,
+      repo: repo,
+      gateway: gateway,
+      onReload: () {},
+      size: const Size(1024, 700),
+    );
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('settings.nav.workspace')),
+      findsNothing,
+      reason: '内容较少时不额外增加设置分类导航',
+    );
+    expect(
+      find.byKey(const ValueKey('settings.workspaceCard')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('settings.trayResident')), findsOneWidget);
+    expect(find.byKey(const ValueKey('settings.about')), findsOneWidget);
+    await _scrollSettingsTo(tester, find.byKey(const ValueKey('wb.exit')));
+    expect(tester.takeException(), isNull);
     repo.dispose();
   });
 }

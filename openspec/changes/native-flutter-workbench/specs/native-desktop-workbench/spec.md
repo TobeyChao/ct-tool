@@ -5,7 +5,7 @@
 ## ADDED Requirements
 
 ### Requirement: Native workspace navigation
-客户端 SHALL 提供工作区选择、总览、Table/Record/Enum 搜索和导航、Schema 编辑、只读数据预览、翻译、导出、独立部署、日志、最近五次导出历史和设置。资源列表和选择器 SHALL 反映当前草稿 cursor 下的候选资源；切换页面或改变分栏不得丢失编辑状态。数据预览 SHALL 按需分页而非一次加载整表。
+客户端 SHALL 提供工作区选择、总览、Table/Record/Enum 搜索和导航、Schema 编辑、只读数据预览、翻译、导出、日志、最近五次导出历史和设置。导出页 SHALL 与 Web 面板保持一致，不单独提供过滤、校验或部署入口。资源列表和选择器 SHALL 反映当前草稿 cursor 下的候选资源；切换页面或改变分栏不得丢失编辑状态。数据预览 SHALL 按需分页而非一次加载整表。
 
 #### Scenario: Navigate unsaved resources
 - **WHEN** 用户创建 Record 后切换到 Table 并调整分栏
@@ -53,7 +53,7 @@
 - **THEN** 显示定位问题，不覆盖 Excel，不把已成功的 YAML 保存改判为失败
 
 ### Requirement: Responsive export and process lifecycle
-耗时任务期间客户端 SHALL 保持导航、滚动和日志查看可用，并显示阶段、耗时、缓存统计及可定位错误。桌面 export SHALL 仅本地导出并在成功后记账，部署由独立操作触发。同工作区冲突写入 SHALL 展示 busy；发布前取消、发布后延迟取消以内核终态为准。断连无终态 SHALL 显示结果未知并保留草稿，不自动重放写请求。
+耗时任务期间客户端 SHALL 保持导航、滚动和日志查看可用，并显示阶段与耗时；结构化问题随执行进度展示。桌面 export SHALL 仅本地导出并在成功后记账，不内嵌部署动作。同工作区冲突写入 SHALL 展示 busy；发布前取消、发布后延迟取消以内核终态为准。断连无终态 SHALL 显示结果未知并保留草稿，不自动重放写请求。
 
 #### Scenario: Cancel during publication
 - **WHEN** 用户取消时内核已经开始发布
@@ -68,7 +68,7 @@
 - **THEN** 事件仍归属原任务，不更新当前工作区资源或草稿
 
 ### Requirement: Visual prototype is an intermediate milestone
-客户端 SHALL 先交付带明确模拟标识的可运行视觉样板，覆盖资源树、Schema 编辑、属性区及导出面板的空态/错误/忙碌状态。正式完成 SHALL 使用真实运行时在 Windows/macOS 无 Python 环境完成创建资源、保存、生成模板、填表后校验导出、编辑翻译和独立部署全链路，并记录截图与验证结果。
+客户端 SHALL 先交付带明确模拟标识的可运行视觉样板，覆盖资源树、Schema 编辑、属性区及导出面板的空态/错误/忙碌状态。正式完成 SHALL 使用真实运行时在 Windows/macOS 无 Python 环境完成创建资源、保存、生成模板、填表后导出、编辑翻译全链路，并记录截图与验证结果。
 
 #### Scenario: Mock export completes
 - **WHEN** 样板中的模拟导出显示完成

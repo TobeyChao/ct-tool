@@ -4,6 +4,8 @@ import '../../state/schema_draft.dart';
 import '../../state/workbench_repository.dart';
 import '../../theme.dart';
 import '../tokens.dart';
+import '../widgets/type_picker.dart';
+import 'workbench_draft_bar.dart' show confirmWorkbenchDiscard;
 import 'workbench_models.dart';
 
 /// 资源与字段的草稿操作面板（native-flutter-workbench 任务 3.1）。
@@ -11,10 +13,16 @@ import 'workbench_models.dart';
 /// 只做两件事：把用户动作拼成内核词表里的命令入草稿，并用 `schema.candidate`
 /// 让内核判定这批命令（客户端不自创校验规则）。保存动作在 3.4 接入。
 class WorkbenchSchemaEditor extends StatelessWidget {
-  const WorkbenchSchemaEditor({super.key, required this.repo, this.selected});
+  const WorkbenchSchemaEditor({
+    super.key,
+    required this.repo,
+    this.selected,
+    this.onResourceSelected,
+  });
 
   final WorkbenchRepository repo;
   final String? selected;
+  final ValueChanged<String?>? onResourceSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +38,7 @@ class WorkbenchSchemaEditor extends StatelessWidget {
                 keyName: 'wb.newMenu',
                 label: '新建',
                 tooltip: '新建资源（只入草稿，保存前不写文件）',
+                enabled: !repo.busy,
                 items: [
                   ('table', Icons.add, '表', 'wb.newTable'),
                   ('record', Icons.data_object, '记录', 'wb.newRecord'),
@@ -43,7 +52,7 @@ class WorkbenchSchemaEditor extends StatelessWidget {
                 keyName: 'wb.resourceMenu',
                 label: selected == null ? '选中资源后可用' : '选中资源',
                 tooltip: '对当前选中资源做什么（改名 / 删除 / 加字段）',
-                enabled: selected != null,
+                enabled: selected != null && !repo.busy,
                 items: [
                   (
                     'rename',
@@ -160,19 +169,21 @@ class WorkbenchSchemaEditor extends StatelessWidget {
               'wb.undo',
               Icons.undo,
               '撤销',
-              repo.canUndo ? repo.undoDraft : null,
+              repo.canUndo && !repo.busy ? repo.undoDraft : null,
             ),
             _mini(
               'wb.redo',
               Icons.redo,
               '重做',
-              repo.canRedo ? repo.redoDraft : null,
+              repo.canRedo && !repo.busy ? repo.redoDraft : null,
             ),
             _mini(
               'wb.discard',
               Icons.layers_clear,
               '丢弃草稿',
-              repo.hasDraft ? repo.discardDraft : null,
+              repo.hasDraft && !repo.busy
+                  ? () => confirmWorkbenchDiscard(context, repo)
+                  : null,
             ),
             const SizedBox(width: 4),
             TextButton(
@@ -182,7 +193,7 @@ class WorkbenchSchemaEditor extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 minimumSize: const Size(0, 28),
               ),
-              onPressed: repo.hasDraft && !repo.busy
+              onPressed: repo.hasDraft && !repo.busy && !repo.candidateBusy
                   ? () => repo.requestCandidate()
                   : null,
               child: const Text('算候选', style: TextStyle(fontSize: ctFontSm)),
@@ -314,6 +325,7 @@ class WorkbenchSchemaEditor extends StatelessWidget {
       default:
         repo.createEnum(answer.name);
     }
+    onResourceSelected?.call(answer.name);
   }
 
   Future<void> _renameResource(BuildContext context) async {
@@ -322,6 +334,7 @@ class WorkbenchSchemaEditor extends StatelessWidget {
     final answer = await _ask(context, title: '把 $from 改名为', initial: from);
     if (answer == null || answer.name == from) return;
     repo.renameResource(from, answer.name);
+    onResourceSelected?.call(answer.name);
   }
 
   Future<void> _deleteResource(BuildContext context) async {
@@ -329,7 +342,34 @@ class WorkbenchSchemaEditor extends StatelessWidget {
     if (name == null) return;
     final resource = repo.resourceNamed(name);
     if (resource == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        key: const ValueKey('wb.deleteResourcePrompt'),
+        title: Text('删除资源 $name？'),
+        content: const Text(
+          '此操作先加入 Schema 草稿，不会立即改动工作区文件。'
+          '保存草稿后才会删除对应的 YAML；可在保存前撤销。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            key: const ValueKey('wb.deleteResourceConfirm'),
+            style: TextButton.styleFrom(foregroundColor: ctDanger),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('加入删除草稿'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
     repo.deleteResource(resourceId(_kindWire(resource.kind), name));
+    onResourceSelected?.call(
+      repo.resources.isEmpty ? null : repo.resources.first.name,
+    );
   }
 
   Future<void> _addField(BuildContext context) async {
@@ -337,18 +377,90 @@ class WorkbenchSchemaEditor extends StatelessWidget {
     if (owner == null) return;
     final resource = repo.resourceNamed(owner);
     if (resource == null) return;
-    final answer = await _ask(
+    final namedTypes = [
+      for (final item in repo.resources)
+        if (item.kind != WorkbenchResourceKind.table && item.name != owner)
+          item.name,
+    ];
+    final answer = await _askAddField(
       context,
-      title: '给 $owner 加字段',
-      secondLabel: '类型（int32 / string / 具名类型…）',
-      secondInitial: 'int32',
+      owner: owner,
+      namedTypes: namedTypes,
     );
     if (answer == null) return;
     repo.addField(
       resourceId(_kindWire(resource.kind), owner),
       answer.name,
-      answer.second.isEmpty ? 'int32' : answer.second,
+      answer.type,
     );
+  }
+
+  Future<_AddFieldResult?> _askAddField(
+    BuildContext context, {
+    required String owner,
+    required List<String> namedTypes,
+  }) async {
+    final name = TextEditingController();
+    var type = 'int32';
+    final result = await showDialog<_AddFieldResult>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text('给 $owner 加字段'),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  key: const ValueKey('wb.nameField'),
+                  controller: name,
+                  autofocus: true,
+                  decoration: const InputDecoration(labelText: '字段名'),
+                ),
+                const SizedBox(height: ctGapLg),
+                Text(
+                  '类型',
+                  style: ctText(size: ctFontSm, color: ctInk2),
+                ),
+                const SizedBox(height: ctGapXs),
+                CtTypePicker(
+                  value: type,
+                  namedTypes: namedTypes,
+                  keyPrefix: 'wb.addFieldType',
+                  onChanged: (value) => setDialogState(() => type = value),
+                ),
+                const SizedBox(height: ctGapXs),
+                Text(
+                  namedTypes.isEmpty
+                      ? '当前工作区没有 Record / Enum；只能选择标量类型。'
+                      : '具名类型来自当前工作区资源清单。',
+                  style: ctText(size: ctFontXs, color: ctInk3),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              key: const ValueKey('wb.dialogConfirm'),
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                _AddFieldResult(name.text.trim(), type),
+              ),
+              child: const Text('加入草稿'),
+            ),
+          ],
+        ),
+      ),
+    );
+    name.dispose();
+    if (result == null || result.name.isEmpty) return null;
+    return result;
   }
 
   static String _kindWire(WorkbenchResourceKind kind) => switch (kind) {
@@ -363,4 +475,11 @@ class _PromptResult {
 
   final String name;
   final String second;
+}
+
+class _AddFieldResult {
+  const _AddFieldResult(this.name, this.type);
+
+  final String name;
+  final String type;
 }

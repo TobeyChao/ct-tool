@@ -129,22 +129,18 @@ void main() {
         '${ctx.ws.path}/excel/Item.xlsx',
       ).readAsBytesSync();
 
-      expect(
-        await ctx.repo.saveRow(
-          key: '1002.Name',
-          text: 'Iron Shield',
-          confirmed: true,
-        ),
-        isTrue,
-        reason: describe(ctx.repo),
-      );
+      ctx.repo.selectEntry('1002.Name');
+      ctx.repo.updateDraft('Iron Shield\n第二行');
+      expect(await ctx.repo.saveDraft(), isTrue, reason: describe(ctx.repo));
       final saved = readLang(ctx.ws)['1002.Name']! as Map<String, Object?>;
-      expect(saved['text'], 'Iron Shield');
+      expect(saved['text'], 'Iron Shield\n第二行');
       expect(saved['confirmed'], isTrue);
       expect(saved['status'], isNot('missing'), reason: '内核重判后的状态应写进文件：$saved');
 
       final row = ctx.repo.entries.firstWhere((e) => e.key == '1002.Name');
       expect(row.status, isNot(I18nStatus.missing));
+      expect(row.text, 'Iron Shield\n第二行');
+      expect(ctx.repo.draftDirty, isFalse);
       expect(
         File('${ctx.ws.path}/config/schemas/item.yaml').readAsBytesSync(),
         yamlBefore,

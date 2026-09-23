@@ -106,11 +106,15 @@ class ExportRunner extends ChangeNotifier {
   }
 
   /// 发起导出。返回 false 表示没能启动（内核忙等），原状态保留给界面提示。
-  Future<bool> startExport() => _run(
-    kind: Methods.export,
-    params: exportParams,
-    onPayload: _acceptExport,
-  );
+  /// [forced] 非空时先切换增量/强制全量模式；不传则沿用当前模式（状态层兼容入口）。
+  Future<bool> startExport({bool? forced}) {
+    if (forced != null) all = forced;
+    return _run(
+      kind: Methods.export,
+      params: exportParams,
+      onPayload: _acceptExport,
+    );
+  }
 
   /// 独立部署：导出不会顺带做它。
   Future<bool> startDeploy() => _run(

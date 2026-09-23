@@ -5,7 +5,6 @@ import 'package:ct_launcher/services/worker_service.dart';
 import 'package:ct_launcher/state/desktop_state.dart';
 import 'package:ct_launcher/state/export_runner.dart';
 import 'package:ct_launcher/state/translation_repository.dart';
-import 'package:ct_launcher/state/validate_runner.dart';
 import 'package:ct_launcher/state/workbench_repository.dart';
 import 'package:ct_launcher/theme.dart';
 import 'package:ct_launcher/ui/workbench/workbench_screen.dart';
@@ -36,7 +35,6 @@ void main() {
   late WorkerService worker;
   late WorkbenchRepository repo;
   late ExportRunner runner;
-  late ValidateRunner validate;
   late TranslationRepository translations;
   late DesktopStateRepository desktop;
   final frames = <FrameTiming>[];
@@ -79,7 +77,6 @@ void main() {
     repo = WorkbenchRepository(worker: worker);
     await repo.switchWorkspace(ws.path);
     runner = ExportRunner(worker: worker, workspaceRoot: ws.path);
-    validate = ValidateRunner(worker: worker, workspaceRoot: ws.path);
     translations = TranslationRepository(worker: worker);
     await translations.bind(ws.path);
     desktop = DesktopStateRepository(worker: worker);
@@ -91,7 +88,6 @@ void main() {
     await worker.stop();
     repo.dispose();
     runner.dispose();
-    validate.dispose();
     translations.dispose();
     desktop.dispose();
     try {
@@ -116,11 +112,9 @@ void main() {
           refresh: repo,
           draft: repo,
           runner: runner,
-          validate: validate,
           translations: translations,
           desktop: desktop,
           settings: settings,
-          onResourceSelected: (name) => repo.loadPreview(name),
           workspaceKey: 'perf',
           bannerLabel: 'profile 帧时间测量',
         ),

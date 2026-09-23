@@ -51,6 +51,14 @@ class _FakeGateway implements KernelGateway {
               'kind': 'table',
               'sourcePath': 'config/schemas/item.yaml',
             },
+            {
+              'name': 'Reward',
+              'kind': 'record',
+              'sourcePath': 'config/schemas/reward.yaml',
+              'fields': [
+                {'name': 'Amount', 'type': 'int32'},
+              ],
+            },
           ],
         };
       case Methods.schemaSave:
@@ -97,7 +105,6 @@ void main() {
           refresh: repo,
           draft: repo,
           settings: settings,
-          onResourceSelected: (name) => repo.loadPreview(name),
           workspaceKey: 'editor-test',
           bannerLabel: '已连接原生内核',
         ),
@@ -161,21 +168,59 @@ void main() {
     expect(find.text('草稿 1 条'), findsOneWidget);
     expect(find.textContaining('Hero'), findsWidgets);
     expect(repo.resources.last.dirty, isTrue);
+    expect(
+      tester
+          .widget<WorkbenchSchemaEditor>(
+            find.byKey(const ValueKey('wb.schemaEditor')),
+          )
+          .selected,
+      'Hero',
+    );
     expect(repo.commands.single.kind, 'add_resource');
+  });
+
+  testWidgets('加字段用工作区具名类型与 vector 选择器，不再手填类型', (tester) async {
+    await pumpEditor(tester);
+    await tester.tap(find.byKey(const ValueKey('wb.resourceMenu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wb.addField')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('wb.nameField')),
+      'Rewards',
+    );
+    final base = find.byKey(const ValueKey('wb.addFieldType.base'));
+    await tester.tap(base);
+    await tester.pumpAndSettle();
+    expect(find.text('Reward'), findsWidgets);
+    await tester.tap(find.text('Reward').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wb.addFieldType.vector')));
+    await tester.pumpAndSettle();
+    expect(find.text('实际写入：vector<Reward>'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('wb.dialogConfirm')));
+    await tester.pumpAndSettle();
+    final field = repo.commands.last.payload['field'] as Map<String, Object?>;
+    expect(repo.commands.last.kind, 'add_field');
+    expect(field['type'], 'vector<Reward>');
   });
 
   testWidgets('算候选把守卫参数送内核并回显净差异', (tester) async {
     await pumpEditor(tester);
     repo.createTable('Hero');
-    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(gateway.candidates, hasLength(1), reason: '编辑后自动算候选');
     await tester.tap(find.byKey(const ValueKey('wb.candidate')));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('净差异 新增1'), findsOneWidget);
-    final sent = gateway.candidates.single;
+    expect(gateway.candidates, hasLength(2), reason: '工具栏按钮仍可显式重算');
+    final sent = gateway.candidates.last;
     expect(sent['schemaRevision'], 'baseline-sha');
     expect(sent['cursor'], '1');
-    expect(sent['draftGeneration'], 1);
+    expect(sent['draftGeneration'], 2);
   });
 
   testWidgets('撤销/重做/丢弃都反映到清单与按钮可用性', (tester) async {
@@ -195,12 +240,20 @@ void main() {
     expect(find.text('草稿 1 条'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('wb.discard')));
-    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(repo.hasDraft, isTrue, reason: '侧栏放弃草稿也必须先确认');
+    await tester.tap(find.text('取消').last);
+    await tester.pumpAndSettle();
+    expect(repo.hasDraft, isTrue);
+    await tester.tap(find.byKey(const ValueKey('wb.discard')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wb.draftDiscard.confirm')));
+    await tester.pumpAndSettle();
     expect(find.text('草稿 0 条'), findsOneWidget);
     expect(repo.hasDraft, isFalse);
   });
 
-  testWidgets('改名作用于选中资源，删除走内核 id', (tester) async {
+  testWidgets('改名后仍选中新资源', (tester) async {
     await pumpEditor(tester);
     // 默认选中清单里第一个资源（Item）
     await tester.tap(find.byKey(const ValueKey('wb.resourceMenu')));
@@ -210,32 +263,56 @@ void main() {
     await tester.enterText(find.byKey(const ValueKey('wb.nameField')), 'Gear');
     await tester.tap(find.byKey(const ValueKey('wb.dialogConfirm')));
     await tester.pumpAndSettle();
-    expect(repo.resources.single.name, 'Gear');
+    expect(repo.resourceNamed('Gear'), isNotNull);
     expect(find.textContaining('Gear'), findsWidgets);
-
-    await repo.requestCandidate();
-    repo.deleteResource('table:Gear');
-    await tester.pump();
-    expect(repo.resources, isEmpty);
     expect(
-      repo.commands.last.payload['name'],
-      'table:Gear',
-      reason: '删除命令必须带内核 id 形态',
+      tester
+          .widget<WorkbenchSchemaEditor>(
+            find.byKey(const ValueKey('wb.schemaEditor')),
+          )
+          .selected,
+      'Gear',
     );
+  });
+
+  testWidgets('删除选中资源先确认，取消时不入草稿', (tester) async {
+    await pumpEditor(tester);
+    await tester.tap(find.byKey(const ValueKey('wb.resourceMenu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wb.deleteResource')));
+    await tester.pumpAndSettle();
+    expect(repo.resourceNamed('Item'), isNotNull);
+    await tester.tap(find.text('取消').last);
+    await tester.pumpAndSettle();
+    expect(repo.draftCount, 0);
+    await tester.tap(find.byKey(const ValueKey('wb.resourceMenu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wb.deleteResource')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wb.deleteResourceConfirm')));
+    await tester.pumpAndSettle();
+    expect(repo.resourceNamed('Item'), isNull);
+    expect(repo.resourceNamed('Reward'), isNotNull);
+    expect(
+      tester
+          .widget<WorkbenchSchemaEditor>(
+            find.byKey(const ValueKey('wb.schemaEditor')),
+          )
+          .selected,
+      'Reward',
+    );
+    expect(repo.commands.last.payload['name'], 'table:Item');
   });
 
   testWidgets('真实草稿下保存走双守卫请求，成功后清空草稿', (tester) async {
     await pumpEditor(tester);
     repo.createTable('Hero');
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     TextButton saveButton() =>
         tester.widget<TextButton>(find.byKey(const ValueKey('wb.draftSave')));
-    expect(saveButton().onPressed, isNull, reason: '还没算候选时不得允许保存');
-
-    await repo.requestCandidate();
-    await tester.pump();
-    expect(saveButton().onPressed, isNotNull);
+    expect(gateway.candidates, hasLength(1), reason: '编辑后自动算候选');
+    expect(saveButton().onPressed, isNotNull, reason: '候选就绪后无需再找「算候选」');
     await tester.tap(find.byKey(const ValueKey('wb.draftSave')));
     await tester.pumpAndSettle();
 

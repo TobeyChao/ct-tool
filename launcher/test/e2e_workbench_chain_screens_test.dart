@@ -3,13 +3,12 @@ import 'dart:ui' as ui;
 
 import 'package:ct_launcher/services/settings_store.dart';
 import 'package:ct_launcher/services/protocol/protocol.dart'
-    show DeployResult, ExportResult, TaskOutcome;
+    show ExportResult, TaskOutcome;
 import 'package:ct_launcher/services/worker_service.dart';
 import 'package:ct_launcher/state/desktop_state.dart';
 import 'package:ct_launcher/state/export_runner.dart';
 import 'package:ct_launcher/state/template_service.dart';
 import 'package:ct_launcher/state/translation_repository.dart';
-import 'package:ct_launcher/state/validate_runner.dart';
 import 'package:ct_launcher/state/workbench_repository.dart';
 import 'package:ct_launcher/theme.dart';
 import 'package:ct_launcher/ui/widgets/common.dart';
@@ -59,11 +58,9 @@ void main() {
   // 未构建二进制时整组用例 skip（testWidgets 的 skip 只收 bool，理由写在文件名与注释里）。
 
   late Directory ws;
-  late Directory unity;
   late WorkerService worker;
   late WorkbenchRepository repo;
   late ExportRunner runner;
-  late ValidateRunner validate;
   late TemplateService template;
   late TranslationRepository translations;
   late DesktopStateRepository desktop;
@@ -71,7 +68,6 @@ void main() {
 
   Future<void> copyFixture() async {
     ws = await Directory.systemTemp.createTemp('ct-shots-');
-    unity = await Directory.systemTemp.createTemp('ct-shots-unity-');
     final source = Directory('../native/fixtures/export_pipeline/workspace');
     await for (final entity in source.list(recursive: true)) {
       final relative = entity.path.substring(source.path.length + 1);
@@ -83,20 +79,9 @@ void main() {
         await entity.copy(target);
       }
     }
-    // 打开部署目标：独立部署要真的把文件送进 Unity 工程目录。
-    final cfg = File('${ws.path}/config/global.yaml');
-    cfg.writeAsStringSync(
-      '${cfg.readAsStringSync()}\n'
-      'deploy:\n'
-      '  enabled: true\n'
-      '  unity_project: ${unity.path.replaceAll(Platform.pathSeparator, '/')}\n'
-      '  targets:\n'
-      '    - {source: output/binary, dest: Assets/Content/Config}\n'
-      '    - {source: output/generated/csharp, dest: Assets/Scripts/Config/Gen}\n',
-    );
   }
 
-  /// 每一步同时记下**内核侧真实状态**，截图不是摆拍：候选/校验/导出部署/翻译各自说话。
+  /// 每一步同时记下**内核侧真实状态**，截图不是摆拍：候选/导出/翻译各自说话。
   String kernelFacts() {
     final cand = repo.candidate;
     final summary = runner.last;
@@ -104,15 +89,13 @@ void main() {
         ' · 候选 ${cand == null ? '未计算' : '${cand.candidateHash.characters.take(8).join()}… '
                   '+${cand.netDiff.added.length}/~${cand.netDiff.changed.length}/-'
                   '${cand.netDiff.removed.length} 问题 ${cand.problems.length}'}'
-        ' · 校验「${validate.summaryLabel}」'
         ' · 运行相位 ${runner.phase.name}'
         '${summary?.result == null ? '' : ' 导出表 ${summary!.result!.tables} 耗时 ${summary.result!.durationMs}ms 阶段 ${summary.result!.stages.length}'}'
-        '${summary?.deploy == null ? '' : ' 部署同步 ${summary!.deploy!.synced} 个'}'
         ' · 翻译忙碌 ${translations.busy}'
         ' · 模板忙碌 ${template.busy}';
   }
 
-  /// 截图直接落到 `test/evidence/`，不做像素比对：导出/部署面板里带真实耗时，
+  /// 截图直接落到 `test/evidence/`，不做像素比对：导出面板里带真实耗时，
   /// 逐像素断言会把「数字变了」误报成界面坏了（5.4 要的是证据，不是 golden 回归）。
   Future<void> shot(WidgetTester tester, String name, String note) async {
     final boundary = tester.renderObject<RenderRepaintBoundary>(
@@ -124,7 +107,12 @@ void main() {
       image.dispose();
       return data!.buffer.asUint8List();
     });
-    File('test/evidence/$name.png').writeAsBytesSync(bytes!);
+    try {
+      File('test/evidence/$name.png').writeAsBytesSync(bytes!);
+    } on FileSystemException catch (error) {
+      // Windows 图片查看器会锁住 PNG 映射区；保留原图不阻断其余矩阵。
+      if (error.osError?.errorCode != 1224) rethrow;
+    }
     final visible = tester
         .widgetList<Text>(find.byType(Text))
         .map((t) => t.data ?? '')
@@ -153,7 +141,6 @@ void main() {
     repo = WorkbenchRepository(worker: worker);
     await repo.switchWorkspace(ws.path);
     runner = ExportRunner(worker: worker, workspaceRoot: ws.path);
-    validate = ValidateRunner(worker: worker, workspaceRoot: ws.path);
     template = TemplateService(worker: worker, workspaceRoot: ws.path);
     translations = TranslationRepository(worker: worker);
     await translations.bind(ws.path);
@@ -171,7 +158,7 @@ void main() {
       '截图里中文显示为方块，故文字证据单独留档）。\n\n'
       '${textLog.join('\n')}',
     );
-    for (final dir in [ws, unity]) {
+    for (final dir in [ws]) {
       try {
         dir.deleteSync(recursive: true);
       } on FileSystemException {
@@ -180,9 +167,7 @@ void main() {
     }
   });
 
-  testWidgets('创建 → 草稿步骤 → 净差异 → 模板 → 校验 → 导出 → 部署 → 翻译 → Quick Open', (
-    tester,
-  ) async {
+  testWidgets('创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open', (tester) async {
     SharedPreferences.setMockInitialValues({'workspace_path': ws.path});
     final settings = SettingsStore();
     await settings.load();
@@ -202,12 +187,10 @@ void main() {
             refresh: repo,
             draft: repo,
             runner: runner,
-            validate: validate,
             translations: translations,
             template: template,
             desktop: desktop,
             settings: settings,
-            onResourceSelected: (name) => repo.loadPreview(name),
             onExitRequested: () {},
             workspaceKey: 'shots',
             bannerLabel: '已连接原生内核（截图证据）',
@@ -219,7 +202,7 @@ void main() {
     await shot(
       tester,
       'chain-01-schema',
-      'Schema 模块：资源清单与只读预览都来自内核 resources.list / table.preview。',
+      'Schema 模块：资源清单与字段结构都来自内核 resources.list。',
     );
 
     // 草稿：加一张表，看草稿条与「步骤 / 净差异」弹层（游标、逐步撤销、资源级净差异）。
@@ -281,20 +264,9 @@ void main() {
       }
     }
 
-    // 导出模块：先校验（只读闸门），再导出，再独立部署。
+    // 导出模块：校验与部署入口已收敛，导出本身仍在内核发布前完整校验。
     await tester.tap(find.text('导出'));
     await settle(tester, rounds: 60);
-    await act(
-      tester,
-      () => tester.tap(find.byKey(const ValueKey('wb.validateRun'))),
-      done: () => !validate.busy,
-    );
-    await settle(tester, rounds: 60);
-    await shot(
-      tester,
-      'chain-06-validate',
-      '导出页的「校验」入口：结论与问题全部来自内核 validate（只读，不写盘）。',
-    );
 
     await act(
       tester,
@@ -302,7 +274,6 @@ void main() {
       done: () => !runner.running,
     );
     ExportResult? exported;
-    DeployResult? deployedResult;
     await tester.runAsync(() async => exported = runner.last?.result);
     expect(
       exported?.outcome,
@@ -315,29 +286,13 @@ void main() {
       reason: '阶段耗时来自 progress 事件',
     );
     await settle(tester, rounds: 60);
-    await shot(
-      tester,
-      'chain-07-export',
-      '导出完成：阶段/耗时/缓存统计与日志由 progress/log 事件汇成。',
-    );
-
-    await act(
-      tester,
-      () => tester.tap(find.byKey(const ValueKey('wb.deployRun'))),
-      done: () => !runner.running,
-    );
-    await tester.runAsync(() async => deployedResult = runner.last?.deploy);
-    expect(
-      (deployedResult?.synced ?? 0) > 0,
-      isTrue,
-      reason: '独立部署要真的同步文件：${kernelFacts()}',
-    );
-    await settle(tester, rounds: 60);
-    await shot(tester, 'chain-08-deploy', '独立部署：显式操作，真的把产物送进 Unity 工程目录。');
+    await shot(tester, 'chain-07-export', '导出完成：阶段与耗时来自 progress/result 事件。');
 
     // 翻译模块：sync 后看四态与分页。
     await tester.tap(find.text('翻译'));
     await settle(tester, rounds: 60);
+    await tester.tap(find.byKey(const ValueKey('wb.i18nActionsMenu')));
+    await settle(tester);
     await act(
       tester,
       () => tester.tap(find.byKey(const ValueKey('wb.i18nSync'))),
@@ -359,18 +314,7 @@ void main() {
     // 收尾断言：截图不是摆拍——内核状态确实变了。
     expect(repo.resources, isNotEmpty);
     expect(repo.candidate, isNotNull, reason: '净差异必须由内核算出');
-    expect(validate.last?.ok, isTrue, reason: '校验结论来自内核：${validate.error}');
     expect(exported, isNotNull, reason: '导出结果快照必须留在 RunSummary 里');
-    expect(deployedResult, isNotNull, reason: '独立部署必须留下同步计数');
-    final deployed = Directory('${unity.path}/Assets/Content/Config');
-    expect(deployed.existsSync(), isTrue, reason: '部署目标目录必须真的被写入');
-    expect(
-      deployed
-          .listSync(recursive: true)
-          .whereType<File>()
-          .fold<int>(0, (n, _) => n + 1),
-      greaterThan(0),
-    );
     await tester.runAsync(() => desktop.refresh());
     await settle(tester, rounds: 20);
     expect(desktop.logs, isNotEmpty, reason: '内核日志要能进桌面日志列表（logs.list）');
@@ -405,12 +349,10 @@ void main() {
                 refresh: repo,
                 draft: repo,
                 runner: runner,
-                validate: validate,
                 translations: translations,
                 template: template,
                 desktop: desktop,
                 settings: settings,
-                onResourceSelected: (name) => repo.loadPreview(name),
                 onExitRequested: () {},
                 workspaceKey: 'matrix',
                 bannerLabel: '已连接原生内核（矩阵截图）',
@@ -427,6 +369,7 @@ void main() {
       ('Schema', 'schema'),
       ('翻译', 'i18n'),
       ('导出', 'export'),
+      ('日志', 'logs'),
       ('历史', 'history'),
       ('设置', 'settings'),
     ];

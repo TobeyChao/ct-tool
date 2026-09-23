@@ -1,7 +1,7 @@
 /// 工作台壳接真实内核数据（native-flutter-workbench 任务 2.3 的界面侧证据）。
 ///
-/// 数据来源是 [WorkbenchRepository]（假网关提供内核回包），验证：资源列表/总览/只读预览
-/// 全部来自内核应答；切换工作区后旧工作区的迟到回包不会回到界面上。
+/// 数据来源是 [WorkbenchRepository]（假网关提供内核回包），验证：资源列表、字段结构
+/// 与总览全部来自内核应答；切换工作区后旧工作区的迟到回包不会回到界面上。
 library;
 
 import 'dart:async';
@@ -71,18 +71,27 @@ Map<String, Object?> _snapshot(
 
 Map<String, Object?> _resources(List<List<String>> rows) => {
   'revision': 1,
-  'resources': rows
-      .map((r) => {'name': r[0], 'kind': r[1], 'sourcePath': r[2]})
-      .toList(),
-};
-
-Map<String, Object?> _preview(int revision, List<List<Object?>> rows) => {
-  'revision': revision,
-  'columns': [
-    {'name': 'Id', 'typeExpr': 'int32', 'role': 'primary'},
-    {'name': 'Name', 'typeExpr': 'string', 'role': null},
+  'resources': [
+    for (final r in rows)
+      {
+        'name': r[0],
+        'kind': r[1],
+        'sourcePath': r[2],
+        if (r[1] == 'table') ...{
+          'primary': 'Id',
+          'fields': [
+            {'name': 'Id', 'type': 'int32'},
+            {'name': 'Name', 'type': 'string'},
+          ],
+        },
+        if (r[1] == 'enum') ...{
+          'values': [
+            {'name': 'Common'},
+            {'name': 'Rare'},
+          ],
+        },
+      },
   ],
-  'rows': rows,
 };
 
 Future<void> pumpLive(WidgetTester tester, WorkbenchRepository repo) async {
@@ -95,9 +104,10 @@ Future<void> pumpLive(WidgetTester tester, WorkbenchRepository repo) async {
       home: WorkbenchScreen(
         data: repo,
         refresh: repo,
-        onResourceSelected: repo.loadPreview,
         workspaceKey: 'live-test',
         bannerLabel: '已连接原生内核 · 只读',
+        showDesktopTitleBar: true,
+        showWindowControls: false,
       ),
     ),
   );
@@ -122,22 +132,15 @@ void main() {
           ['Item', 'table', 'config/schemas/item.yaml'],
           ['Rarity', 'enum', 'config/types/rarity.yaml'],
         ]),
-        'table.preview@$aRoot': (_) => _preview(7, [
-          [1001, '铁剑'],
-          [1002, '铁盾'],
-        ]),
         'workspace.open@$bRoot': (_) => _snapshot(12, tables: 1),
         'resources.list@$bRoot': (_) => _resources([
           ['Quest', 'table', 'config/schemas/quest.yaml'],
-        ]),
-        'table.preview@$bRoot': (_) => _preview(12, [
-          [1, 'daily'],
         ]),
       });
     return gw;
   }
 
-  testWidgets('资源列表、总览与只读预览都来自内核回包', (tester) async {
+  testWidgets('资源列表、字段结构与总览都来自内核回包', (tester) async {
     final gw = buildGateway();
     final repo = WorkbenchRepository(worker: gw);
     await repo.switchWorkspace(aRoot);
@@ -147,27 +150,20 @@ void main() {
     expect(find.textContaining('Item'), findsWidgets);
     expect(find.textContaining('Rarity'), findsWidgets);
     expect(find.textContaining('模拟数据（MOCK）'), findsNothing);
-    expect(find.textContaining('已连接原生内核 · 只读'), findsOneWidget);
+    expect(find.text('已连接原生内核'), findsOneWidget);
 
-    // 只读预览：选中表后按 table.preview 渲染
+    // 字段结构：选中表后由 resources.list 自带的 fields 渲染
     await tester.tap(find.textContaining('Item').first);
     await tester.pumpAndSettle();
-    await repo.loadPreview('Item');
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('数据预览'));
-    await tester.pumpAndSettle();
-    // 页脚改成真实分页口径（任务 5.2）：行数 + 内核给的页态。
-    expect(find.textContaining('已显示 2 行'), findsOneWidget);
-    expect(find.byKey(const ValueKey('wb.previewCount')), findsOneWidget);
-    expect(find.text('铁剑'), findsWidgets);
     expect(find.text('Id'), findsWidgets);
+    expect(find.text('Name'), findsWidgets);
 
     // 总览：分类计数取自 resources.list，代次取自 workspace.open
     await tester.tap(find.text('总览'));
     await tester.pumpAndSettle();
     expect(find.text('工作区总览'), findsOneWidget);
     expect(find.textContaining('表 1 · 记录 0 · 枚举 1'), findsOneWidget);
-    expect(find.textContaining('schemaRevision 7'), findsOneWidget);
+    expect(find.textContaining('Schema 版本 7'), findsOneWidget);
     expect(
       find.textContaining('总览统计当前为模拟数据'),
       findsNothing,

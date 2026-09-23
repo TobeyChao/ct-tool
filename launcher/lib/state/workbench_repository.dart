@@ -94,7 +94,6 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   bool get busy =>
       _loading ||
       _saving ||
-      _candidateBusy ||
       _pendingPreviews.isNotEmpty ||
       worker.status == WorkerStatus.starting;
 
