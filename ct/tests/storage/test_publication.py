@@ -103,14 +103,14 @@ def test_staging_happens_on_the_target_volume(tmp_path: Path) -> None:
     root = tmp_path / "gd"
     _seed(root)
     seen: list[tuple[Path, Path]] = []
-    real_replace = os.replace
+    real_replace = pub.atomic_replace
 
     def spy(src, dst):
         seen.append((Path(src), Path(dst)))
         return real_replace(src, dst)
 
     with pytest.MonkeyPatch.context() as patch:
-        patch.setattr(os, "replace", spy)
+        patch.setattr(pub, "atomic_replace", spy)
         FilePublisher(root).publish(
             {root / "output" / "json" / "a.json": b"new-a"}
         )

@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from ct.contracts import ProgressReporter
@@ -22,7 +23,10 @@ def sync_dir(src: Path, dst: Path, reporter: ProgressReporter) -> int:
         raise FileNotFoundError(f"产物目录不存在: {src}")
     dst.mkdir(parents=True, exist_ok=True)
 
-    src_names = {p.name for p in src.iterdir() if p.is_file()}
+    # Windows 文件名大小写不敏感；生成器调整拼写时仍沿用 Unity 资产的
+    # 原有文件名与 .meta，避免删除再创建导致 GUID 改变。
+    src_names = {os.path.normcase(p.name) for p in src.iterdir() if p.is_file()}
+    existing = {os.path.normcase(p.name): p for p in dst.iterdir() if p.is_file()}
     changed = 0
 
     # 清理目标中多余产物：源里没有的非 .meta 文件删除；孤儿 .meta 仅当对应
@@ -30,11 +34,11 @@ def sync_dir(src: Path, dst: Path, reporter: ProgressReporter) -> int:
     for p in sorted(dst.iterdir()):
         if not p.is_file():
             continue
-        if p.name in src_names:
+        if os.path.normcase(p.name) in src_names:
             continue
         if p.name.endswith(".meta"):
             stem = p.name[: -len(".meta")]
-            if stem in src_names:
+            if os.path.normcase(stem) in src_names:
                 continue
             p.unlink()
             reporter.log(f"[deploy] 删除 {p}")
@@ -48,7 +52,7 @@ def sync_dir(src: Path, dst: Path, reporter: ProgressReporter) -> int:
     for p in sorted(src.iterdir()):
         if not p.is_file():
             continue
-        target = dst / p.name
+        target = existing.get(os.path.normcase(p.name), dst / p.name)
         try:
             same = target.read_bytes() == p.read_bytes()
         except FileNotFoundError:

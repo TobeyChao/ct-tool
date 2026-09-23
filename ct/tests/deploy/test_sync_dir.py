@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -55,6 +56,22 @@ def test_sync_preserves_meta_of_existing_files(tmp_path: Path) -> None:
 
     assert (dst / "a.cs").read_text() == "A"
     assert (dst / "a.cs.meta").read_text() == "GUID-KEEP"
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="需要 Windows 大小写不敏感文件系统")
+def test_sync_preserves_meta_when_generated_name_changes_case(tmp_path: Path) -> None:
+    src, dst = tmp_path / "src", tmp_path / "dst"
+    src.mkdir()
+    dst.mkdir()
+    _write(src / "itemaccessor.cs", "new")
+    _write(dst / "ItemAccessor.cs", "old")
+    _write(dst / "ItemAccessor.cs.meta", "GUID-KEEP")
+
+    sync_dir(src, dst, _Reporter())
+
+    assert (dst / "ItemAccessor.cs").read_text() == "new"
+    assert (dst / "ItemAccessor.cs.meta").read_text() == "GUID-KEEP"
+    assert len(list(dst.iterdir())) == 2
 
 
 def test_sync_idempotent(tmp_path: Path) -> None:

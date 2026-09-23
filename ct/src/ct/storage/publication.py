@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Mapping
 
-from ct.storage.files import atomic_write, normalize, sha256_bytes, sha256_file
+from ct.storage.files import atomic_replace, atomic_write, normalize, sha256_bytes, sha256_file
 
 JOURNAL_FORMAT = "export-publication/1"
 JOURNAL_NAME = "export-publication.json"
@@ -275,7 +275,7 @@ class FilePublisher:
             return
         staged = Path(entry.staged or "")
         target.parent.mkdir(parents=True, exist_ok=True)
-        os.replace(staged, target)
+        atomic_replace(staged, target)
 
     # ----------------------------------------------------------------- recover
 

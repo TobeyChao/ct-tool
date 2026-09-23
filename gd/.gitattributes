@@ -1,0 +1,6 @@
+# ct-generated text uses LF on every platform.
+/excel/layout_manifests/*.json text eol=lf
+/output/json/*.json text eol=lf
+/output/fbs/*.fbs text eol=lf
+/output/generated/csharp/*.cs text eol=lf
+/output/generated/lua/*.lua text eol=lf
