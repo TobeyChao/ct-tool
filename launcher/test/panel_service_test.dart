@@ -182,13 +182,15 @@ fields:
     });
 
     test('外部工具目录回退：venv ct 真实启动到 running', () async {
-      final venvCt = '../ct/.venv/bin/ct';
+      final venvCt = Platform.isWindows
+          ? '../ct/.venv/Scripts/ct.exe'
+          : '../ct/.venv/bin/ct';
       expect(File(venvCt).existsSync(), isTrue,
           reason: '需要 ct/.venv 存在（仓库内测试环境）');
       final ws = tempWorkspace();
       final settings = SettingsStore()
         ..workspacePath = ws.path
-        ..toolDir = Directory.current.parent.path + '/ct'
+        ..toolDir = '${Directory.current.parent.path}/ct'
         ..port = 18122;
       final svc = PanelService(settings: settings);
 

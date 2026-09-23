@@ -269,6 +269,11 @@ def panel(
     no_browser: bool = typer.Option(False, "--no-browser", help="启动时不自动打开浏览器"),
 ) -> None:
     """启动本地面板（浏览器打开即用）。"""
+    # Windows 的冻结运行时在被 launcher 管道捕获时会默认输出本地代码页
+    # （例如 GBK）；launcher 与 Web 日志统一按 UTF-8 读取。
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     _setup_logging()
     root = _root(project_root)
     _load_workspace(root)  # 配置/schema 错误立即以友好提示退出

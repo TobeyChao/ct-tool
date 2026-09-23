@@ -130,11 +130,11 @@ class PanelService extends ChangeNotifier {
       );
 
       proc.stdout
-          .transform(utf8.decoder)
+          .transform(const Utf8Decoder(allowMalformed: true))
           .transform(const LineSplitter())
           .listen((line) => _onOutput(line));
       proc.stderr
-          .transform(utf8.decoder)
+          .transform(const Utf8Decoder(allowMalformed: true))
           .transform(const LineSplitter())
           .listen((line) => _onOutput(line, fromErr: true));
       unawaited(proc.exitCode.then(_onExit));

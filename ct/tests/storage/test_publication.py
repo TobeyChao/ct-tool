@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import sys
 from pathlib import Path
 
 import pytest
@@ -142,6 +143,39 @@ def test_backup_failure_never_touches_formal_files(tmp_path: Path) -> None:
             )
 
     assert _snapshot(root) == before, "备份未完成时不得改写任何正式文件"
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="需要 Windows 文件共享语义")
+def test_windows_open_target_blocks_replace_then_recovers(tmp_path: Path) -> None:
+    """真实占用的目标不能替换；释放句柄后可从保留的 journal 恢复。"""
+    import ctypes
+
+    root = tmp_path / "gd"
+    files = _seed(root)
+    before = _snapshot(root)
+    target = files["a"]
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateFileW.argtypes = [
+        ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32,
+        ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p,
+    ]
+    kernel32.CreateFileW.restype = ctypes.c_void_p
+    kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+    kernel32.CloseHandle.restype = ctypes.c_int
+    # 允许备份读取，但拒绝写入/删除共享，从而在正式替换处触发 Windows 占用错误。
+    handle = kernel32.CreateFileW(str(target), 0x80000000, 0x1, None, 3, 0x80, None)
+    assert handle != ctypes.c_void_p(-1).value
+    try:
+        with pytest.raises(OSError):
+            FilePublisher(root).publish({target: b"new-a"})
+        assert _snapshot(root) == before
+        assert FilePublisher(root).read_journal() is not None
+    finally:
+        assert kernel32.CloseHandle(handle)
+
+    assert FilePublisher(root).recover() is not None
+    assert _snapshot(root) == before
+    assert not FilePublisher(root).journal_path.exists()
 
 
 # --------------------------------------------------------------------- 4.2

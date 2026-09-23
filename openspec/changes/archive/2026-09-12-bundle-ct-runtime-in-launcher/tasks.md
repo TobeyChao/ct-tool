@@ -26,4 +26,4 @@
 ## 5. 端到端验证
 
 - [x] 5.1 无 ct-tool 拉取、无 Python 环境（用干净机器/移除 toolDir 配置模拟）下双击 macOS `.app`，能启动面板并完成一次导出
-- [ ] 5.2 Windows 链路（用户机器）：`ct_launcher.exe` 同级 `runtime\` 可启动面板并导出
+- [ ] 5.2 Windows 链路（用户机器）：`ct_launcher.exe` 同级 `runtime\` 可启动面板并导出。**部分验证（2026-09-24）**：Windows Release 构建和同级 runtime 嵌入成功；冻结 `ct.exe` 在隔离工作区启动面板并经 Web API 导出 1 张表成功。launcher 本体到隔离工作区的完整 UI 链路未验收，保持未勾选。

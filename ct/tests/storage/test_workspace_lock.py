@@ -5,6 +5,7 @@ from __future__ import annotations
 import subprocess
 import sys
 import textwrap
+import time
 from pathlib import Path
 
 import pytest
@@ -111,7 +112,16 @@ def test_process_death_releases_the_lock(tmp_path: Path) -> None:
     holder.kill()
     holder.wait(timeout=10)
 
-    with WorkspaceLock(root):
-        pass
+    # Windows 有时在 wait() 返回后数毫秒才释放文件区间锁。
+    deadline = time.monotonic() + 1
+    while True:
+        try:
+            with WorkspaceLock(root):
+                pass
+            break
+        except WorkspaceBusyError:
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(0.01)
     # 文件仍在，但锁已由系统释放
     assert (root / ".ct" / "export.lock").exists()
