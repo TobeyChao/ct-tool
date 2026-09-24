@@ -5,6 +5,7 @@ import 'package:ct_launcher/state/workbench_repository.dart';
 import 'package:ct_launcher/theme.dart';
 import 'package:ct_launcher/ui/workbench/workbench_screen.dart';
 import 'package:ct_launcher/ui/workbench/workbench_shortcuts.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -305,9 +306,9 @@ void main() {
     repo.createTable('Hero');
     await tester.pump();
     // 打开改名对话框：焦点在输入框里。
-    await tester.tap(find.byKey(const ValueKey('wb.resourceMenu')));
+    await tester.tap(find.text('Item').first, buttons: kSecondaryMouseButton);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('wb.renameResource')));
+    await tester.tap(find.byKey(const ValueKey('wb.resourceMenu.rename')));
     await tester.pumpAndSettle();
     expect(WorkbenchShortcuts.textEditingFocused(), isTrue);
 
@@ -332,7 +333,49 @@ void main() {
       modifier: LogicalKeyboardKey.control,
     );
     expect(find.byKey(const ValueKey('wb.quickOpen.field')), findsOneWidget);
-    expect(find.byKey(const ValueKey('wb.quickOpen.hint')), findsOneWidget);
+    final hint = find.byKey(const ValueKey('wb.quickOpen.hint'));
+    final results = find.byKey(const ValueKey('wb.quickOpen.results'));
+    expect(hint, findsOneWidget);
+    expect(results, findsOneWidget);
+    final dialogRect = tester.getRect(find.byType(Dialog).last);
+    final resultsRect = tester.getRect(results);
+    final hintRect = tester.getRect(hint);
+    expect(
+      resultsRect.top,
+      greaterThan(
+        tester
+                .getRect(find.byKey(const ValueKey('wb.quickOpen.field')))
+                .bottom +
+            8,
+      ),
+    );
+    expect(hintRect.top, greaterThan(resultsRect.bottom));
+    expect(hintRect.right, lessThanOrEqualTo(resultsRect.right));
+    expect(
+      resultsRect.left - dialogRect.left,
+      moreOrLessEquals(dialogRect.right - resultsRect.right, epsilon: 1),
+    );
+    expect(dialogRect.bottom - hintRect.bottom, greaterThanOrEqualTo(12));
+    // 首行不额外留 top-padding：选中底色与列表同宽、贴住搜索行下划线。
+    final firstRow = tester.getRect(
+      find.byKey(const ValueKey('wb.quickOpen.row.Quality.0')),
+    );
+    expect(firstRow.top, moreOrLessEquals(resultsRect.top, epsilon: 1));
+    expect(firstRow.left, moreOrLessEquals(resultsRect.left, epsilon: 1));
+    expect(firstRow.right, moreOrLessEquals(resultsRect.right, epsilon: 1));
+    // 放大镜与输入文字同排居中，不再各居一方。
+    final searchIcon = find.descendant(
+      of: find.byType(Dialog).last,
+      matching: find.byIcon(Icons.search),
+    );
+    expect(searchIcon, findsOneWidget);
+    expect(
+      tester.getCenter(searchIcon).dy,
+      moreOrLessEquals(
+        tester.getCenter(find.byKey(const ValueKey('wb.quickOpen.field'))).dy,
+        epsilon: 1,
+      ),
+    );
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('wb.quickOpen.row.Quality.0')),

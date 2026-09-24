@@ -6,6 +6,7 @@ import '../../state/translation_repository.dart';
 import '../../theme.dart';
 import '../tokens.dart';
 import '../widgets/common.dart';
+import '../widgets/search_picker.dart';
 import '../widgets/status_badge.dart';
 
 /// 翻译模块（native-flutter-workbench 任务 4.1–4.3）。
@@ -330,31 +331,27 @@ class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
             _labelled(
               '表',
               170,
-              _dropdown<String>(
-                key: 'wb.i18nTable',
+              CtSearchPicker(
+                key: const ValueKey('wb.i18nTable'),
+                keyPrefix: 'wb.i18nTable',
+                title: '选择表',
                 value: repo.table,
-                items: [
-                  const DropdownMenuItem(value: '', child: Text('（未选择）')),
-                  for (final name in widget.tables)
-                    DropdownMenuItem(value: name, child: Text(name)),
-                ],
-                onChanged: repo.busy
-                    ? null
-                    : (v) => _changeTable(repo, v ?? ''),
+                options: widget.tables,
+                enabled: !repo.busy,
+                onChanged: (value) => _changeTable(repo, value),
               ),
             ),
             _labelled(
               '语言',
               130,
-              _dropdown<String>(
-                key: 'wb.i18nLang',
+              CtSearchPicker(
+                key: const ValueKey('wb.i18nLang'),
+                keyPrefix: 'wb.i18nLang',
+                title: '选择语言',
                 value: repo.lang,
-                items: [
-                  const DropdownMenuItem(value: '', child: Text('（未选择）')),
-                  for (final name in repo.langNames)
-                    DropdownMenuItem(value: name, child: Text(name)),
-                ],
-                onChanged: repo.busy ? null : (v) => _changeLang(repo, v ?? ''),
+                options: repo.langNames,
+                enabled: !repo.busy,
+                onChanged: (value) => _changeLang(repo, value),
               ),
             ),
             _labelled(
@@ -433,6 +430,7 @@ class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
         height: _actionHeight,
         child: PopupMenuButton<String>(
           key: const ValueKey('wb.i18nColumnsMenu'),
+          popUpAnimationStyle: ctMenuAnimationStyle,
           tooltip: '选择列表显示内容',
           onSelected: repo.toggleColumn,
           itemBuilder: (context) => [
@@ -457,6 +455,7 @@ class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
         height: _actionHeight,
         child: PopupMenuButton<String>(
           key: const ValueKey('wb.i18nActionsMenu'),
+          popUpAnimationStyle: ctMenuAnimationStyle,
           tooltip: '更多翻译操作',
           enabled: !repo.busy && repo.canQuery,
           onSelected: (value) async {
@@ -508,42 +507,179 @@ class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
     required T value,
     required List<DropdownMenuItem<T>> items,
     required void Function(T?)? onChanged,
-  }) => DropdownButton<T>(
-    key: ValueKey(key),
-    isExpanded: true,
-    value: items.any((e) => e.value == value) ? value : items.first.value,
-    items: items,
-    onChanged: onChanged,
-  );
+  }) {
+    final selected = items.firstWhere(
+      (item) => item.value == value,
+      orElse: () => items.first,
+    );
+    return PopupMenuButton<T>(
+      key: ValueKey(key),
+      tooltip: '选择状态',
+      enabled: onChanged != null,
+      initialValue: selected.value,
+      position: PopupMenuPosition.under,
+      popUpAnimationStyle: ctMenuAnimationStyle,
+      onSelected: (value) => onChanged?.call(value),
+      itemBuilder: (context) => [
+        for (final item in items)
+          PopupMenuItem<T>(value: item.value, child: item.child),
+      ],
+      child: Container(
+        height: 32,
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: ctInk3)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: DefaultTextStyle(
+                style: ctText(size: ctFontSm),
+                child: selected.child,
+              ),
+            ),
+            Icon(
+              Icons.arrow_drop_down,
+              color: onChanged == null ? ctInk3 : ctInk2,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   // ---- 进度总览（i18n.status） ----
 
   Widget _progress(TranslationRepository repo) {
     if (repo.langs.isEmpty) return const SizedBox.shrink();
-    return Container(
-      key: const ValueKey('wb.i18nProgress'),
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: ctGapSm, horizontal: 2),
-      child: Wrap(
-        spacing: ctGapLg,
-        runSpacing: ctGapXs,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          Text(
-            '全库进度',
-            style: ctText(size: ctFontXs, color: ctInk3),
-          ),
-          for (final lang in repo.langs)
-            Text(
-              '${lang.lang}　已翻译 ${lang.translated}　缺失 ${lang.missing}'
-              '　过期 ${lang.stale}　孤立 ${lang.orphan}',
-              key: ValueKey('wb.i18nProgress.${lang.lang}'),
-              style: ctMono.copyWith(fontSize: ctFontXs, color: ctInk2),
-            ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: ctGapSm),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: OutlinedButton.icon(
+          key: const ValueKey('wb.i18nProgress'),
+          onPressed: () => _showProgress(repo),
+          icon: const Icon(Icons.bar_chart_outlined, size: 17),
+          label: Text('全库进度 · ${repo.langs.length} 种语言'),
+        ),
       ),
     );
   }
+
+  Future<void> _showProgress(TranslationRepository repo) => showDialog<void>(
+    context: context,
+    builder: (dialogContext) => Dialog(
+      key: const ValueKey('wb.i18nProgressDialog'),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 620,
+          maxHeight: (MediaQuery.sizeOf(dialogContext).height - 48).clamp(
+            0.0,
+            560.0,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(ctGapXl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '全库翻译进度',
+                      style: ctText(size: ctFontLg, weight: FontWeight.w600),
+                    ),
+                  ),
+                  IconButton(
+                    key: const ValueKey('wb.i18nProgressClose'),
+                    tooltip: '关闭进度',
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              Text(
+                '共 ${repo.langs.length} 种语言',
+                style: ctText(size: ctFontSm, color: ctInk3),
+              ),
+              const SizedBox(height: ctGapLg),
+              Flexible(
+                fit: FlexFit.loose,
+                child: ListView.separated(
+                  key: const ValueKey('wb.i18nProgressList'),
+                  shrinkWrap: true,
+                  itemCount: repo.langs.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: ctGapSm),
+                  itemBuilder: (context, index) {
+                    final lang = repo.langs[index];
+                    return Container(
+                      key: ValueKey('wb.i18nProgress.${lang.lang}'),
+                      padding: const EdgeInsets.all(ctGapMd),
+                      decoration: BoxDecoration(
+                        color: lang.lang == repo.lang
+                            ? ctAccentSofter
+                            : ctSurface,
+                        border: Border.all(color: ctBorder),
+                        borderRadius: ctRadiusMdAll,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            lang.lang,
+                            style: ctText(
+                              size: ctFontMd,
+                              weight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: ctGapSm),
+                          Wrap(
+                            spacing: ctGapLg,
+                            runSpacing: ctGapXs,
+                            children: [
+                              _progressCount('已翻译', lang.translated),
+                              _progressCount('缺失', lang.missing),
+                              _progressCount('过期', lang.stale),
+                              _progressCount('孤立', lang.orphan),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget _progressCount(String label, int count) => SizedBox(
+    width: 116,
+    child: Row(
+      children: [
+        Text(
+          label,
+          style: ctText(size: ctFontXs, color: ctInk3),
+        ),
+        const SizedBox(width: ctGapSm),
+        Expanded(
+          child: Tooltip(
+            message: '$count',
+            child: Text(
+              '$count',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: ctMono.copyWith(fontSize: ctFontSm, color: ctInk2),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _notices(TranslationRepository repo) {
     final blocks = <Widget>[];

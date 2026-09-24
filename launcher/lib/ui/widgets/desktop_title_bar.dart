@@ -46,6 +46,8 @@ class CtDesktopTitleBar extends StatelessWidget {
     this.statusLabel,
     this.statusTone = CtBadgeTone.neutral,
     this.onQuickOpen,
+    this.sidebarWidth,
+    this.sidebarToggle,
     this.isMaximized = false,
     this.showWindowControls = true,
     this.leadingInset = 0,
@@ -60,6 +62,10 @@ class CtDesktopTitleBar extends StatelessWidget {
   final String? statusLabel;
   final CtBadgeTone statusTone;
   final VoidCallback? onQuickOpen;
+
+  /// When present, place the sidebar toggle alongside the workspace title.
+  final double? sidebarWidth;
+  final Widget? sidebarToggle;
   final bool isMaximized;
   final bool showWindowControls;
 
@@ -74,99 +80,172 @@ class CtDesktopTitleBar extends StatelessWidget {
     return Container(
       key: const ValueKey('ct.desktopTitleBar'),
       height: ctTitleBarHeight,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: ctSurface2,
-        border: Border(bottom: BorderSide(color: ctBorder)),
+        border: sidebarToggle == null || sidebarWidth == null
+            ? const Border(bottom: BorderSide(color: ctBorder))
+            : null,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 1180;
-          return Row(
-            children: [
-              if (leadingInset > 0) SizedBox(width: leadingInset),
-              for (final menu in menus) _TitleBarMenuButton(menu: menu),
-              if (menus.isNotEmpty) const _TitleBarDivider(),
-              Expanded(
-                child: DragToMoveArea(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: ctGapMd),
-                    child: Row(
-                      children: [
-                        const CtBrandMark(),
-                        const SizedBox(width: ctGapSm),
-                        Flexible(
-                          child: Text(
-                            title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: ctText(
-                              size: ctFontSm,
-                              color: ctInk,
-                              weight: FontWeight.w700,
-                            ),
+          // 状态与快速打开在整条标题栏里水平居中：右侧只留给窗口按钮，
+          // 大窗口（侧栏收起）时中间不再是一整片空白。
+          final centerCluster =
+              (compact || statusLabel == null) && onQuickOpen == null
+              ? null
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!compact && statusLabel != null) ...[
+                      Tooltip(
+                        message: statusLabel!,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 150),
+                          child: CtStatusBadge(
+                            label: statusLabel!,
+                            tone: statusTone,
+                            dot: true,
                           ),
                         ),
-                        if (!compact && subtitle != null) ...[
-                          const SizedBox(width: ctGapSm),
-                          Container(
-                            width: 1,
-                            height: 14,
-                            color: ctBorderStrong,
-                          ),
-                          const SizedBox(width: ctGapSm),
-                          Flexible(
-                            child: Text(
-                              subtitle!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: ctText(size: ctFontXs, color: ctInk3),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: ctGapSm),
+                    ],
+                    if (onQuickOpen != null)
+                      _QuickOpenButton(
+                        compact: compact,
+                        onPressed: onQuickOpen!,
+                      ),
+                  ],
+                );
+          final identity = Row(
+            children: [
+              const CtBrandMark(),
+              const SizedBox(width: ctGapSm),
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: ctText(
+                    size: ctFontSm,
+                    color: ctInk,
+                    weight: FontWeight.w700,
                   ),
                 ),
               ),
-              if (!compact && statusLabel != null) ...[
-                Tooltip(
-                  message: statusLabel!,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 150),
-                    child: CtStatusBadge(
-                      label: statusLabel!,
-                      tone: statusTone,
-                      dot: true,
+              if (!compact && subtitle != null) ...[
+                const SizedBox(width: ctGapSm),
+                Container(width: 1, height: 14, color: ctBorderStrong),
+                const SizedBox(width: ctGapSm),
+                Flexible(
+                  child: Text(
+                    subtitle!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: ctText(size: ctFontXs, color: ctInk3),
+                  ),
+                ),
+              ],
+            ],
+          );
+          return Stack(
+            children: [
+              Row(
+                children: [
+                  if (leadingInset > 0) SizedBox(width: leadingInset),
+                  for (final menu in menus) _TitleBarMenuButton(menu: menu),
+                  if (menus.isNotEmpty) const _TitleBarDivider(),
+                  if (sidebarToggle != null && sidebarWidth != null) ...[
+                    if (sidebarWidth! - leadingInset >= ctNavRailWidth)
+                      SizedBox(
+                        width: sidebarWidth! - leadingInset,
+                        child: sidebarWidth! <= ctNavRailWidth
+                            ? Center(child: sidebarToggle!)
+                            : Row(
+                                children: [
+                                  Expanded(
+                                    child: DragToMoveArea(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          left: ctGapMd,
+                                        ),
+                                        child: identity,
+                                      ),
+                                    ),
+                                  ),
+                                  sidebarToggle!,
+                                  const SizedBox(width: ctGapSm),
+                                ],
+                              ),
+                      ),
+                    const Expanded(
+                      child: DragToMoveArea(child: SizedBox.expand()),
+                    ),
+                  ] else
+                    Expanded(
+                      child: DragToMoveArea(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: ctGapMd,
+                          ),
+                          child: identity,
+                        ),
+                      ),
+                    ),
+                  if (showWindowControls) ...[
+                    const SizedBox(width: ctGapXs),
+                    WindowCaptionButton.minimize(
+                      key: const ValueKey('ct.windowMinimize'),
+                      brightness: Brightness.light,
+                      onPressed: onMinimize,
+                    ),
+                    if (isMaximized)
+                      WindowCaptionButton.unmaximize(
+                        key: const ValueKey('ct.windowToggleMaximize'),
+                        brightness: Brightness.light,
+                        onPressed: onToggleMaximize,
+                      )
+                    else
+                      WindowCaptionButton.maximize(
+                        key: const ValueKey('ct.windowToggleMaximize'),
+                        brightness: Brightness.light,
+                        onPressed: onToggleMaximize,
+                      ),
+                    WindowCaptionButton.close(
+                      key: const ValueKey('ct.windowClose'),
+                      brightness: Brightness.light,
+                      onPressed: onClose,
+                    ),
+                  ],
+                ],
+              ),
+              if (centerCluster != null)
+                Align(alignment: Alignment.center, child: centerCluster),
+              if (sidebarToggle != null && sidebarWidth != null) ...[
+                Positioned(
+                  key: const ValueKey('ct.titleBar.sidebarEdge'),
+                  left: sidebarWidth! - 1,
+                  top: 0,
+                  bottom: 0,
+                  child: const IgnorePointer(
+                    child: ColoredBox(
+                      color: ctBorder,
+                      child: SizedBox(width: 1),
                     ),
                   ),
                 ),
-                const SizedBox(width: ctGapSm),
-              ],
-              if (onQuickOpen != null)
-                _QuickOpenButton(compact: compact, onPressed: onQuickOpen!),
-              if (showWindowControls) ...[
-                const SizedBox(width: ctGapXs),
-                WindowCaptionButton.minimize(
-                  key: const ValueKey('ct.windowMinimize'),
-                  brightness: Brightness.light,
-                  onPressed: onMinimize,
-                ),
-                if (isMaximized)
-                  WindowCaptionButton.unmaximize(
-                    key: const ValueKey('ct.windowToggleMaximize'),
-                    brightness: Brightness.light,
-                    onPressed: onToggleMaximize,
-                  )
-                else
-                  WindowCaptionButton.maximize(
-                    key: const ValueKey('ct.windowToggleMaximize'),
-                    brightness: Brightness.light,
-                    onPressed: onToggleMaximize,
+                Positioned(
+                  key: const ValueKey('ct.titleBar.contentEdge'),
+                  left: sidebarWidth!,
+                  right: 0,
+                  bottom: 0,
+                  child: const IgnorePointer(
+                    child: ColoredBox(
+                      color: ctBorder,
+                      child: SizedBox(height: 1),
+                    ),
                   ),
-                WindowCaptionButton.close(
-                  key: const ValueKey('ct.windowClose'),
-                  brightness: Brightness.light,
-                  onPressed: onClose,
                 ),
               ],
             ],
@@ -200,6 +279,7 @@ class _TitleBarMenuButtonState extends State<_TitleBarMenuButton> {
         tooltip: widget.menu.label,
         padding: EdgeInsets.zero,
         position: PopupMenuPosition.under,
+        popUpAnimationStyle: ctMenuAnimationStyle,
         onSelected: (index) => actions[index].onSelected(),
         itemBuilder: (context) => [
           for (var i = 0; i < actions.length; i++)
@@ -289,7 +369,10 @@ class _QuickOpenButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tooltip = '快速打开（Ctrl/Cmd+P）';
+    final shortcut = Theme.of(context).platform == TargetPlatform.macOS
+        ? '⌘P'
+        : 'Ctrl P';
+    final tooltip = '快速打开（$shortcut）';
     return Tooltip(
       message: tooltip,
       child: Padding(
@@ -322,7 +405,7 @@ class _QuickOpenButton extends StatelessWidget {
                         style: ctText(size: ctFontXs, color: ctInk3),
                       ),
                     ),
-                    Text('Ctrl/Cmd P', style: ctText(size: 10, color: ctInk3)),
+                    Text(shortcut, style: ctText(size: 10, color: ctInk3)),
                   ],
                 ],
               ),

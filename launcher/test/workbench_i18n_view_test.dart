@@ -23,6 +23,7 @@ class _FakeGateway implements KernelGateway {
   bool hasMore = true;
   bool failSave = false;
   String? longSource;
+  List<Map<String, Object?>>? statusLangs;
 
   List<_Call> of(String method) =>
       calls.where((c) => c.method == method).toList();
@@ -58,15 +59,17 @@ class _FakeGateway implements KernelGateway {
     switch (method) {
       case Methods.i18nStatus:
         return {
-          'langs': [
-            {
-              'lang': 'en',
-              'translated': 1,
-              'missing': 1,
-              'stale': 0,
-              'orphan': 0,
-            },
-          ],
+          'langs':
+              statusLangs ??
+              [
+                {
+                  'lang': 'en',
+                  'translated': 1,
+                  'missing': 1,
+                  'stale': 0,
+                  'orphan': 0,
+                },
+              ],
         };
       case Methods.i18nQuery:
         final page = params['page']! as Map<String, Object?>;
@@ -300,7 +303,25 @@ void main() {
   testWidgets('同步与进度总览显示内核给出的数字', (tester) async {
     await openI18n(tester);
     expect(find.byKey(const ValueKey('wb.i18nProgress')), findsOneWidget);
-    expect(find.textContaining('en　已翻译 1　缺失 1'), findsOneWidget);
+    expect(find.textContaining('已翻译 1　缺失 1'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('wb.i18nProgress')));
+    await tester.pumpAndSettle();
+    final language = find.byKey(const ValueKey('wb.i18nProgress.en'));
+    expect(language, findsOneWidget);
+    expect(
+      find.descendant(of: language, matching: find.text('已翻译')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: language, matching: find.text('缺失')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: language, matching: find.text('1')),
+      findsNWidgets(2),
+    );
+    await tester.tap(find.byKey(const ValueKey('wb.i18nProgressClose')));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const ValueKey('wb.i18nSyncTable')));
     await tester.pumpAndSettle();
@@ -308,6 +329,41 @@ void main() {
       'table': 'Item',
     }, reason: '本表同步必须带表名');
     expect(find.textContaining('已同步 1 张表'), findsOneWidget);
+  });
+
+  testWidgets('语言很多时进度入口保持单行，弹窗滚动查看全部语言', (tester) async {
+    gateway.statusLangs = [
+      for (var i = 0; i < 18; i++)
+        {
+          'lang': 'lang-$i',
+          'translated': i,
+          'missing': 18 - i,
+          'stale': 0,
+          'orphan': 0,
+        },
+    ];
+    await openI18n(tester, size: const Size(1024, 700));
+    final progress = find.byKey(const ValueKey('wb.i18nProgress'));
+    expect(progress, findsOneWidget);
+    expect(find.text('全库进度 · 18 种语言'), findsOneWidget);
+    expect(tester.getSize(progress).height, lessThan(55));
+    expect(find.text('lang-17'), findsNothing);
+
+    await tester.tap(progress);
+    await tester.pumpAndSettle();
+    final dialog = find.byKey(const ValueKey('wb.i18nProgressDialog'));
+    expect(dialog, findsOneWidget);
+    expect(tester.getRect(dialog).bottom, lessThanOrEqualTo(700));
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('wb.i18nProgress.lang-17')),
+      200,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('wb.i18nProgressList')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(find.text('lang-17'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('选择条目后显示专注编辑器和多行编辑器布局', (tester) async {

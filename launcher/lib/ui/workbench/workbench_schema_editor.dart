@@ -1,12 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../state/schema_draft.dart';
 import '../../state/workbench_repository.dart';
 import '../../theme.dart';
 import '../tokens.dart';
+import '../widgets/common.dart';
 import '../widgets/type_picker.dart';
 import 'workbench_draft_bar.dart' show confirmWorkbenchDiscard;
 import 'workbench_models.dart';
+
+/// 资源栏菜单和工作区空态共用的创建入口；只加入 Schema 草稿。
+Future<void> createWorkbenchResource(
+  BuildContext context, {
+  required WorkbenchRepository repo,
+  required String kind,
+  ValueChanged<String?>? onResourceSelected,
+}) async {
+  if (repo.busy) return;
+  if (repo.workspaceRoot.isEmpty) {
+    showCtToast(context, '请先在设置中绑定配表工作区');
+    return;
+  }
+  final title = switch (kind) {
+    'table' => '新建 Table',
+    'record' => '新建 Record',
+    'enum' => '新建 Enum',
+    _ => throw ArgumentError.value(kind, 'kind'),
+  };
+  final answer = await WorkbenchSchemaEditor._ask(context, title: title);
+  if (answer == null ||
+      !context.mounted ||
+      repo.busy ||
+      repo.workspaceRoot.isEmpty) {
+    return;
+  }
+  switch (kind) {
+    case 'table':
+      repo.createTable(answer.name);
+    case 'record':
+      repo.createRecord(answer.name);
+    case 'enum':
+      repo.createEnum(answer.name);
+  }
+  onResourceSelected?.call(answer.name);
+}
 
 /// 资源与字段的草稿操作面板（native-flutter-workbench 任务 3.1）。
 ///
@@ -46,34 +84,6 @@ class WorkbenchSchemaEditor extends StatelessWidget {
                 ],
                 onPick: (value) => _create(context, value),
               ),
-              const SizedBox(width: ctGapSm),
-              _menu(
-                context,
-                keyName: 'wb.resourceMenu',
-                label: selected == null ? '选中资源后可用' : '选中资源',
-                tooltip: '对当前选中资源做什么（改名 / 删除 / 加字段）',
-                enabled: selected != null && !repo.busy,
-                items: [
-                  (
-                    'rename',
-                    Icons.drive_file_rename_outline,
-                    '改名',
-                    'wb.renameResource',
-                  ),
-                  ('delete', Icons.delete_outline, '删除', 'wb.deleteResource'),
-                  ('field', Icons.playlist_add, '加字段', 'wb.addField'),
-                ],
-                onPick: (value) {
-                  switch (value) {
-                    case 'rename':
-                      _renameResource(context);
-                    case 'delete':
-                      _deleteResource(context);
-                    default:
-                      _addField(context);
-                  }
-                },
-              ),
             ],
           ),
           const SizedBox(height: ctGapSm),
@@ -98,6 +108,7 @@ class WorkbenchSchemaEditor extends StatelessWidget {
     enabled: enabled,
     tooltip: tooltip,
     position: PopupMenuPosition.under,
+    popUpAnimationStyle: ctMenuAnimationStyle,
     itemBuilder: (context) => [
       for (final (value, icon, text, itemKey) in items)
         PopupMenuItem<String>(
@@ -140,18 +151,35 @@ class WorkbenchSchemaEditor extends StatelessWidget {
   );
 
   Widget _draftRow(BuildContext context) {
+    final hasEditableState =
+        repo.hasDraft ||
+        repo.canUndo ||
+        repo.canRedo ||
+        repo.candidate != null ||
+        repo.candidateBusy ||
+        repo.refreshError != null;
+    if (!hasEditableState) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "草稿 ${repo.draftCount} 条",
-          key: const ValueKey('wb.draftCount'),
-          style: ctText(size: ctFontSm, color: ctInk2),
-        ),
-        Text(
-          "落盘：${repo.draftPersistLabel}",
-          key: const ValueKey('wb.draftPersistState'),
-          style: ctText(size: ctFontXs, color: ctInk3),
+        Row(
+          children: [
+            Text(
+              "草稿 ${repo.draftCount} 条",
+              key: const ValueKey('wb.draftCount'),
+              style: ctText(size: ctFontSm, color: ctInk2),
+            ),
+            const Spacer(),
+            Flexible(
+              child: Text(
+                "落盘：${repo.draftPersistLabel}",
+                key: const ValueKey('wb.draftPersistState'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: ctText(size: ctFontXs, color: ctInk3),
+              ),
+            ),
+          ],
         ),
         if (repo.refreshError != null)
           Text(
@@ -257,7 +285,7 @@ class WorkbenchSchemaEditor extends StatelessWidget {
   }
 
   /// 单/双输入框的轻量对话框；返回 null 表示取消。
-  Future<_PromptResult?> _ask(
+  static Future<_PromptResult?> _ask(
     BuildContext context, {
     required String title,
     String initial = '',
@@ -309,24 +337,13 @@ class WorkbenchSchemaEditor extends StatelessWidget {
     return _PromptResult(name, (result['second'] as String? ?? '').trim());
   }
 
-  Future<void> _create(BuildContext context, String kind) async {
-    final title = switch (kind) {
-      'table' => '新建 Table',
-      'record' => '新建 Record',
-      _ => '新建 Enum',
-    };
-    final answer = await _ask(context, title: title);
-    if (answer == null) return;
-    switch (kind) {
-      case 'table':
-        repo.createTable(answer.name);
-      case 'record':
-        repo.createRecord(answer.name);
-      default:
-        repo.createEnum(answer.name);
-    }
-    onResourceSelected?.call(answer.name);
-  }
+  Future<void> _create(BuildContext context, String kind) =>
+      createWorkbenchResource(
+        context,
+        repo: repo,
+        kind: kind,
+        onResourceSelected: onResourceSelected,
+      );
 
   Future<void> _renameResource(BuildContext context) async {
     final from = selected;
@@ -458,7 +475,8 @@ class WorkbenchSchemaEditor extends StatelessWidget {
         ),
       ),
     );
-    name.dispose();
+    // 类型选择器是嵌套路由；等退出动画结束后再释放输入控制器。
+    Future<void>.delayed(const Duration(milliseconds: 300), name.dispose);
     if (result == null || result.name.isEmpty) return null;
     return result;
   }
@@ -468,6 +486,128 @@ class WorkbenchSchemaEditor extends StatelessWidget {
     WorkbenchResourceKind.record => 'record',
     WorkbenchResourceKind.enumType => 'enum',
   };
+}
+
+enum _ResourceMenuAction { open, addField, rename, copyId, copyPath, delete }
+
+/// 资源树右键菜单：常用编辑动作与复制/删除入口。
+Future<void> showWorkbenchResourceContextMenu(
+  BuildContext context, {
+  required WorkbenchRepository repo,
+  required String resourceName,
+  required Offset globalPosition,
+  ValueChanged<String?>? onResourceSelected,
+}) async {
+  final resource = repo.resourceNamed(resourceName);
+  if (resource == null) return;
+  final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+  final action = await showMenu<_ResourceMenuAction>(
+    context: context,
+    position: RelativeRect.fromRect(
+      Rect.fromPoints(globalPosition, globalPosition),
+      Offset.zero & overlay.size,
+    ),
+    popUpAnimationStyle: ctMenuAnimationStyle,
+    items: [
+      const PopupMenuItem(
+        key: ValueKey('wb.resourceMenu.open'),
+        value: _ResourceMenuAction.open,
+        height: 36,
+        child: _ResourceMenuItem(Icons.edit_outlined, '打开'),
+      ),
+      PopupMenuItem(
+        key: const ValueKey('wb.resourceMenu.addField'),
+        value: _ResourceMenuAction.addField,
+        enabled: !repo.busy,
+        height: 36,
+        child: const _ResourceMenuItem(Icons.playlist_add, '添加字段…'),
+      ),
+      PopupMenuItem(
+        key: const ValueKey('wb.resourceMenu.rename'),
+        value: _ResourceMenuAction.rename,
+        enabled: !repo.busy,
+        height: 36,
+        child: const _ResourceMenuItem(Icons.drive_file_rename_outline, '重命名…'),
+      ),
+      const PopupMenuItem(
+        key: ValueKey('wb.resourceMenu.copyId'),
+        value: _ResourceMenuAction.copyId,
+        height: 36,
+        child: _ResourceMenuItem(Icons.tag, '复制资源 ID'),
+      ),
+      const PopupMenuItem(
+        key: ValueKey('wb.resourceMenu.copyPath'),
+        value: _ResourceMenuAction.copyPath,
+        height: 36,
+        child: _ResourceMenuItem(Icons.content_copy, '复制路径'),
+      ),
+      const PopupMenuDivider(),
+      PopupMenuItem(
+        key: const ValueKey('wb.resourceMenu.delete'),
+        value: _ResourceMenuAction.delete,
+        enabled: !repo.busy,
+        height: 36,
+        child: const _ResourceMenuItem(
+          Icons.delete_outline,
+          '删除资源…',
+          danger: true,
+        ),
+      ),
+    ],
+  );
+  if (action == null || !context.mounted) return;
+
+  final editor = WorkbenchSchemaEditor(
+    repo: repo,
+    selected: resourceName,
+    onResourceSelected: onResourceSelected,
+  );
+  switch (action) {
+    case _ResourceMenuAction.open:
+      onResourceSelected?.call(resourceName);
+    case _ResourceMenuAction.addField:
+      await editor._addField(context);
+    case _ResourceMenuAction.rename:
+      await editor._renameResource(context);
+    case _ResourceMenuAction.copyId:
+      await Clipboard.setData(
+        ClipboardData(
+          text: resourceId(
+            WorkbenchSchemaEditor._kindWire(resource.kind),
+            resourceName,
+          ),
+        ),
+      );
+      if (context.mounted) showCtToast(context, '已复制资源 ID');
+    case _ResourceMenuAction.copyPath:
+      await Clipboard.setData(ClipboardData(text: resource.path));
+      if (context.mounted) showCtToast(context, '已复制路径');
+    case _ResourceMenuAction.delete:
+      await editor._deleteResource(context);
+  }
+}
+
+class _ResourceMenuItem extends StatelessWidget {
+  const _ResourceMenuItem(this.icon, this.label, {this.danger = false});
+
+  final IconData icon;
+  final String label;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger ? ctDanger : ctInk2;
+    return Row(
+      children: [
+        Icon(icon, size: 15, color: color),
+        const SizedBox(width: ctGapSm),
+        Text(
+          label,
+          style: ctText(size: ctFontSm, color: color),
+        ),
+      ],
+    );
+  }
 }
 
 class _PromptResult {

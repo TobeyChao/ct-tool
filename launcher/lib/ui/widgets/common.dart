@@ -117,6 +117,143 @@ class CtSurfaceCard extends StatelessWidget {
   }
 }
 
+/// 分组卡片：设置页与属性区共用的圆角矩形分组。
+///
+/// 白底 + `ctBorder` 描边 + 12px 圆角，条目之间自动补一条顶线；标题与说明作为卡片抬头。
+/// 条目自己只管内容，内边距与分隔线统一由这里给，避免各页各写一套。
+class CtGroupCard extends StatelessWidget {
+  const CtGroupCard({
+    super.key,
+    this.title,
+    this.description,
+    required this.children,
+  });
+
+  final String? title;
+  final String? description;
+  final List<Widget> children;
+
+  static const EdgeInsets _itemPadding = EdgeInsets.fromLTRB(
+    ctGapLg,
+    14,
+    ctGapLg,
+    14,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: ctSurface,
+        border: Border.all(color: ctBorder),
+        borderRadius: ctRadiusLgAll,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (title != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(ctGapLg, 14, ctGapLg, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title!,
+                    style: ctText(
+                      size: ctFontSm,
+                      color: ctInk,
+                      weight: FontWeight.w600,
+                    ),
+                  ),
+                  if (description != null) ...[
+                    const SizedBox(height: ctGapXs),
+                    Text(
+                      description!,
+                      style: ctText(size: ctFontXs, color: ctInk3, height: 1.4),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const Divider(height: 1, thickness: 1, color: ctBorder),
+            Padding(padding: _itemPadding, child: children[i]),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// 复选框：描述**对象属性**的布尔标记——字段是否本地化、是否仅服务端、表有没有 codename 索引、
+/// Excel 是否拆成多列。这类「是 / 否」是实体上的一个属性值，与同类属性并列，所以用勾选。
+///
+/// 语义分工：**开关某个行为的设置项用 [CtSwitch]**，实体的属性标记用本控件；
+/// 全项目只留这两种布尔外观，不要再各自用 Switch/Checkbox 拼。
+class CtCheckbox extends StatelessWidget {
+  const CtCheckbox({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.tooltip,
+  });
+
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final box = SizedBox(
+      width: 32,
+      height: 32,
+      child: Checkbox(
+        value: value,
+        onChanged: onChanged == null ? null : (on) => onChanged!(on ?? false),
+        visualDensity: VisualDensity.compact,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        activeColor: ctAccent,
+        checkColor: Colors.white,
+        side: const BorderSide(color: ctBorderStrong),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ctRadiusSm),
+        ),
+      ),
+    );
+    if (tooltip == null) return box;
+    return Tooltip(message: tooltip!, child: box);
+  }
+}
+
+/// 开关：开关**某个行为**的设置项——开机自启、托盘常驻这类「打开 / 关闭」一件事情的条目。
+///
+/// 语义分工：设置项用本控件，实体的属性标记用 [CtCheckbox]。
+/// 配色沿用主题的 `colorScheme.primary`，不在这里另写一套颜色。
+class CtSwitch extends StatelessWidget {
+  const CtSwitch({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.tooltip,
+  });
+
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final control = Switch(
+      value: value,
+      onChanged: onChanged,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+    if (tooltip == null) return control;
+    return Tooltip(message: tooltip!, child: control);
+  }
+}
+
 /// 全局轻提示（深绿浮层，替代页面内重复的 SnackBar 拼装）
 void showCtToast(BuildContext context, String message) {
   ScaffoldMessenger.of(context)

@@ -5,6 +5,7 @@ import 'package:ct_launcher/state/workbench_repository.dart';
 import 'package:ct_launcher/theme.dart';
 import 'package:ct_launcher/ui/workbench/workbench_screen.dart';
 import 'package:ct_launcher/ui/workbench/workbench_schema_editor.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,6 +16,7 @@ class _FakeGateway implements KernelGateway {
 
   final List<Map<String, Object?>> candidates = [];
   final List<Map<String, Object?>> saves = [];
+  bool emptyResources = false;
 
   @override
   WorkerStatus status = WorkerStatus.ready;
@@ -45,21 +47,23 @@ class _FakeGateway implements KernelGateway {
         return {
           'revision': 3,
           'schemaRevision': 'baseline-sha',
-          'resources': [
-            {
-              'name': 'Item',
-              'kind': 'table',
-              'sourcePath': 'config/schemas/item.yaml',
-            },
-            {
-              'name': 'Reward',
-              'kind': 'record',
-              'sourcePath': 'config/schemas/reward.yaml',
-              'fields': [
-                {'name': 'Amount', 'type': 'int32'},
-              ],
-            },
-          ],
+          'resources': emptyResources
+              ? <Object?>[]
+              : [
+                  {
+                    'name': 'Item',
+                    'kind': 'table',
+                    'sourcePath': 'config/schemas/item.yaml',
+                  },
+                  {
+                    'name': 'Reward',
+                    'kind': 'record',
+                    'sourcePath': 'config/schemas/reward.yaml',
+                    'fields': [
+                      {'name': 'Amount', 'type': 'int32'},
+                    ],
+                  },
+                ],
         };
       case Methods.schemaSave:
         saves.add(params);
@@ -129,16 +133,31 @@ void main() {
       .widget<PopupMenuButton<String>>(find.byKey(ValueKey(keyName)))
       .enabled;
 
-  testWidgets('资源区挂着编辑面板，首个资源自动选中后上下文菜单可用', (tester) async {
+  Future<void> openResourceMenu(WidgetTester tester, String name) async {
+    await tester.tap(find.text(name).first, buttons: kSecondaryMouseButton);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('资源区保持新建入口，资源右键菜单提供常用操作', (tester) async {
     await pumpEditor(tester);
     expect(find.byKey(const ValueKey('wb.schemaEditor')), findsOneWidget);
-    expect(find.text('草稿 0 条'), findsOneWidget);
-    // 动作收进菜单后：清单非空时首个资源自动选中，两个菜单都可用
+    expect(find.text('草稿 0 条'), findsNothing);
     expect(menuEnabled(tester, 'wb.newMenu'), isTrue);
-    expect(menuEnabled(tester, 'wb.resourceMenu'), isTrue);
+
+    await openResourceMenu(tester, 'Item');
+    for (final key in const [
+      'wb.resourceMenu.open',
+      'wb.resourceMenu.addField',
+      'wb.resourceMenu.rename',
+      'wb.resourceMenu.copyId',
+      'wb.resourceMenu.copyPath',
+      'wb.resourceMenu.delete',
+    ]) {
+      expect(find.byKey(ValueKey(key)), findsOneWidget);
+    }
   });
 
-  testWidgets('没有选中资源时上下文菜单整体禁用', (tester) async {
+  testWidgets('无选中资源时新建入口仍可用', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: buildCtTheme(),
@@ -147,11 +166,56 @@ void main() {
     );
     await tester.pump();
     expect(menuEnabled(tester, 'wb.newMenu'), isTrue);
-    expect(
-      menuEnabled(tester, 'wb.resourceMenu'),
-      isFalse,
-      reason: '没有选中资源时不该能改名/删除/加字段（避免把空 owner 送进内核）',
-    );
+    expect(find.byKey(const ValueKey('wb.resourceMenu')), findsNothing);
+  });
+
+  for (final (button, kind, name) in [
+    ('wb.emptyNewTable', 'table', 'Hero'),
+    ('wb.emptyNewRecord', 'record', 'Stats'),
+    ('wb.emptyNewEnum', 'enum', 'Quality'),
+  ]) {
+    testWidgets('空工作区的 $kind 按钮复用真实草稿创建流程', (tester) async {
+      gateway.emptyResources = true;
+      await repo.switchWorkspace('D:/game/gd');
+      await pumpEditor(tester);
+      expect(repo.resources, isEmpty);
+      await tester.tap(find.byKey(ValueKey(button)));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('wb.nameField')), findsOneWidget);
+      await tester.enterText(find.byKey(const ValueKey('wb.nameField')), name);
+      await tester.tap(find.byKey(const ValueKey('wb.dialogConfirm')));
+      await tester.pumpAndSettle();
+      expect(repo.commands.single.kind, 'add_resource');
+      expect(repo.resources.single.name, name);
+      expect(repo.resources.single.dirty, isTrue);
+      expect(find.text('草稿 1 条'), findsOneWidget);
+      expect(find.byKey(ValueKey(button)), findsNothing);
+    });
+  }
+
+  testWidgets('未绑定工作区时新建不会加入草稿', (tester) async {
+    repo.clearWorkspace();
+    await pumpEditor(tester);
+    await tester.tap(find.byKey(const ValueKey('wb.emptyNewTable')));
+    await tester.pump();
+    expect(find.text('请先在设置中绑定配表工作区'), findsOneWidget);
+    expect(find.byKey(const ValueKey('wb.nameField')), findsNothing);
+    expect(repo.commands, isEmpty);
+  });
+
+  testWidgets('资源列表空态的新建菜单也可加入草稿', (tester) async {
+    gateway.emptyResources = true;
+    await repo.switchWorkspace('D:/game/gd');
+    await pumpEditor(tester);
+    await tester.tap(find.byKey(const ValueKey('wb.emptyNewMenu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('新建表').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('wb.nameField')), 'Hero');
+    await tester.tap(find.byKey(const ValueKey('wb.dialogConfirm')));
+    await tester.pumpAndSettle();
+    expect(repo.resources.single.name, 'Hero');
+    expect(repo.commands.single.kind, 'add_resource');
   });
 
   testWidgets('新建 Table 走对话框入草稿，清单立刻出现草稿资源', (tester) async {
@@ -181,24 +245,28 @@ void main() {
 
   testWidgets('加字段用工作区具名类型与 vector 选择器，不再手填类型', (tester) async {
     await pumpEditor(tester);
-    await tester.tap(find.byKey(const ValueKey('wb.resourceMenu')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('wb.addField')));
+    await openResourceMenu(tester, 'Item');
+    await tester.tap(find.byKey(const ValueKey('wb.resourceMenu.addField')));
     await tester.pumpAndSettle();
 
     await tester.enterText(
       find.byKey(const ValueKey('wb.nameField')),
       'Rewards',
     );
-    final base = find.byKey(const ValueKey('wb.addFieldType.base'));
-    await tester.tap(base);
+    await tester.tap(find.byKey(const ValueKey('wb.addFieldType.base')));
     await tester.pumpAndSettle();
-    expect(find.text('Reward'), findsWidgets);
-    await tester.tap(find.text('Reward').last);
+    await tester.enterText(
+      find.byKey(const ValueKey('wb.addFieldType.search')),
+      'Reward',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('wb.addFieldType.option.Reward')),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('wb.addFieldType.vector')));
     await tester.pumpAndSettle();
-    expect(find.text('实际写入：vector<Reward>'), findsOneWidget);
+    expect(find.text('vector<Reward>'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('wb.dialogConfirm')));
     await tester.pumpAndSettle();
@@ -231,7 +299,7 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('wb.undo')));
     await tester.pump();
-    expect(find.text('草稿 0 条'), findsOneWidget);
+    expect(find.text('草稿 0 条'), findsOneWidget, reason: '仍有可重做历史');
     expect(find.textContaining('Hero'), findsNothing);
     expect(find.byKey(const ValueKey('wb.redo')), findsOneWidget);
 
@@ -249,16 +317,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('wb.draftDiscard.confirm')));
     await tester.pumpAndSettle();
-    expect(find.text('草稿 0 条'), findsOneWidget);
+    expect(find.text('草稿 0 条'), findsNothing);
     expect(repo.hasDraft, isFalse);
   });
 
   testWidgets('改名后仍选中新资源', (tester) async {
     await pumpEditor(tester);
     // 默认选中清单里第一个资源（Item）
-    await tester.tap(find.byKey(const ValueKey('wb.resourceMenu')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('wb.renameResource')));
+    await openResourceMenu(tester, 'Item');
+    await tester.tap(find.byKey(const ValueKey('wb.resourceMenu.rename')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const ValueKey('wb.nameField')), 'Gear');
     await tester.tap(find.byKey(const ValueKey('wb.dialogConfirm')));
@@ -277,17 +344,15 @@ void main() {
 
   testWidgets('删除选中资源先确认，取消时不入草稿', (tester) async {
     await pumpEditor(tester);
-    await tester.tap(find.byKey(const ValueKey('wb.resourceMenu')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('wb.deleteResource')));
+    await openResourceMenu(tester, 'Item');
+    await tester.tap(find.byKey(const ValueKey('wb.resourceMenu.delete')));
     await tester.pumpAndSettle();
     expect(repo.resourceNamed('Item'), isNotNull);
     await tester.tap(find.text('取消').last);
     await tester.pumpAndSettle();
     expect(repo.draftCount, 0);
-    await tester.tap(find.byKey(const ValueKey('wb.resourceMenu')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('wb.deleteResource')));
+    await openResourceMenu(tester, 'Item');
+    await tester.tap(find.byKey(const ValueKey('wb.resourceMenu.delete')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('wb.deleteResourceConfirm')));
     await tester.pumpAndSettle();
@@ -321,7 +386,7 @@ void main() {
     expect(sent['candidateHash'], 'hash-edit');
     expect(sent['commands'], hasLength(1));
     expect(sent['cursor'], '1');
-    expect(find.text('草稿 0 条'), findsOneWidget);
+    expect(find.text('草稿 0 条'), findsNothing);
     expect(repo.draftCount, 0);
   });
 

@@ -85,7 +85,7 @@ class _WorkbenchTemplatePanelState extends State<WorkbenchTemplatePanel> {
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: ctBorder)),
       ),
-      padding: const EdgeInsets.all(ctGapMd),
+      padding: const EdgeInsets.fromLTRB(ctGapMd, ctGapSm, ctGapMd, ctGapSm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -124,24 +124,52 @@ class _WorkbenchTemplatePanelState extends State<WorkbenchTemplatePanel> {
                   ),
                 ],
               );
-              if (constraints.maxWidth < 600) {
+              final hint = plan == null && !blocked && service.error == null
+                  ? Tooltip(
+                      message: '生成按钮保持禁用；预检只读，不改任何文件。',
+                      child: Text(
+                        '生成前需预检 · 预检只读',
+                        key: const ValueKey('wb.templateHint'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: ctText(size: ctFontXs, color: ctInk3),
+                      ),
+                    )
+                  : null;
+              if (constraints.maxWidth < 680) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    title,
+                    Row(
+                      children: [
+                        title,
+                        if (hint != null) ...[
+                          const Spacer(),
+                          Flexible(child: hint),
+                        ],
+                      ],
+                    ),
                     const SizedBox(height: ctGapSm),
                     Align(alignment: Alignment.centerRight, child: actions),
                   ],
                 );
               }
-              return Row(children: [title, const Spacer(), actions]);
+              return Row(
+                children: [
+                  title,
+                  if (hint != null) ...[
+                    const SizedBox(width: ctGapLg),
+                    Flexible(child: hint),
+                  ],
+                  const Spacer(),
+                  actions,
+                ],
+              );
             },
           ),
           if (blocked) _line(widget.blockReason!, CtBadgeTone.warn),
           if (service.error != null) _line(service.error!, CtBadgeTone.danger),
-          if (plan == null)
-            _line('未预检：生成按钮保持禁用；预检只读，不改任何文件。', CtBadgeTone.neutral)
-          else ...[
+          if (plan != null) ...[
             for (final action in plan.actions)
               _line('将执行：$action', CtBadgeTone.info),
             for (final issue in plan.problems) _issue(issue, danger: true),

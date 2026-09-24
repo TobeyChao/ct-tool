@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../theme.dart';
@@ -14,6 +15,7 @@ import '../tokens.dart';
 import '../widgets/common.dart';
 import '../widgets/desktop_title_bar.dart';
 import '../widgets/status_badge.dart';
+import '../widgets/type_picker.dart';
 import 'mock/mock_data.dart';
 import 'workbench_models.dart';
 import 'workbench_schema_editor.dart';
@@ -28,6 +30,18 @@ import 'workbench_shortcuts.dart';
 import 'workbench_template_panel.dart';
 import 'workbench_field_editor.dart';
 import 'workbench_settings.dart';
+
+enum _FieldMenuAction {
+  edit,
+  changeType,
+  copyName,
+  copyType,
+  toggleI18n,
+  toggleServerOnly,
+  moveUp,
+  moveDown,
+  delete,
+}
 
 /// 原生工作台壳（native-flutter-workbench 1.3）：
 /// 模块导航 + 资源区 + 主编辑区 + 可调属性区。
@@ -119,14 +133,15 @@ class WorkbenchScreen extends StatefulWidget {
 }
 
 class _WorkbenchScreenState extends State<WorkbenchScreen> {
-  static const double _wName = 160;
-  static const double _wType = 230;
-  static const double _wRole = 80;
-  static const double _wConstraint = 130;
-  static const double _wDefault = 110;
-  static const double _wDesc = 260;
+  // Schema 表格优先展示完整结构：这些最小列宽合计 660px，
+  // 1400px 窗口三栏全展开时仍无需横向滚动；额外空间全部给描述列。
+  static const double _wName = 140;
+  static const double _wType = 170;
+  static const double _wRole = 68;
+  static const double _wConstraint = 92;
+  static const double _wDesc = 160;
   static const double _tableMinWidth =
-      _wName + _wType + _wRole + _wConstraint + _wDefault + _wDesc;
+      _wName + _wType + _wRole + _wConstraint + _wDesc;
 
   static const _modules = <(IconData, String, String)>[
     (Icons.dashboard_outlined, '总览', ''),
@@ -225,15 +240,38 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
     if (!mounted) return;
     final k = _prefsKey;
     setState(() {
-      _resourceWidth = prefs.getDouble('$k.resourceWidth') ?? _resourceWidth;
-      _inspectorWidth = prefs.getDouble('$k.inspectorWidth') ?? _inspectorWidth;
-      _rememberCollapse('resource', prefs.getBool('$k.resourceCollapsed'));
-      _rememberCollapse('inspector', prefs.getBool('$k.inspectorCollapsed'));
+      _resourceWidth = (prefs.getDouble('$k.resourceWidth') ?? _resourceWidth)
+          .clamp(ctResourcePanelMin, ctResourcePanelMax);
+      _inspectorWidth =
+          (prefs.getDouble('$k.inspectorWidth') ?? _inspectorWidth).clamp(
+            ctInspectorMin,
+            ctInspectorMax,
+          );
+      // v2 起只读取“用户手动折叠意图”。旧 key 曾把自动断点结果也写成偏好，
+      // 会导致升级后窄窗口仍强制展开辅助区，因此有意忽略旧值。
+      _rememberCollapse('sidebar', prefs.getBool('$k.collapse.v2.sidebar'));
+      _rememberCollapse('resource', prefs.getBool('$k.collapse.v2.resource'));
+      _rememberCollapse('inspector', prefs.getBool('$k.collapse.v2.inspector'));
       _recentResources
         ..clear()
         ..addAll(prefs.getStringList('$k.recents') ?? const []);
       _layoutLoaded = true;
     });
+  }
+
+  /// 自动断点不是偏好：没有手动覆盖时删除 key，窗口缩放后继续跟随断点。
+  Future<void> _saveCollapsePreference(
+    SharedPreferences prefs,
+    String key,
+    String zone,
+  ) async {
+    final preferenceKey = '$key.collapse.v2.$zone';
+    final value = _userCollapse[zone];
+    if (value == null) {
+      await prefs.remove(preferenceKey);
+    } else {
+      await prefs.setBool(preferenceKey, value);
+    }
   }
 
   Future<void> _saveLayout() async {
@@ -242,14 +280,9 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
     final k = _prefsKey;
     await prefs.setDouble('$k.resourceWidth', _resourceWidth);
     await prefs.setDouble('$k.inspectorWidth', _inspectorWidth);
-    await prefs.setBool(
-      '$k.resourceCollapsed',
-      _userCollapse['resource'] ?? _resourceCollapsed,
-    );
-    await prefs.setBool(
-      '$k.inspectorCollapsed',
-      _userCollapse['inspector'] ?? _inspectorCollapsed,
-    );
+    await _saveCollapsePreference(prefs, k, 'sidebar');
+    await _saveCollapsePreference(prefs, k, 'resource');
+    await _saveCollapsePreference(prefs, k, 'inspector');
     await prefs.setStringList('$k.recents', _recentResources);
   }
 
@@ -257,8 +290,10 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
   /// 再折叠（实测报过 RenderFlex overflow）；用户手动动过的区不再被断点覆盖。
   void _applyBreakpoints(double width) {
     _sidebarCollapsed = _userCollapse['sidebar'] ?? width < 740;
-    _resourceCollapsed = _userCollapse['resource'] ?? width < 980;
-    _inspectorCollapsed = _userCollapse['inspector'] ?? width < 1180;
+    // 资源清单是 Schema 的核心导航；属性区只是选中项详情。
+    // 先收属性区，再收资源区，把默认视口留给六列表格。
+    _resourceCollapsed = _userCollapse['resource'] ?? width < 1120;
+    _inspectorCollapsed = _userCollapse['inspector'] ?? width < 1360;
   }
 
   void _rememberCollapse(String zone, bool? value) {
@@ -361,6 +396,10 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
 
   Widget _buildDesktopTitleBar() {
     final firstStatusPart = widget.bannerLabel.split('·').first.trim();
+    final view = View.of(context);
+    final sidebarCollapsed =
+        _userCollapse['sidebar'] ??
+        view.physicalSize.width / view.devicePixelRatio < 740;
     return CtDesktopTitleBar(
       title: widget.data.workspaceName.isEmpty
           ? 'ct 配表工作台'
@@ -371,6 +410,15 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
           : firstStatusPart,
       statusTone: widget.bannerTone ?? CtBadgeTone.neutral,
       onQuickOpen: _openQuickOpen,
+      sidebarWidth: sidebarCollapsed ? ctNavRailWidth : ctSidebarWidth,
+      sidebarToggle: _iconBtn(
+        sidebarCollapsed ? Icons.chevron_right : Icons.chevron_left,
+        sidebarCollapsed ? '展开侧栏' : '收起侧栏',
+        () => _setCollapse('sidebar', !sidebarCollapsed),
+        key: ValueKey(
+          sidebarCollapsed ? 'wb.expand.sidebar' : 'wb.collapse.sidebar',
+        ),
+      ),
       isMaximized: widget.windowMaximized,
       showWindowControls: widget.showWindowControls,
       leadingInset: widget.titleBarLeadingInset,
@@ -483,11 +531,29 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (!widget.showDesktopTitleBar)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  ctGapMd,
+                  ctGapSm,
+                  ctGapMd,
+                  0,
+                ),
+                child: _iconBtn(
+                  Icons.chevron_left,
+                  '收起侧栏',
+                  () => _setCollapse('sidebar', true),
+                  key: const ValueKey('wb.collapse.sidebar'),
+                ),
+              ),
+            ),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
                 ctGapMd,
-                ctGapMd,
+                ctGapSm,
                 ctGapMd,
                 ctGapSm,
               ),
@@ -536,14 +602,19 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
       ),
       child: Column(
         children: [
-          const SizedBox(height: ctGapMd),
-          _iconBtn(
-            Icons.chevron_right,
-            '展开侧栏',
-            () => _setCollapse('sidebar', false),
-            key: const ValueKey('wb.expand.sidebar'),
-          ),
-          const SizedBox(height: ctGapSm),
+          // macOS 的交通灯占满 56px 窄栏时，展开入口移到图标栏内。
+          if (!widget.showDesktopTitleBar ||
+              widget.titleBarLeadingInset >= ctNavRailWidth) ...[
+            const SizedBox(height: ctGapMd),
+            _iconBtn(
+              Icons.chevron_right,
+              '展开侧栏',
+              () => _setCollapse('sidebar', false),
+              key: const ValueKey('wb.expand.sidebar'),
+            ),
+            const SizedBox(height: ctGapSm),
+          ] else
+            const SizedBox(height: ctGapSm),
           for (var i = 0; i < 4; i++)
             Tooltip(
               message: _modules[i].$2,
@@ -952,9 +1023,27 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
       child: Column(
         children: [
           _panelHeader('资源', [
-            _iconBtn(Icons.add, '新建资源（样板）', () {
-              showCtToast(context, '界面样板未连接原生内核，无法新建资源');
-            }),
+            if (widget.draft != null && _currentResource != null)
+              Builder(
+                builder: (buttonContext) =>
+                    _iconBtn(Icons.more_horiz, '资源操作', () {
+                      final box = buttonContext.findRenderObject() as RenderBox;
+                      final name = _currentResource!.name;
+                      showWorkbenchResourceContextMenu(
+                        context,
+                        repo: widget.draft!,
+                        resourceName: name,
+                        globalPosition: box.localToGlobal(
+                          Offset(0, box.size.height),
+                        ),
+                        onResourceSelected: (selected) {
+                          if (selected != null) {
+                            _gotoResource(selected, rememberRecent: true);
+                          }
+                        },
+                      );
+                    }, key: const ValueKey('wb.resourceActions')),
+              ),
             _iconBtn(Icons.chevron_left, '折叠资源区', () {
               _setCollapse('resource', true);
               _saveLayout();
@@ -1012,6 +1101,22 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
     );
   }
 
+  Future<void> _createResource(String kind) async {
+    final repo = widget.draft;
+    if (repo == null) {
+      showCtToast(context, '界面样板未连接原生内核，无法新建资源');
+      return;
+    }
+    await createWorkbenchResource(
+      context,
+      repo: repo,
+      kind: kind,
+      onResourceSelected: (name) {
+        if (mounted && name != null) _gotoResource(name);
+      },
+    );
+  }
+
   Widget _buildResourceEmpty() {
     if (_query.isNotEmpty) {
       return Center(
@@ -1034,12 +1139,24 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
               style: ctText(size: ctFontSm, color: ctInk2),
             ),
             const SizedBox(height: ctGapMd),
-            CtButton.ghost(
-              '新建资源',
-              onPressed: () {
-                showCtToast(context, '界面样板未连接原生内核，无法新建资源');
-              },
-            ),
+            if (widget.draft == null)
+              CtButton.ghost('新建资源', onPressed: () => _createResource('table'))
+            else
+              PopupMenuButton<String>(
+                key: const ValueKey('wb.emptyNewMenu'),
+                tooltip: '新建资源（只入草稿）',
+                enabled: !widget.draft!.busy,
+                onSelected: _createResource,
+                itemBuilder: (context) => const [
+                  PopupMenuItem(value: 'table', child: Text('新建表')),
+                  PopupMenuItem(value: 'record', child: Text('新建记录')),
+                  PopupMenuItem(value: 'enum', child: Text('新建枚举')),
+                ],
+                child: Padding(
+                  padding: const EdgeInsets.all(ctGapSm),
+                  child: Text('新建资源', style: ctText(size: ctFontSm)),
+                ),
+              ),
           ],
         ),
       ),
@@ -1071,6 +1188,22 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
     final selected = r.name == _selectedResource;
     return InkWell(
       onTap: () => _selectResource(r),
+      onSecondaryTapDown: (details) {
+        if (widget.draft case final repo?) {
+          _gotoResource(r.name, rememberRecent: true);
+          showWorkbenchResourceContextMenu(
+            context,
+            repo: repo,
+            resourceName: r.name,
+            globalPosition: details.globalPosition,
+            onResourceSelected: (name) {
+              if (name != null) _gotoResource(name, rememberRecent: true);
+            },
+          );
+        } else {
+          showCtToast(context, '样板模式没有资源编辑命令');
+        }
+      },
       child: Container(
         height: ctRowSm,
         color: selected ? ctAccentSofter : null,
@@ -1130,12 +1263,20 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
   Widget _buildEditorToolbar(MockResource? res) {
     final d = widget.data;
     final draft = widget.draft;
+    final textScale = MediaQuery.textScalerOf(
+      context,
+    ).scale(1).clamp(1.0, 2.0).toDouble();
+    final toolbarHeight = 52.0 + (textScale - 1) * 12;
     // 真实草稿：能不能保存由内核结论决定（必须已有无阻塞问题的候选）。
     final canSave = draft == null
         ? d.draftCount > 0 && !d.busy && !d.candidateExpired && res != null
         : draft.canSave;
+    final resource = res;
+    final countLabel = resource?.kind == WorkbenchResourceKind.enumType
+        ? '成员 · ${resource?.fields.length ?? 0}'
+        : '字段 · ${resource?.fields.length ?? 0}';
     return Container(
-      height: ctToolbarHeight,
+      height: toolbarHeight,
       padding: const EdgeInsets.symmetric(horizontal: ctGapMd),
       decoration: const BoxDecoration(
         color: ctSurface,
@@ -1143,15 +1284,80 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.table_chart_outlined, size: 15, color: ctInk3),
-          const SizedBox(width: ctGapSm),
-          Flexible(
-            child: Text(
-              res?.path ?? '未选择资源',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: ctMono.copyWith(fontSize: ctFontSm, color: ctInk2),
-            ),
+          Icon(
+            res == null ? Icons.table_chart_outlined : _kindIcon(res.kind),
+            size: 17,
+            color: res == null ? ctInk3 : ctPrimary,
+          ),
+          const SizedBox(width: ctGapSm + 2),
+          Expanded(
+            child: resource == null
+                ? Text(
+                    '未选择资源',
+                    style: ctText(size: ctFontSm, color: ctInk3),
+                  )
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      // 两个辅助区同时展开时，主区可能不足 120px：只保留资源名，
+                      // 类型、字段数和路径都退回 tooltip/资源区，避免硬撑出溢出。
+                      final compact = constraints.maxWidth < 260;
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Tooltip(
+                                  message: resource.name,
+                                  child: Text(
+                                    resource.name,
+                                    key: const ValueKey('wb.editorTitle'),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: ctText(
+                                      size: ctFontMd,
+                                      weight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (!compact) ...[
+                                const SizedBox(width: ctGapSm),
+                                CtStatusBadge(
+                                  label: resource.kind.label,
+                                  tone: CtBadgeTone.info,
+                                  dot: false,
+                                ),
+                                const SizedBox(width: ctGapSm),
+                                Text(
+                                  countLabel,
+                                  key: const ValueKey('wb.editorCount'),
+                                  maxLines: 1,
+                                  style: ctText(size: ctFontXs, color: ctInk3),
+                                ),
+                              ],
+                            ],
+                          ),
+                          if (!compact) ...[
+                            const SizedBox(height: 2),
+                            Tooltip(
+                              message: resource.path,
+                              child: Text(
+                                resource.path,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: ctMono.copyWith(
+                                  fontSize: ctFontXs - 1,
+                                  color: ctInk3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
           ),
           if (_navBack.isNotEmpty)
             _iconBtn(
@@ -1161,7 +1367,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
               key: const ValueKey('wb.navBack'),
             ),
           // 全局草稿动作（撤销/重做/差异/放弃/保存）只在顶部草稿条出现一次；
-          // 样板模式没有内核草稿条，页面内保留一个禁用保存占位，避免"看起来能点"。
+          // 样板模式没有内核草稿条，页面内保留一个禁用保存占位，避免“看起来能点”。
           if (res != null &&
               res.kind == WorkbenchResourceKind.enumType &&
               draft != null) ...[
@@ -1172,7 +1378,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
               onPressed: () => _addEnumMember(draft, res),
             ),
             const SizedBox(width: ctGapSm),
-            if (MediaQuery.sizeOf(context).width < 1180)
+            if (MediaQuery.sizeOf(context).width < 1360)
               const Tooltip(
                 message: '成员顺序即 ordinal：重排或删除会改变既有数据的 wire 值',
                 child: Icon(Icons.info_outline, size: 14, color: ctWarn),
@@ -1188,7 +1394,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
                 ),
               ),
           ],
-          // 接了内核就只保留顶部草稿条那一个保存入口；样板模式没有草稿条，页面内留占位
+          // 接了内核就只保留顶部草稿条那一个保存入口；样板模式没有草稿条，页面内留占位。
           if (draft == null) ...[
             const SizedBox(width: ctGapSm),
             CtButton.accent(
@@ -1391,23 +1597,26 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
               children: [
                 CtButton.ghost(
                   '新建表',
-                  onPressed: () {
-                    showCtToast(context, '界面样板未连接原生内核，无法修改资源');
-                  },
+                  key: const ValueKey('wb.emptyNewTable'),
+                  onPressed: widget.draft?.busy == true
+                      ? null
+                      : () => _createResource('table'),
                 ),
                 const SizedBox(width: ctGapSm),
                 CtButton.ghost(
                   '新建记录',
-                  onPressed: () {
-                    showCtToast(context, '界面样板未连接原生内核，无法修改资源');
-                  },
+                  key: const ValueKey('wb.emptyNewRecord'),
+                  onPressed: widget.draft?.busy == true
+                      ? null
+                      : () => _createResource('record'),
                 ),
                 const SizedBox(width: ctGapSm),
                 CtButton.ghost(
                   '新建枚举',
-                  onPressed: () {
-                    showCtToast(context, '界面样板未连接原生内核，无法修改资源');
-                  },
+                  key: const ValueKey('wb.emptyNewEnum'),
+                  onPressed: widget.draft?.busy == true
+                      ? null
+                      : () => _createResource('enum'),
                 ),
               ],
             ),
@@ -1417,41 +1626,13 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
     }
     return Column(
       children: [
-        Container(
-          height: ctRowMd,
-          padding: const EdgeInsets.symmetric(horizontal: ctGapMd),
-          decoration: const BoxDecoration(
-            color: ctSurface,
-            border: Border(bottom: BorderSide(color: ctBorder)),
+        Expanded(child: _buildFieldsTable(res)),
+        if (widget.template != null)
+          WorkbenchTemplatePanel(
+            service: widget.template!,
+            resource: res,
+            blockReason: widget.data.loadError ?? widget.writeBlockReason,
           ),
-          child: Row(
-            children: [
-              const Icon(Icons.view_list_outlined, size: 15, color: ctInk3),
-              const SizedBox(width: ctGapSm),
-              Text(
-                '字段 · ${res.fields.length}',
-                style: ctText(
-                  size: ctFontSm,
-                  color: ctInk2,
-                  weight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: Column(
-            children: [
-              Expanded(child: _buildFieldsTable(res)),
-              if (widget.template != null)
-                WorkbenchTemplatePanel(
-                  service: widget.template!,
-                  resource: res,
-                  blockReason: widget.data.loadError ?? widget.writeBlockReason,
-                ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -1539,8 +1720,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
           _hCell('名称', _wName),
           _hCell('类型', _wType),
           _hCell('角色', _wRole),
-          _hCell('约束', _wConstraint),
-          _hCell('默认值', _wDefault),
+          _hCell('引用', _wConstraint),
           _hCell('描述', descWidth),
         ],
       ),
@@ -1552,6 +1732,10 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
     final selected = _selectedField == index;
     return InkWell(
       onTap: () => setState(() => _selectedField = index),
+      onSecondaryTapDown: (details) {
+        setState(() => _selectedField = index);
+        _showFieldContextMenu(res, index, details.globalPosition);
+      },
       child: Container(
         height: ctRowSm + 2,
         decoration: BoxDecoration(
@@ -1583,11 +1767,6 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
               ctText(size: ctFontSm, color: ctInk2),
             ),
             _tCell(
-              f.defaultValue.isEmpty ? '—' : f.defaultValue,
-              _wDefault,
-              style: ctMono.copyWith(fontSize: ctFontSm, color: ctInk2),
-            ),
-            _tCell(
               f.description,
               descWidth,
               style: ctText(size: ctFontSm, color: ctInk2),
@@ -1598,14 +1777,197 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
     );
   }
 
+  String _kindWireFor(WorkbenchResourceKind kind) => switch (kind) {
+    WorkbenchResourceKind.table => 'table',
+    WorkbenchResourceKind.record => 'record',
+    WorkbenchResourceKind.enumType => 'enum',
+  };
+
+  String _ownerIdFor(WorkbenchResource resource) =>
+      '${_kindWireFor(resource.kind)}:${resource.name}';
+
+  List<String> _namedTypesFor(WorkbenchResource resource) => [
+    for (final item in widget.data.resources)
+      if (item.kind != WorkbenchResourceKind.table &&
+          item.name != resource.name)
+        item.name,
+  ];
+
+  Future<void> _showFieldContextMenu(
+    WorkbenchResource resource,
+    int index,
+    Offset globalPosition,
+  ) async {
+    final repo = widget.draft;
+    if (repo == null) {
+      showCtToast(context, '样板模式没有字段编辑命令');
+      return;
+    }
+    final field = resource.fields[index];
+    final primary = _isPrimaryRole(field.role);
+    final isEnum = resource.kind == WorkbenchResourceKind.enumType;
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+
+    PopupMenuItem<_FieldMenuAction> item(
+      _FieldMenuAction value,
+      IconData icon,
+      String label, {
+      bool enabled = true,
+    }) => PopupMenuItem(
+      key: ValueKey('wb.fieldMenu.${value.name}'),
+      value: value,
+      enabled: enabled,
+      height: 36,
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: enabled ? ctInk2 : ctInk3),
+          const SizedBox(width: ctGapSm),
+          Text(
+            label,
+            style: ctText(size: ctFontSm, color: enabled ? ctInk2 : ctInk3),
+          ),
+        ],
+      ),
+    );
+
+    final action = await showMenu<_FieldMenuAction>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromPoints(globalPosition, globalPosition),
+        Offset.zero & overlay.size,
+      ),
+      popUpAnimationStyle: ctMenuAnimationStyle,
+      items: [
+        item(_FieldMenuAction.edit, Icons.edit_outlined, '编辑属性'),
+        if (!isEnum)
+          item(_FieldMenuAction.changeType, Icons.swap_horiz, '更改类型…'),
+        item(_FieldMenuAction.copyName, Icons.content_copy, '复制字段名'),
+        if (!isEnum) item(_FieldMenuAction.copyType, Icons.code, '复制类型表达式'),
+        if (!isEnum) ...[
+          const PopupMenuDivider(),
+          item(
+            _FieldMenuAction.toggleI18n,
+            field.localized ? Icons.check_box : Icons.check_box_outline_blank,
+            '本地化：${field.localized ? '开' : '关'}',
+          ),
+          item(
+            _FieldMenuAction.toggleServerOnly,
+            field.serverOnly ? Icons.check_box : Icons.check_box_outline_blank,
+            '仅服务端：${field.serverOnly ? '开' : '关'}',
+          ),
+        ],
+        const PopupMenuDivider(),
+        item(
+          _FieldMenuAction.moveUp,
+          Icons.arrow_upward,
+          '上移',
+          enabled: !primary && index > 0,
+        ),
+        item(
+          _FieldMenuAction.moveDown,
+          Icons.arrow_downward,
+          '下移',
+          enabled: !primary && index < resource.fields.length - 1,
+        ),
+        item(
+          _FieldMenuAction.delete,
+          Icons.delete_outline,
+          isEnum ? '删除成员…' : '删除字段…',
+          enabled: !primary,
+        ),
+      ],
+    );
+    if (action == null || !mounted) return;
+    final owner = _ownerIdFor(resource);
+
+    switch (action) {
+      case _FieldMenuAction.edit:
+        setState(() => _selectedField = index);
+        _setCollapse('inspector', false);
+      case _FieldMenuAction.changeType:
+        final picked = await showCtTypePickerDialog(
+          context,
+          value: field.type,
+          namedTypes: _namedTypesFor(resource),
+          keyPrefix: 'wb.fieldContext.type',
+        );
+        if (picked != null) repo.setFieldType(owner, field.name, picked);
+      case _FieldMenuAction.copyName:
+        await Clipboard.setData(ClipboardData(text: field.name));
+        if (mounted) showCtToast(context, '已复制字段名');
+      case _FieldMenuAction.copyType:
+        await Clipboard.setData(ClipboardData(text: field.type));
+        if (mounted) showCtToast(context, '已复制类型表达式');
+      case _FieldMenuAction.toggleI18n:
+        repo.setFieldProperty(owner, field.name, 'i18n', !field.localized);
+      case _FieldMenuAction.toggleServerOnly:
+        repo.setFieldProperty(
+          owner,
+          field.name,
+          'server_only',
+          !field.serverOnly,
+        );
+      case _FieldMenuAction.moveUp:
+        if (isEnum) {
+          _rewriteEnumMembers(
+            repo,
+            resource,
+            moveTo: index - 1,
+            moveToIndex: index,
+          );
+        } else {
+          repo.moveField(owner, field.name, index - 1);
+        }
+      case _FieldMenuAction.moveDown:
+        if (isEnum) {
+          _rewriteEnumMembers(
+            repo,
+            resource,
+            moveTo: index + 1,
+            moveToIndex: index,
+          );
+        } else {
+          repo.moveField(owner, field.name, index + 1);
+        }
+      case _FieldMenuAction.delete:
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            key: const ValueKey('wb.fieldDeletePrompt'),
+            title: Text('删除${isEnum ? '成员' : '字段'} ${field.name}？'),
+            content: const Text('此操作先加入 Schema 草稿，可在保存前撤销。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                key: const ValueKey('wb.fieldDeleteConfirm'),
+                style: TextButton.styleFrom(foregroundColor: ctDanger),
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('加入删除草稿'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true || !mounted) return;
+        if (isEnum) {
+          _rewriteEnumMembers(repo, resource, dropIndex: index);
+        } else {
+          repo.deleteField(owner, field.name);
+        }
+    }
+  }
+
+  bool _isPrimaryRole(String role) => role == 'primary' || role == '主键';
+
   Widget _roleCell(MockField f) {
-    final badges = <Widget>[
-      if (f.role == '主键')
-        const CtStatusBadge(label: '主键', tone: CtBadgeTone.info, dot: false),
-      if (f.localized)
-        const CtStatusBadge(label: '文', tone: CtBadgeTone.busy, dot: false),
+    final glyphs = <Widget>[
+      if (_isPrimaryRole(f.role)) _roleGlyph(Icons.key, '主键', ctPrimary),
+      if (f.localized) _roleGlyph(Icons.translate, '本地化字段', ctGoldText),
+      if (f.serverOnly) _roleGlyph(Icons.cloud_outlined, '仅服务端字段', ctInk3),
     ];
-    if (badges.isEmpty) {
+    if (glyphs.isEmpty) {
       return _tCell(
         f.role.isEmpty ? '—' : f.role,
         _wRole,
@@ -1615,18 +1977,27 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
     return SizedBox(
       width: _wRole,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Row(
           children: [
-            for (var i = 0; i < badges.length; i++) ...[
+            for (var i = 0; i < glyphs.length; i++) ...[
               if (i > 0) const SizedBox(width: 4),
-              badges[i],
+              glyphs[i],
             ],
           ],
         ),
       ),
     );
   }
+
+  Widget _roleGlyph(IconData icon, String tooltip, Color color) => Tooltip(
+    message: tooltip,
+    child: SizedBox(
+      width: 14,
+      height: 20,
+      child: Icon(icon, size: 14, color: color),
+    ),
+  );
 
   // ---- 属性区 ----
 
@@ -1641,8 +2012,12 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
     final roleText = field == null
         ? ''
         : [
-            if (field.role.isNotEmpty) field.role,
+            if (_isPrimaryRole(field.role))
+              '主键'
+            else if (field.role.isNotEmpty)
+              field.role,
             if (field.localized) '本地化',
+            if (field.serverOnly) '仅服务端',
           ].join(' · ');
     // 真实草稿来源才给编辑能力；样板场景保持只读展示。
     if (widget.draft != null) {
@@ -1736,6 +2111,18 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
       child: Column(
         children: [
           _panelHeader('属性', [
+            if (res != null && field != null && ordinal != null)
+              Builder(
+                builder: (buttonContext) =>
+                    _iconBtn(Icons.more_horiz, '字段操作', () {
+                      final box = buttonContext.findRenderObject() as RenderBox;
+                      _showFieldContextMenu(
+                        res,
+                        ordinal,
+                        box.localToGlobal(Offset(0, box.size.height)),
+                      );
+                    }, key: const ValueKey('wb.fieldActions')),
+              ),
             _iconBtn(Icons.chevron_right, '折叠属性区', () {
               _setCollapse('inspector', true);
               _saveLayout();
@@ -2037,6 +2424,7 @@ class _CollapsedStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final characters = title.characters;
     return Container(
       width: ctCollapsedStripWidth,
       decoration: BoxDecoration(
@@ -2061,11 +2449,26 @@ class _CollapsedStrip extends StatelessWidget {
           const SizedBox(height: ctGapXs),
           Expanded(
             child: Center(
-              child: RotatedBox(
-                quarterTurns: 3,
-                child: Text(
-                  title,
-                  style: ctText(size: ctFontXs, color: ctInk3),
+              child: Semantics(
+                label: title,
+                child: ExcludeSemantics(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (var i = 0; i < characters.length; i++) ...[
+                        if (i > 0) const SizedBox(height: 2),
+                        Text(
+                          characters.elementAt(i),
+                          style: ctText(
+                            size: ctFontSm + 0.5,
+                            color: ctInk3,
+                            weight: FontWeight.w500,
+                            height: 1.15,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),

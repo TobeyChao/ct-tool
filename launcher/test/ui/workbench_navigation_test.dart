@@ -3,7 +3,9 @@ import 'package:ct_launcher/services/settings_store.dart';
 import 'package:ct_launcher/services/worker_service.dart';
 import 'package:ct_launcher/state/workbench_repository.dart';
 import 'package:ct_launcher/theme.dart';
+import 'package:ct_launcher/ui/widgets/common.dart';
 import 'package:ct_launcher/ui/workbench/workbench_screen.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,6 +51,7 @@ class _FakeGateway implements KernelGateway {
                 {'name': 'Id', 'type': 'int32'},
                 {'name': 'Rarity', 'type': 'Quality'},
                 {'name': 'Amount', 'type': 'int32'},
+                {'name': 'Price', 'type': 'int32'},
               ],
             },
             {
@@ -173,6 +176,79 @@ void main() {
     expect(find.byKey(const ValueKey('wb.navBack')), findsOneWidget);
   });
 
+  testWidgets('资源与字段操作可从可聚焦按钮打开', (tester) async {
+    await pumpNav(tester);
+    await tester.tap(find.byKey(const ValueKey('wb.resourceActions')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('wb.resourceMenu.rename')),
+      findsOneWidget,
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Rarity').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wb.fieldActions')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('wb.fieldMenu.changeType')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('字段右键下移只交换相邻字段', (tester) async {
+    await pumpNav(tester);
+    await tester.tap(find.text('Rarity').first, buttons: kSecondaryMouseButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wb.fieldMenu.moveDown')));
+    await tester.pumpAndSettle();
+    expect(repo.commands.last.kind, 'move_field');
+    expect(repo.commands.last.payload['to'], 2);
+    expect(
+      repo.resourceNamed('Item')!.fields.map((field) => field.name).toList(),
+      ['Id', 'Amount', 'Rarity', 'Price'],
+    );
+  });
+
+  testWidgets('属性区下移只交换相邻字段且末项不可下移', (tester) async {
+    await pumpNav(tester);
+    await tester.tap(find.text('Rarity').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wb.fieldDown')));
+    await tester.pumpAndSettle();
+    expect(repo.commands.last.payload['to'], 2);
+    expect(repo.resourceNamed('Item')!.fields.map((f) => f.name), [
+      'Id',
+      'Amount',
+      'Rarity',
+      'Price',
+    ]);
+    await tester.tap(find.text('Price').first);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<CtButton>(find.byKey(const ValueKey('wb.fieldDown')))
+          .onPressed,
+      isNull,
+    );
+  });
+
+  testWidgets('枚举成员在属性区下移时只交换相邻成员', (tester) async {
+    repo.setEnumValues('enum:Quality', ['Low', 'High', 'Epic']);
+    await pumpNav(tester);
+    await tester.tap(find.text('Quality').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Low').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wb.enumItemDown')));
+    await tester.pumpAndSettle();
+    expect([
+      for (final item in repo.commands.last.payload['values'] as List)
+        (item as Map)['name'],
+    ], ['High', 'Low', 'Epic']);
+  });
+
   testWidgets('枚举成员追加走 set_enum_values 整表改写', (tester) async {
     await pumpNav(tester);
     await tester.tap(find.text('Quality').first);
@@ -204,6 +280,8 @@ void main() {
     // 选中第二个成员，点「上移」→ 顺序变成 High, Low。
     await tester.tap(find.text('High').last);
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wb.group.danger')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('wb.enumItemUp')));
     await tester.pumpAndSettle();
     var values = [
@@ -217,6 +295,8 @@ void main() {
       reason: 'Enum 没有字段列表，move_field 会被内核拒绝',
     );
 
+    await tester.tap(find.byKey(const ValueKey('wb.group.danger')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('wb.enumItemDelete')));
     await tester.pumpAndSettle();
     values = [

@@ -10,11 +10,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<void> pumpWorkbench(
   WidgetTester tester,
   MockWorkspaceData data, {
-  // 默认按受支持的最大档量测：侧栏 248 + 资源 240 + 属性 300 要 1440 才全展开
+  // 默认按受支持的最大档量测：侧栏 248 + 资源 220 + 属性 280 在 1440 可全展开。
   Size size = const Size(1440, 900),
   double scale = 1.0,
   String workspaceKey = 'mock-test',
   bool showDesktopTitleBar = false,
+  double titleBarLeadingInset = 0,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -28,6 +29,7 @@ Future<void> pumpWorkbench(
           data: data,
           workspaceKey: workspaceKey,
           showDesktopTitleBar: showDesktopTitleBar,
+          titleBarLeadingInset: titleBarLeadingInset,
           showWindowControls: false,
         ),
       ),
@@ -72,12 +74,120 @@ void main() {
       showDesktopTitleBar: true,
     );
 
-    expect(find.byKey(const ValueKey('ct.desktopTitleBar')), findsOneWidget);
+    final titleBar = find.byKey(const ValueKey('ct.desktopTitleBar'));
+    expect(titleBar, findsOneWidget);
+    expect(
+      (tester.widget<Container>(titleBar).decoration! as BoxDecoration).border,
+      isNull,
+    );
+    void expectJoinedEdge(String railKey) {
+      final rail = tester.getRect(find.byKey(ValueKey(railKey)));
+      final sidebarEdge = tester.getRect(
+        find.byKey(const ValueKey('ct.titleBar.sidebarEdge')),
+      );
+      final contentEdge = tester.getRect(
+        find.byKey(const ValueKey('ct.titleBar.contentEdge')),
+      );
+      expect(sidebarEdge.right, rail.right);
+      expect(sidebarEdge.bottom, rail.top);
+      expect(contentEdge.left, rail.right);
+      expect(contentEdge.bottom, tester.getRect(titleBar).bottom);
+    }
+
+    expectJoinedEdge('wb.sidebar');
+    expect(
+      find.descendant(of: titleBar, matching: find.byType(CtBrandMark)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: titleBar, matching: find.text('gd')),
+      findsOneWidget,
+    );
     for (final label in ['文件', '编辑', '视图', '帮助']) {
       expect(find.text(label), findsNothing);
     }
-    expect(find.byKey(const ValueKey('wb.collapse.sidebar')), findsNothing);
+    final toggle = find.byKey(const ValueKey('wb.collapse.sidebar'));
+    expect(toggle, findsOneWidget);
     expect(find.text('工作流'), findsOneWidget);
+    expect(
+      tester.getRect(toggle).center.dy,
+      lessThan(tester.getRect(find.byKey(const ValueKey('wb.sidebar'))).top),
+    );
+    expect(
+      tester.getRect(find.text('工作流')).top,
+      lessThan(
+        tester.getRect(find.byKey(const ValueKey('wb.sidebar'))).top + 45,
+      ),
+    );
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('wb.iconRail')), findsOneWidget);
+    expectJoinedEdge('wb.iconRail');
+    final railCenter = tester
+        .getRect(find.byKey(const ValueKey('wb.iconRail')))
+        .center
+        .dx;
+    final expandCenter = tester
+        .getRect(find.byKey(const ValueKey('wb.expand.sidebar')))
+        .center
+        .dx;
+    final navCenter = tester
+        .getRect(find.byKey(const ValueKey('wb.navTap.Schema')))
+        .center
+        .dx;
+    expect(expandCenter, closeTo(railCenter, 0.5));
+    expect(expandCenter, closeTo(navCenter, 0.5));
+    expect(
+      find.descendant(of: titleBar, matching: find.byType(CtBrandMark)),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: titleBar, matching: find.text('gd')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: titleBar, matching: find.text('Schema')),
+      findsNothing,
+    );
+    await tester.tap(find.byKey(const ValueKey('wb.expand.sidebar')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('wb.sidebar')), findsOneWidget);
+    expect(
+      find.descendant(of: titleBar, matching: find.text('gd')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('无标题栏的侧栏展开按钮与图标导航水平对齐', (tester) async {
+    await pumpWorkbench(tester, mockWorkspaceFor(MockScenario.normal));
+    await tester.tap(find.byKey(const ValueKey('wb.collapse.sidebar')));
+    await tester.pumpAndSettle();
+    final rail = tester.getRect(find.byKey(const ValueKey('wb.iconRail')));
+    final expand = tester.getRect(
+      find.byKey(const ValueKey('wb.expand.sidebar')),
+    );
+    final nav = tester.getRect(find.byKey(const ValueKey('wb.navTap.Schema')));
+    expect(expand.center.dx, closeTo(rail.center.dx, 0.5));
+    expect(expand.center.dx, closeTo(nav.center.dx, 0.5));
+  });
+
+  testWidgets('交通灯占满窄栏时展开按钮在栏内居中', (tester) async {
+    await pumpWorkbench(
+      tester,
+      mockWorkspaceFor(MockScenario.normal),
+      showDesktopTitleBar: true,
+      titleBarLeadingInset: 72,
+    );
+    await tester.tap(find.byKey(const ValueKey('wb.collapse.sidebar')));
+    await tester.pumpAndSettle();
+    final rail = tester.getRect(find.byKey(const ValueKey('wb.iconRail')));
+    final expand = find.byKey(const ValueKey('wb.expand.sidebar'));
+    expect(tester.getRect(expand).center.dx, closeTo(rail.center.dx, 0.5));
+    expect(tester.getRect(expand).top, greaterThanOrEqualTo(rail.top));
+    expect(tester.takeException(), isNull);
+    await tester.tap(expand);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('wb.sidebar')), findsOneWidget);
   });
 
   testWidgets('选择资源与字段后属性区联动', (tester) async {
@@ -89,6 +199,33 @@ void main() {
     await tester.pump();
     expect(find.text('字段名'), findsOneWidget);
     expect(find.text('默认值'), findsWidgets);
+  });
+
+  testWidgets('侧栏可折叠为图标栏，保留导航并按工作区恢复', (tester) async {
+    final data = mockWorkspaceFor(MockScenario.normal);
+    await pumpWorkbench(tester, data, workspaceKey: 'sidebar-a');
+    expect(find.byTooltip('收起侧栏'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('wb.collapse.sidebar')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('wb.iconRail')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wb.sidebar')), findsNothing);
+    expect(
+      tester.getSize(find.byKey(const ValueKey('wb.iconRail'))).width,
+      ctNavRailWidth,
+    );
+    await tester.tap(find.byKey(const ValueKey('wb.navTap.总览')));
+    await tester.pumpAndSettle();
+    expect(find.text('工作区总览'), findsOneWidget);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('wb.sidebar-a.collapse.v2.sidebar'), isTrue);
+
+    await tester.pumpWidget(const SizedBox());
+    await pumpWorkbench(tester, data, workspaceKey: 'sidebar-a');
+    expect(find.byKey(const ValueKey('wb.iconRail')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('wb.expand.sidebar')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('wb.sidebar')), findsOneWidget);
+    expect(prefs.getBool('wb.sidebar-a.collapse.v2.sidebar'), isFalse);
   });
 
   testWidgets('资源区可折叠为窄条并恢复', (tester) async {
@@ -105,6 +242,27 @@ void main() {
     );
     await tester.pump();
     expect(find.byKey(const ValueKey('wb.resourcePanel')), findsOneWidget);
+  });
+
+  testWidgets('资源和属性窄条的展开按钮与各自窄条水平居中', (tester) async {
+    await pumpWorkbench(tester, mockWorkspaceFor(MockScenario.normal));
+    for (final zone in const ['resource', 'inspector']) {
+      await tester.tap(find.byKey(ValueKey('wb.collapse.$zone')));
+      await tester.pumpAndSettle();
+      final strip = find.byKey(ValueKey('wb.strip.$zone'));
+      final expand = find.descendant(
+        of: strip,
+        matching: find.byType(IconButton),
+      );
+      expect(expand, findsOneWidget);
+      expect(
+        tester.getRect(expand).center.dx,
+        closeTo(tester.getRect(strip).center.dx, 0.5),
+      );
+      await tester.tap(expand);
+      await tester.pumpAndSettle();
+      expect(find.byKey(ValueKey('wb.strip.$zone')), findsNothing);
+    }
   });
 
   testWidgets('资源区折叠使用 200ms 过渡', (tester) async {
@@ -157,6 +315,9 @@ void main() {
     expect(find.text('工作区还没有任何资源'), findsOneWidget);
     expect(find.text('新建资源'), findsOneWidget);
     expect(find.text('从左侧选择资源，或新建 Table / Record / Enum'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('wb.emptyNewTable')));
+    await tester.pump();
+    expect(find.text('界面样板未连接原生内核，无法新建资源'), findsOneWidget);
   });
 
   testWidgets('加载失败：错误面板与重试入口', (tester) async {
@@ -191,7 +352,7 @@ void main() {
     expect(save.onPressed, isNull);
   });
 
-  testWidgets('1024x700 + 150% 缩放 + 长文本：无溢出，属性区按整窗宽度自动折叠', (tester) async {
+  testWidgets('1024x700 + 150% 缩放 + 长文本：无溢出，辅助区按优先级自动折叠', (tester) async {
     await pumpWorkbench(
       tester,
       mockWorkspaceFor(MockScenario.longText),
@@ -199,36 +360,80 @@ void main() {
       scale: 1.5,
       workspaceKey: 'mock-1024',
     );
-    // 断点按**整窗宽度**算（与 web 的 CSS 断点同义）：1024 折属性区、保留资源区
+    // 断点按整窗宽度算：1024 先收起属性区，再收起资源区，优先保住六列表格。
     expect(
       find.byKey(const ValueKey('wb.strip.inspector')),
       findsOneWidget,
-      reason: '窗口 1024 < 1180：属性区应自动折叠',
+      reason: '窗口 1024 < 1360：属性区应自动折叠',
     );
     expect(
-      find.byKey(const ValueKey('wb.resourcePanel')),
+      find.byKey(const ValueKey('wb.strip.resource')),
       findsOneWidget,
-      reason: '窗口 1024 ≥ 980：资源区不该被挤掉',
+      reason: '窗口 1024 < 1120：资源区应自动折叠，但保留可展开窄条',
     );
     expect(
       find.byKey(const ValueKey('wb.sidebar')),
       findsOneWidget,
       reason: '窗口 1024 ≥ 740：侧栏保持文字形态',
     );
-    // 手动展开属性区后仍不得溢出（FlutterError 会让本用例直接失败）
-    await tester.tap(
-      find.descendant(
-        of: find.byKey(const ValueKey('wb.strip.inspector')),
-        matching: find.byType(IconButton),
-      ),
-    );
-    await tester.pump();
+    // 手动展开两个辅助区后仍不得溢出（FlutterError 会让本用例直接失败）。
+    for (final zone in const ['resource', 'inspector']) {
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(ValueKey('wb.strip.$zone')),
+          matching: find.byType(IconButton),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
     await tester.tap(
       find
           .text('英雄配置表_超长名称_hero_config_with_a_very_long_english_suffix_v2')
           .first,
     );
     await tester.pump();
+  });
+
+  testWidgets('自动折叠不落盘，旧断点偏好被忽略，手动展开才按工作区恢复', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'wb.mock-collapse.inspectorCollapsed': false,
+    });
+    final data = mockWorkspaceFor(MockScenario.normal);
+    await pumpWorkbench(
+      tester,
+      data,
+      size: const Size(1280, 800),
+      workspaceKey: 'mock-collapse',
+    );
+    expect(
+      find.byKey(const ValueKey('wb.strip.inspector')),
+      findsOneWidget,
+      reason: '旧 key 不能被当作手动展开而覆盖新断点',
+    );
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const ValueKey('wb.strip.inspector')),
+        matching: find.byType(IconButton),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('wb.inspectorPanel')), findsOneWidget);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('wb.mock-collapse.collapse.v2.inspector'), isFalse);
+
+    await tester.pumpWidget(const SizedBox());
+    await pumpWorkbench(
+      tester,
+      data,
+      size: const Size(1280, 800),
+      workspaceKey: 'mock-collapse',
+    );
+    expect(
+      find.byKey(const ValueKey('wb.inspectorPanel')),
+      findsOneWidget,
+      reason: '用户手动展开后，同一工作区重启应恢复',
+    );
   });
 
   testWidgets('900 宽折资源区、700 宽侧栏收成图标栏（断点按整窗宽度）', (tester) async {

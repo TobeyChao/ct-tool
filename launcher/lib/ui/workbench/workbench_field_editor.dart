@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../services/protocol/protocol.dart';
 import '../../theme.dart';
 import '../tokens.dart';
 import '../widgets/common.dart';
+import '../widgets/status_badge.dart';
 import '../widgets/type_picker.dart';
 import 'workbench_models.dart';
 
@@ -76,14 +78,9 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
   late final TextEditingController _item = TextEditingController(
     text: widget.field?.name ?? '',
   );
-  late String _typeValue;
-  late String _refValue;
-
   @override
   void initState() {
     super.initState();
-    _typeValue = widget.field?.type ?? '';
-    _refValue = widget.field?.constraints ?? '';
     // 输入变化要立刻反映到「是否可提交」上，否则按钮会停在旧状态；
     // 这里只重绘本面板，不做任何校验——合法性始终由内核候选判定。
     for (final c in [_comment, _columns, _item]) {
@@ -103,9 +100,7 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
         old.field?.name != widget.field?.name;
     if (!switched) return;
     final field = widget.field;
-    _typeValue = field?.type ?? '';
     _comment.text = field?.description ?? '';
-    _refValue = field?.constraints ?? '';
     _columns.text = field?.excelColumns?.toString() ?? '';
     _item.text = field?.name ?? '';
   }
@@ -123,17 +118,72 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
 
   bool get _locked => widget.disabled;
 
-  /// 分组标题：把一屏散行收成「资源 / 字段属性 / 表级索引 / 危险操作」几段。
-  Widget _groupTitle(String text, {required String key}) => Padding(
-    padding: const EdgeInsets.fromLTRB(ctGapMd, ctGapMd, ctGapMd, ctGapXs),
-    child: Text(
-      text,
+  TextStyle get _styleLabel =>
+      ctText(size: ctFontXs, color: ctInk2, weight: FontWeight.w500);
+
+  /// 面板身份块：字段/资源名 + 副标题 + 标记，作为第一张卡片的正文。
+  Widget _identityHeader({
+    required String title,
+    String? subtitle,
+    List<Widget> badges = const [],
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: ctText(size: ctFontMd, weight: FontWeight.w700, height: 1.2),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 3),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: ctMono.copyWith(fontSize: ctFontXs, color: ctInk3),
+          ),
+        ],
+        if (badges.isNotEmpty) ...[
+          const SizedBox(height: ctGapSm),
+          Wrap(spacing: 6, runSpacing: 6, children: badges),
+        ],
+      ],
+    );
+  }
+
+  /// 属性区的一张卡片：与设置页同一个外观（见 [CtGroupCard]），左右留出面板内边距。
+  Widget _card({
+    Key? key,
+    String? title,
+    String? description,
+    required List<Widget> children,
+  }) => Padding(
+    padding: const EdgeInsets.fromLTRB(ctGapMd, 0, ctGapMd, ctGapSm),
+    child: CtGroupCard(
+      key: key,
+      title: title,
+      description: description,
+      children: children,
+    ),
+  );
+
+  Widget _iconAction({
+    required String key,
+    required IconData icon,
+    required String tooltip,
+    VoidCallback? onPressed,
+  }) => SizedBox(
+    width: 32,
+    height: 32,
+    child: IconButton(
       key: ValueKey(key),
-      style: ctText(
-        size: ctFontXs + 0.5,
-        color: ctInk3,
-        weight: FontWeight.w700,
-      ),
+      icon: Icon(icon, size: 16),
+      tooltip: tooltip,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      onPressed: onPressed,
     ),
   );
 
@@ -143,7 +193,7 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
     final isEnum = widget.resource.kind == WorkbenchResourceKind.enumType;
     return ListView(
       key: const ValueKey('wb.fieldEditor'),
-      padding: const EdgeInsets.only(bottom: ctGapMd),
+      padding: const EdgeInsets.only(top: ctGapSm, bottom: ctGapMd),
       children: [
         if (field == null) ..._resourceRows(),
         if (field != null && isEnum) ..._enumItemRows(field),
@@ -159,30 +209,43 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
   List<Widget> _resourceRows() {
     final res = widget.resource;
     final primary = _primaryOf(res);
+    final isTable = res.kind == WorkbenchResourceKind.table;
     return [
-      _groupTitle('资源', key: 'wb.group.resource'),
-      _row('名称', res.name, mono: true),
-      _row('类别', res.kind.label),
-      _row('资源 ID', widget.ownerId, mono: true),
-      _row('路径', res.path, mono: true, multiline: true),
-      _row('字段数', '共 ${res.fields.length}'),
-      if (res.kind == WorkbenchResourceKind.table)
-        _row('主键', primary ?? '未标记', mono: true),
-      if (res.kind == WorkbenchResourceKind.table)
-        _checkRow(
-          key: 'wb.indexCodename',
-          label: 'codename 索引',
-          value: res.indexes.contains('codename'),
-          onChanged: _locked
-              ? null
-              : (on) => widget.onSetIndexes?.call(
-                  on == true ? const ['codename'] : const [],
-                ),
-          sub:
-              '状态取自内核 resources.list；勾选是覆盖式声明，取消即提交移除。'
-              '要求存在非 i18n 的 CodeName 字段。',
-          disabledHint: widget.disabledHint,
-        ),
+      _card(
+        children: [
+          _identityHeader(
+            title: res.name,
+            subtitle: widget.ownerId,
+            badges: [
+              CtStatusBadge(
+                label: res.kind.label,
+                tone: CtBadgeTone.info,
+                dot: false,
+              ),
+            ],
+          ),
+        ],
+      ),
+      _card(
+        title: '资源',
+        children: [
+          _row('路径', res.path, mono: true, multiline: true),
+          _row('字段数', '${res.fields.length}'),
+          if (isTable) _row('主键', primary ?? '未标记', mono: true),
+          if (isTable)
+            _toggleRow(
+              key: 'wb.indexCodename',
+              label: 'codename 索引',
+              value: res.indexes.contains('codename'),
+              onChanged: _locked
+                  ? null
+                  : (on) => widget.onSetIndexes?.call(
+                      on ? const ['codename'] : const [],
+                    ),
+              disabledHint: widget.disabledHint,
+            ),
+        ],
+      ),
     ];
   }
 
@@ -199,54 +262,63 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
     final ordinal = widget.fieldOrdinal ?? 0;
     final lastOrdinal = widget.resource.fields.length - 1;
     return [
-      _groupTitle('枚举成员', key: 'wb.group.enum'),
-      _row('枚举', widget.resource.name, mono: true),
-      _row('成员', field.name, mono: true),
-      _labeled(
-        '改成员名',
-        _item,
-        'wb.enumItemName',
-        CtButton.ghost(
-          '改名',
-          key: const ValueKey('wb.enumItemRename'),
-          onPressed: _locked || _item.text.trim().isEmpty
-              ? null
-              : () {
-                  final ordinal = widget.fieldOrdinal;
-                  if (ordinal == null) return;
-                  widget.onRenameEnumItem?.call(_item.text.trim(), ordinal);
-                },
-        ),
-      ),
-      _note('改名带 originalOrdinal：与内核当前顺序不一致时会被直接拒绝。'),
-      _groupTitle('危险操作（顺序即 ordinal，会改既有数据 wire 值）', key: 'wb.group.danger'),
-      Wrap(
-        spacing: ctGapSm,
+      _card(
         children: [
-          CtButton.ghost(
-            '上移',
-            key: const ValueKey('wb.enumItemUp'),
-            onPressed: _locked || ordinal <= 0
-                ? null
-                : () => widget.onMoveField?.call(ordinal - 1),
-          ),
-          CtButton.ghost(
-            '下移',
-            key: const ValueKey('wb.enumItemDown'),
-            onPressed: _locked || ordinal >= lastOrdinal
-                ? null
-                : () => widget.onMoveField?.call(ordinal + 2),
-          ),
-          CtButton.ghost(
-            '删除成员',
-            key: const ValueKey('wb.enumItemDelete'),
-            onPressed: _locked ? null : widget.onDeleteField,
+          _identityHeader(
+            title: field.name,
+            subtitle: 'ordinal $ordinal',
+            badges: const [
+              CtStatusBadge(label: '枚举成员', tone: CtBadgeTone.info, dot: false),
+            ],
           ),
         ],
       ),
-      _note(
-        '重排/删除是整表改写 set_enum_values：成员顺序即 ordinal，'
-        '会改变既有数据行的 wire 值，内核没有 move_field/delete_field 给 Enum。',
+      _card(
+        title: '名称',
+        children: [
+          _inlineEdit(
+            fieldKey: 'wb.enumItemName',
+            controller: _item,
+            dirty: _item.text.trim() != field.name,
+            onSave: _item.text.trim().isEmpty ? null : _saveItemName,
+            onRevert: _revertItemName,
+            revertKey: 'wb.revertEnumItemName',
+            saveKey: 'wb.enumItemRename',
+            saveTooltip: '应用改名（Enter）',
+            errorText: _item.text.trim().isEmpty ? '名称不能为空' : null,
+          ),
+        ],
+      ),
+      _card(
+        key: const ValueKey('wb.group.danger'),
+        title: '危险操作',
+        description: '顺序即 ordinal，重排或删除会改变 wire 值。',
+        children: [
+          Wrap(
+            spacing: ctGapSm,
+            children: [
+              CtButton.ghost(
+                '上移',
+                key: const ValueKey('wb.enumItemUp'),
+                onPressed: _locked || ordinal <= 0
+                    ? null
+                    : () => widget.onMoveField?.call(ordinal - 1),
+              ),
+              CtButton.ghost(
+                '下移',
+                key: const ValueKey('wb.enumItemDown'),
+                onPressed: _locked || ordinal >= lastOrdinal
+                    ? null
+                    : () => widget.onMoveField?.call(ordinal + 1),
+              ),
+              CtButton.ghost(
+                '删除成员',
+                key: const ValueKey('wb.enumItemDelete'),
+                onPressed: _locked ? null : widget.onDeleteField,
+              ),
+            ],
+          ),
+        ],
       ),
     ];
   }
@@ -255,197 +327,329 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
 
   List<Widget> _fieldRows(WorkbenchField field) {
     final ordinal = widget.fieldOrdinal ?? 0;
+    final lastOrdinal = widget.resource.fields.length - 1;
+    final primary = field.role == 'primary' || field.role == '主键';
+    final isVector = ctSplitTypeExpression(field.type).vector;
     return [
-      _groupTitle('字段属性', key: 'wb.group.fields'),
-      _row('字段', field.name, mono: true),
-      _row('角色', field.role == 'primary' ? '主键' : '普通字段'),
-      _typeRow(field),
-      if (widget.namedTypes.isNotEmpty)
-        _note('具名类型来自当前工作区清单；类型表达式只允许单层 vector<T>。'),
-      _checkRow(
-        key: 'wb.fieldI18n',
-        label: '本地化（i18n）',
-        value: field.localized,
-        onChanged: _locked
-            ? null
-            : (v) => widget.onSetProperty?.call('i18n', v),
-        sub: '只有 string 能标记，且与 server_only 互斥；由内核候选判定。',
-        disabledHint: widget.disabledHint,
-      ),
-      _checkRow(
-        key: 'wb.fieldServerOnly',
-        label: '仅服务端（server_only）',
-        value: field.serverOnly,
-        onChanged: _locked
-            ? null
-            : (v) => widget.onSetProperty?.call('server_only', v),
-        disabledHint: widget.disabledHint,
-      ),
-      _labeled(
-        '注释',
-        _comment,
-        'wb.fieldComment',
-        CtButton.ghost(
-          '写注释',
-          key: const ValueKey('wb.setFieldComment'),
-          onPressed: _locked || _comment.text == field.description
-              ? null
-              : () => widget.onSetProperty?.call('comment', _comment.text),
-        ),
-      ),
-      _referenceRow(field),
-      _labeled(
-        '展开组数',
-        _columns,
-        'wb.fieldColumns',
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CtButton.ghost(
-              '设置',
-              key: const ValueKey('wb.setFieldColumns'),
-              onPressed: _locked
-                  ? null
-                  : () => widget.onSetProperty?.call(
-                      'excel_columns',
-                      int.tryParse(_columns.text.trim()),
-                    ),
-            ),
-            CtButton.ghost(
-              '清除',
-              key: const ValueKey('wb.clearFieldColumns'),
-              onPressed: _locked || field.excelColumns == null
-                  ? null
-                  : () => widget.onSetProperty?.call('excel_columns', null),
-            ),
-          ],
-        ),
-      ),
-      _note('展开组数只适用于 vector<T>；类型不符时内核候选会报错并阻止保存。'),
-      _groupTitle('危险操作（顺序影响 wire 与 ordinal）', key: 'wb.group.danger'),
-      Wrap(
-        spacing: ctGapSm,
+      _card(
         children: [
-          CtButton.ghost(
-            '上移',
-            key: const ValueKey('wb.fieldUp'),
-            onPressed: _locked || ordinal <= 0 || field.role == 'primary'
-                ? null
-                : () => widget.onMoveField?.call(ordinal - 1),
-          ),
-          CtButton.ghost(
-            '下移',
-            key: const ValueKey('wb.fieldDown'),
-            onPressed: _locked || field.role == 'primary'
-                ? null
-                : () => widget.onMoveField?.call(ordinal + 2),
-          ),
-          CtButton.ghost(
-            '删除字段',
-            key: const ValueKey('wb.fieldDelete'),
-            onPressed: _locked || field.role == 'primary'
-                ? null
-                : widget.onDeleteField,
+          _identityHeader(
+            title: field.name,
+            subtitle: 'ordinal $ordinal',
+            badges: [
+              CtStatusBadge(
+                label: primary ? '主键' : '普通字段',
+                tone: primary ? CtBadgeTone.info : CtBadgeTone.neutral,
+                dot: false,
+              ),
+              if (field.localized)
+                const CtStatusBadge(
+                  label: '本地化',
+                  tone: CtBadgeTone.busy,
+                  dot: false,
+                ),
+              if (field.serverOnly)
+                const CtStatusBadge(
+                  label: '服务端',
+                  tone: CtBadgeTone.neutral,
+                  dot: false,
+                ),
+            ],
           ),
         ],
       ),
-      if (field.role == 'primary') _note('主键不可删除、不可调序；内核没有改主键命令，需要重建表。'),
-    ];
-  }
-
-  Widget _typeRow(WorkbenchField field) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(ctGapLg, ctGapSm, ctGapLg, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      _card(title: '类型', children: [_typeControl(field)]),
+      _card(
+        title: '标记',
         children: [
-          Text(
-            '类型',
-            style: ctText(size: ctFontXs, color: ctInk2),
+          _toggleRow(
+            key: 'wb.fieldI18n',
+            label: '本地化（i18n）',
+            value: field.localized,
+            onChanged: _locked
+                ? null
+                : (v) => widget.onSetProperty?.call('i18n', v),
+            disabledHint: widget.disabledHint,
           ),
-          const SizedBox(height: ctGapXs),
-          CtTypePicker(
-            value: _typeValue,
-            namedTypes: widget.namedTypes,
-            enabled: !_locked,
-            keyPrefix: 'wb.fieldType',
-            onChanged: (value) => setState(() => _typeValue = value),
-          ),
-          const SizedBox(height: ctGapXs),
-          Align(
-            alignment: Alignment.centerRight,
-            child: CtButton.ghost(
-              '改类型',
-              key: const ValueKey('wb.setFieldType'),
-              onPressed: _locked || _typeValue.trim() == field.type
-                  ? null
-                  : () => widget.onSetType?.call(_typeValue.trim()),
-            ),
+          _toggleRow(
+            key: 'wb.fieldServerOnly',
+            label: '仅服务端（server_only）',
+            value: field.serverOnly,
+            onChanged: _locked
+                ? null
+                : (v) => widget.onSetProperty?.call('server_only', v),
+            disabledHint: widget.disabledHint,
           ),
         ],
       ),
-    );
-  }
-
-  Widget _referenceRow(WorkbenchField field) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(ctGapLg, ctGapSm, ctGapLg, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      _card(title: '注释', children: [_commentRow(field)]),
+      _card(title: '引用', children: [_referenceControl(field)]),
+      if (isVector || field.excelColumns != null)
+        _card(title: 'Excel 展开', children: _excelColumnsItems(field)),
+      _card(
+        key: const ValueKey('wb.group.danger'),
+        title: '危险操作',
+        description: primary ? '主键不可删除、不可调序；需要重建表改主键。' : '顺序影响 wire 与 ordinal。',
         children: [
-          Text(
-            'ref',
-            style: ctText(size: ctFontXs, color: ctInk2),
-          ),
-          const SizedBox(height: ctGapXs),
-          CtReferencePicker(
-            value: _refValue,
-            targets: widget.referenceTargets,
-            enabled: !_locked,
-            keyPrefix: 'wb.fieldRef',
-            onChanged: (value) => setState(() => _refValue = value),
-          ),
-          const SizedBox(height: ctGapXs),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          Wrap(
+            spacing: ctGapSm,
             children: [
               CtButton.ghost(
-                '清除',
-                key: const ValueKey('wb.clearFieldRef'),
-                onPressed: _locked || field.constraints.isEmpty
+                '上移',
+                key: const ValueKey('wb.fieldUp'),
+                onPressed: _locked || ordinal <= 0 || primary
                     ? null
-                    : () {
-                        setState(() => _refValue = '');
-                        widget.onSetProperty?.call('ref', '');
-                      },
+                    : () => widget.onMoveField?.call(ordinal - 1),
               ),
-              const SizedBox(width: ctGapSm),
               CtButton.ghost(
-                '设置',
-                key: const ValueKey('wb.setFieldRef'),
-                onPressed: _locked || _refValue.trim() == field.constraints
+                '下移',
+                key: const ValueKey('wb.fieldDown'),
+                onPressed: _locked || primary || ordinal >= lastOrdinal
                     ? null
-                    : () => widget.onSetProperty?.call('ref', _refValue.trim()),
+                    : () => widget.onMoveField?.call(ordinal + 1),
+              ),
+              CtButton.ghost(
+                '删除字段',
+                key: const ValueKey('wb.fieldDelete'),
+                onPressed: _locked || primary ? null : widget.onDeleteField,
               ),
             ],
           ),
-          if (widget.referenceTargets.isEmpty)
-            _note('当前工作区没有可引用的表.主键；ref 只接受内核清单里的目标。'),
         ],
       ),
+    ];
+  }
+
+  /// 类型选择器本身：标签由卡片抬头给，这里只留控件。
+  Widget _typeControl(WorkbenchField field) => CtTypePicker(
+    value: field.type,
+    namedTypes: widget.namedTypes,
+    enabled: !_locked,
+    keyPrefix: 'wb.fieldType',
+    onChanged: (value) => widget.onSetType?.call(value),
+  );
+
+  /// 注释：多行输入；只有相对内核草稿值有变更时才出现「还原 / 保存」两个动作。
+  Widget _commentRow(WorkbenchField field) => _inlineEdit(
+    fieldKey: 'wb.fieldComment',
+    controller: _comment,
+    dirty: _comment.text != field.description,
+    onSave: _saveComment,
+    onRevert: _revertComment,
+    revertKey: 'wb.revertFieldComment',
+    saveKey: 'wb.setFieldComment',
+    saveTooltip: '保存注释（Ctrl+Enter）',
+    hintText: '字段注释，可多行',
+    multiline: true,
+  );
+
+  /// Excel 展开：勾选才给组数输入，取消勾选即清掉 excel_columns。
+  ///
+  /// 组数只收 1~64 的整数：输入层挡掉非数字，越界由下方提示说明并禁用保存。
+  List<Widget> _excelColumnsItems(WorkbenchField field) {
+    final saved = field.excelColumns?.toString() ?? '';
+    final text = _columns.text.trim();
+    final value = int.tryParse(text);
+    final valid = value != null && value >= 1 && value <= 64;
+    return [
+      _toggleRow(
+        key: 'wb.fieldExpand',
+        label: '拆成多列（excel_columns）',
+        value: field.excelColumns != null,
+        onChanged: _locked ? null : _toggleExpand,
+        disabledHint: widget.disabledHint,
+      ),
+      if (field.excelColumns != null)
+        _inlineEdit(
+          label: '展开组数',
+          fieldKey: 'wb.fieldColumns',
+          controller: _columns,
+          dirty: text != saved,
+          onSave: valid ? _saveColumns : null,
+          onRevert: _revertColumns,
+          revertKey: 'wb.revertFieldColumns',
+          saveKey: 'wb.setFieldColumns',
+          saveTooltip: '保存展开组数（Enter）',
+          hintText: '1~64',
+          errorText: valid ? null : '只能填 1~64 的整数',
+          keyboardType: TextInputType.number,
+        ),
+    ];
+  }
+
+  void _saveComment() {
+    final text = _comment.text;
+    if (text == widget.field?.description) return;
+    widget.onSetProperty?.call('comment', text);
+  }
+
+  void _revertComment() => _restore(_comment, widget.field?.description ?? '');
+
+  void _toggleExpand(bool on) {
+    if (!on) {
+      widget.onSetProperty?.call('excel_columns', null);
+      return;
+    }
+    // 勾选后输入框必须马上有一个合法值：沿用上次填的数，否则退回最小值。
+    final typed = int.tryParse(_columns.text.trim());
+    final value = typed != null && typed >= 1 && typed <= 64 ? typed : 1;
+    _restore(_columns, value.toString());
+    widget.onSetProperty?.call('excel_columns', value);
+  }
+
+  void _saveColumns() {
+    final value = int.tryParse(_columns.text.trim());
+    if (value == null || value < 1 || value > 64) return;
+    if (value == widget.field?.excelColumns) return;
+    widget.onSetProperty?.call('excel_columns', value);
+  }
+
+  void _revertColumns() =>
+      _restore(_columns, widget.field?.excelColumns?.toString() ?? '');
+
+  void _saveItemName() {
+    final ordinal = widget.fieldOrdinal;
+    final name = _item.text.trim();
+    if (ordinal == null || name.isEmpty || name == widget.field?.name) return;
+    widget.onRenameEnumItem?.call(name, ordinal);
+  }
+
+  void _revertItemName() => _restore(_item, widget.field?.name ?? '');
+
+  /// 还原文本并把光标收到末尾，避免还原后停在越界位置。
+  void _restore(TextEditingController controller, String text) {
+    controller.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
     );
   }
+
+  /// 行内编辑行：可选的标签 + 输入框 + 「有改动才出现」的还原/保存动作，错误提示另起一行。
+  ///
+  /// 注释、枚举成员名、展开组数共用这一套排版与键位，属性区里不留第二种编辑习惯。
+  Widget _inlineEdit({
+    String? label,
+    required String fieldKey,
+    required TextEditingController controller,
+    required bool dirty,
+    required VoidCallback? onSave,
+    required VoidCallback onRevert,
+    required String revertKey,
+    required String saveKey,
+    required String saveTooltip,
+    String? hintText,
+    String? errorText,
+    bool multiline = false,
+    TextInputType? keyboardType,
+  }) {
+    final save = onSave;
+    final enabled = !_locked && dirty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (label != null) ...[
+          Text(label, style: _styleLabel),
+          const SizedBox(height: ctGapXs),
+        ],
+        Row(
+          // 动作贴首行：输入框变高时按钮不跟着往下漂。
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: CallbackShortcuts(
+                bindings: {
+                  // 多行里 Enter 归换行，保存得带修饰键；单行直接 Enter 保存。
+                  if (enabled && save != null) ...{
+                    if (multiline)
+                      const SingleActivator(
+                        LogicalKeyboardKey.enter,
+                        control: true,
+                      ): save,
+                    if (multiline)
+                      const SingleActivator(
+                        LogicalKeyboardKey.enter,
+                        meta: true,
+                      ): save,
+                    if (!multiline)
+                      const SingleActivator(LogicalKeyboardKey.enter): save,
+                  },
+                  if (enabled)
+                    const SingleActivator(LogicalKeyboardKey.escape): onRevert,
+                },
+                child: TextField(
+                  key: ValueKey(fieldKey),
+                  controller: controller,
+                  enabled: !_locked,
+                  minLines: 1,
+                  maxLines: multiline ? 4 : 1,
+                  keyboardType:
+                      keyboardType ??
+                      (multiline ? TextInputType.multiline : null),
+                  textInputAction: multiline ? TextInputAction.newline : null,
+                  inputFormatters: [
+                    if (keyboardType == TextInputType.number)
+                      FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  style: ctMono.copyWith(fontSize: ctFontSm),
+                  decoration: ctInputDecoration().copyWith(
+                    hintText: hintText,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: ctGapSm,
+                      vertical: 8,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (dirty) ...[
+              const SizedBox(width: ctGapXs),
+              _iconAction(
+                key: revertKey,
+                icon: Icons.close,
+                tooltip: '还原（Esc）',
+                onPressed: _locked ? null : onRevert,
+              ),
+              _iconAction(
+                key: saveKey,
+                icon: Icons.check,
+                tooltip: saveTooltip,
+                onPressed: _locked ? null : save,
+              ),
+            ],
+          ],
+        ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: ctGapXs),
+            child: Text(
+              errorText,
+              key: ValueKey('$fieldKey.error'),
+              style: ctText(size: ctFontXs, color: ctDanger),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// 引用选择器本身：标签由卡片抬头给，这里只留控件。
+  Widget _referenceControl(WorkbenchField field) => CtReferencePicker(
+    value: field.constraints,
+    targets: widget.referenceTargets,
+    enabled: !_locked,
+    keyPrefix: 'wb.fieldRef',
+    onChanged: (value) => widget.onSetProperty?.call('ref', value),
+  );
 
   Widget _problemBlock() {
     final problems = widget.problems;
     if (problems.isEmpty) return const SizedBox.shrink();
     return Container(
       key: const ValueKey('wb.fieldProblems'),
-      margin: const EdgeInsets.fromLTRB(ctGapLg, ctGapSm, ctGapLg, 0),
+      margin: const EdgeInsets.fromLTRB(ctGapMd, 0, ctGapMd, ctGapSm),
       padding: const EdgeInsets.all(ctGapSm),
       decoration: BoxDecoration(
         color: ctDangerSoft,
-        borderRadius: ctRadiusSmAll,
+        borderRadius: ctRadiusLgAll,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -468,145 +672,84 @@ class _WorkbenchFieldEditorState extends State<WorkbenchFieldEditor> {
     );
   }
 
-  Widget _labeled(
-    String label,
-    TextEditingController controller,
-    String key,
-    Widget action,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(ctGapLg, ctGapSm, ctGapLg, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: ctText(size: ctFontXs, color: ctInk2),
-          ),
-          const SizedBox(height: 2),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  key: ValueKey(key),
-                  controller: controller,
-                  enabled: !_locked,
-                  style: ctMono.copyWith(fontSize: ctFontSm),
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: ctGapSm),
-              action,
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 布尔行：用固定尺寸的 Switch 表达选中态，不引入对勾导致的宽度变化。
-  Widget _checkRow({
+  /// 布尔行：标签在左、统一的 [CtCheckbox] 在右，禁用原因仅在需要时展开一行。
+  Widget _toggleRow({
     required String key,
     required String label,
     required bool value,
-    required void Function(bool?)? onChanged,
-    String? sub,
+    required ValueChanged<bool>? onChanged,
     String? disabledHint,
   }) {
     final lockHint = onChanged == null ? (disabledHint ?? '当前不可修改，稍后重试') : null;
-    final control = Switch(
-      key: ValueKey(key),
-      value: value,
-      onChanged: onChanged,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    );
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(ctGapLg, ctGapSm, ctGapLg, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              if (lockHint == null)
-                control
-              else
-                Tooltip(message: lockHint, child: control),
-              const SizedBox(width: ctGapXs),
-              Expanded(
-                child: Text(label, style: ctText(size: ctFontSm)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: ctText(size: ctFontSm, color: ctInk),
               ),
-            ],
+            ),
+            CtCheckbox(
+              key: ValueKey(key),
+              value: value,
+              onChanged: onChanged,
+              tooltip: lockHint == null ? label : null,
+            ),
+          ],
+        ),
+        if (lockHint != null)
+          Padding(
+            padding: const EdgeInsets.only(top: ctGapXs),
+            child: Text(
+              '当前不可修改：$lockHint',
+              key: ValueKey('$key.disabledHint'),
+              style: ctText(size: ctFontXs, color: ctWarn),
+            ),
           ),
-          if (sub != null)
-            Padding(
-              padding: const EdgeInsets.only(left: ctGapLg),
-              child: Text(
-                sub,
-                style: ctText(size: ctFontXs, color: ctInk3),
-              ),
-            ),
-          if (lockHint != null)
-            Padding(
-              padding: const EdgeInsets.only(left: ctGapLg, top: 2),
-              child: Text(
-                '当前不可修改：$lockHint',
-                key: ValueKey('$key.disabledHint'),
-                style: ctText(size: ctFontXs, color: ctWarn),
-              ),
-            ),
-        ],
-      ),
+      ],
     );
   }
 
   Widget _note(String text) => Padding(
-    padding: const EdgeInsets.fromLTRB(ctGapLg, ctGapXs, ctGapLg, 0),
+    padding: const EdgeInsets.fromLTRB(ctGapMd, ctGapXs, ctGapMd, 0),
     child: Text(
       text,
       style: ctText(size: ctFontXs, color: ctInk3),
     ),
   );
 
+  /// 卡片里的只读行：固定标签列 + 值，内边距与分隔线由卡片给。
   Widget _row(
     String label,
     String value, {
     bool mono = false,
     bool multiline = false,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: ctGapLg,
-        vertical: ctGapSm + 2,
-      ),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: ctBorder)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 56,
-            child: Text(
-              label,
-              style: ctText(size: ctFontSm, color: ctInk2),
-            ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 56,
+          child: Text(
+            label,
+            style: ctText(size: ctFontSm, color: ctInk2),
           ),
-          const SizedBox(width: ctGapSm),
-          Expanded(
-            child: Text(
-              value,
-              maxLines: multiline ? 4 : 1,
-              overflow: TextOverflow.ellipsis,
-              style: mono
-                  ? ctMono.copyWith(fontSize: ctFontSm, color: ctInk)
-                  : ctText(size: ctFontSm, color: ctInk),
-            ),
+        ),
+        const SizedBox(width: ctGapSm),
+        Expanded(
+          child: Text(
+            value,
+            maxLines: multiline ? 4 : 1,
+            overflow: TextOverflow.ellipsis,
+            style: mono
+                ? ctMono.copyWith(fontSize: ctFontSm, color: ctInk)
+                : ctText(size: ctFontSm, color: ctInk),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

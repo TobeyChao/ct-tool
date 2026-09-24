@@ -21,6 +21,10 @@ const double ctGapXxl = 32;
 const Duration ctMotionFast = Duration(milliseconds: 120);
 const Duration ctMotionStandard = Duration(milliseconds: 200);
 const Curve ctMotionCurve = Curves.easeOut;
+// Flutter 弹出菜单默认 300ms；桌面高频菜单统一缩短打开和关闭过渡。
+const AnimationStyle ctMenuAnimationStyle = AnimationStyle(
+  duration: ctMotionFast,
+);
 
 // ---- 圆角 ----
 const double ctRadiusSm = 6;
@@ -56,7 +60,7 @@ const double ctTitleBarHeight = 38;
 const double ctBorderWidth = 1;
 const double ctFocusBorderWidth = 1.5;
 
-// ---- 工作台布局（宽度取自 web 的 tokens.css） ----
+// ---- 工作台布局（原生桌面按内容优先级定宽；不逐值复刻 web） ----
 const double ctNavRailWidth = 56;
 
 /// 文字侧栏宽度（web 的 --ct-sidebar-w = 236px）
@@ -64,12 +68,12 @@ const double ctSidebarWidth = 248;
 const double ctSidebarMinWidth = 212;
 const double ctSidebarMaxWidth = 300;
 
-const double ctResourcePanelDefault = 240;
+const double ctResourcePanelDefault = 220;
 const double ctResourcePanelMin = 180;
-const double ctResourcePanelMax = 380;
-const double ctInspectorDefault = 300;
+const double ctResourcePanelMax = 360;
+const double ctInspectorDefault = 280;
 const double ctInspectorMin = 240;
-const double ctInspectorMax = 440;
+const double ctInspectorMax = 420;
 const double ctCollapsedStripWidth = 44;
 
 /// 非编辑器页面的阅读宽度；避免大窗口里表单和日志横向摊得过开。

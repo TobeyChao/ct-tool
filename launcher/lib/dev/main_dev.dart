@@ -117,15 +117,23 @@ class _DevAppState extends State<DevApp> {
           const Text('场景', style: TextStyle(fontSize: 11, color: ctInk3)),
           const SizedBox(width: ctGapXs),
           DropdownButtonHideUnderline(
-            child: DropdownButton<MockScenario>(
-              value: _scenario,
-              isDense: true,
-              style: ctText(size: ctFontSm),
-              items: [
+            child: PopupMenuButton<MockScenario>(
+              tooltip: '选择场景',
+              initialValue: _scenario,
+              position: PopupMenuPosition.under,
+              popUpAnimationStyle: ctMenuAnimationStyle,
+              onSelected: (v) => setState(() => _scenario = v),
+              itemBuilder: (context) => [
                 for (final s in MockScenario.values)
-                  DropdownMenuItem(value: s, child: Text(s.label)),
+                  PopupMenuItem(value: s, child: Text(s.label)),
               ],
-              onChanged: (v) => setState(() => _scenario = v!),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_scenario.label, style: ctText(size: ctFontSm)),
+                  const Icon(Icons.arrow_drop_down, size: 18, color: ctInk2),
+                ],
+              ),
             ),
           ),
           const _DevDivider(),

@@ -1,9 +1,47 @@
 import 'package:ct_launcher/theme.dart';
 import 'package:ct_launcher/ui/widgets/desktop_title_bar.dart';
+import 'package:ct_launcher/ui/widgets/status_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  /// 标题栏左侧只剩导航栏图标、右侧只剩窗口按钮时，状态与快速打开整组居中。
+  testWidgets('状态徽标与快速打开在标题栏里水平居中', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCtTheme(),
+        home: Scaffold(
+          body: CtDesktopTitleBar(
+            title: 'ct 配表工作台',
+            statusLabel: '原生内核已连接',
+            onQuickOpen: () {},
+            sidebarWidth: 56,
+            sidebarToggle: const Icon(Icons.chevron_right, size: 16),
+            onMinimize: () {},
+            onToggleMaximize: () {},
+            onClose: () {},
+          ),
+        ),
+      ),
+    );
+
+    final bar = tester.getRect(
+      find.byKey(const ValueKey('ct.desktopTitleBar')),
+    );
+    final badge = tester.getRect(find.byType(CtStatusBadge));
+    final quickOpen = tester.getRect(
+      find.byKey(const ValueKey('ct.titleBar.quickOpen')),
+    );
+    // 整组（徽标左缘到快速打开右缘）的中线落在标题栏中线；两侧各留 4px 内边距。
+    expect((badge.left + quickOpen.right) / 2, closeTo(bar.center.dx, 6));
+    // 不再贴着窗口按钮。
+    expect(bar.right - quickOpen.right, greaterThan(160));
+  });
+
   testWidgets('自绘标题栏展示菜单、状态与窗口按钮', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1;
@@ -101,5 +139,18 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
+
+    // 窄窗口收起徽标，快速打开依然居中，不挤到窗口按钮上。
+    final bar = tester.getRect(
+      find.byKey(const ValueKey('ct.desktopTitleBar')),
+    );
+    expect(find.byType(CtStatusBadge), findsNothing);
+    expect(
+      tester
+          .getRect(find.byKey(const ValueKey('ct.titleBar.quickOpen')))
+          .center
+          .dx,
+      closeTo(bar.center.dx, 4),
+    );
   });
 }

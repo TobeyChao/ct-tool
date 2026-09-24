@@ -80,24 +80,44 @@ class _AcceptIntent extends Intent {
   const _AcceptIntent();
 }
 
+/// 面板度量：固定行高，滚动定位与「最多露几行」都可直接算出来。
+const double _panelWidth = 560;
+const double _rowHeight = 56;
+const int _maxVisibleRows = 5;
+
 /// 打开 Quick Open，返回被选中的条目（取消返回 null）。
+///
+/// 面板是一张白卡片：搜索行只有一条下划线（无焦点描边、无选中态），
+/// 列表与卡片同宽，选中/悬停背景铺满整行，圆角由卡片裁切。
 Future<QuickOpenEntry?> showWorkbenchQuickOpen(
   BuildContext context, {
   required List<QuickOpenEntry> entries,
   required List<String> recents,
 }) => showDialog<QuickOpenEntry>(
   context: context,
-  builder: (dialogContext) => AlertDialog(
-    title: null,
-    content: SizedBox(
-      width: 520,
+  builder: (dialogContext) => Dialog(
+    insetPadding: const EdgeInsets.symmetric(
+      horizontal: ctGapXl,
+      vertical: ctGapXl,
+    ),
+    backgroundColor: ctSurface,
+    surfaceTintColor: Colors.transparent,
+    clipBehavior: Clip.antiAlias,
+    shape: RoundedRectangleBorder(
+      borderRadius: ctRadiusLgAll,
+      side: const BorderSide(color: ctBorder),
+    ),
+    child: ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: _panelWidth,
+        maxHeight: MediaQuery.sizeOf(dialogContext).height - 2 * ctGapXl,
+      ),
       child: _QuickOpenBody(
         entries: entries,
         recents: recents,
         onPick: (entry) => Navigator.pop(dialogContext, entry),
       ),
     ),
-    actions: const [],
   ),
 );
 
@@ -118,6 +138,7 @@ class _QuickOpenBody extends StatefulWidget {
 
 class _QuickOpenBodyState extends State<_QuickOpenBody> {
   final TextEditingController _text = TextEditingController();
+  final ScrollController _scroll = ScrollController();
   int _selected = 0;
 
   @override
@@ -130,10 +151,14 @@ class _QuickOpenBodyState extends State<_QuickOpenBody> {
   void dispose() {
     _text.removeListener(_onQuery);
     _text.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
-  void _onQuery() => setState(() => _selected = 0);
+  void _onQuery() {
+    setState(() => _selected = 0);
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+  }
 
   /// 空查询：最近打开在前（按 recents 顺序），其余按名字补齐。
   List<QuickOpenEntry> get _visible {
@@ -160,6 +185,30 @@ class _QuickOpenBodyState extends State<_QuickOpenBody> {
     final count = _visible.length;
     if (count == 0) return;
     setState(() => _selected = (_selected + delta + count) % count);
+    _revealSelection();
+  }
+
+  /// 键盘选择只做「最少滚动」：已经可见就不动，越过上下沿才挪一屏。
+  void _revealSelection() {
+    if (!_scroll.hasClients) return;
+    final position = _scroll.position;
+    final top = _selected * _rowHeight;
+    final bottom = top + _rowHeight;
+    final viewport = position.viewportDimension;
+    final double? target;
+    if (top < position.pixels) {
+      target = top;
+    } else if (bottom > position.pixels + viewport) {
+      target = bottom - viewport;
+    } else {
+      target = null; // 已经完整可见：不动，避免列表无谓跳动。
+    }
+    if (target == null) return;
+    _scroll.animateTo(
+      target.clamp(0.0, position.maxScrollExtent),
+      duration: ctMotionFast,
+      curve: ctMotionCurve,
+    );
   }
 
   void _accept() {
@@ -203,74 +252,149 @@ class _QuickOpenBodyState extends State<_QuickOpenBody> {
         },
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(
+            _buildSearchRow(),
+            Flexible(fit: FlexFit.loose, child: _buildResults(list)),
+            _buildHint(list.length, emptyQuery),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 搜索行：图标与输入框同排居中对齐，整行底边一条下划线。
+  Widget _buildSearchRow() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: ctGapLg,
+        vertical: ctGapMd,
+      ),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: ctBorder)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.search, size: 16, color: ctInk3),
+          const SizedBox(width: ctGapSm),
+          Expanded(
+            child: TextField(
               key: const ValueKey('wb.quickOpen.field'),
               controller: _text,
               autofocus: true,
-              decoration: const InputDecoration(
-                isDense: true,
-                hintText: '搜资源名（留空给最近打开）',
-                prefixIcon: Icon(Icons.search, size: 18),
+              cursorColor: ctAccent,
+              cursorWidth: 1.5,
+              style: ctText(size: ctFontSm),
+              decoration: InputDecoration(
+                isCollapsed: true,
                 border: InputBorder.none,
+                hintText: '搜资源名（留空给最近打开）',
+                hintStyle: ctText(size: ctFontSm, color: ctInk3),
               ),
             ),
-            const Divider(height: 1),
-            Text(
-              emptyQuery
-                  ? '↑↓ 选择 · Enter 打开 · Esc 关闭 · 共 ${list.length} 项（最近打开在前）'
-                  : '↑↓ 选择 · Enter 打开 · 命中 ${list.length} 项',
-              key: const ValueKey('wb.quickOpen.hint'),
-              style: ctText(size: ctFontXs, color: ctInk3),
-            ),
-            const SizedBox(height: ctGapXs),
-            if (list.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(ctGapMd),
-                child: Text(
-                  '没有匹配的资源',
-                  key: const ValueKey('wb.quickOpen.empty'),
-                  style: ctText(size: ctFontSm, color: ctInk3),
-                ),
-              )
-            else
-              SizedBox(
-                height: 260,
-                child: ListView.builder(
-                  itemCount: list.length,
-                  itemBuilder: (context, index) {
-                    final entry = list[index];
-                    final selected = index == _selected;
-                    return ListTile(
-                      key: ValueKey('wb.quickOpen.row.${entry.name}.$index'),
-                      dense: true,
-                      selected: selected,
-                      selectedTileColor: ctAccentSofter,
-                      leading: Text(
-                        entry.kindLabel,
-                        style: ctMono.copyWith(fontSize: ctFontXs),
-                      ),
-                      title: Text(entry.name, style: ctText(size: ctFontSm)),
-                      subtitle: entry.path.isEmpty
-                          ? null
-                          : Text(
-                              entry.path,
-                              style: ctText(size: ctFontXs, color: ctInk3),
-                            ),
-                      trailing: entry.refCount > 0
-                          ? Text(
-                              '引用 ${entry.refCount}',
-                              style: ctText(size: ctFontXs, color: ctInk3),
-                            )
-                          : null,
-                      onTap: () => widget.onPick(entry),
-                    );
-                  },
-                ),
-              ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResults(List<QuickOpenEntry> list) {
+    if (list.isEmpty) {
+      return SizedBox(
+        key: const ValueKey('wb.quickOpen.results'),
+        height: _rowHeight * 2,
+        child: Center(
+          child: Text(
+            '没有匹配的资源',
+            key: const ValueKey('wb.quickOpen.empty'),
+            style: ctText(size: ctFontSm, color: ctInk3),
+          ),
         ),
+      );
+    }
+    return SizedBox(
+      key: const ValueKey('wb.quickOpen.results'),
+      height: (list.length * _rowHeight).clamp(
+        _rowHeight,
+        _maxVisibleRows * _rowHeight,
+      ),
+      child: ListView.builder(
+        controller: _scroll,
+        padding: EdgeInsets.zero,
+        itemExtent: _rowHeight,
+        itemCount: list.length,
+        itemBuilder: (context, index) =>
+            _buildRow(list[index], index, selected: index == _selected),
+      ),
+    );
+  }
+
+  /// 一行 = 类型 + 名字/路径 + 引用数；选中与悬停用同一层底色，铺满整行。
+  Widget _buildRow(QuickOpenEntry entry, int index, {required bool selected}) {
+    return Material(
+      color: selected ? ctAccentSofter : ctSurface,
+      child: InkWell(
+        key: ValueKey('wb.quickOpen.row.${entry.name}.$index'),
+        onTap: () => widget.onPick(entry),
+        hoverColor: ctAccentSofter,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: ctGapLg),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 32,
+                child: Text(
+                  entry.kindLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: ctMono.copyWith(fontSize: ctFontXs, color: ctInk3),
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: ctText(size: ctFontSm),
+                    ),
+                    if (entry.path.isNotEmpty)
+                      Text(
+                        entry.path,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: ctText(size: ctFontXs, color: ctInk3),
+                      ),
+                  ],
+                ),
+              ),
+              if (entry.refCount > 0) ...[
+                const SizedBox(width: ctGapSm),
+                Text(
+                  '引用 ${entry.refCount}',
+                  style: ctText(size: ctFontXs, color: ctInk3),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHint(int count, bool emptyQuery) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(ctGapLg, ctGapSm, ctGapLg, ctGapMd),
+      child: Text(
+        emptyQuery
+            ? '↑↓ 选择 · Enter 打开 · Esc 关闭 · 共 $count 项（最近打开在前）'
+            : '↑↓ 选择 · Enter 打开 · Esc 关闭 · 命中 $count 项',
+        key: const ValueKey('wb.quickOpen.hint'),
+        textAlign: TextAlign.right,
+        style: ctText(size: ctFontXs, color: ctInk3),
       ),
     );
   }

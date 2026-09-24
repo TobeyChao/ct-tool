@@ -146,7 +146,6 @@ class _WorkbenchSettingsPanelState extends State<WorkbenchSettingsPanel> {
                                 '原生内核不监听端口，也不启动解释器。',
                                 key: ValueKey('settings.legacyNote'),
                               ),
-                              divider: false,
                             ),
                           ],
                         ),
@@ -187,7 +186,6 @@ class _WorkbenchSettingsPanelState extends State<WorkbenchSettingsPanel> {
                                 ),
                               ],
                             ),
-                            divider: false,
                           ),
                         ],
                       ),
@@ -217,7 +215,6 @@ class _WorkbenchSettingsPanelState extends State<WorkbenchSettingsPanel> {
                                   ),
                               ],
                             ),
-                            divider: false,
                           ),
                           _settingsItem(
                             title: '运行时管理',
@@ -252,21 +249,22 @@ class _WorkbenchSettingsPanelState extends State<WorkbenchSettingsPanel> {
                           _settingsItem(
                             title: '开机自启',
                             description: '登录系统后自动启动 ct 工作台。',
-                            trailing: Switch(
+                            trailing: CtSwitch(
                               key: const ValueKey('settings.autostart'),
                               value: _autostart,
                               onChanged: _autostartBusy
                                   ? null
                                   : _toggleAutostart,
+                              tooltip: '开机自启',
                             ),
-                            divider: false,
                           ),
                           _settingsItem(
                             title: '托盘常驻',
                             description: '关闭窗口时隐藏到托盘，而不是退出应用。',
-                            trailing: Switch(
+                            trailing: CtSwitch(
                               key: const ValueKey('settings.trayResident'),
                               value: s.trayResident,
+                              tooltip: '托盘常驻',
                               onChanged: (value) async {
                                 final messenger = ScaffoldMessenger.of(context);
                                 await s.setTrayResident(value);
@@ -301,7 +299,6 @@ class _WorkbenchSettingsPanelState extends State<WorkbenchSettingsPanel> {
                               key: const ValueKey('settings.docs'),
                               onPressed: widget.onOpenDocs,
                             ),
-                            divider: false,
                           ),
                           _settingsItem(
                             title: '帮助与快捷键',
@@ -334,7 +331,6 @@ class _WorkbenchSettingsPanelState extends State<WorkbenchSettingsPanel> {
                               key: const ValueKey('wb.exit'),
                               onPressed: widget.onExit,
                             ),
-                            divider: false,
                           ),
                         ],
                       ),
@@ -358,16 +354,7 @@ class _WorkbenchSettingsPanelState extends State<WorkbenchSettingsPanel> {
   }
 
   Widget _settingsGroup({Key? key, required List<Widget> children}) {
-    return Container(
-      key: key,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: ctSurface,
-        border: Border.all(color: ctBorder),
-        borderRadius: ctRadiusLgAll,
-      ),
-      child: Column(children: children),
-    );
+    return CtGroupCard(key: key, children: children);
   }
 
   Widget _settingsItem({
@@ -375,52 +362,45 @@ class _WorkbenchSettingsPanelState extends State<WorkbenchSettingsPanel> {
     required String description,
     Widget? detail,
     Widget? trailing,
-    bool divider = true,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        border: divider ? const Border(top: BorderSide(color: ctBorder)) : null,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: ctText(
-                    size: ctFontMd,
-                    color: ctInk,
-                    weight: FontWeight.w600,
-                  ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: ctText(
+                  size: ctFontMd,
+                  color: ctInk,
+                  weight: FontWeight.w600,
                 ),
-                const SizedBox(height: ctGapXs),
-                Text(
-                  description,
-                  style: ctText(size: ctFontXs, color: ctInk3, height: 1.4),
+              ),
+              const SizedBox(height: ctGapXs),
+              Text(
+                description,
+                style: ctText(size: ctFontXs, color: ctInk3, height: 1.4),
+              ),
+              if (detail != null) ...[
+                const SizedBox(height: ctGapSm),
+                DefaultTextStyle.merge(
+                  style: ctText(size: ctFontXs, color: ctInk2),
+                  child: detail,
                 ),
-                if (detail != null) ...[
-                  const SizedBox(height: ctGapSm),
-                  DefaultTextStyle.merge(
-                    style: ctText(size: ctFontXs, color: ctInk2),
-                    child: detail,
-                  ),
-                ],
               ],
-            ),
+            ],
           ),
-          if (trailing != null) ...[
-            const SizedBox(width: ctGapXl),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 380),
-              child: trailing,
-            ),
-          ],
+        ),
+        if (trailing != null) ...[
+          const SizedBox(width: ctGapXl),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 380),
+            child: trailing,
+          ),
         ],
-      ),
+      ],
     );
   }
 }
