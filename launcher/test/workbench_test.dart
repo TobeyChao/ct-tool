@@ -4,7 +4,10 @@ import 'package:ct_launcher/ui/widgets/common.dart';
 import 'package:ct_launcher/ui/workbench/mock/mock_data.dart';
 import 'package:ct_launcher/ui/workbench/workbench_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ct_launcher/ui/widgets/titlebar_control_area.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> pumpWorkbench(
@@ -16,13 +19,17 @@ Future<void> pumpWorkbench(
   String workspaceKey = 'mock-test',
   bool showDesktopTitleBar = false,
   double titleBarLeadingInset = 0,
+  bool disableAnimations = false,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     MediaQuery(
-      data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+      data: MediaQueryData(
+        textScaler: TextScaler.linear(scale),
+        disableAnimations: disableAnimations,
+      ),
       child: MaterialApp(
         theme: buildCtTheme(),
         home: WorkbenchScreen(
@@ -95,10 +102,12 @@ void main() {
     }
 
     expectJoinedEdge('wb.sidebar');
-    expect(
-      find.descendant(of: titleBar, matching: find.byType(CtBrandMark)),
-      findsOneWidget,
+    final brand = find.descendant(
+      of: titleBar,
+      matching: find.byType(CtBrandMark),
     );
+    expect(tester.getSize(brand), const Size(22, 22));
+    expect(brand, findsOneWidget);
     expect(
       find.descendant(of: titleBar, matching: find.text('gd')),
       findsOneWidget,
@@ -171,23 +180,186 @@ void main() {
     expect(expand.center.dx, closeTo(nav.center.dx, 0.5));
   });
 
-  testWidgets('交通灯占满窄栏时展开按钮在栏内居中', (tester) async {
+  testWidgets('macOS 顶栏标题跨侧栏边界且与内容区分隔', (tester) async {
     await pumpWorkbench(
       tester,
       mockWorkspaceFor(MockScenario.normal),
       showDesktopTitleBar: true,
-      titleBarLeadingInset: 72,
+      titleBarLeadingInset: 80,
+      size: const Size(1280, 800),
     );
-    await tester.tap(find.byKey(const ValueKey('wb.collapse.sidebar')));
+    final titleBar = find.byKey(const ValueKey('ct.desktopTitleBar'));
+    final bar = tester.getRect(titleBar);
+    final rail = tester.getRect(find.byKey(const ValueKey('wb.sidebar')));
+    final border =
+        (tester.widget<Container>(titleBar).decoration! as BoxDecoration)
+            .border;
+    expect(bar.height, 40);
+    final brand = find.descendant(
+      of: titleBar,
+      matching: find.byType(CtBrandMark),
+    );
+    expect(tester.getSize(brand), const Size(18, 18));
+    // 40pt 顶栏的控件中心与 AppKit unifiedCompact 的交通灯中心约 20pt 对齐。
+    expect(tester.getRect(brand).center.dy - bar.top, closeTo(20, 1));
+    final toggle = find.byKey(const ValueKey('wb.collapse.sidebar'));
+    expect(
+      tester.getRect(brand).center.dy,
+      closeTo(tester.getRect(toggle).center.dy, 0.5),
+    );
+    expect(border?.bottom.color, ctBorder);
+    expect(find.byKey(const ValueKey('ct.titleBar.sidebarEdge')), findsNothing);
+    final title = find.descendant(of: titleBar, matching: find.text('gd'));
+    final subtitle = find.descendant(
+      of: titleBar,
+      matching: find.text('Schema'),
+    );
+    expect(tester.getRect(subtitle).right, greaterThan(rail.right));
+    expect(
+      tester.renderObject<RenderParagraph>(title).didExceedMaxLines,
+      isFalse,
+    );
+    expect(
+      tester.renderObject<RenderParagraph>(subtitle).didExceedMaxLines,
+      isFalse,
+    );
+    expect(
+      tester.getRect(find.byKey(const ValueKey('ct.titleBar.quickOpen'))).left,
+      greaterThan(tester.getRect(subtitle).right),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('macOS 侧栏开关在展开与收起时固定于交通灯右侧', (tester) async {
+    await pumpWorkbench(
+      tester,
+      mockWorkspaceFor(MockScenario.normal),
+      showDesktopTitleBar: true,
+      titleBarLeadingInset: 80,
+      size: const Size(1024, 700),
+      scale: 1.5,
+    );
+    final titleBar = find.byKey(const ValueKey('ct.desktopTitleBar'));
+    final collapse = find.byKey(const ValueKey('wb.collapse.sidebar'));
+    final collapseRect = tester.getRect(collapse);
+    final passthrough = find.byType(CtTitlebarControlArea);
+    expect(find.descendant(of: titleBar, matching: collapse), findsOneWidget);
+    expect(passthrough, findsOneWidget);
+    expect(find.ancestor(of: collapse, matching: passthrough), findsOneWidget);
+    expect(tester.getRect(passthrough), collapseRect);
+    expect(collapseRect.left, greaterThanOrEqualTo(80));
+    expect(
+      collapseRect.bottom,
+      lessThanOrEqualTo(tester.getRect(titleBar).bottom + 1),
+    );
+
+    await tester.tap(collapse);
     await tester.pumpAndSettle();
     final rail = tester.getRect(find.byKey(const ValueKey('wb.iconRail')));
     final expand = find.byKey(const ValueKey('wb.expand.sidebar'));
-    expect(tester.getRect(expand).center.dx, closeTo(rail.center.dx, 0.5));
-    expect(tester.getRect(expand).top, greaterThanOrEqualTo(rail.top));
+    final expandRect = tester.getRect(expand);
+    expect(find.descendant(of: titleBar, matching: expand), findsOneWidget);
+    expect(find.ancestor(of: expand, matching: passthrough), findsOneWidget);
+    expect(tester.getRect(passthrough), expandRect);
+    expect(expandRect.center.dx, closeTo(collapseRect.center.dx, 0.5));
+    expect(expandRect.left, greaterThan(rail.right));
+    final collapsedTitle = find.descendant(
+      of: titleBar,
+      matching: find.text('gd'),
+    );
+    expect(collapsedTitle, findsOneWidget);
+    expect(
+      tester.renderObject<RenderParagraph>(collapsedTitle).didExceedMaxLines,
+      isFalse,
+    );
     expect(tester.takeException(), isNull);
     await tester.tap(expand);
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('wb.sidebar')), findsOneWidget);
+  });
+
+  testWidgets('快速和稍慢的连续点击 macOS 侧栏开关均不会最大化窗口', (tester) async {
+    const windowChannel = MethodChannel('window_manager');
+    final calls = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      windowChannel,
+      (call) async {
+        calls.add(call.method);
+        if (call.method == 'isMaximized') return false;
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        windowChannel,
+        null,
+      ),
+    );
+    await pumpWorkbench(
+      tester,
+      mockWorkspaceFor(MockScenario.normal),
+      showDesktopTitleBar: true,
+      titleBarLeadingInset: 80,
+    );
+    final start = tester.getCenter(
+      find.byKey(const ValueKey('wb.collapse.sidebar')),
+    );
+    for (var i = 0; i < 4; i++) {
+      await tester.tapAt(start);
+      await tester.pump(const Duration(milliseconds: 40));
+    }
+    expect(find.byKey(const ValueKey('wb.collapse.sidebar')), findsOneWidget);
+    for (var i = 0; i < 2; i++) {
+      await tester.tapAt(start);
+      await tester.pump(const Duration(milliseconds: 240));
+    }
+    expect(find.byKey(const ValueKey('wb.collapse.sidebar')), findsOneWidget);
+    // 也检查紧挨按钮的可拖动空白，不让插件的双击手势误触发最大化。
+    final nearbyDragArea =
+        tester
+            .getRect(find.byKey(const ValueKey('ct.desktopTitleBar')))
+            .topLeft +
+        const Offset(470, 20);
+    await tester.tapAt(nearbyDragArea);
+    await tester.pump(const Duration(milliseconds: 40));
+    await tester.tapAt(nearbyDragArea);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(calls, isNot(contains('maximize')));
+    expect(calls, isNot(contains('unmaximize')));
+  });
+
+  testWidgets('Windows 顶栏空白双击仍可最大化', (tester) async {
+    const windowChannel = MethodChannel('window_manager');
+    final calls = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      windowChannel,
+      (call) async {
+        calls.add(call.method);
+        if (call.method == 'isMaximized') return false;
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        windowChannel,
+        null,
+      ),
+    );
+    await pumpWorkbench(
+      tester,
+      mockWorkspaceFor(MockScenario.normal),
+      showDesktopTitleBar: true,
+    );
+    final blank =
+        tester
+            .getRect(find.byKey(const ValueKey('ct.desktopTitleBar')))
+            .topLeft +
+        const Offset(470, 20);
+    await tester.tapAt(blank);
+    await tester.pump(const Duration(milliseconds: 40));
+    await tester.tapAt(blank);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(calls, contains('maximize'));
   });
 
   testWidgets('选择资源与字段后属性区联动', (tester) async {
@@ -285,6 +457,38 @@ void main() {
     expect(midResourceWidth, greaterThan(ctCollapsedStripWidth));
     await tester.pumpAndSettle();
     expect(tester.getSize(resourceMotion).width, ctCollapsedStripWidth);
+  });
+
+  testWidgets('系统减少动态效果时面板和菜单立即切换', (tester) async {
+    await pumpWorkbench(
+      tester,
+      mockWorkspaceFor(MockScenario.normal),
+      disableAnimations: true,
+      showDesktopTitleBar: true,
+    );
+    expect(
+      tester
+          .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+          .every((widget) => widget.duration == Duration.zero),
+      isTrue,
+    );
+    expect(
+      tester
+          .widgetList<PopupMenuButton<dynamic>>(find.byType(PopupMenuButton))
+          .every(
+            (widget) =>
+                widget.popUpAnimationStyle == AnimationStyle.noAnimation,
+          ),
+      isTrue,
+    );
+    await tester.tap(find.byKey(const ValueKey('wb.collapse.resource')));
+    await tester.pump();
+    final transition = find.ancestor(
+      of: find.byKey(const ValueKey('wb.strip.resource')),
+      matching: find.byType(AnimatedSize),
+    );
+    expect(transition, findsNothing);
+    expect(find.byKey(const ValueKey('wb.strip.resource')), findsOneWidget);
   });
 
   testWidgets('拖拽手柄调整资源区宽度并按工作区记忆', (tester) async {

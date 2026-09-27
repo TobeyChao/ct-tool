@@ -26,6 +26,29 @@ const AnimationStyle ctMenuAnimationStyle = AnimationStyle(
   duration: ctMotionFast,
 );
 
+/// 遵循系统「减少动态效果」偏好，所有工作台过渡共用此判定。
+Duration ctMotionDuration(BuildContext context, Duration duration) =>
+    MediaQuery.maybeOf(context)?.disableAnimations == true
+    ? Duration.zero
+    : duration;
+
+AnimationStyle ctMenuStyle(BuildContext context) =>
+    MediaQuery.maybeOf(context)?.disableAnimations == true
+    ? AnimationStyle.noAnimation
+    : ctMenuAnimationStyle;
+
+void ctScrollTo(
+  BuildContext context,
+  ScrollController controller,
+  double offset,
+) {
+  if (ctMotionDuration(context, ctMotionFast) == Duration.zero) {
+    controller.jumpTo(offset);
+  } else {
+    controller.animateTo(offset, duration: ctMotionFast, curve: ctMotionCurve);
+  }
+}
+
 // ---- 圆角 ----
 const double ctRadiusSm = 6;
 const double ctRadiusMd = 10;

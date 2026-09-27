@@ -5,10 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// 预览分页（任务 5.2 的「分页预览」）：游标续页、追加语义、代次变化整页重查。
 class _FakeGateway implements KernelGateway {
-  _FakeGateway({this.nextRevision = 7});
+  _FakeGateway({this.nextRevision = 7, this.extraCell});
 
   final List<Map<String, Object?>> requests = [];
   final int nextRevision;
+  final Object? extraCell;
 
   @override
   WorkerStatus status = WorkerStatus.ready;
@@ -56,7 +57,8 @@ class _FakeGateway implements KernelGateway {
               {'name': 'Id', 'typeExpr': 'int32', 'role': 'primary'},
             ],
             'rows': [
-              for (var i = 0; i < 50; i++) ['Id$i'],
+              for (var i = 0; i < 50; i++)
+                ['Id$i', if (extraCell != null) extraCell],
             ],
             'nextCursor': 'c1',
           };
@@ -77,6 +79,16 @@ class _FakeGateway implements KernelGateway {
   }
 }
 
+class _CountingCell {
+  int formats = 0;
+
+  @override
+  String toString() {
+    formats++;
+    return 'cell';
+  }
+}
+
 void main() {
   late _FakeGateway gateway;
   late WorkbenchRepository repo;
@@ -88,6 +100,23 @@ void main() {
   }
 
   tearDown(() => repo.dispose());
+
+  test('预览行按可见索引格式化，翻页不一次转换全部单元格', () async {
+    final cell = _CountingCell();
+    gateway = _FakeGateway(extraCell: cell);
+    repo = WorkbenchRepository(worker: gateway);
+    await repo.switchWorkspace('D:/game/gd');
+    await repo.loadPreview('Item');
+    final rows = repo.resources.single.previewRows;
+    expect(rows.length, 50);
+    expect(cell.formats, 0);
+    expect(rows[0][1], 'cell');
+    expect(rows[0][1], 'cell');
+    expect(cell.formats, 1);
+    await repo.loadMorePreview('Item');
+    expect(repo.resources.single.previewRows.length, 80);
+    expect(cell.formats, 1, reason: '续页只读行数时不得格式化所有预览格');
+  });
 
   test('首页带 nextCursor 时标记还有更多，续页是追加而不是替换', () async {
     await bind();

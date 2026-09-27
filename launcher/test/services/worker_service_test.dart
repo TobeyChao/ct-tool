@@ -419,13 +419,15 @@ void main() {
           timeout: const Duration(seconds: 120),
         );
 
-        final page1 = await service.query(
-          Methods.logsList,
-          params: const {
-            'page': {'limit': 1},
-          },
-          workspaceRoot: workspace.path,
-        ) as Map<String, Object?>;
+        final page1 =
+            await service.query(
+                  Methods.logsList,
+                  params: const {
+                    'page': {'limit': 1},
+                  },
+                  workspaceRoot: workspace.path,
+                )
+                as Map<String, Object?>;
         final entries1 = (page1['entries'] as List)
             .cast<Map<String, Object?>>();
         expect(entries1.length, 1, reason: '单页应只回 1 条：$page1');
@@ -434,13 +436,15 @@ void main() {
         final revision = page1['revision'];
         expect(revision, isA<int>());
 
-        final page2 = await service.query(
-          Methods.logsList,
-          params: {
-            'page': {'limit': 1, 'cursor': cursor},
-          },
-          workspaceRoot: workspace.path,
-        ) as Map<String, Object?>;
+        final page2 =
+            await service.query(
+                  Methods.logsList,
+                  params: {
+                    'page': {'limit': 1, 'cursor': cursor},
+                  },
+                  workspaceRoot: workspace.path,
+                )
+                as Map<String, Object?>;
         expect(page2['revision'], revision, reason: '同一次快照代次内翻页不得混代次');
         final entries2 = (page2['entries'] as List)
             .cast<Map<String, Object?>>();

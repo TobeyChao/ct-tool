@@ -267,7 +267,7 @@ class _TypeSearchDialogState extends State<_TypeSearchDialog> {
       0.0,
       _scroll.position.maxScrollExtent,
     );
-    _scroll.animateTo(target, duration: ctMotionFast, curve: ctMotionCurve);
+    ctScrollTo(context, _scroll, target);
   }
 
   void _chooseHighlighted() {

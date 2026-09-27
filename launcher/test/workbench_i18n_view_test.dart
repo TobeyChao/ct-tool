@@ -184,6 +184,35 @@ void main() {
     expect(button.onPressed, isNull, reason: '内核没给 nextCursor 就到底了');
   });
 
+  testWidgets('翻译操作忙碌时禁用入口不再保留启用颜色', (tester) async {
+    await openI18n(tester);
+    translations.syncing = true;
+    translations.notifyListeners();
+    await tester.pump();
+
+    final confirmed = tester.widget<IconButton>(
+      find.byKey(const ValueKey('wb.i18nConfirmed.1001.Name')),
+    );
+    expect(confirmed.onPressed, isNull);
+    expect(confirmed.color, ctAccent);
+    expect(confirmed.disabledColor, isNot(ctAccent));
+    final icon = confirmed.icon as Icon;
+    expect(icon.color, isNull, reason: '图标要继承按钮的禁用色');
+    expect(tester.widget<Text>(find.text('1001.Name')).style!.color, ctInk3);
+
+    final status = find.byKey(const ValueKey('wb.i18nStatus'));
+    expect(
+      tester.widget<PopupMenuButton<TranslationFilter>>(status).enabled,
+      isFalse,
+    );
+    final labelStyle = tester.widget<DefaultTextStyle>(
+      find
+          .descendant(of: status, matching: find.byType(DefaultTextStyle))
+          .first,
+    );
+    expect(labelStyle.style.color, ctInk3);
+  });
+
   testWidgets('状态筛选送内核，列显隐即时生效并在切表后保留', (tester) async {
     await openI18n(tester);
 

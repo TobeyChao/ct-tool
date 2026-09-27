@@ -243,10 +243,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('wb.enumItemDown')));
     await tester.pumpAndSettle();
-    expect([
-      for (final item in repo.commands.last.payload['values'] as List)
-        (item as Map)['name'],
-    ], ['High', 'Low', 'Epic']);
+    expect(
+      [
+        for (final item in repo.commands.last.payload['values'] as List)
+          (item as Map)['name'],
+      ],
+      ['High', 'Low', 'Epic'],
+    );
   });
 
   testWidgets('枚举成员追加走 set_enum_values 整表改写', (tester) async {

@@ -7,6 +7,8 @@
 /// **任何保存拒绝都保留草稿**，只作废候选。
 library;
 
+import 'dart:collection';
+
 import 'package:flutter/foundation.dart';
 
 import '../services/protocol/protocol.dart';
@@ -121,9 +123,8 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   @override
   String? get damagedDraftPath => _damagedPath;
 
-  /// 投影缓存：`resources` 每次调用都要把全部预览行转成单元格文本
-  /// （M 档 300 行 × 20 列 = 6000 次转换），而一帧里界面会读它好几遍。
-  /// 这是任务 5.2 实测出的阻塞 UI 的路径：改成按键失效的缓存，键变了才重算。
+  /// 投影缓存防止重复构造清单；预览行由 _PreviewRows 按可见索引转换，
+  /// 翻页时不再同步格式化整张预览表。
   String? _resourcesKey;
   List<WorkbenchResource>? _resourcesCache;
 
@@ -1269,12 +1270,37 @@ class _DraftNode {
       fields: fields,
       indexes: indexes,
       previewColumns: columns.map((c) => c.name).toList(),
-      previewRows: (preview?.rows ?? const [])
-          .map((row) => row.map(_cellText).toList())
-          .toList(),
+      previewRows: preview == null ? const [] : _PreviewRows(preview.rows),
       previewHasMore: (preview?.nextCursor ?? '').isNotEmpty,
     );
   }
+}
+
+/// 只转换当前 ListView 请求的预览行；同一页滚动返回时复用已经格式化的行。
+class _PreviewRows extends ListBase<List<String>> {
+  _PreviewRows(this._raw);
+
+  final List<List<Object?>> _raw;
+  final Map<int, List<String>> _formatted = {};
+
+  @override
+  int get length => _raw.length;
+
+  @override
+  set length(int value) => throw UnsupportedError('只读预览');
+
+  @override
+  List<String> operator [](int index) {
+    RangeError.checkValidIndex(index, this);
+    return _formatted.putIfAbsent(
+      index,
+      () => List<String>.unmodifiable(_raw[index].map(_cellText)),
+    );
+  }
+
+  @override
+  void operator []=(int index, List<String> value) =>
+      throw UnsupportedError('只读预览');
 
   static String _cellText(Object? cell) => switch (cell) {
     null => '',

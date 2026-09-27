@@ -430,7 +430,7 @@ class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
         height: _actionHeight,
         child: PopupMenuButton<String>(
           key: const ValueKey('wb.i18nColumnsMenu'),
-          popUpAnimationStyle: ctMenuAnimationStyle,
+          popUpAnimationStyle: ctMenuStyle(context),
           tooltip: '选择列表显示内容',
           onSelected: repo.toggleColumn,
           itemBuilder: (context) => [
@@ -455,7 +455,7 @@ class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
         height: _actionHeight,
         child: PopupMenuButton<String>(
           key: const ValueKey('wb.i18nActionsMenu'),
-          popUpAnimationStyle: ctMenuAnimationStyle,
+          popUpAnimationStyle: ctMenuStyle(context),
           tooltip: '更多翻译操作',
           enabled: !repo.busy && repo.canQuery,
           onSelected: (value) async {
@@ -518,7 +518,7 @@ class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
       enabled: onChanged != null,
       initialValue: selected.value,
       position: PopupMenuPosition.under,
-      popUpAnimationStyle: ctMenuAnimationStyle,
+      popUpAnimationStyle: ctMenuStyle(context),
       onSelected: (value) => onChanged?.call(value),
       itemBuilder: (context) => [
         for (final item in items)
@@ -526,14 +526,21 @@ class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
       ],
       child: Container(
         height: 32,
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: ctInk3)),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: onChanged == null ? ctBorderStrong : ctInk3,
+            ),
+          ),
         ),
         child: Row(
           children: [
             Expanded(
               child: DefaultTextStyle(
-                style: ctText(size: ctFontSm),
+                style: ctText(
+                  size: ctFontSm,
+                  color: onChanged == null ? ctInk3 : ctInk,
+                ),
                 child: selected.child,
               ),
             ),
@@ -902,7 +909,10 @@ class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
         entry.key,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: ctMono.copyWith(fontSize: ctFontXs, color: ctPrimary),
+        style: ctMono.copyWith(
+          fontSize: ctFontXs,
+          color: repo.busy ? ctInk3 : ctPrimary,
+        ),
       ),
     ),
   );
@@ -921,8 +931,9 @@ class _WorkbenchI18nViewState extends State<WorkbenchI18nView> {
               icon: Icon(
                 entry.confirmed ? Icons.verified : Icons.check_circle_outline,
                 size: 19,
-                color: entry.confirmed ? ctAccent : ctInk3,
               ),
+              color: entry.confirmed ? ctAccent : ctInk3,
+              disabledColor: const Color(0xFF8A958D),
               onPressed: repo.busy ? null : () => _confirmRow(repo, entry),
             ),
           ),

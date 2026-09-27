@@ -94,7 +94,11 @@ Map<String, Object?> _resources(List<List<String>> rows) => {
   ],
 };
 
-Future<void> pumpLive(WidgetTester tester, WorkbenchRepository repo) async {
+Future<void> pumpLive(
+  WidgetTester tester,
+  WorkbenchRepository repo, {
+  bool withDraft = false,
+}) async {
   tester.view.physicalSize = const Size(1400, 900);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
@@ -104,6 +108,7 @@ Future<void> pumpLive(WidgetTester tester, WorkbenchRepository repo) async {
       home: WorkbenchScreen(
         data: repo,
         refresh: repo,
+        draft: withDraft ? repo : null,
         workspaceKey: 'live-test',
         bannerLabel: '已连接原生内核 · 只读',
         showDesktopTitleBar: true,
@@ -139,6 +144,44 @@ void main() {
       });
     return gw;
   }
+
+  testWidgets('只读预览入口按内核游标追加下一页', (tester) async {
+    final gw = buildGateway();
+    gw.replies['table.preview@$aRoot'] = (call) {
+      final page = call.params['page'] as Map<String, Object?>;
+      final more = page.containsKey('cursor');
+      return {
+        'revision': 7,
+        'columns': [
+          {'name': 'Id', 'typeExpr': 'int32', 'role': 'primary'},
+        ],
+        'rows': [
+          for (var i = 0; i < (more ? 1 : 50); i++) [more ? 'Next' : 'Id$i'],
+        ],
+        'nextCursor': more ? null : 'next-page',
+      };
+    };
+    final repo = WorkbenchRepository(worker: gw);
+    addTearDown(repo.dispose);
+    await repo.switchWorkspace(aRoot);
+    await pumpLive(tester, repo, withDraft: true);
+    expect(gw.calls.where((call) => call.method == 'table.preview'), isEmpty);
+    await tester.tap(find.byKey(const ValueKey('wb.openPreview')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('已显示 50 行'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('wb.previewMore')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('已显示 51 行'), findsOneWidget);
+    expect(find.byKey(const ValueKey('wb.previewMore')), findsNothing);
+    final previews = gw.calls
+        .where((call) => call.method == 'table.preview')
+        .toList();
+    expect(previews, hasLength(2));
+    expect(
+      (previews.last.params['page'] as Map<String, Object?>)['cursor'],
+      'next-page',
+    );
+  });
 
   testWidgets('资源列表、字段结构与总览都来自内核回包', (tester) async {
     final gw = buildGateway();

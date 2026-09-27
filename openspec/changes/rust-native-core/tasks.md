@@ -36,8 +36,10 @@
   - 已落地：`native` workspace（12 个 crate + tests/ + fuzz/）与 `.github/workflows/native.yml`
     （windows/macos/ubuntu 三份矩阵：fmt、clippy -D warnings、cargo test、`fingerprint --check`、
     release 构建、`cargo run -p ct-xtask -- dist` 的独立 CLI/worker smoke 与无 Python 自检、运行时包上传）。
-  - 未勾选原因：本机只有 Windows，CI 无法在此环境实跑（且 `native/` 尚未提交，工作流还不会触发）；
-    macOS/Linux 的编译与 smoke 结论仍需在推送后由 Actions 结果证明。
+  - 原未勾选原因（Windows 阶段）：当时只有 Windows 实测，macOS/Linux 的编译与 smoke 缺真机结论。
+  - 2026-09-24 macOS Apple Silicon 实机补验：`cargo fmt --all --check`、
+    `cargo clippy --workspace --all-targets -- -D warnings`、`cargo test --workspace` 全绿；
+    release CLI 与 `xtask dist` 构建通过，包内 CLI/worker 自检通过。Linux 仍缺实跑，故保持未勾选。
 
 - [x] 1.4 输出协议 v1 文档/机器 schema/同源样例，覆盖方法、握手、事件、取消、分页、错误与大整数；用契约测试验证样例并供 Flutter 消费。
 - [x] 1.5 验证 Excel 读取候选对公式缓存、日期、空值、错误值及固定 vector 的行为，与 openpyxl 夹具逐项对照。
@@ -154,6 +156,14 @@
     `cargo run -p ct-xtask -- bench --size s --runs 5`，需要 Python 参照在位）。
   - 未勾选原因：macOS/Linux 无真机（只有 CI 定义），L 档已在 Windows 完成且暴露绝对上限口径问题；按提案要求，跨平台结果或
     显式的门槛修订完成前不得宣布此项通过。
+  - 2026-09-24 macOS Apple Silicon S 档已完成 5 轮配对测量（`native/docs/baseline/bench-s-macos.json`）：
+    冷全量/热 CLI/改单表/改译文时间比 0.197–0.240、RSS 比 0.399–0.512，四项均 `pass`
+    （改为 macOS 默认 3 worker 后复跑）；
+    两侧 67 个产物摘要逐场景一致，`gd/` 前后零改动。`hot-worker` 无 Python 对照，记 `no-baseline`。
+    M 档首轮 8 worker 的 RSS 比 2.56–2.95 超标，失败报告保留为
+    `native/docs/baseline/bench-m-macos-8workers.json`；macOS 默认并发调到 3 后，M 档 5 轮配对
+    四项均 `pass`（时间比 0.287–0.307、RSS 比 1.826–2.404），两侧 307 个产物摘要相同。
+    macOS L 档与 Linux 全档仍未完成，本项保持未勾选。
 
 - [ ] 6.6 生成各目标平台独立运行时包和版本信息，在无 Python 环境验证 CLI/worker 及中文空格路径，提供给桌面打包。
   - Windows 已完成并真跑：`cargo run -p ct-xtask -- dist` 产出
@@ -164,8 +174,12 @@
     在 `…\ct-native 运行时 验证 <triple> <pid>\配表工作区`（中文+空格）里真跑
     `--version/validate/status/export` 与 `ct worker`（hello+workspace.open+shutdown 三条终态齐全），
     导出后 `output/json/Item_zh.json` 存在且汇总行为「增量导出：写入 11，复用 0；生成缓存命中 0」。
-  - 未勾选原因：macOS/Linux 的运行时包与无 Python 验证只在 `.github/workflows/native.yml` 里定义，
-    本机无对应平台，无法交付真机结论；桌面壳集成（launcher 使用内置运行时）属 native-flutter-workbench。
+  - 原未勾选原因（Windows 阶段）：当时 macOS/Linux 的包与无 Python 验证只有 CI 定义；
+    桌面壳集成（launcher 使用内置运行时）属 native-flutter-workbench。
+  - 2026-09-24 macOS Apple Silicon 实机补验：`native/dist/ct-native-0.0.0-aarch64-apple-darwin/`
+    及 zip 已产出，`VERSION.json` 记 `pythonRuntimeRequired=false`；`RUNTIME-CHECK.txt`
+    记录在中文空格临时路径与无 Python 环境下 `--version`/validate/status/export/worker 全通过。
+    Linux 仍缺运行时包真机自检，故保持未勾选。
 
 - [ ] 6.7 演练发布中断恢复与版本回滚，更新 CLI 安装/缓存说明；验收后删除 Python 实现，无回退路径。
   - 演练已真跑并留档 `native/docs/baseline/recovery-drill.md`（脚本 `native/tools/bench/recovery-drill.mjs`）：

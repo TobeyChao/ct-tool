@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:macos_window_utils/macos_window_utils.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'app.dart';
@@ -28,6 +29,18 @@ Future<void> main() async {
     await windowManager.setResizable(true);
     // 对齐 FlClash：启动阶段就拦截关闭事件，关闭行为由 app 层决策。
     await windowManager.setPreventClose(true);
+    if (Platform.isMacOS) {
+      // 顺序敏感：window_manager 已在 waitUntilReadyToShow 前半段应用
+      // hidden 标题栏样式，而 macos_window_utils 的原生 start() 默认值
+      // 与其相反（显示标题/不透明/无全尺寸内容），因此这三步必须在
+      // hidden 样式之后执行；空 DefaultToolbar 借 unifiedCompact 度量
+      // 让 AppKit 把交通灯与悬停区域一起排进 40pt 顶栏。
+      await WindowManipulator.initialize();
+      await WindowManipulator.addToolbar();
+      await WindowManipulator.setToolbarStyle(
+        toolbarStyle: NSWindowToolbarStyle.unifiedCompact,
+      );
+    }
     await windowManager.show();
     await windowManager.focus();
   });

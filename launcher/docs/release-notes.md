@@ -9,7 +9,7 @@
 | 桌面壳 | Flutter 桌面应用，版本 `0.1.0+1`（`launcher/pubspec.yaml`） |
 | 内核 | Rust 单二进制 `ct`（`ct 0.0.0`，release），经 stdio NDJSON 协议 `ct worker` 提供全部业务能力 |
 | Windows 产物 | `launcher/build/windows/x64/runner/Release/` 整目录即分发（`ct_launcher.exe` + 同级 `runtime\ct.exe`，27 个文件） |
-| macOS 产物 | `launcher/tool/build_macos.sh` 产 `.app`（运行时在 `Contents/Resources/runtime/ct`），**必须在 macOS 上构建** |
+| macOS 产物 | `launcher/tool/build_macos.sh` 产 `.app` 与 `ct-launcher-arm64.dmg`（运行时在 `Contents/Resources/runtime/ct`）；2026-09-24 在 Apple Silicon 实机构建通过 |
 | 运行时来源 | 只有两条：包内 `runtime/ct(.exe)` → 设置里的显式路径。**没有 Python/venv/Web 服务回退** |
 | 安装前置 | 目标机器不需要 Python、不需要仓库、不需要网络服务；路径含中文与空格已实测可用 |
 
@@ -24,6 +24,10 @@
 5. 卸载 = 删掉应用目录。用户数据只在应用支持目录：
    `%APPDATA%\com.ct\ct_launcher\shared_preferences.json`（偏好）、`ct_launcher.lock`（单实例锁）、
    `ct\drafts\`（未保存的 Schema 草稿信封，按工作区与基线隔离）。不留服务、不留计划任务。
+
+macOS：打开 DMG，把 `ct_launcher.app` 拖到 Applications 后启动；卸载时删应用。若还要清除用户数据，
+删除 `~/Library/Application Support/com.ct.ctLauncher/`（锁文件、草稿）和
+`~/Library/Preferences/com.ct.ctLauncher.plist`（偏好）。本地 DMG 为 ad-hoc 签名，正式外部分发还需开发者身份签名与公证。
 
 ## 快捷键
 
@@ -54,20 +58,22 @@
 
 ## 已验证到什么程度
 
-- 内核：`cargo test --workspace` 277 例全绿；`cargo clippy --workspace --all-targets -- -D warnings`、`cargo fmt --check` 干净。
-- 桌面：`flutter test` 315 例全绿（含真实 `ct worker` 的协议串测、全链截图与六模块矩阵用例）、`flutter analyze` 0 issues、`dart format` 无差异。
+- 内核：macOS 上 `cargo test --workspace` 全绿；`cargo clippy --workspace --all-targets -- -D warnings`、`cargo fmt --check` 干净。
+- 桌面：macOS 上 `flutter test --concurrency=1` 376 例全绿（使用真实 release `ct worker`，包括全链截图、六模块矩阵及减少动态效果用例）、`flutter analyze` 0 issues；17 张金标使用独立 macOS 基线。
+- macOS 负载：`xtask dist` 在 `aarch64-apple-darwin` 生成独立运行时并完成无 Python CLI/worker 自检；`build_macos.sh` 实跑生成 114.3MB `.app` 与约 38MB DMG，包内只读 `ct status` 在清除 Python 环境变量后通过。
+- macOS DMG：只读挂载、复制 `.app` 到临时 Applications 目录、`codesign --verify --deep --strict`、隔离运行 `ct status`、移除应用及卸载镜像均通过；尚未做人工 GUI 启动验收。
+- macOS 性能：S/M 档各 5 轮配对报告中四个可比场景均通过时间/RSS 门槛；S 档时间比 0.197–0.240、RSS 比 0.399–0.512，M 档时间比 0.287–0.307、RSS 比 1.826–2.404。67/307 个产物摘要分别相同，`gd/` 无改动；M 档默认并发从 8 降至 3 后通过，原始超标报告保留在 `bench-m-macos-8workers.json`。L 档和 Linux 仍待测。
 - 负载：`pwsh launcher/tool/check_payload.ps1` 在「PATH 只剩包内 runtime、`PYTHON*`/`VIRTUAL_ENV`/`CONDA_PREFIX` 全清」的
   隔离环境里真跑 `ct --version`、`status`、`validate` 全 exit 0，负载内 Python/Flask 痕迹 0 处。
 - 布局：1440x900 / 1280x800 / 1024x700 × 100%/125%/150% 金标矩阵（Schema 模块）+ 六个模块在 1024x700 的
   100%/150% 逐模块截图（`launcher/test/evidence/matrix-*.png`），无 RenderFlex 溢出。
+- macOS profile 界面帧时间：M 档 50 表 × 2000 行 × 20 列、真实 release worker，按内核游标预览 300 行；大字段表/分页预览/日志三阶段断言通过，分页预览 build p95/max 为 1.073/20.492ms，记录见 `launcher/test/evidence/responsiveness-profile-macos.md`。键盘滚动及减少动态效果有 6 例新增控件测试通过，系统偏好与输入法仍待真机人工验收。
 - 真实数据工作区（`gd/`）在以上所有自动化中 0 行改动（守卫 `node native/tools/gd-guard.mjs`）。
 
 ## 已知限制（如实列出）
 
-1. **没有安装器与代码签名**：Windows 只交付目录包，未做 MSIX/Inno，也未签名 → 首次运行会有 SmartScreen 提示，
-   也不存在「升级安装」路径（换版本 = 换目录）。对应任务 5.3 未完成。
-2. **macOS / Linux 未做真机验收**：这两平台的构建脚本、运行时包与负载复核只在 CI 定义与脚本里存在，
-   本机无对应平台。跨平台编译（1.3）、配对性能测量（6.5）、平台运行时包（6.6）都还开着。
+1. **外部分发签名与安装验收未完成**：Windows 只交付目录包，未做 MSIX/Inno 或签名；macOS 本地 DMG 为 ad-hoc 签名，仍需正式签名、公证，以及安装/启动/卸载实测。对应任务 5.3 仍未勾选。
+2. **跨平台验收仍未完成**：macOS 的自动构建和测试已有实测；Linux 真机与 Windows/macOS 的发行交互检查仍待补齐。三平台总任务 1.3/6.5/6.6 保持未勾选。
 3. **截图矩阵里中文是方块**：`flutter_tester` 不带 CJK 字体，PNG 只能验布局与遮挡；字体度量、换行与
    行高以真机运行为准。
 4. **输入法、焦点遍历与「减少动态效果」未在真机核**：中文 IME 组合、Tab 焦点顺序、系统动画偏好

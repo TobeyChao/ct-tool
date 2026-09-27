@@ -7,7 +7,7 @@ import '../tokens.dart';
 import '../widgets/common.dart';
 import 'workbench_models.dart';
 
-/// 跨模块全局草稿条（native-flutter-workbench 任务 4.9；2026-09-21 按 web 收成 4 个动作）。
+/// 跨模块全局草稿条：状态摘要 + 草稿操作。
 ///
 /// 与 web 的 `ct-draftbar` 同口径：一个状态点 + 一句可点摘要（点开「步骤 / 净差异」弹层）
 /// + 撤销 / 重做 / 放弃草稿 / 保存变更；**没有草稿、没有撤销历史时整条不占位**。
@@ -18,13 +18,11 @@ class WorkbenchDraftBar extends StatefulWidget {
     required this.data,
     required this.repo,
     this.onSave,
-    this.onQuickOpen,
   });
 
   final WorkbenchData data;
   final WorkbenchRepository? repo;
   final VoidCallback? onSave;
-  final VoidCallback? onQuickOpen;
 
   @override
   State<WorkbenchDraftBar> createState() => _WorkbenchDraftBarState();
@@ -122,6 +120,33 @@ class _WorkbenchDraftBarState extends State<WorkbenchDraftBar> {
         '${draft.candidateBusy ? '正在计算未保存修改…' : (candidatePending ? '未保存修改（净差异未计算）' : (changed == 0 ? '无未保存修改' : '$changed 个资源有未保存修改'))}'
         '${notes.isEmpty ? '' : ' · ${notes.join(' · ')}'}'
         '${steps == 0 ? '' : ' · 草稿 $steps 步 · ${draft.draftPersistLabel}'}';
+    final canUndo = draft.canUndo && !draft.editingFrozen;
+    final canRedo = draft.canRedo && !draft.editingFrozen;
+    final canDiscard = draft.hasDraft && !draft.editingFrozen;
+    final canSave = draft.canSave && widget.onSave != null;
+    final undoTip = draft.editingFrozen
+        ? '保存中，暂不能撤销'
+        : (canUndo ? '撤销一步草稿（Ctrl/Cmd+Z）' : '没有可撤销的草稿步骤');
+    final redoTip = draft.editingFrozen
+        ? '保存中，暂不能重做'
+        : (canRedo ? '重做一步草稿（Ctrl/Cmd+Shift+Z）' : '没有可重做的草稿步骤');
+    final discardTip = draft.editingFrozen
+        ? '保存中，暂不能放弃草稿'
+        : (canDiscard ? '丢弃全部草稿命令（需确认，不改工作区文件）' : '没有可放弃的草稿');
+    final saveTip = canSave
+        ? '保存草稿为 YAML（Ctrl/Cmd+S）：仅改 schema 文件'
+        : draft.editingFrozen
+        ? '正在保存变更…'
+        : found == null &&
+              (draft.draftError != null || draft.candidateProblems.isNotEmpty)
+        ? '候选计算失败，请查看未保存修改'
+        : draft.candidateBusy || candidatePending
+        ? '正在计算净差异，完成后可保存'
+        : (found?.problems.isNotEmpty ?? false)
+        ? '存在阻塞项，请查看未保存修改'
+        : changed == 0
+        ? '没有需要保存的净变更'
+        : '当前无法保存，请查看未保存修改';
     return Container(
       key: const ValueKey('wb.draftBar'),
       width: double.infinity,
@@ -168,67 +193,63 @@ class _WorkbenchDraftBarState extends State<WorkbenchDraftBar> {
                   ),
                 ),
               ),
-              _icon(
-                keyName: 'wb.draftQuickOpen',
-                icon: Icons.search,
-                tooltip: 'Quick Open（Ctrl/Cmd+P）：按名字跳到资源',
-                onPressed: widget.onQuickOpen,
-              ),
               if (compact) ...[
                 _icon(
                   keyName: 'wb.draftUndo',
                   icon: Icons.undo,
-                  tooltip: '撤销一步草稿（Ctrl/Cmd+Z）',
-                  onPressed: !draft.canUndo ? null : draft.undoDraft,
+                  tooltip: undoTip,
+                  onPressed: canUndo ? draft.undoDraft : null,
                 ),
                 _icon(
                   keyName: 'wb.draftRedo',
                   icon: Icons.redo,
-                  tooltip: '重做一步草稿（Ctrl/Cmd+Shift+Z）',
-                  onPressed: !draft.canRedo ? null : draft.redoDraft,
+                  tooltip: redoTip,
+                  onPressed: canRedo ? draft.redoDraft : null,
                 ),
+                const SizedBox(width: ctGapSm),
                 _icon(
                   keyName: 'wb.draftDiscard',
                   icon: Icons.delete_sweep_outlined,
-                  tooltip: '丢弃全部草稿命令（需确认，不改工作区文件）',
-                  onPressed: !draft.hasDraft
-                      ? null
-                      : () => confirmWorkbenchDiscard(context, draft),
+                  tooltip: discardTip,
+                  onPressed: canDiscard
+                      ? () => confirmWorkbenchDiscard(context, draft)
+                      : null,
                 ),
                 _icon(
                   keyName: 'wb.draftSave',
                   icon: Icons.save_outlined,
-                  tooltip: '保存草稿为 YAML（Ctrl/Cmd+S）：仅改 schema 文件',
-                  onPressed: !draft.canSave ? null : widget.onSave,
+                  tooltip: saveTip,
+                  onPressed: canSave ? widget.onSave : null,
                   accent: true,
                 ),
               ] else ...[
                 _button(
                   keyName: 'wb.draftUndo',
                   label: '撤销',
-                  tooltip: '撤销一步草稿（Ctrl/Cmd+Z）',
-                  onPressed: !draft.canUndo ? null : draft.undoDraft,
+                  tooltip: undoTip,
+                  onPressed: canUndo ? draft.undoDraft : null,
                 ),
                 _button(
                   keyName: 'wb.draftRedo',
                   label: '重做',
-                  tooltip: '重做一步草稿（Ctrl/Cmd+Shift+Z）',
-                  onPressed: !draft.canRedo ? null : draft.redoDraft,
+                  tooltip: redoTip,
+                  onPressed: canRedo ? draft.redoDraft : null,
                 ),
+                const SizedBox(width: ctGapSm),
                 _button(
                   keyName: 'wb.draftDiscard',
                   label: '放弃草稿',
-                  tooltip: '丢弃全部草稿命令（需确认，不改工作区文件）',
-                  onPressed: !draft.hasDraft
-                      ? null
-                      : () => confirmWorkbenchDiscard(context, draft),
+                  tooltip: discardTip,
+                  onPressed: canDiscard
+                      ? () => confirmWorkbenchDiscard(context, draft)
+                      : null,
                 ),
                 _button(
                   keyName: 'wb.draftSave',
                   label: '保存变更',
-                  tooltip: '保存草稿为 YAML（Ctrl/Cmd+S）：仅改 schema 文件',
+                  tooltip: saveTip,
                   accent: true,
-                  onPressed: !draft.canSave ? null : widget.onSave,
+                  onPressed: canSave ? widget.onSave : null,
                 ),
               ],
             ],
@@ -244,15 +265,22 @@ class _WorkbenchDraftBarState extends State<WorkbenchDraftBar> {
     required String tooltip,
     VoidCallback? onPressed,
     bool accent = false,
-  }) => IconButton(
-    key: ValueKey(keyName),
-    icon: Icon(icon, size: 17),
-    tooltip: tooltip,
-    onPressed: onPressed,
-    splashRadius: 16,
-    padding: EdgeInsets.zero,
-    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-    color: accent && onPressed != null ? ctAccent : ctInk2,
+  }) => Tooltip(
+    message: tooltip,
+    child: IconButton(
+      key: ValueKey(keyName),
+      icon: Icon(icon, size: 17),
+      onPressed: onPressed,
+      splashRadius: 16,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+      style: IconButton.styleFrom(
+        foregroundColor: accent ? Colors.white : ctInk,
+        disabledForegroundColor: accent ? ctInk3 : const Color(0xFF8A958D),
+        backgroundColor: accent ? ctPrimary : Colors.transparent,
+        disabledBackgroundColor: accent ? ctBorderStrong : Colors.transparent,
+      ),
+    ),
   );
 
   Widget _button({
@@ -261,30 +289,37 @@ class _WorkbenchDraftBarState extends State<WorkbenchDraftBar> {
     required String tooltip,
     VoidCallback? onPressed,
     bool accent = false,
-  }) => Tooltip(
-    message: tooltip,
-    child: TextButton(
-      key: ValueKey(keyName),
-      onPressed: onPressed,
-      style: TextButton.styleFrom(
-        minimumSize: const Size(0, 40),
-        padding: const EdgeInsets.symmetric(horizontal: ctGapSm),
-        foregroundColor: accent && onPressed != null
-            ? Colors.white
-            : (onPressed == null ? ctInk3 : ctInk),
-        backgroundColor: accent && onPressed != null
-            ? ctAccent
-            : Colors.transparent,
-      ),
-      child: Text(
-        label,
-        style: ctText(
-          size: ctFontSm,
-          weight: accent ? FontWeight.w600 : FontWeight.w400,
+  }) {
+    final enabled = onPressed != null;
+    final foreground = !enabled
+        ? (accent ? ctInk3 : const Color(0xFF8A958D))
+        : (accent ? Colors.white : ctInk);
+    return Tooltip(
+      message: tooltip,
+      child: TextButton(
+        key: ValueKey(keyName),
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+          minimumSize: const Size(0, 40),
+          padding: const EdgeInsets.symmetric(horizontal: ctGapSm),
+          foregroundColor: foreground,
+          disabledForegroundColor: foreground,
+          backgroundColor: accent
+              ? (enabled ? ctPrimary : ctBorderStrong)
+              : Colors.transparent,
+          disabledBackgroundColor: accent ? ctBorderStrong : Colors.transparent,
+        ),
+        child: Text(
+          label,
+          style: ctText(
+            size: ctFontSm,
+            color: foreground,
+            weight: accent ? FontWeight.w600 : FontWeight.w400,
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// 「步骤 / 净差异」弹层：web 版把这两件事收在同一句摘要后面，这里同口径。

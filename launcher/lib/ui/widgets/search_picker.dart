@@ -168,10 +168,10 @@ class _SearchDialogState extends State<_SearchDialog> {
     if (length == 0) return;
     setState(() => _highlight = (_highlight + delta).clamp(0, length - 1));
     if (_scroll.hasClients) {
-      _scroll.animateTo(
+      ctScrollTo(
+        context,
+        _scroll,
         (_highlight * 38.0).clamp(0.0, _scroll.position.maxScrollExtent),
-        duration: ctMotionFast,
-        curve: ctMotionCurve,
       );
     }
   }

@@ -175,6 +175,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
   final List<String> _navBack = [];
   String? _selectedResource;
   int _selectedField = -1;
+  bool _showDataPreview = false;
 
   @override
   void initState() {
@@ -318,7 +319,6 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
   }
 
   void _selectResource(MockResource r) {
-    // 真实数据源按需拉只读预览由 _gotoResource 统一触发。
     _gotoResource(r.name, rememberRecent: true);
   }
 
@@ -375,7 +375,6 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
                                   data: widget.data,
                                   repo: widget.draft,
                                   onSave: _saveViaBar,
-                                  onQuickOpen: _openQuickOpen,
                                 ),
                                 Expanded(child: _buildModuleBody()),
                               ],
@@ -464,6 +463,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
       _module = 1;
       _selectedResource = name;
       _selectedField = -1;
+      _showDataPreview = false;
       if (rememberRecent) {
         _recentResources
           ..remove(name)
@@ -591,7 +591,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
     );
   }
 
-  /// 窄窗口的 56px 图标栏：只留图标与 tooltip，顶部给展开按钮。
+  /// 窄窗口的 56px 图标栏：无桌面标题栏时顶部提供展开按钮。
   Widget _buildIconRail() {
     return Container(
       key: const ValueKey('wb.iconRail'),
@@ -602,9 +602,8 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
       ),
       child: Column(
         children: [
-          // macOS 的交通灯占满 56px 窄栏时，展开入口移到图标栏内。
-          if (!widget.showDesktopTitleBar ||
-              widget.titleBarLeadingInset >= ctNavRailWidth) ...[
+          // 桌面端的展开入口固定在顶栏；无标题栏时留在图标栏。
+          if (!widget.showDesktopTitleBar) ...[
             const SizedBox(height: ctGapMd),
             _iconBtn(
               Icons.chevron_right,
@@ -716,7 +715,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
               children: [
                 if (!compact) ...[
                   AnimatedContainer(
-                    duration: ctMotionFast,
+                    duration: ctMotionDuration(context, ctMotionFast),
                     curve: ctMotionCurve,
                     width: 3,
                     height: 18,
@@ -1145,6 +1144,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
               PopupMenuButton<String>(
                 key: const ValueKey('wb.emptyNewMenu'),
                 tooltip: '新建资源（只入草稿）',
+                popUpAnimationStyle: ctMenuStyle(context),
                 enabled: !widget.draft!.busy,
                 onSelected: _createResource,
                 itemBuilder: (context) => const [
@@ -1626,7 +1626,34 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
     }
     return Column(
       children: [
-        Expanded(child: _buildFieldsTable(res)),
+        if (res.kind == WorkbenchResourceKind.table)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: ctGapMd,
+              vertical: ctGapXs,
+            ),
+            child: Row(
+              children: [
+                TextButton(
+                  onPressed: () => setState(() => _showDataPreview = false),
+                  child: const Text('字段'),
+                ),
+                TextButton(
+                  key: const ValueKey('wb.openPreview'),
+                  onPressed: () {
+                    setState(() => _showDataPreview = true);
+                    widget.draft?.loadPreview(res.name);
+                  },
+                  child: const Text('数据预览'),
+                ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: _showDataPreview && res.kind == WorkbenchResourceKind.table
+              ? _buildDataPreview(res)
+              : _buildFieldsTable(res),
+        ),
         if (widget.template != null)
           WorkbenchTemplatePanel(
             service: widget.template!,
@@ -1636,6 +1663,127 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
       ],
     );
   }
+
+  Widget _buildDataPreview(MockResource res) {
+    final repo = widget.draft;
+    final loading = repo?.previewLoading(res.name) ?? false;
+    final columns = res.previewColumns;
+    final rows = res.previewRows;
+    const cellWidth = 160.0;
+    return Column(
+      children: [
+        if (repo?.previewError case final error?)
+          Padding(
+            padding: const EdgeInsets.all(ctGapSm),
+            child: Text(
+              error,
+              style: ctText(size: ctFontSm, color: ctDanger),
+            ),
+          ),
+        Expanded(
+          child: columns.isEmpty
+              ? Center(child: Text(loading ? '正在读取预览…' : '暂无预览数据'))
+              : LayoutBuilder(
+                  builder: (context, constraints) => SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: (columns.length * cellWidth).clamp(
+                        constraints.maxWidth,
+                        double.infinity,
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            height: ctRowMd,
+                            color: ctSurface2,
+                            child: Row(
+                              children: [
+                                for (final column in columns)
+                                  _previewCell(column, cellWidth, header: true),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: ListView.builder(
+                              key: const ValueKey('wb.previewRows'),
+                              itemCount: rows.length,
+                              itemBuilder: (context, index) {
+                                final row = rows[index];
+                                return SizedBox(
+                                  height: ctRowMd,
+                                  child: Row(
+                                    children: [
+                                      for (var i = 0; i < columns.length; i++)
+                                        _previewCell(
+                                          i < row.length ? row[i] : '',
+                                          cellWidth,
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: ctGapMd,
+            vertical: ctGapSm,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '已显示 ${rows.length} 行 · 每页 ${WorkbenchRepository.previewPageLimit} · '
+                  '${loading
+                      ? '加载中…'
+                      : res.previewHasMore
+                      ? '还有更多'
+                      : '已到末页'}',
+                  style: ctText(size: ctFontXs, color: ctInk2),
+                ),
+              ),
+              if (repo != null && res.previewHasMore)
+                TextButton(
+                  key: const ValueKey('wb.previewMore'),
+                  onPressed: loading
+                      ? null
+                      : () => repo.loadMorePreview(res.name),
+                  child: const Text('加载更多'),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _previewCell(String text, double width, {bool header = false}) =>
+      Container(
+        width: width,
+        padding: const EdgeInsets.symmetric(horizontal: ctGapSm),
+        alignment: Alignment.centerLeft,
+        decoration: const BoxDecoration(
+          border: Border(
+            right: BorderSide(color: ctBorder),
+            bottom: BorderSide(color: ctBorder),
+          ),
+        ),
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: ctText(
+            size: ctFontSm,
+            weight: header ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+      );
 
   Widget _buildLoadError(String message) {
     return Center(
@@ -1836,7 +1984,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
         Rect.fromPoints(globalPosition, globalPosition),
         Offset.zero & overlay.size,
       ),
-      popUpAnimationStyle: ctMenuAnimationStyle,
+      popUpAnimationStyle: ctMenuStyle(context),
       items: [
         item(_FieldMenuAction.edit, Icons.edit_outlined, '编辑属性'),
         if (!isEnum)
@@ -2391,11 +2539,13 @@ class _AnimatedCollapse extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final disableAnimations =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (MediaQuery.maybeOf(context)?.disableAnimations == true) {
+      // AnimatedSize 的零时长切换会在布局中触发自身重排断言。
+      return child;
+    }
     return AnimatedSize(
-      duration: animate && !disableAnimations
-          ? ctMotionStandard
+      duration: animate
+          ? ctMotionDuration(context, ctMotionStandard)
           : Duration.zero,
       curve: ctMotionCurve,
       alignment: alignment,

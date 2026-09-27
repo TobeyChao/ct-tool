@@ -293,7 +293,7 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
         showDesktopTitleBar: Platform.isWindows || Platform.isMacOS,
         windowMaximized: _windowMaximized,
         showWindowControls: Platform.isWindows,
-        titleBarLeadingInset: Platform.isMacOS ? 72 : 0,
+        titleBarLeadingInset: Platform.isMacOS ? 80 : 0,
         onWindowMinimize: _minimizeWindow,
         onWindowToggleMaximize: _toggleWindowMaximized,
         onWindowClose: _closeWindow,

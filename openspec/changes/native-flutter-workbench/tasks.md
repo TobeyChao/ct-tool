@@ -350,6 +350,7 @@
 ## 5. 交互验收与正式包
 
 - [ ] 5.1 完成键盘搜索/保存/undo/redo、焦点恢复、减少动态效果与中文输入法检查，记录 Windows/macOS 验收结果。
+  - 2026-09-24 自动化补验：`test/ui/keyboard_motion_test.dart` 的 6 例用 30/35 项列表分别验证 Quick Open、类型选择器、搜索选择器在普通/减少动态效果下的键盘滚动、即时跳转、选中与 Enter；`workbench_test.dart` 覆盖面板/菜单即时切换，原草稿条用例覆盖搜索、保存、撤销重做。针对性 34 例全绿，`flutter analyze lib test integration_test` 无问题。2026-09-24 追加 widget 焦点回归：Quick Open 从已有焦点的按钮打开后，搜索框获得焦点，Esc 关闭时焦点回到原按钮；同文件 7 例通过。翻译编辑已有组合态 Ctrl+Enter 不误提交的自动化用例。系统级减少动态效果开关、中文 IME 真正输入、其他弹窗焦点路径和 Windows/macOS 真机人工验收仍未完成，故保持未勾。
 - [x] 5.2 在 profile/release 模式以大字段表、分页预览和持续日志验证 UI 响应，记录帧时间并修复业务阻塞 UI 的路径。
   - 跑法与前提：`flutter test` 只能出 debug 构建，所以帧时间用 drive 跑真实 profile 包——
     `flutter drive --driver=test_driver/integration_test.dart --target=integration_test/ui_responsiveness_test.dart -d windows --profile`
@@ -372,9 +373,13 @@
     过程中修掉一个真缺陷：续页里嵌套调用 `loadPreview(force)` 会被自己的「在途」标记挡掉，
     导致快照代次变化时不重查——`test/state/workbench_repository_preview_test.dart` 抓到并钉住。
   - 测试：新增 5 例（预览分页 3 + 界面页脚 2），`flutter test` **301 例全绿**；`workbench_live_test` 的页脚断言同步更新。
-  - 剩余如实记录：选表后首帧 build 20.6ms / totalSpan max 41.8ms 来自一次性投影 300 行预览，
-    属长尾而非系统性阻塞（p95 全部远低于预算）；macOS 侧帧时间随任务 5.1 的真机验收一并补，本项不声称跨平台。
+  - 2026-09-24 macOS Apple Silicon profile 补测：当前工作台的「数据预览」入口曾缺失，导致旧 drive 用例找不到按钮；已接回按需预览与内核游标续页，界面测试验证 50→51 行及末页收口。首次实测分页预览 build max 40.053ms，超过 34ms 门槛；改成按可见行延迟格式化、同一行缓存，复测 340 帧 build p50/p95/max 0.542/1.073/20.492ms，raster 0.624/2.066/4.628ms，totalSpan 1.381/3.451/25.341ms，其他两阶段断言也通过。完整数据、硬件、命令与单次测量限制在 `launcher/test/evidence/responsiveness-profile-macos.md`；Flutter macOS `open returned 1` 偶发导致驱动等不到首帧，需将同一测试应用置前。更新金标后 `flutter test --concurrency=1` 使用 release worker 376 例全绿、`flutter analyze` 0 issues；并行全量时 busy 用例曾因竞争失败，单独及顺序全量复验通过。
 - [ ] 5.3 构建 Windows/macOS 安装包并嵌入匹配架构 Rust 运行时，在无 Python/仓库环境验证安装、启动与卸载路径。
+  - 2026-09-24 macOS Apple Silicon 推进：`xtask dist` 的 `aarch64-apple-darwin` 包无 Python 自检通过；
+    `launcher/tool/build_macos.sh` 实跑生成 114.3MB `.app` 与 38MB DMG，内置 `runtime/ct`。
+    DMG 只读挂载、复制到临时 Applications、`codesign --verify --deep --strict`、清除 Python 环境变量
+    后运行包内 `ct status`、移除应用与卸载镜像均通过。正式开发者签名/公证、GUI 启动和 Windows 安装验收
+    仍未完成，保持未勾选。
 - [x] 5.4 使用临时工作区执行创建→保存→模板→填写夹具→校验→导出→翻译→独立部署，验证产物和截图，不能用 mock 勾选此项
   - 协议层串测：`test/e2e_workbench_chain_kernel_test.dart` 10 例（真实 `ct worker`、临时工作区、零 mock），
     逐步断言产物与账本（保存只改 YAML、模板迁移保住既有 2 行、导出产出 JSON+Accessor、增量命中缓存、
@@ -400,6 +405,11 @@
   - 未勾选原因：本项还要求"填写夹具"的真实 Excel 人工填行与**真机截图**归档，需与 5.1/5.2/5.3 一并在
     release 构建上采集；不用 mock 或样板截图代替。。
 - [ ] 5.5 完成窗口/缩放矩阵、异常退出、旧设置迁移和旧版本回滚演练，形成已知限制及发行说明。
+  - 2026-09-24 macOS 新增 17 张独立金标（正常 3 尺寸 × 3 缩放、状态、展开长文本与控件样板）；
+    `flutter test` 使用真实 release worker 共 368 例全绿、`flutter analyze` 无问题；减少动态效果
+    用例覆盖面板、导航、标题栏与菜单的即时切换；快速打开和类型/搜索选择器的键盘滚动也
+    接入该偏好，真机系统设置仍待核对。
+    金标只验布局，异常退出、旧版本回滚与真机窗口交互仍未完成，本项不勾选。
   - 本轮推进两块（其余仍需真机，本项不勾选）：
     1. 窗口/缩放矩阵从「只有 Schema 模块」扩到**六个模块**：`test/e2e_workbench_chain_screens_test.dart`
        新增一条用例，在最窄 1024x700 的 100% 与 150% 缩放下逐模块（总览/Schema/翻译/导出/历史/设置）

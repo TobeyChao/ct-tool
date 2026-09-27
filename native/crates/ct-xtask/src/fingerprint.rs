@@ -199,7 +199,8 @@ fn command_line(program: &str, args: &[&str], cwd: Option<&Path>) -> Option<Stri
 }
 
 /// 计算基线指纹（无时间戳，可逐字节重放）。
-pub fn compute() -> Result<Value> {
+#[cfg(test)]
+fn compute() -> Result<Value> {
     compute_at(&repo_root())
 }
 
@@ -242,14 +243,14 @@ fn compute_at(root: &Path) -> Result<Value> {
         .iter()
         .map(|(name, file)| (name.clone(), json!(file.functions.len())))
         .collect();
-    let (native_tests, native_total) = native_test_inventory(&root)?;
+    let (native_tests, native_total) = native_test_inventory(root)?;
     let cargo_lock =
         sha256_hex(&std::fs::read(root.join("native/Cargo.lock")).context("缺少 Cargo.lock")?);
     Ok(json!({
         "schema": "ct-source-tree/2",
         "git": {
-            "commit": command_line("git", &["rev-parse", "HEAD"], Some(&root)).unwrap_or_default(),
-            "dirtyPaths": command_line("git", &["status", "--porcelain"], Some(&root))
+            "commit": command_line("git", &["rev-parse", "HEAD"], Some(root)).unwrap_or_default(),
+            "dirtyPaths": command_line("git", &["status", "--porcelain"], Some(root))
                 .map(|text| text.lines().count()),
         },
         "toolchain": {

@@ -204,11 +204,7 @@ class _QuickOpenBodyState extends State<_QuickOpenBody> {
       target = null; // 已经完整可见：不动，避免列表无谓跳动。
     }
     if (target == null) return;
-    _scroll.animateTo(
-      target.clamp(0.0, position.maxScrollExtent),
-      duration: ctMotionFast,
-      curve: ctMotionCurve,
-    );
+    ctScrollTo(context, _scroll, target.clamp(0.0, position.maxScrollExtent));
   }
 
   void _accept() {

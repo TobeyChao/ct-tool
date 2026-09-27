@@ -2,6 +2,7 @@ import 'package:ct_launcher/services/protocol/protocol.dart';
 import 'package:ct_launcher/services/worker_service.dart';
 import 'package:ct_launcher/state/template_service.dart';
 import 'package:ct_launcher/theme.dart';
+import 'package:ct_launcher/ui/widgets/common.dart';
 import 'package:ct_launcher/ui/workbench/workbench_models.dart';
 import 'package:ct_launcher/ui/workbench/workbench_screen.dart';
 import 'package:flutter/material.dart';
@@ -143,18 +144,89 @@ void main() {
 
   tearDown(() => service.dispose());
 
+  testWidgets('通用主次按钮在禁用时都有清晰的颜色变化', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCtTheme(),
+        home: Scaffold(
+          body: Column(
+            children: [
+              CtButton.accent(
+                '可生成',
+                key: const ValueKey('accentOn'),
+                onPressed: () {},
+              ),
+              const CtButton.accent(
+                '不可生成',
+                key: ValueKey('accentOff'),
+                onPressed: null,
+              ),
+              CtButton.ghost(
+                '可预检',
+                key: const ValueKey('ghostOn'),
+                onPressed: () {},
+              ),
+              const CtButton.ghost(
+                '不可预检',
+                key: ValueKey('ghostOff'),
+                onPressed: null,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    TextButton inner(String key) => tester.widget<TextButton>(
+      find.descendant(
+        of: find.byKey(ValueKey(key)),
+        matching: find.byType(TextButton),
+      ),
+    );
+    final mainOn = inner('accentOn').style!;
+    final mainOff = inner('accentOff').style!;
+    expect(mainOn.backgroundColor!.resolve({}), ctAccent);
+    expect(mainOff.backgroundColor!.resolve({WidgetState.disabled}), ctBorder);
+    expect(mainOn.foregroundColor!.resolve({}), Colors.white);
+    expect(
+      mainOff.foregroundColor!.resolve({WidgetState.disabled}),
+      isNot(Colors.white),
+    );
+    final secondaryOn = inner('ghostOn').style!;
+    final secondaryOff = inner('ghostOff').style!;
+    expect(secondaryOn.foregroundColor!.resolve({}), ctInk2);
+    expect(
+      secondaryOff.foregroundColor!.resolve({WidgetState.disabled}),
+      isNot(ctInk2),
+    );
+    expect(secondaryOff.side!.resolve({WidgetState.disabled})!.color, ctBorder);
+  });
+
   testWidgets('Table 给出预检与生成入口，未预检时生成禁用', (tester) async {
     await open(tester, select: 'Item');
     expect(find.byKey(const ValueKey('wb.templatePanel')), findsOneWidget);
     expect(find.text('未预检'), findsOneWidget);
-    expect(button(tester, 'wb.templateGenerate').onPressed, isNull);
+    final disabledGenerate = button(tester, 'wb.templateGenerate');
+    expect(disabledGenerate.onPressed, isNull);
+    expect(
+      disabledGenerate.style!.backgroundColor!.resolve({WidgetState.disabled}),
+      ctBorder,
+      reason: '未预检时主按钮不应仍显示为绿色',
+    );
+    expect(
+      disabledGenerate.style!.foregroundColor!.resolve({WidgetState.disabled}),
+      isNot(Colors.white),
+    );
+    expect(button(tester, 'wb.templatePlan').onPressed, isNotNull);
     expect(gateway.methods, isNot(contains(Methods.templateGenerate)));
 
     await tester.tap(find.byKey(const ValueKey('wb.templatePlan')));
     await tester.pumpAndSettle();
     expect(find.text('将执行：生成空模板（工作簿不存在）'), findsOneWidget);
     expect(find.text('可生成'), findsOneWidget);
-    expect(button(tester, 'wb.templateGenerate').onPressed, isNotNull);
+    final enabledGenerate = button(tester, 'wb.templateGenerate');
+    expect(enabledGenerate.onPressed, isNotNull);
+    expect(enabledGenerate.style!.backgroundColor!.resolve({}), ctAccent);
+    expect(enabledGenerate.style!.foregroundColor!.resolve({}), Colors.white);
 
     await tester.tap(find.byKey(const ValueKey('wb.templateGenerate')));
     await tester.pumpAndSettle();

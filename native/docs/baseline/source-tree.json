@@ -1,28 +1,28 @@
 {
   "schema": "ct-source-tree/2",
   "git": {
-    "commit": "3acde48afeae27e22bf8296b849e2d6a68a700c4",
-    "dirtyPaths": 6
+    "commit": "133a0223595f6a12fa5ebb6c312b34c6c1b3ca7e",
+    "dirtyPaths": 7
   },
   "toolchain": {
-    "rustc": "unavailable",
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
     "cargoLockSha256": "c20c6e340a325f179b95c85fae87c4c5c9092cdc0d33d08f89d4c7144b86c464",
     "pythonRuntimeRequired": false
   },
   "tree": {
-    "sha256": "0778cb7b7ecc5a696387a856bbf3dd6307a8133348d9d6bfc5d2830bdd766eb0",
-    "files": 1196
+    "sha256": "bf49b9ed3e9329b2480eb706f85d583a329a61b9fcb78f1955629a787689bd43",
+    "files": 1387
   },
   "scopes": {
     "native": {
       "files": 699,
-      "bytes": 9243261,
-      "sha256": "13a554845bdf2c76cc0f67da55ec2c3b46c979997e86d7cac2323934724af56b",
+      "bytes": 9242269,
+      "sha256": "0394f62b84dfbd75b1188231cb1622063aa7a3ddfb76ec2e94b132571ef94eae",
       "entries": {
         ".gitignore": "e899756b962f25261eca57ba87fa2e878892daa40bca86f0871d7935d038a520",
         "Cargo.lock": "c20c6e340a325f179b95c85fae87c4c5c9092cdc0d33d08f89d4c7144b86c464",
         "Cargo.toml": "7e94522a8f6dc7e44172c04a26309abfe111404afc264328d8e581c691a7ff9d",
-        "README.md": "92b0721c42bde349efafb07bb77628301fa9be26ac8300156681248eba6be183",
+        "README.md": "0d54b82c70eb244836a74dacc9d51b8179cc910b6cffa52728e925d858cc8e1e",
         "benches/README.md": "17dc55a29361c712551463c10c6039aac8802aaaf362cc13e12c0939f79baa65",
         "clippy.toml": "9ddbc4742f3769968c9e07ff2e9a8b9d701205b8b0714a6d77e85a171fe2d966",
         "crates/ct-app/Cargo.toml": "959a7cef8d2afcf5342f913aef4668170af7ae2f6cc7f87047c74f19cf311128",
@@ -143,7 +143,7 @@
         "crates/ct-test-support/src/schema_builder.rs": "e84a6eab4bf8875cfd71d8a9602d6edad52f534d151f82f663d52b3382bb47d7",
         "crates/ct-test-support/src/temp_workspace.rs": "fdef61010d86c7275d0a845f26d614b0050cef40bafb27dc8e2756f30682c305",
         "crates/ct-test-support/src/workspace_builder.rs": "b65c10511e47b96f097ebdd874f7f6304444c28f571e360bee27c68b860ec966",
-        "crates/ct-test-support/src/xlsx_semantics.rs": "2d2898aab899af1e5b29c75be259f0c20b834a1887439f22faa82fbea58f2dee",
+        "crates/ct-test-support/src/xlsx_semantics.rs": "ee60541500f797798d705ddeb81e439a1cf9323adf9789df7e5eb5de69168464",
         "crates/ct-web/Cargo.toml": "76b409c479fad8ba110192d6f6e24dca9895d9b3cdb1590275e77646266e7f32",
         "crates/ct-web/build.rs": "5227a6a31e146bd58213c2725f8b537515f466566dc7b24a62520e0490cfce47",
         "crates/ct-web/src/lib.rs": "cb42864d1577f981b17f45765db7c908291aa8a6f5029580ac92bd1238bae448",
@@ -172,8 +172,8 @@
         "crates/ct-xtask/Cargo.toml": "7df907e1bf49c063d51045e6c8c21319b0185da94802b22b7a8945de01d153d5",
         "crates/ct-xtask/src/accessor_fixtures.rs": "2c04f2de8f9c80fcdd1c36ac08da0b54a2b8ad198656debb65300b151c09d467",
         "crates/ct-xtask/src/bench.rs": "cb3ee3b0a89994bf86bdf9f841e3994dcdcbdfb6672b3acb28ce44a557f032b0",
-        "crates/ct-xtask/src/dist.rs": "7c85157b1b5813b6825b010f686e1836c9c45613b8098d5df34b6cacff53dc88",
-        "crates/ct-xtask/src/fingerprint.rs": "e33fc3eadf87ee53653844960fa9e53f37aa7f848befc22c59619064a0ec20be",
+        "crates/ct-xtask/src/dist.rs": "05afd109a6ba4823aaa3097f28a9f36d0d26853f6ba6d4561e799f5bb3725109",
+        "crates/ct-xtask/src/fingerprint.rs": "27a4b1eed72f436f78552db0676e4ab703afc12dbb497b3bb619b588ed9d225d",
         "crates/ct-xtask/src/fixtures.rs": "789db1d22bf5b68a494c6e7edf3f197a16b11ef1501d133818878290680ac8d6",
         "crates/ct-xtask/src/main.rs": "fe28ea5d0ff4b951d7dee35ece220c5778407c9ae5662cf60466ba66bf54dfc8",
         "crates/ct-xtask/src/real_fixture.rs": "fc8c3bbd483565e3baef6a6189bd52ed62930381fda1f4e619493b2893f79172",
@@ -205,7 +205,7 @@
         "docs/baseline/compat-fixtures-tests.txt": "552e27e7ba9524e5c1de112672efcb89cb600e138a2aba52dc5bfa9dc5b57acc",
         "docs/baseline/compat-fixtures-verification.md": "aa0d680442f8a14dde1595e3384e6643baa09e96a850309f1c3e846a8522ddc0",
         "docs/baseline/compat-fixtures-workspace-tests.txt": "1c11fbe721e1cbdf84d32f92f3be7f04309792ca0627b567a3eaed0b89f13383",
-        "docs/baseline/compat-matrix.json": "63d2749ef96f143593af78f99a45369775c703d18efa50615654e6f30c3bfa40",
+        "docs/baseline/compat-matrix.json": "f39c33433be2d8096b18d5f8374df8c2a7ae71982caff93ce802d81258d6a010",
         "docs/baseline/handoff-macos-linux.md": "5742f3e7dc0cad1d9f6442662327d55a1a026599b7f1eaa86f79784f9b207dd6",
         "docs/baseline/isolation-check.md": "d2d755dfea4361269f02fc8270d5e02e9657cd50ae773f50740f86e873ea36bb",
         "docs/baseline/macos-g3-verification.md": "67588b2c00e4ee1a081ccdd46708f6ac6ec899dc06b30cb7b83d15d21a676016",
@@ -726,19 +726,19 @@
       "sha256": "f87c378c7a3e7a00d24dd2ab44159eb89e8bfa3072f8623b13becfe9db376bb5"
     },
     "launcher": {
-      "files": 80,
-      "bytes": 677508,
-      "sha256": "884f6df8d1709a6be1b028608f403f64c349abc5959bbcd2f3fbe907ba430bc4"
+      "files": 257,
+      "bytes": 21643273,
+      "sha256": "e4abdf00723ab93f4a069f5afe9dc02023c900c6d0919f0ede42776962045a10"
     },
     "openspec": {
-      "files": 251,
-      "bytes": 2131202,
-      "sha256": "8a007f227921465198503a5dacffaf53729ab154c74eab49d74bf4a8e6476016"
+      "files": 265,
+      "bytes": 2289662,
+      "sha256": "c10b37a0c730bf3d6d10f0b5f4e978cc595c7ee8799cf516c74412b091079271"
     },
     ".github": {
       "files": 1,
-      "bytes": 3866,
-      "sha256": "027774e579ab023b56dd888de6217056353dfa4c0ee343737d88b05286c0c997"
+      "bytes": 4854,
+      "sha256": "d91a36fa36561a1c8e018189de2df000ae43c4d4d71420af212a00c775f4b974"
     },
     "test-proj": {
       "files": 99,

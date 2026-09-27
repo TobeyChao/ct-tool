@@ -108,7 +108,7 @@ class WorkbenchSchemaEditor extends StatelessWidget {
     enabled: enabled,
     tooltip: tooltip,
     position: PopupMenuPosition.under,
-    popUpAnimationStyle: ctMenuAnimationStyle,
+    popUpAnimationStyle: ctMenuStyle(context),
     itemBuilder: (context) => [
       for (final (value, icon, text, itemKey) in items)
         PopupMenuItem<String>(
@@ -507,7 +507,7 @@ Future<void> showWorkbenchResourceContextMenu(
       Rect.fromPoints(globalPosition, globalPosition),
       Offset.zero & overlay.size,
     ),
-    popUpAnimationStyle: ctMenuAnimationStyle,
+    popUpAnimationStyle: ctMenuStyle(context),
     items: [
       const PopupMenuItem(
         key: ValueKey('wb.resourceMenu.open'),

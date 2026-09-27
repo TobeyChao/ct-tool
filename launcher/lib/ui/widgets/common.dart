@@ -298,25 +298,27 @@ InputDecoration ctInputDecoration() {
 
 /// 品牌标志（深绿方块 + ct 字标）
 class CtBrandMark extends StatelessWidget {
-  const CtBrandMark({super.key});
+  const CtBrandMark({super.key, this.size = 22});
+
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 22,
-      height: 22,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: ctPrimary,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(size * 5 / 22),
       ),
       alignment: Alignment.center,
-      child: const Text(
+      child: Text(
         'ct',
         style: TextStyle(
           fontFamily: ctMonoFamily,
           fontFamilyFallback: ctMonoFallback,
           color: Colors.white,
-          fontSize: 11,
+          fontSize: size / 2,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -407,6 +409,8 @@ class CtButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 固定色会盖过 Material 的禁用态：按钮不可点时仍像绿色主操作。
+    const disabledInk = Color(0xFF8A958D);
     final style = ButtonStyle(
       visualDensity: VisualDensity.compact,
       minimumSize: const WidgetStatePropertyAll(Size(0, 40)),
@@ -419,21 +423,28 @@ class CtButton extends StatelessWidget {
       textStyle: const WidgetStatePropertyAll(
         TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
       ),
-      side: _kind == _CtButtonKind.accent
-          ? const WidgetStatePropertyAll(BorderSide(color: ctAccent))
-          : const WidgetStatePropertyAll(BorderSide(color: ctBorderStrong)),
-      backgroundColor: switch (_kind) {
-        _CtButtonKind.accent => const WidgetStatePropertyAll(ctAccent),
-        _CtButtonKind.ghost => const WidgetStatePropertyAll(Colors.transparent),
-      },
-      foregroundColor: switch (_kind) {
-        _CtButtonKind.accent => const WidgetStatePropertyAll(Colors.white),
-        _CtButtonKind.ghost => const WidgetStatePropertyAll(ctInk2),
-      },
-      overlayColor: switch (_kind) {
-        _CtButtonKind.accent => const WidgetStatePropertyAll(ctAccentHover),
-        _CtButtonKind.ghost => const WidgetStatePropertyAll(ctSurface2),
-      },
+      side: WidgetStateProperty.resolveWith((states) {
+        final disabled = states.contains(WidgetState.disabled);
+        return BorderSide(
+          color: disabled
+              ? ctBorder
+              : (_kind == _CtButtonKind.accent ? ctAccent : ctBorderStrong),
+        );
+      }),
+      backgroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return _kind == _CtButtonKind.accent ? ctBorder : Colors.transparent;
+        }
+        return _kind == _CtButtonKind.accent ? ctAccent : Colors.transparent;
+      }),
+      foregroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.disabled)) return disabledInk;
+        return _kind == _CtButtonKind.accent ? Colors.white : ctInk2;
+      }),
+      overlayColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.disabled)) return Colors.transparent;
+        return _kind == _CtButtonKind.accent ? ctAccentHover : ctSurface2;
+      }),
     );
     return TextButton(style: style, onPressed: onPressed, child: Text(label));
   }

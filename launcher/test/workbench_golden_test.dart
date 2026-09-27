@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:ct_launcher/theme.dart';
 import 'package:ct_launcher/ui/dev/component_gallery.dart';
 import 'package:ct_launcher/ui/workbench/mock/mock_data.dart';
@@ -21,6 +23,8 @@ void main() {
     '1024x700': Size(1024, 700),
   };
   const scales = <String, double>{'s100': 1.0, 's125': 1.25, 's150': 1.5};
+  String golden(String name) =>
+      'goldens/$name${Platform.isMacOS ? '_macos' : ''}.png';
 
   Future<void> pumpAt(
     WidgetTester tester,
@@ -58,7 +62,7 @@ void main() {
         await pumpAt(tester, MockScenario.normal, size, scale);
         await expectLater(
           find.byType(WorkbenchScreen),
-          matchesGoldenFile('goldens/workbench_${sizeName}_$scaleName.png'),
+          matchesGoldenFile(golden('workbench_${sizeName}_$scaleName')),
         );
       });
     }
@@ -70,7 +74,7 @@ void main() {
       await pumpAt(tester, scenario, const Size(1280, 800), 1.0);
       await expectLater(
         find.byType(WorkbenchScreen),
-        matchesGoldenFile('goldens/workbench_scenario_${scenario.name}.png'),
+        matchesGoldenFile(golden('workbench_scenario_${scenario.name}')),
       );
     });
   }
@@ -93,7 +97,7 @@ void main() {
     expect(find.byKey(const ValueKey('wb.inspectorPanel')), findsOneWidget);
     await expectLater(
       find.byType(WorkbenchScreen),
-      matchesGoldenFile('goldens/workbench_1024x700_expanded_longtext.png'),
+      matchesGoldenFile(golden('workbench_1024x700_expanded_longtext')),
     );
   });
 
@@ -111,7 +115,7 @@ void main() {
     await tester.pump();
     await expectLater(
       find.byType(ComponentGallery),
-      matchesGoldenFile('goldens/component_gallery.png'),
+      matchesGoldenFile(golden('component_gallery')),
     );
   });
 }

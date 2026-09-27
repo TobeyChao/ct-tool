@@ -329,7 +329,7 @@ pub fn dump(path: &Path) -> Result<Value> {
         .flat_map(|node| node.named("dataValidation"))
         .map(|node| {
             let kind = node.attr("type");
-            let operator = node.attr("operator").or_else(|| match kind {
+            let operator = node.attr("operator").or(match kind {
                 Some("whole" | "decimal") => Some("between"),
                 _ => None,
             });

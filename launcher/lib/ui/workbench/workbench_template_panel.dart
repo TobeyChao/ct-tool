@@ -101,7 +101,7 @@ class _WorkbenchTemplatePanelState extends State<WorkbenchTemplatePanel> {
                     style: ctText(size: ctFontSm, weight: FontWeight.w600),
                   ),
                   const SizedBox(width: ctGapSm),
-                  _badge(service),
+                  _badge(service, blocked: blocked),
                 ],
               );
               final actions = Wrap(
@@ -128,7 +128,7 @@ class _WorkbenchTemplatePanelState extends State<WorkbenchTemplatePanel> {
                   ? Tooltip(
                       message: '生成按钮保持禁用；预检只读，不改任何文件。',
                       child: Text(
-                        '生成前需预检 · 预检只读',
+                        service.busy ? '正在预检…' : '生成前需预检 · 预检只读',
                         key: const ValueKey('wb.templateHint'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -186,8 +186,15 @@ class _WorkbenchTemplatePanelState extends State<WorkbenchTemplatePanel> {
     );
   }
 
-  Widget _badge(TemplateService service) {
+  Widget _badge(TemplateService service, {required bool blocked}) {
     final plan = service.plan;
+    if (blocked) {
+      return const CtStatusBadge(
+        label: '不可操作',
+        tone: CtBadgeTone.warn,
+        dot: false,
+      );
+    }
     if (service.busy) {
       return const CtStatusBadge(
         label: '处理中',

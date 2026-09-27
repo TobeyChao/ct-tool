@@ -42,12 +42,21 @@ abstract final class NativeRuntimeLocator {
     required bool isMacOS,
     required bool isWindows,
   }) {
+    if (isWindows) {
+      // File(...).parent 使用宿主平台语义；在 macOS 测试 Windows 路径时会得到 "."。
+      final normalized = executablePath.replaceAll('/', r'\');
+      final separator = normalized.lastIndexOf(r'\');
+      final directory = separator < 0
+          ? '.'
+          : normalized.substring(0, separator);
+      return _join([directory, 'runtime', 'ct.exe'], true);
+    }
     final dir = File(executablePath).parent;
     if (isMacOS) {
       // MacOS 的 Contents/MacOS 上一级是 Contents，运行时放 Resources/runtime。
       return _join([dir.parent.path, 'Resources', 'runtime', 'ct'], false);
     }
-    return _join([dir.path, 'runtime', isWindows ? 'ct.exe' : 'ct'], isWindows);
+    return _join([dir.path, 'runtime', 'ct'], false);
   }
 
   static String _join(List<String> parts, bool windows) =>

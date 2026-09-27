@@ -501,77 +501,6 @@ pub fn run(extra_targets: &[String], out: Option<PathBuf>, skip_check: bool) -> 
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn package_names_follow_target_family() {
-        assert_eq!(exe_name("x86_64-pc-windows-msvc"), "ct.exe");
-        assert_eq!(exe_name("aarch64-apple-darwin"), "ct");
-        assert_eq!(exe_name("x86_64-unknown-linux-gnu"), "ct");
-    }
-
-    #[test]
-    fn isolated_environment_only_keeps_the_package_bin_dir() {
-        let package_bin = if cfg!(windows) {
-            Path::new("C:\\pkg\\bin")
-        } else {
-            Path::new("/tmp/pkg/bin")
-        };
-        let command = isolated(&package_bin.join(if cfg!(windows) { "ct.exe" } else { "ct" }));
-        let mut keys = Vec::new();
-        let mut path_value = String::new();
-        for (key, value) in command.get_envs() {
-            if value.is_some() {
-                keys.push(key.to_string_lossy().to_ascii_uppercase());
-            }
-            if key == "PATH" {
-                path_value =
-                    value.map_or_else(String::new, |entry| entry.to_string_lossy().to_string());
-            }
-        }
-        assert_eq!(
-            path_value,
-            std::env::join_paths([package_bin.to_path_buf()])
-                .expect("拼接测试路径")
-                .to_string_lossy(),
-            "PATH 应只剩包内 bin 目录"
-        );
-        assert!(
-            !keys.contains(&"PYTHONHOME".to_string()),
-            "PYTHONHOME 应被清除：{keys:?}"
-        );
-    }
-
-    #[test]
-    fn distribution_zip_preserves_executable_permission_and_binary_bytes() {
-        let temp = tempfile::tempdir().unwrap();
-        let package = temp.path().join("package");
-        std::fs::create_dir_all(package.join("bin")).unwrap();
-        std::fs::write(package.join("bin/ct"), b"native payload").unwrap();
-        std::fs::write(package.join("VERSION.json"), b"metadata").unwrap();
-        let path = temp.path().join("package.zip");
-        zip_package(&package, &path).unwrap();
-        let mut archive = zip::ZipArchive::new(std::fs::File::open(path).unwrap()).unwrap();
-        let mut binary = archive.by_name("bin/ct").unwrap();
-        assert_eq!(binary.unix_mode().unwrap() & 0o777, 0o755);
-        let mut bytes = Vec::new();
-        std::io::Read::read_to_end(&mut binary, &mut bytes).unwrap();
-        assert_eq!(bytes, b"native payload");
-        drop(binary);
-        assert_eq!(
-            archive
-                .by_name("VERSION.json")
-                .unwrap()
-                .unix_mode()
-                .unwrap()
-                & 0o777,
-            0o644
-        );
-    }
-}
-
 /// Verify embedded panel assets and safe stdin-EOF shutdown in the isolated package.
 fn run_panel_step(binary: &Path, workspace: &Path) -> Result<String> {
     use std::io::{BufRead, BufReader, Read};
@@ -647,4 +576,75 @@ fn run_panel_step(binary: &Path, workspace: &Path) -> Result<String> {
         std::thread::sleep(Duration::from_millis(25));
     }
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn package_names_follow_target_family() {
+        assert_eq!(exe_name("x86_64-pc-windows-msvc"), "ct.exe");
+        assert_eq!(exe_name("aarch64-apple-darwin"), "ct");
+        assert_eq!(exe_name("x86_64-unknown-linux-gnu"), "ct");
+    }
+
+    #[test]
+    fn isolated_environment_only_keeps_the_package_bin_dir() {
+        let package_bin = if cfg!(windows) {
+            Path::new("C:\\pkg\\bin")
+        } else {
+            Path::new("/tmp/pkg/bin")
+        };
+        let command = isolated(&package_bin.join(if cfg!(windows) { "ct.exe" } else { "ct" }));
+        let mut keys = Vec::new();
+        let mut path_value = String::new();
+        for (key, value) in command.get_envs() {
+            if value.is_some() {
+                keys.push(key.to_string_lossy().to_ascii_uppercase());
+            }
+            if key == "PATH" {
+                path_value =
+                    value.map_or_else(String::new, |entry| entry.to_string_lossy().to_string());
+            }
+        }
+        assert_eq!(
+            path_value,
+            std::env::join_paths([package_bin.to_path_buf()])
+                .expect("拼接测试路径")
+                .to_string_lossy(),
+            "PATH 应只剩包内 bin 目录"
+        );
+        assert!(
+            !keys.contains(&"PYTHONHOME".to_string()),
+            "PYTHONHOME 应被清除：{keys:?}"
+        );
+    }
+
+    #[test]
+    fn distribution_zip_preserves_executable_permission_and_binary_bytes() {
+        let temp = tempfile::tempdir().unwrap();
+        let package = temp.path().join("package");
+        std::fs::create_dir_all(package.join("bin")).unwrap();
+        std::fs::write(package.join("bin/ct"), b"native payload").unwrap();
+        std::fs::write(package.join("VERSION.json"), b"metadata").unwrap();
+        let path = temp.path().join("package.zip");
+        zip_package(&package, &path).unwrap();
+        let mut archive = zip::ZipArchive::new(std::fs::File::open(path).unwrap()).unwrap();
+        let mut binary = archive.by_name("bin/ct").unwrap();
+        assert_eq!(binary.unix_mode().unwrap() & 0o777, 0o755);
+        let mut bytes = Vec::new();
+        std::io::Read::read_to_end(&mut binary, &mut bytes).unwrap();
+        assert_eq!(bytes, b"native payload");
+        drop(binary);
+        assert_eq!(
+            archive
+                .by_name("VERSION.json")
+                .unwrap()
+                .unix_mode()
+                .unwrap()
+                & 0o777,
+            0o644
+        );
+    }
 }

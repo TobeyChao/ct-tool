@@ -18,10 +18,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// 任务 5.2：profile / release 模式下测「大字段表 + 分页预览 + 持续日志」的帧时间。
 ///
 /// 跑法（需要真实内核与真实窗口，因此不放普通 test/ 里）：
-///   cd native && cargo build -p ct-cli          # 或 --release
-///   cd launcher && flutter test integration_test -d windows --profile ^
-///     --dart-define-from-file=integration_test/worker-bin.json
-/// 结论落 `test/evidence/responsiveness-<模式>.md`（含每阶段帧数、p50/p95/max）。
+///   cd native && cargo build -p ct-cli --release
+///   cd launcher && CT_WORKER_BIN=/absolute/path/to/release/ct flutter drive \
+///     --driver=test_driver/integration_test.dart \
+///     --target=integration_test/ui_responsiveness_test.dart -d macos --profile
+/// 结论落 `test/evidence/responsiveness-<模式>-<平台>.md`（含每阶段帧数、p50/p95/max）。
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
@@ -104,6 +105,7 @@ void main() {
     await settings.load();
     WidgetsBinding.instance.addTimingsCallback(collect);
 
+    debugPrint('profile: mount workbench');
     await tester.pumpWidget(
       MaterialApp(
         theme: buildCtTheme(),
@@ -120,7 +122,9 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    debugPrint('profile: widget pumped');
+    await tester.pump(const Duration(milliseconds: 300));
+    debugPrint('profile: mounted');
 
     final tables = repo.resources
         .where((r) => r.name != 'Item')
@@ -131,8 +135,10 @@ void main() {
 
     final phases = <String, FrameStats>{};
     Future<void> phase(String name, Future<void> Function() body) async {
+      debugPrint('profile: start $name');
       frames.clear();
       await body();
+      debugPrint('profile: actions done $name');
       await tester.pump(const Duration(milliseconds: 300));
       phases[name] = FrameStats.of(frames);
     }
@@ -152,7 +158,7 @@ void main() {
 
     // 阶段二：分页预览——每点一次都要过内核游标 + 解码 + 追加重建
     await phase('分页预览', () async {
-      await tester.tap(find.text('数据预览'));
+      await tester.tap(find.byKey(const ValueKey('wb.openPreview')));
       await tester.pumpAndSettle();
       for (var i = 0; i < 5; i++) {
         final more = find.byKey(const ValueKey('wb.previewMore'));
@@ -164,8 +170,7 @@ void main() {
 
     // 阶段三：持续日志——反复拉 logs.list 并在日志列表里滚动
     await phase('持续日志', () async {
-      // 模块栏与底部任务区都有「历史」字样：按图标点，避免歧义。
-      await tester.tap(find.byIcon(Icons.history).first);
+      await tester.tap(find.byKey(const ValueKey('wb.navTap.日志')));
       await tester.pumpAndSettle();
       for (var i = 0; i < 8; i++) {
         await tester.runAsync(() => desktop.refresh());
@@ -187,7 +192,7 @@ void main() {
         ? 'release'
         : 'debug';
     final lines = <String>[
-      '# 桌面 UI 帧时间（任务 5.2，$mode 模式）',
+      '# 桌面 UI 帧时间（任务 5.2，$mode 模式，${Platform.operatingSystem}）',
       '',
       '- 夹具：M 档（50 表 × 2000 行 × 20 列），真实 `ct worker`（`$binary`）',
       '- 口径：`WidgetsBinding.addTimingsCallback` 采到的逐帧 build/raster 时长',
@@ -200,7 +205,9 @@ void main() {
         '| ${e.key} | ${e.value.count} | ${e.value.buildLine} | ${e.value.rasterLine} | ${e.value.spanLine} |',
       '',
     ];
-    final out = File('test/evidence/responsiveness-$mode.md');
+    final out = File(
+      'test/evidence/responsiveness-$mode-${Platform.operatingSystem}.md',
+    );
     out.parent.createSync(recursive: true);
     out.writeAsStringSync(lines.join('\n'));
 

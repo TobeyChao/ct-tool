@@ -176,9 +176,9 @@ class WorkerService extends ChangeNotifier implements KernelGateway {
   }
 
   /// 运行时发现 + 启动 + 握手；失败只报可操作原因，绝不回退 Python。
-  Future<void> start({String? workspaceRoot}) =>
-      _starting ??= _start(workspaceRoot: workspaceRoot)
-          .whenComplete(() => _starting = null);
+  Future<void> start({String? workspaceRoot}) => _starting ??= _start(
+    workspaceRoot: workspaceRoot,
+  ).whenComplete(() => _starting = null);
 
   Future<void> _start({String? workspaceRoot}) async {
     if (status == WorkerStatus.starting || status == WorkerStatus.ready) return;

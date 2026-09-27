@@ -5,6 +5,7 @@ import '../../theme.dart';
 import '../tokens.dart';
 import 'common.dart';
 import 'status_badge.dart';
+import 'titlebar_control_area.dart';
 
 /// 一条应用菜单动作。标题栏只负责展示与回调，不把具体业务命令耦合进控件。
 @immutable
@@ -63,7 +64,7 @@ class CtDesktopTitleBar extends StatelessWidget {
   final CtBadgeTone statusTone;
   final VoidCallback? onQuickOpen;
 
-  /// When present, place the sidebar toggle alongside the workspace title.
+  /// 侧栏切换按钮与工作区标题；macOS 中标题允许跨过侧栏边界。
   final double? sidebarWidth;
   final Widget? sidebarToggle;
   final bool isMaximized;
@@ -77,18 +78,42 @@ class CtDesktopTitleBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final macSidebarLayout =
+        sidebarToggle != null &&
+        sidebarWidth != null &&
+        leadingInset >= ctNavRailWidth;
     return Container(
       key: const ValueKey('ct.desktopTitleBar'),
-      height: ctTitleBarHeight,
+      height: macSidebarLayout ? 40 : ctTitleBarHeight,
       decoration: BoxDecoration(
         color: ctSurface2,
-        border: sidebarToggle == null || sidebarWidth == null
+        border:
+            macSidebarLayout || sidebarToggle == null || sidebarWidth == null
             ? const Border(bottom: BorderSide(color: ctBorder))
             : null,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 1180;
+          // macOS 的原生交通灯占据左端。侧栏宽度从 248 收到 56 时，
+          // 切换按钮仍留在交通灯右侧的同一位置，不跟着侧栏右缘移动。
+          final leadingSidebarToggle = macSidebarLayout;
+          Widget dragArea(Widget child) => macSidebarLayout
+              ? GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onPanStart: (_) => windowManager.startDragging(),
+                  child: child,
+                )
+              : DragToMoveArea(child: child);
+          final sidebarTitleWidth = (sidebarWidth ?? 0) - leadingInset;
+          // 标题穿过侧栏边界，但要给居中的状态和快速打开留足空间。
+          final macTitleWidth =
+              (constraints.maxWidth / 2 -
+                      leadingInset -
+                      ctNavRailWidth -
+                      ctGapMd -
+                      (compact ? 24 : 170))
+                  .clamp(0.0, 360.0);
           // 状态与快速打开在整条标题栏里水平居中：右侧只留给窗口按钮，
           // 大窗口（侧栏收起）时中间不再是一整片空白。
           final centerCluster =
@@ -120,7 +145,7 @@ class CtDesktopTitleBar extends StatelessWidget {
                 );
           final identity = Row(
             children: [
-              const CtBrandMark(),
+              CtBrandMark(size: macSidebarLayout ? 18 : 22),
               const SizedBox(width: ctGapSm),
               Flexible(
                 child: Text(
@@ -154,12 +179,30 @@ class CtDesktopTitleBar extends StatelessWidget {
               Row(
                 children: [
                   if (leadingInset > 0) SizedBox(width: leadingInset),
+                  if (leadingSidebarToggle)
+                    SizedBox(
+                      width: ctNavRailWidth,
+                      child: Center(
+                        child: CtTitlebarControlArea(child: sidebarToggle!),
+                      ),
+                    ),
                   for (final menu in menus) _TitleBarMenuButton(menu: menu),
                   if (menus.isNotEmpty) const _TitleBarDivider(),
+                  if (leadingSidebarToggle && macTitleWidth > 0)
+                    SizedBox(
+                      width: macTitleWidth,
+                      child: dragArea(
+                        Padding(
+                          padding: const EdgeInsets.only(left: ctGapXs),
+                          child: identity,
+                        ),
+                      ),
+                    ),
                   if (sidebarToggle != null && sidebarWidth != null) ...[
-                    if (sidebarWidth! - leadingInset >= ctNavRailWidth)
+                    if (!leadingSidebarToggle &&
+                        sidebarTitleWidth >= ctNavRailWidth)
                       SizedBox(
-                        width: sidebarWidth! - leadingInset,
+                        width: sidebarTitleWidth,
                         child: sidebarWidth! <= ctNavRailWidth
                             ? Center(child: sidebarToggle!)
                             : Row(
@@ -179,9 +222,7 @@ class CtDesktopTitleBar extends StatelessWidget {
                                 ],
                               ),
                       ),
-                    const Expanded(
-                      child: DragToMoveArea(child: SizedBox.expand()),
-                    ),
+                    Expanded(child: dragArea(const SizedBox.expand())),
                   ] else
                     Expanded(
                       child: DragToMoveArea(
@@ -223,30 +264,32 @@ class CtDesktopTitleBar extends StatelessWidget {
               if (centerCluster != null)
                 Align(alignment: Alignment.center, child: centerCluster),
               if (sidebarToggle != null && sidebarWidth != null) ...[
-                Positioned(
-                  key: const ValueKey('ct.titleBar.sidebarEdge'),
-                  left: sidebarWidth! - 1,
-                  top: 0,
-                  bottom: 0,
-                  child: const IgnorePointer(
-                    child: ColoredBox(
-                      color: ctBorder,
-                      child: SizedBox(width: 1),
+                if (!macSidebarLayout)
+                  Positioned(
+                    key: const ValueKey('ct.titleBar.sidebarEdge'),
+                    left: sidebarWidth! - 1,
+                    top: 0,
+                    bottom: 0,
+                    child: const IgnorePointer(
+                      child: ColoredBox(
+                        color: ctBorder,
+                        child: SizedBox(width: 1),
+                      ),
                     ),
                   ),
-                ),
-                Positioned(
-                  key: const ValueKey('ct.titleBar.contentEdge'),
-                  left: sidebarWidth!,
-                  right: 0,
-                  bottom: 0,
-                  child: const IgnorePointer(
-                    child: ColoredBox(
-                      color: ctBorder,
-                      child: SizedBox(height: 1),
+                if (!macSidebarLayout)
+                  Positioned(
+                    key: const ValueKey('ct.titleBar.contentEdge'),
+                    left: sidebarWidth!,
+                    right: 0,
+                    bottom: 0,
+                    child: const IgnorePointer(
+                      child: ColoredBox(
+                        color: ctBorder,
+                        child: SizedBox(height: 1),
+                      ),
                     ),
                   ),
-                ),
               ],
             ],
           );
@@ -279,7 +322,7 @@ class _TitleBarMenuButtonState extends State<_TitleBarMenuButton> {
         tooltip: widget.menu.label,
         padding: EdgeInsets.zero,
         position: PopupMenuPosition.under,
-        popUpAnimationStyle: ctMenuAnimationStyle,
+        popUpAnimationStyle: ctMenuStyle(context),
         onSelected: (index) => actions[index].onSelected(),
         itemBuilder: (context) => [
           for (var i = 0; i < actions.length; i++)
@@ -295,7 +338,7 @@ class _TitleBarMenuButtonState extends State<_TitleBarMenuButton> {
             ),
         ],
         child: AnimatedContainer(
-          duration: ctMotionFast,
+          duration: ctMotionDuration(context, ctMotionFast),
           curve: ctMotionCurve,
           height: ctTitleBarHeight,
           padding: const EdgeInsets.symmetric(horizontal: ctGapMd),

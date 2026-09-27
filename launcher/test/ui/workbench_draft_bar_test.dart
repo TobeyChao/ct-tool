@@ -196,6 +196,41 @@ void main() {
     expect(summary().data, isNot(contains('未落盘')));
   });
 
+  testWidgets('草稿栏只保留草稿操作；禁用与可用状态清晰区分', (tester) async {
+    await pumpBar(tester);
+    repo.createTable('Hero');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('wb.draftQuickOpen')), findsNothing);
+
+    TextButton button(String name) =>
+        tester.widget<TextButton>(find.byKey(ValueKey('wb.draft$name')));
+    Color textColor(String name) => tester
+        .widget<Text>(
+          find.descendant(
+            of: find.byKey(ValueKey('wb.draft$name')),
+            matching: find.byType(Text),
+          ),
+        )
+        .style!
+        .color!;
+
+    expect(button('Undo').onPressed, isNotNull);
+    expect(button('Redo').onPressed, isNull);
+    expect(button('Discard').onPressed, isNotNull);
+    expect(button('Save').onPressed, isNotNull);
+    expect(textColor('Undo'), ctInk);
+    expect(textColor('Redo'), isNot(ctInk));
+    expect(textColor('Save'), Colors.white);
+
+    await tester.tap(find.byKey(const ValueKey('wb.draftUndo')));
+    await tester.pumpAndSettle();
+    expect(button('Undo').onPressed, isNull);
+    expect(button('Redo').onPressed, isNotNull);
+    expect(button('Discard').onPressed, isNull);
+    expect(button('Save').onPressed, isNull);
+    expect(textColor('Save'), isNot(Colors.white));
+  });
+
   testWidgets('净差异对话框给出改名身份与 ordinal/wire 风险明细', (tester) async {
     await pumpBar(tester);
     repo.renameEnumItem('Quality', 'Mythic', 'Legendary', 1);
