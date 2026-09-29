@@ -1,0 +1,16 @@
+table: Item
+primary: Id
+fields:
+  - name: Id
+    type: int32
+  - name: CodeName
+    type: string
+  - name: Name
+    type: string
+    i18n: true
+  - name: Quality
+    type: Rarity
+  - name: Price
+    type: int32
+indexes:
+  - kind: codename

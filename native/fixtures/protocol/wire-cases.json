@@ -1,0 +1,162 @@
+{
+  "protocolVersion": 1,
+  "description": "worker 协议 v1 契约夹具：Rust 侧用真实 worker 逐例执行，Dart 侧逐帧解码同一批消息。占位符由执行方按规则校验，不做字面比较。",
+  "placeholders": {
+    "<n>": "正整数（连接内 seq）",
+    "<id>": "workspaceId：16 位十六进制，对客户端不透明",
+    "<message>": "非空诊断文本",
+    "<sha256>": "64 位十六进制摘要",
+    "<any>": "任意非 null 值"
+  },
+  "rules": {
+    "subset": "expected 只列出必须核对的字段；未列字段不比较",
+    "null": "expected 为 null 表示该键必须缺席或为 null",
+    "$from": "取此前实际消息里同一路径的最新值（如 nextCursor），用于串联分页令牌",
+    "conn": "帧上的 conn 递增表示重连：执行方须新建连接并重新握手"
+  },
+  "cases": [
+    {
+      "name": "hello_mismatch",
+      "title": "协议主版本不兼容：连接级错误，不执行任何业务",
+      "workspace": "minimal",
+      "frames": [
+        { "dir": "in", "conn": 1, "hello": 999 },
+        {
+          "dir": "out",
+          "conn": 1,
+          "expected": {
+            "type": "error",
+            "requestId": null,
+            "workspaceId": null,
+            "seq": null,
+            "error": { "code": "protocol-mismatch", "message": "<message>" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "duplicate_request_id",
+      "title": "连接内重复 requestId：第二次拒绝执行，错误可归属",
+      "workspace": "minimal",
+      "frames": [
+        { "dir": "in", "hello": "v1" },
+        { "dir": "in", "request": { "requestId": 10, "method": "workspace.open", "params": {} } },
+        { "dir": "out", "expected": { "type": "result", "requestId": 10, "seq": "<n>", "payload": { "status": "ready" } } },
+        { "dir": "in", "request": { "requestId": 10, "method": "workspace.open", "params": {} } },
+        {
+          "dir": "out",
+          "expected": {
+            "type": "error",
+            "requestId": 10,
+            "seq": "<n>",
+            "error": { "code": "duplicate-request-id", "message": "<message>" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "stale_page_after_input_change",
+      "title": "输入变化后旧分页令牌失效：返回 stale-page，不得混合两版行数据",
+      "workspace": "rich",
+      "frames": [
+        { "dir": "in", "hello": "v1" },
+        { "dir": "in", "request": { "requestId": 12, "method": "table.preview", "params": { "table": "Item", "page": { "limit": 1 } } } },
+        { "dir": "out", "expected": { "type": "result", "requestId": 12, "payload": { "revision": "<n>", "nextCursor": "<any>" } } },
+        { "dir": "in", "change": "config/global.yaml" },
+        { "dir": "in", "request": { "requestId": 13, "method": "table.preview", "params": { "table": "Item", "page": { "limit": 1, "cursor": { "$from": "12.payload.nextCursor" } } } } },
+        {
+          "dir": "out",
+          "expected": {
+            "type": "error",
+            "requestId": 13,
+            "error": { "code": "stale-page", "message": "<message>" }
+          }
+        },
+        { "dir": "in", "request": { "requestId": 14, "method": "table.preview", "params": { "table": "Item", "page": { "limit": 1 } } } },
+        { "dir": "out", "expected": { "type": "result", "requestId": 14, "payload": { "revision": "<n>" } } }
+      ]
+    },
+    {
+      "name": "reconnect_reuses_ids_without_replay",
+      "title": "重连：requestId 可复用，但上一连接的写任务不复活也不重放",
+      "workspace": "minimal",
+      "frames": [
+        { "dir": "in", "conn": 1, "hello": "v1" },
+        { "dir": "in", "conn": 1, "request": { "requestId": 20, "method": "template.generate", "params": { "table": "Item" } } },
+        { "dir": "out", "conn": 1, "expected": { "type": "result", "requestId": 20 } },
+        { "dir": "in", "conn": 2, "hello": "v1" },
+        { "dir": "in", "conn": 2, "request": { "requestId": 21, "method": "tasks.list", "params": {} } },
+        { "dir": "out", "conn": 2, "expected": { "type": "result", "requestId": 21, "payload": { "tasks": [] } } },
+        { "dir": "in", "conn": 2, "request": { "requestId": 20, "method": "workspace.status", "params": {} } },
+        { "dir": "out", "conn": 2, "expected": { "type": "result", "requestId": 20 } }
+      ]
+    },
+    {
+      "name": "big_integer_roundtrip",
+      "title": "超出 ±(2^53-1) 的整数：入站标签被精确解析，出站仍是标签",
+      "workspace": "minimal",
+      "frames": [
+        { "dir": "in", "hello": "v1" },
+        {
+          "dir": "in",
+          "request": {
+            "requestId": 30,
+            "method": "schema.candidate",
+            "params": {
+              "schemaRevision": "<schemaRevision>",
+              "commands": [],
+              "cursor": "1",
+              "draftGeneration": { "$int": "9007199254740993" }
+            }
+          }
+        },
+        {
+          "dir": "out",
+          "expected": {
+            "type": "result",
+            "requestId": 30,
+            "payload": { "draftGeneration": { "$int": "9007199254740993" }, "candidateHash": "<sha256>" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "candidate_generation_echo",
+      "title": "候选代次回显：客户端按 draftGeneration 丢弃迟到/乱序响应",
+      "workspace": "minimal",
+      "frames": [
+        { "dir": "in", "hello": "v1" },
+        {
+          "dir": "in",
+          "request": {
+            "requestId": 41,
+            "method": "schema.candidate",
+            "params": { "schemaRevision": "<schemaRevision>", "commands": [], "cursor": "1", "draftGeneration": 5 }
+          }
+        },
+        {
+          "dir": "in",
+          "request": {
+            "requestId": 42,
+            "method": "schema.candidate",
+            "params": { "schemaRevision": "<schemaRevision>", "commands": [], "cursor": "1", "draftGeneration": 7 }
+          }
+        },
+        { "dir": "out", "expected": { "type": "result", "requestId": 41, "seq": "<n>", "payload": { "draftGeneration": 5 } } },
+        { "dir": "out", "expected": { "type": "result", "requestId": 42, "seq": "<n>", "payload": { "draftGeneration": 7 } } }
+      ]
+    },
+    {
+      "name": "shutdown_flow",
+      "title": "安全关闭：shutdown 返回 result，之后客户端必须关闭输入管道",
+      "workspace": "minimal",
+      "frames": [
+        { "dir": "in", "hello": "v1" },
+        { "dir": "in", "request": { "requestId": 50, "method": "workspace.open", "params": {} } },
+        { "dir": "out", "expected": { "type": "result", "requestId": 50 } },
+        { "dir": "in", "request": { "requestId": 51, "method": "shutdown", "params": {} } },
+        { "dir": "out", "expected": { "type": "result", "requestId": 51, "payload": { "outcome": "shutdown" } } }
+      ]
+    }
+  ]
+}

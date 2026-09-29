@@ -1,0 +1,49 @@
+   Compiling ct-cli v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.57s
+     Running tests/panel.rs (native/target/debug/deps/panel-19cbe4ff5437845b)
+
+running 13 tests
+test legacy_apply_blocks_writes_and_survives_recovery_attempt ... ok
+test embedded_assets_and_invalid_workspace_remain_accessible ... ok
+test request_boundaries_and_port_conflict ... ok
+test legacy_history_import_is_idempotent_and_preserves_source ... ok
+test candidate_applies_only_active_cursor_prefix ... ok
+test shared_lock_blocks_web_reads_and_cli_template_writes ... ok
+test schema_guards_candidate_undo_and_yaml_only_save ... ok
+test missing_python_backup_refuses_recovery_and_preserves_journal ... ok
+test create_three_resource_kinds_and_roundtrip_net_noop ... ok
+test unknown_host_is_rejected_before_routing ... ok
+test validate_reports_unknown_commands_without_publishing ... ok
+test translations_recompute_stale_and_reject_unsynchronized_save ... ok
+test explicit_http_recovery_consumes_frozen_python_journals_before_loading_config ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.09s
+
+     Running tests/journal_recovery.rs (native/target/debug/deps/journal_recovery-605cb5c4a5d0d59c)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/publication_recovery.rs (native/target/debug/deps/publication_recovery-72659d3a40b91495)
+
+running 10 tests
+test out_of_scope_journal_path_rejected ... ok
+test crash_after_prepared_cleans_private_only ... ok
+test missing_backup_keeps_materials_and_blocks ... ok
+test dropping_staged_payloads_leaves_targets_untouched ... ok
+test crash_after_committed_keeps_new_version ... ok
+test sweep_staging_respects_journal ... ok
+test crash_mid_publish_restores_content_and_mtime_and_removes_created ... ok
+test publish_then_recover_is_noop ... ok
+test staged_payload_does_not_touch_targets ... ok
+test publish_failure_rolls_back_with_mtime ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/python_publication.rs (native/target/debug/deps/python_publication-28604fa042ea33ef)
+
+running 1 test
+test frozen_python_journals_recover_all_stages_with_content_and_nanosecond_mtime ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s

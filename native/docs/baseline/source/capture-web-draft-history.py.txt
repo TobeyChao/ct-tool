@@ -1,0 +1,33 @@
+import json,tempfile,threading,os
+from pathlib import Path
+from werkzeug.serving import make_server
+from playwright.sync_api import sync_playwright
+from ct.web.app import create_app
+from ct.web.history import append_history,load_history
+from web_helpers import build_project
+fixture=Path('native/docs/baseline/web-http-python.json')
+with tempfile.TemporaryDirectory(prefix='ct-old-draft-中文 ') as temp:
+ root=build_project(Path(temp)/'workspace',schemas=[{'table':'Item','primary':'Id','fields':[{'name':'Id','type':'int32'}]}]);app=create_app(root)
+ server=make_server('127.0.0.1',0,app,threaded=True);worker=threading.Thread(target=server.serve_forever,daemon=True);worker.start()
+ try:
+  with sync_playwright() as pw:
+   browser=pw.chromium.launch(headless=True,executable_path=os.environ['CT_CHROMIUM_EXECUTABLE'])
+   page=browser.new_page();page.goto(f'http://127.0.0.1:{server.server_port}/static/index.html')
+   record=page.evaluate('''async () => {
+     const root=(await(await fetch('/api/workspace')).json()).data.root;
+     const store=await import('/static/js/core/draft-store.js');
+     const commands=[{type:'set_property',payload:{owner:'table:Item',name:'Id',property:'comment',value:'active'}},{type:'set_property',payload:{owner:'table:Item',name:'Id',property:'comment',value:'redo'}}];
+     Date.now=()=>1780000000000;
+     await store.saveDraft(root,{schemaRevision:'old-baseline',commands,cursor:1});
+     const db=await new Promise((resolve,reject)=>{const r=indexedDB.open('ct-drafts',1);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});
+     const data=await new Promise((resolve,reject)=>{const r=db.transaction('drafts').objectStore('drafts').get('draft:'+root);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});db.close();return {db:'ct-drafts',store:'drafts',origin:location.origin,record:data};
+   }''')
+   browser.close()
+ finally:
+  server.shutdown();worker.join()
+ record['origin']='http://127.0.0.1:${PORT}'
+ record['record']['key']='draft:${ROOT}'
+ cache=Path(temp)/'cache';source={'time':'2026-01-01 00:00:00','scope':'全部表 × 全量语言','result':'成功','tables':1,'elapsed':0.1,'forced':False,'error':''}
+ append_history(cache,source);history={'sourceFile':'cache/panel_history.json','sourceText':(cache/'panel_history.json').read_text(),'readResponse':load_history(cache)}
+ data=json.loads(fixture.read_text());data['data']['legacyDraft']=record;data['data']['legacyHistory']=history;fixture.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+ print('Captured IndexedDB record and legacy history read from old Python Web')

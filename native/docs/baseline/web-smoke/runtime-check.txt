@@ -1,0 +1,10 @@
+   Compiling ct-app v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-app)
+   Compiling ct-xtask v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-xtask)
+    Finished `release` profile [optimized] target(s) in 26.95s
+     Running `native/target/release/xtask dist`
+   Compiling ct-app v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-app)
+   Compiling ct-web v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-web)
+   Compiling ct-worker v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-worker)
+   Compiling ct-cli v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-cli)
+    Finished `release` profile [optimized] target(s) in 20.19s
+aarch64-apple-darwin: /Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-xtask/../../../native/dist/ct-native-0.0.0-aarch64-apple-darwin（zip 3502892 字节，自检 通过）

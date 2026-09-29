@@ -1,0 +1,14 @@
+native export: [deploy] 无文件变更
+generated accessors: 5; JSON files: 12
+[Item] 4 行
+[ItemType] 3 行
+[Quest] 3 行
+[UIConfig] 6 行（变长基线）
+[ItemType] CodeName 索引  3 行
+[FNV] 与 Python 对照 9 条
+[i18n] 稀疏表 + 按下标委托
+  ✓ 切到 en: Item[0].Name = Potion
+  ✓ 切到 ja: Item[0].Name = ポーション
+[Scalars] 12 种标量往返
+
+共校验 127 个字段值，不一致 0

@@ -1,0 +1,90 @@
+{
+  "format": "panel-performance/1",
+  "at": "2026-09-29T13:39:16.772Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "node": "v26.8.2",
+  "nativeBinary": "/Users/tobeychao/Documents/Projects/ct-tool/native/target/release/ct",
+  "pythonRuntime": "/Users/tobeychao/Documents/Projects/ct-tool/ct/.venv/bin/python",
+  "fixture": "one Table, empty generated workbook; 1000 i18n source entries",
+  "native": {
+    "startupMs": [
+      24,
+      8,
+      6,
+      6,
+      7,
+      6
+    ],
+    "startupMedianMs": 6,
+    "candidateMs": [
+      2,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "candidateMedianMs": 1,
+    "exportMs": [
+      13,
+      24,
+      25
+    ],
+    "exportMedianMs": 24,
+    "largeResponseMs": [
+      5,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "largeMedianMs": 4,
+    "largeBytes": 190920,
+    "largeDataSha256": "b7eef07e28a2008ad5379f337211c21aff63bf23efab0c50324c15793904bfb0"
+  },
+  "python": {
+    "startupMs": [
+      260,
+      254,
+      266,
+      266,
+      250,
+      254
+    ],
+    "startupMedianMs": 254,
+    "candidateMs": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    "candidateMedianMs": 2,
+    "exportMs": [
+      27,
+      26,
+      27
+    ],
+    "exportMedianMs": 27,
+    "largeResponseMs": [
+      5,
+      5,
+      4,
+      6,
+      4,
+      4
+    ],
+    "largeMedianMs": 4,
+    "largeBytes": 238921,
+    "largeDataSha256": "b7eef07e28a2008ad5379f337211c21aff63bf23efab0c50324c15793904bfb0"
+  },
+  "ratios": {
+    "startupMedianMs": 0.02,
+    "candidateMedianMs": 0.5,
+    "exportMedianMs": 0.89,
+    "largeMedianMs": 1
+  }
+}

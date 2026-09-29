@@ -1,0 +1,5 @@
+{"type":"request","requestId":30,"method":"export","workspaceRoot":"E:\\Proj\\gd","params":{"all":false}}
+{"type":"progress","requestId":30,"workspaceId":"e:\\proj\\gd","seq":1,"stage":"JSON","done":10,"total":50}
+{"type":"request","requestId":31,"method":"cancel","workspaceRoot":"E:\\Proj\\gd","params":{"targetRequestId":30}}
+{"type":"result","requestId":31,"workspaceId":"e:\\proj\\gd","seq":2,"payload":{"state":"cancelling"}}
+{"type":"result","requestId":30,"workspaceId":"e:\\proj\\gd","seq":3,"payload":{"outcome":"cancelled"}}

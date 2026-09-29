@@ -1,0 +1,1272 @@
+{
+  "format": "python-retirement-inventory/1",
+  "note": "Inventory includes historical citations. Nothing here authorizes deletion; unresolved replacements remain pending.",
+  "items": [
+    {
+      "path": ".github/workflows/ct-tests.yml",
+      "owner": "ci",
+      "replacement": ".github/workflows/native-web.yml",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/fixtures/schema_state/generate.py",
+      "owner": "fixture-regeneration",
+      "replacement": "Pending: Rust/JS generator with independent golden assertions",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/fixtures/binary/generate.py",
+      "owner": "fixture-regeneration",
+      "replacement": "Pending: Rust/JS generator with independent golden assertions",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/fixtures/fingerprints/generate.py",
+      "owner": "fixture-regeneration",
+      "replacement": "Pending: Rust/JS generator with independent golden assertions",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/tools/parity/cli-text-diff.mjs",
+      "owner": "reference-or-tool",
+      "replacement": "Pending: classify active invocation vs historical citation",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/tools/bench/measure.ps1",
+      "owner": "reference-or-tool",
+      "replacement": "Pending: classify active invocation vs historical citation",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/tools/bench/isolation-check.mjs",
+      "owner": "reference-or-tool",
+      "replacement": "Pending: classify active invocation vs historical citation",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/tools/bench/python-entry.py",
+      "owner": "reference-or-tool",
+      "replacement": "Pending: classify active invocation vs historical citation",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/tools/bench/recovery-drill.mjs",
+      "owner": "reference-or-tool",
+      "replacement": "Pending: classify active invocation vs historical citation",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/fixtures/export_pipeline/generate.py",
+      "owner": "fixture-regeneration",
+      "replacement": "Pending: Rust/JS generator with independent golden assertions",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/fixtures/excel/generate.py",
+      "owner": "fixture-regeneration",
+      "replacement": "Pending: Rust/JS generator with independent golden assertions",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/fixtures/template/compare_semantics.py",
+      "owner": "fixture-regeneration",
+      "replacement": "Pending: Rust/JS generator with independent golden assertions",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/packaging/ct_entry.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/export/canonical_accessor_model.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/export/canonical_accessor.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/export/index_query.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/config.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/cli.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/data_preparation.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/exporting/prepare.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/exporting/__init__.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/exporting/models.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/exporting/service.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/exporting/build.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/__init__.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/canonical_workspace.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/events.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/canonical_export.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/canonical_commands.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/fixtures/bench/README.md",
+      "owner": "fixture-regeneration",
+      "replacement": "Pending: Rust/JS generator with independent golden assertions",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/export/i18n/merger.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/fixtures/bench/generate.py",
+      "owner": "fixture-regeneration",
+      "replacement": "Pending: Rust/JS generator with independent golden assertions",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/export/i18n/state.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/export/i18n/__init__.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/export/canonical_fbs.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/export/canonical_json.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/export/__init__.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/export/deploy.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/export/canonical_binary.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/contracts.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/fixtures/template/generate.py",
+      "owner": "fixture-regeneration",
+      "replacement": "Pending: Rust/JS generator with independent golden assertions",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/docs/README.md",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/schema_workspace/snapshot.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/schema_workspace/candidate.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/schema_workspace/netdiff.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/schema_workspace/__init__.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/schema_workspace/legacy_apply.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/schema_workspace/commands_reducer.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/app/schema_workspace/save.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/schema/hashing.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/schema/commands.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/schema/identity.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/schema/resources.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/schema/resource_graph.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/schema/indexes.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/schema/__init__.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/schema/name_validation.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/schema/naming.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/schema/resource_repository.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/schema/type_expression.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/README.md",
+      "owner": "reference-or-tool",
+      "replacement": "Pending: classify active invocation vs historical citation",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/docs/agent-project-reference.md",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/diagnostics/errors.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/diagnostics/__init__.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/docs/archive/fabulous-game-对齐清单.md",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/docs/excel-reading-findings.md",
+      "owner": "reference-or-tool",
+      "replacement": "Pending: classify active invocation vs historical citation",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/docs/binary-prototype-findings.md",
+      "owner": "reference-or-tool",
+      "replacement": "Pending: classify active invocation vs historical citation",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/docs/research/flask-vue-stack.md",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/storage/workspace_transaction.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/storage/publication.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/storage/workspace_lock.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/storage/__init__.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/storage/files.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/__init__.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/web/history.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/web/schema_workspace_api.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/web/task_state.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/web/app.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/docs/design/responsive-app-shell-review.md",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/docs/design/responsive-app-shell_e2e.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/i18n/test_state.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/i18n/__init__.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/excel/reading_compat.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/excel/canonical_reader.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/excel/planning.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/excel/__init__.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/excel/layout_manifest.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/excel/layout.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/excel/canonical_template.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/cache/fingerprints.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/cache/artifacts.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/cache/__init__.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/cache/canonical_state.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/excel/test_planning.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/excel/test_layout.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/excel/test_canonical_template.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/excel/test_canonical_reader.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/excel/__init__.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/excel/test_canonical_v2_regressions.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/cutover/test_canonical_export_smoke.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/cutover/test_e2e_safety.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/cache/test_canonical_state.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/cache/test_fingerprints.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/test_schema_save_api.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/test_tasks_projection.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/web_helpers.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/test_history.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/test_schema_editor_browser.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/test_schema_create_browser.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/test_logs.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/test_shell_browser.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/test_matrix_browser.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/test_browser_baseline.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/test_add_resource_api.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/test_module_pages_browser.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/test_schema_workspace_api.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/test_assets.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/test_resource_benchmark.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/web/test_fuzzy_browser.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/web-parity.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/deploy/test_sync_dir.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/deploy/test_deploy.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/storage/test_publication.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/storage/test_files.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/storage/test_workspace_lock.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/storage/test_workspace_transaction.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/web/__init__.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/web/tasks.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/src/ct/web/logs.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/_helpers.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/test_name_validation.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/test_primary_key_type.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/test_naming.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/test_identity.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/test_commands.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/test_role_boundaries.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/test_old_format_rejection.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/test_type_expression.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/test_resource_repository.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/test_enum_wire_type.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/test_resource_graph.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/test_canonical_hashing.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/conftest.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/test_uniform_layout_flag.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/schema/test_canonical_workspace.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/export/test_canonical_accessor.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/export/test_query_indexes.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/export/test_uniform_layout.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/export/test_canonical_json.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_canonical_i18n.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_schema_net_diff.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/export/__init__.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_schema_save.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_canonical_status.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_reading_compat.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/export/test_canonical_fbs.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/export/test_canonical_binary.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/docs/baseline/cli-text-diff.md",
+      "owner": "reference-or-tool",
+      "replacement": "Pending: classify active invocation vs historical citation",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/docs/baseline/parity-report.md",
+      "owner": "reference-or-tool",
+      "replacement": "Pending: classify active invocation vs historical citation",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/docs/baseline/handoff-macos-linux.md",
+      "owner": "reference-or-tool",
+      "replacement": "Pending: classify active invocation vs historical citation",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/docs/baseline/isolation-check.md",
+      "owner": "reference-or-tool",
+      "replacement": "Pending: classify active invocation vs historical citation",
+      "status": "pending-audit"
+    },
+    {
+      "path": "native/docs/baseline/web-parity.md",
+      "owner": "reference-or-tool",
+      "replacement": "Pending: classify active invocation vs historical citation",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_add_resource_commands.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_enum_token_gate.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_add_resource_workflow.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_export_service.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_add_resource_paths.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_add_resource_atomicity.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_schema_workspace.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/architecture/_helpers.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/_helpers.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_schema_save_atomicity.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_exporting_models.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_canonical_export_regression.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_canonical_validate.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_add_resource_candidate.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_uniform_bloat_notice.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_input_snapshot.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_incremental_export.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_cli_filter_and_i18n_output.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_cli_and_web_service.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_add_resource_netdiff.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_schema_save_workflow.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/app/test_publication_boundary.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "ct/tests/architecture/test_architecture.py",
+      "owner": "historical-python",
+      "replacement": "native/docs/baseline/compat-matrix.json",
+      "status": "pending-audit"
+    },
+    {
+      "path": "launcher/tool/build_macos.sh",
+      "owner": "launcher",
+      "replacement": "launcher/lib/services/panel_service.dart + native xtask dist",
+      "status": "pending-audit"
+    },
+    {
+      "path": "launcher/tool/build_windows.ps1",
+      "owner": "launcher",
+      "replacement": "launcher/lib/services/panel_service.dart + native xtask dist",
+      "status": "pending-audit"
+    },
+    {
+      "path": "launcher/README.md",
+      "owner": "launcher",
+      "replacement": "launcher/lib/services/panel_service.dart + native xtask dist",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/RefConfigBench/OPTIMIZATION-STRATEGY.md",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/RefConfigBench/check_bundle_duplication.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/RefConfigBench/gen_literal_accessor.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/RefConfigBench/check_uniform_risks.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/RefConfigBench/gen_scale_corpus.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/RefConfigBench/RUNTIME-SCHEME-REVIEW.md",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/RefConfigBench/gen_ct_bench_tables.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/RefConfigBench/pick_tables.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/RefConfigBench/eval_uniform_layout.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/RefConfigBench/check_export_preconditions.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/UniformE2EBench/gen_our_item_bench.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/ExportAccessorVerify/prepare.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/fabulous-game/README.md",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/fabulous-game/gen-big-table-fixture.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/fabulous-game/gen_fixtures.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/fabulous-game/gen_bench_fixtures.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/fabulous-game/migrate_excel.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/fabulous-game/gen-two-accessor-variants.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/ExportAccessorVerify/gen_scalars_bench.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/fabulous-game/uniform-check/uniform_fixed_check.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/fabulous-game/uniform-check/uniform_enum_check.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/fabulous-game/uniform-check/README.md",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/fabulous-game/uniform-check/real_uniform_check.py",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    },
+    {
+      "path": "test-proj/ConfigAccessorBench/README.md",
+      "owner": "independent-readers",
+      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
+      "status": "pending-audit"
+    }
+  ]
+}

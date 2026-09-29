@@ -1,0 +1,27 @@
+   Compiling ct-cli v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.61s
+     Running tests/panel.rs (native/target/debug/deps/panel-4ad1f5547e14140d)
+
+running 20 tests
+test legacy_apply_blocks_writes_and_survives_recovery_attempt ... ok
+test invalid_cli_parameters_fail_without_starting_a_panel ... ok
+test missing_python_backup_refuses_recovery_and_preserves_journal ... ok
+test candidate_applies_only_active_cursor_prefix ... ok
+test embedded_assets_and_invalid_workspace_remain_accessible ... ok
+test legacy_history_import_is_idempotent_and_preserves_source ... ok
+test panel_process_defaults_to_port_8000_when_available ... ok
+test panel_process_uses_explicit_port_and_default_bind_address ... ok
+test create_three_resource_kinds_and_roundtrip_net_noop ... ok
+test panel_process_uses_current_directory_by_default_and_accepts_unicode_root ... ok
+test schema_save_reports_busy_without_losing_yaml_when_cli_holds_lock ... ok
+test request_boundaries_and_port_conflict ... ok
+test schema_guards_candidate_undo_and_yaml_only_save ... ok
+test malformed_resource_commands_have_domain_field_locations_on_all_endpoints ... ok
+test unknown_host_is_rejected_before_routing ... ok
+test browser_opens_only_after_successful_listen_and_no_browser_suppresses_it ... ok
+test shared_lock_blocks_web_reads_and_cli_template_writes ... ok
+test validate_reports_unknown_commands_without_publishing ... ok
+test translations_recompute_stale_and_reject_unsynchronized_save ... ok
+test explicit_http_recovery_consumes_frozen_python_journals_before_loading_config ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.28s

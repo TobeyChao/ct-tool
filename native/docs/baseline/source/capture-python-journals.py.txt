@@ -1,0 +1,44 @@
+import hashlib,json,os,subprocess,sys,tempfile
+from pathlib import Path
+from ct.storage.publication import FilePublisher
+REPO=Path.cwd()
+OLD_NS=1600000000123456000
+NEW_NS=1600000100654321000
+
+def initial(root):
+    for rel,text in {'config/global.yaml':'primary_lang: zh\nsecondary_langs: [en]\n','output/replace.txt':'original replacement\n','output/delete.txt':'original deletion\n'}.items():
+        path=root/rel;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text);os.utime(path,ns=(OLD_NS,OLD_NS))
+
+def snapshot(root):
+    return {str(p.relative_to(root)).replace('\\','/'):{'text':p.read_text(),'mtimeNs':str(p.stat().st_mtime_ns)} for p in sorted(root.rglob('*')) if p.is_file() and p!=root/'.ct/export-publication.json'}
+
+if len(sys.argv)>1:
+    root=Path(sys.argv[1]);phase=sys.argv[2];done=int(sys.argv[3]);initial(root)
+    original=FilePublisher._write_journal
+    def crash(self,journal):
+        original(self,journal)
+        if journal.phase==phase and sum(e.done for e in journal.entries)==done:os._exit(86)
+    FilePublisher._write_journal=crash
+    FilePublisher(root).publish({root/'config/global.yaml':b'[invalid config\n',root/'output/replace.txt':b'new replacement\n',root/'output/create.txt':b'new creation\n'},[root/'output/delete.txt'])
+    raise SystemExit('fault point was not reached')
+
+cases=[]
+for phase,done in [('prepared',0),('backed_up',0),*[('publishing',n) for n in range(5)],('committed',4)]:
+    with tempfile.TemporaryDirectory(prefix='ct-python-journal-') as directory:
+        root=Path(directory).resolve()
+        result=subprocess.run([sys.executable,__file__,str(root),phase,str(done)])
+        assert result.returncode==86
+        journal=json.loads((root/'.ct/export-publication.json').read_text())
+        for p in root.rglob('*'):
+            if p.is_file() and not str(p.relative_to(root)).startswith('.ct/backup/') and p.stat().st_mtime_ns!=OLD_NS:os.utime(p,ns=(NEW_NS,NEW_NS))
+        before=snapshot(root)
+        FilePublisher(root).recover()
+        after=snapshot(root)
+        assert FilePublisher(root).recover() is None
+        case={'name':f'{phase}-{done}','journal':journal,'before':before,'after':after}
+        serialized=json.dumps(case,ensure_ascii=False).replace(str(root),'${ROOT}').replace(journal['operation_id'],'fixture-operation')
+        cases.append(json.loads(serialized))
+source=REPO/'ct/src/ct/storage/publication.py'
+output={'format':'python-publication-fixtures/1','sourceCommit':'8dc7b81412ddf712fca54a4200d216fb8af05aca','sourcePath':str(source.relative_to(REPO)),'sourceSha256':hashlib.sha256(source.read_bytes()).hexdigest(),'capture':'Actual Python FilePublisher.publish; os._exit(86) immediately after each journal write; expected state from Python recover, followed by idempotent second recover. Only root, operation id, and new-file timestamps normalized. Existing and backup nanosecond mtimes retained.','cases':cases}
+(REPO/'native/fixtures/journals/python-publication.json').write_text(json.dumps(output,ensure_ascii=False,indent=2)+'\n')
+print(f'Captured {len(cases)} actual Python crash/recovery cases')

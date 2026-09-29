@@ -1,0 +1,2 @@
+{"type":"hello","protocolVersion":2,"coreVersion":"0.0.0","capabilities":["workspace"]}
+{"type":"error","error":{"code":"protocol-mismatch","message":"客户端协议主版本 2 与 worker 支持的 1 不兼容"}}

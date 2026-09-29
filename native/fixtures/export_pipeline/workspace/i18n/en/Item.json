@@ -1,0 +1,14 @@
+{
+  "1001.Name": {
+    "confirmed": true,
+    "source": "铁剑",
+    "status": "confirmed",
+    "text": "Iron Sword"
+  },
+  "1002.Name": {
+    "confirmed": false,
+    "source": "铁盾",
+    "status": "missing",
+    "text": ""
+  }
+}

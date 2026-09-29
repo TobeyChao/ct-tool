@@ -1,0 +1,2 @@
+{"type":"request","requestId":40,"method":"table.preview","workspaceRoot":"E:\\Proj\\gd","params":{"table":"Item","page":{"limit":2}}}
+{"type":"result","requestId":40,"workspaceId":"e:\\proj\\gd","seq":1,"payload":{"revision":7,"columns":[{"name":"Id","typeExpr":"uint64","role":"primary"},{"name":"Name","typeExpr":"string"}],"rows":[[{"$int":"18446744073709551615"},"大剑"],[42,"铁剑"]],"nextCursor":"row:2"}}

@@ -1,0 +1,16 @@
+enum EffectKind : byte { None = 0, Buff = 1, Debuff = 2 }
+
+enum ItemRarity : byte { Common = 0, Rare = 1, Epic = 2 }
+
+enum LongEnum : byte { QuiteLongEnumValueName00 = 0, QuiteLongEnumValueName01 = 1, QuiteLongEnumValueName02 = 2, QuiteLongEnumValueName03 = 3, QuiteLongEnumValueName04 = 4, QuiteLongEnumValueName05 = 5, QuiteLongEnumValueName06 = 6, QuiteLongEnumValueName07 = 7, QuiteLongEnumValueName08 = 8, QuiteLongEnumValueName09 = 9, QuiteLongEnumValueName10 = 10, QuiteLongEnumValueName11 = 11, QuiteLongEnumValueName12 = 12, QuiteLongEnumValueName13 = 13, QuiteLongEnumValueName14 = 14, QuiteLongEnumValueName15 = 15, QuiteLongEnumValueName16 = 16, QuiteLongEnumValueName17 = 17, QuiteLongEnumValueName18 = 18, QuiteLongEnumValueName19 = 19 }
+
+table DropReward {
+  ItemId: int;
+  Count: int;
+}
+
+table Position {
+  X: float32;
+  Y: float32;
+  Z: float32;
+}

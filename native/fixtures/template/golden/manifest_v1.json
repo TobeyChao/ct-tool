@@ -1,0 +1,375 @@
+{
+  "format": "template-layout/2",
+  "schema_hash": "sha256:fixture0001",
+  "header_rows": 6,
+  "columns": [
+    {
+      "index": 1,
+      "stablePath": "table:Item/Id",
+      "typeExpr": "int32",
+      "annotation": "int32",
+      "leaf": "Id",
+      "depth": 1
+    },
+    {
+      "index": 2,
+      "stablePath": "table:Item/CodeName",
+      "typeExpr": "string",
+      "annotation": "string",
+      "leaf": "CodeName",
+      "depth": 1
+    },
+    {
+      "index": 3,
+      "stablePath": "table:Item/Rarity",
+      "typeExpr": "ItemRarity",
+      "annotation": "ItemRarity",
+      "leaf": "Rarity",
+      "depth": 1
+    },
+    {
+      "index": 4,
+      "stablePath": "table:Item/Effect/X",
+      "typeExpr": "float",
+      "annotation": "float",
+      "leaf": "X",
+      "depth": 1
+    },
+    {
+      "index": 5,
+      "stablePath": "table:Item/Effect/Y",
+      "typeExpr": "float",
+      "annotation": "float",
+      "leaf": "Y",
+      "depth": 1
+    },
+    {
+      "index": 6,
+      "stablePath": "table:Item/Effect/Z",
+      "typeExpr": "float",
+      "annotation": "float",
+      "leaf": "Z",
+      "depth": 1
+    },
+    {
+      "index": 7,
+      "stablePath": "table:Item/Rewards[1]/ItemId",
+      "typeExpr": "int32",
+      "annotation": "int32",
+      "leaf": "ItemId",
+      "depth": 2,
+      "groupIndex": 1
+    },
+    {
+      "index": 8,
+      "stablePath": "table:Item/Rewards[1]/Count",
+      "typeExpr": "int32",
+      "annotation": "int32",
+      "leaf": "Count",
+      "depth": 2,
+      "groupIndex": 1
+    },
+    {
+      "index": 9,
+      "stablePath": "table:Item/Rewards[2]/ItemId",
+      "typeExpr": "int32",
+      "annotation": "int32",
+      "leaf": "ItemId",
+      "depth": 2,
+      "groupIndex": 2
+    },
+    {
+      "index": 10,
+      "stablePath": "table:Item/Rewards[2]/Count",
+      "typeExpr": "int32",
+      "annotation": "int32",
+      "leaf": "Count",
+      "depth": 2,
+      "groupIndex": 2
+    },
+    {
+      "index": 11,
+      "stablePath": "table:Item/Tags",
+      "typeExpr": "int32",
+      "annotation": "vector<int32>",
+      "leaf": "Tags",
+      "depth": 1
+    },
+    {
+      "index": 12,
+      "stablePath": "table:Item/Desc",
+      "typeExpr": "string",
+      "annotation": "string",
+      "leaf": "Desc",
+      "depth": 1
+    },
+    {
+      "index": 13,
+      "stablePath": "table:Item/Active",
+      "typeExpr": "bool",
+      "annotation": "bool",
+      "leaf": "Active",
+      "depth": 1
+    },
+    {
+      "index": 14,
+      "stablePath": "table:Item/Score",
+      "typeExpr": "double",
+      "annotation": "double",
+      "leaf": "Score",
+      "depth": 1
+    },
+    {
+      "index": 15,
+      "stablePath": "table:Item/Big",
+      "typeExpr": "LongEnum",
+      "annotation": "LongEnum",
+      "leaf": "Big",
+      "depth": 1
+    }
+  ],
+  "nodes": [
+    {
+      "stablePath": "table:Item/Id",
+      "displayName": "Id",
+      "annotation": "int32",
+      "comment": "编号",
+      "kind": "field",
+      "depth": 1,
+      "children": [],
+      "slotIndex": null,
+      "leafStart": 1,
+      "leafEnd": 1
+    },
+    {
+      "stablePath": "table:Item/CodeName",
+      "displayName": "CodeName",
+      "annotation": "string",
+      "comment": "",
+      "kind": "field",
+      "depth": 1,
+      "children": [],
+      "slotIndex": null,
+      "leafStart": 2,
+      "leafEnd": 2
+    },
+    {
+      "stablePath": "table:Item/Rarity",
+      "displayName": "Rarity",
+      "annotation": "ItemRarity",
+      "comment": "",
+      "kind": "field",
+      "depth": 1,
+      "children": [],
+      "slotIndex": null,
+      "leafStart": 3,
+      "leafEnd": 3
+    },
+    {
+      "stablePath": "table:Item/Effect",
+      "displayName": "Effect",
+      "annotation": "Position",
+      "comment": "",
+      "kind": "record",
+      "depth": 1,
+      "children": [
+        "Effect/X",
+        "Effect/Y",
+        "Effect/Z"
+      ],
+      "slotIndex": null,
+      "leafStart": 4,
+      "leafEnd": 6
+    },
+    {
+      "stablePath": "table:Item/Effect/X",
+      "displayName": "X",
+      "annotation": "Position",
+      "comment": "",
+      "kind": "field",
+      "depth": 2,
+      "children": [],
+      "slotIndex": null,
+      "leafStart": 4,
+      "leafEnd": 4
+    },
+    {
+      "stablePath": "table:Item/Effect/Y",
+      "displayName": "Y",
+      "annotation": "Position",
+      "comment": "",
+      "kind": "field",
+      "depth": 2,
+      "children": [],
+      "slotIndex": null,
+      "leafStart": 5,
+      "leafEnd": 5
+    },
+    {
+      "stablePath": "table:Item/Effect/Z",
+      "displayName": "Z",
+      "annotation": "Position",
+      "comment": "",
+      "kind": "field",
+      "depth": 2,
+      "children": [],
+      "slotIndex": null,
+      "leafStart": 6,
+      "leafEnd": 6
+    },
+    {
+      "stablePath": "table:Item/Rewards",
+      "displayName": "Rewards",
+      "annotation": "vector<DropReward>[2]",
+      "comment": "",
+      "kind": "array",
+      "depth": 1,
+      "children": [
+        "Rewards/1",
+        "Rewards/2"
+      ],
+      "slotIndex": null,
+      "leafStart": 7,
+      "leafEnd": 10
+    },
+    {
+      "stablePath": "table:Item/Rewards[1]",
+      "displayName": "#1",
+      "annotation": "vector<DropReward>[2]",
+      "comment": "",
+      "kind": "slot",
+      "depth": 2,
+      "children": [
+        "Rewards/1/ItemId",
+        "Rewards/1/Count"
+      ],
+      "slotIndex": 1,
+      "leafStart": 7,
+      "leafEnd": 8
+    },
+    {
+      "stablePath": "table:Item/Rewards[1]/ItemId",
+      "displayName": "ItemId",
+      "annotation": "vector<DropReward>[2]",
+      "comment": "",
+      "kind": "field",
+      "depth": 3,
+      "children": [],
+      "slotIndex": null,
+      "leafStart": 7,
+      "leafEnd": 7
+    },
+    {
+      "stablePath": "table:Item/Rewards[1]/Count",
+      "displayName": "Count",
+      "annotation": "vector<DropReward>[2]",
+      "comment": "",
+      "kind": "field",
+      "depth": 3,
+      "children": [],
+      "slotIndex": null,
+      "leafStart": 8,
+      "leafEnd": 8
+    },
+    {
+      "stablePath": "table:Item/Rewards[2]",
+      "displayName": "#2",
+      "annotation": "vector<DropReward>[2]",
+      "comment": "",
+      "kind": "slot",
+      "depth": 2,
+      "children": [
+        "Rewards/2/ItemId",
+        "Rewards/2/Count"
+      ],
+      "slotIndex": 2,
+      "leafStart": 9,
+      "leafEnd": 10
+    },
+    {
+      "stablePath": "table:Item/Rewards[2]/ItemId",
+      "displayName": "ItemId",
+      "annotation": "vector<DropReward>[2]",
+      "comment": "",
+      "kind": "field",
+      "depth": 3,
+      "children": [],
+      "slotIndex": null,
+      "leafStart": 9,
+      "leafEnd": 9
+    },
+    {
+      "stablePath": "table:Item/Rewards[2]/Count",
+      "displayName": "Count",
+      "annotation": "vector<DropReward>[2]",
+      "comment": "",
+      "kind": "field",
+      "depth": 3,
+      "children": [],
+      "slotIndex": null,
+      "leafStart": 10,
+      "leafEnd": 10
+    },
+    {
+      "stablePath": "table:Item/Tags",
+      "displayName": "Tags",
+      "annotation": "vector<int32>",
+      "comment": "",
+      "kind": "field",
+      "depth": 1,
+      "children": [],
+      "slotIndex": null,
+      "leafStart": 11,
+      "leafEnd": 11
+    },
+    {
+      "stablePath": "table:Item/Desc",
+      "displayName": "Desc",
+      "annotation": "string",
+      "comment": "描述文本",
+      "kind": "field",
+      "depth": 1,
+      "children": [],
+      "slotIndex": null,
+      "leafStart": 12,
+      "leafEnd": 12
+    },
+    {
+      "stablePath": "table:Item/Active",
+      "displayName": "Active",
+      "annotation": "bool",
+      "comment": "",
+      "kind": "field",
+      "depth": 1,
+      "children": [],
+      "slotIndex": null,
+      "leafStart": 13,
+      "leafEnd": 13
+    },
+    {
+      "stablePath": "table:Item/Score",
+      "displayName": "Score",
+      "annotation": "double",
+      "comment": "",
+      "kind": "field",
+      "depth": 1,
+      "children": [],
+      "slotIndex": null,
+      "leafStart": 14,
+      "leafEnd": 14
+    },
+    {
+      "stablePath": "table:Item/Big",
+      "displayName": "Big",
+      "annotation": "LongEnum",
+      "comment": "",
+      "kind": "field",
+      "depth": 1,
+      "children": [],
+      "slotIndex": null,
+      "leafStart": 15,
+      "leafEnd": 15
+    }
+  ],
+  "slot_offsets": []
+}

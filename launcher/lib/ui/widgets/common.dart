@@ -12,8 +12,10 @@ const TextStyle ctMono = TextStyle(
   fontFamilyFallback: ['Consolas', 'Cascadia Mono', 'SF Mono'],
 );
 
-const TextStyle ctPageTitleStyle =
-    TextStyle(fontSize: 14, fontWeight: FontWeight.w600);
+const TextStyle ctPageTitleStyle = TextStyle(
+  fontSize: 14,
+  fontWeight: FontWeight.w600,
+);
 
 /// 面板状态的展示信息（唯一 switch 来源，侧栏与概览页共用）
 ({Color dot, String title, String sub, String hint}) panelStatusPresentation(
@@ -22,29 +24,35 @@ const TextStyle ctPageTitleStyle =
 ) {
   return switch (status) {
     PanelStatus.stopped => (
-        dot: ctInk3,
-        title: '已停止',
-        sub: '点击开关启动面板，启动后自动打开',
-        hint: '未运行',
-      ),
+      dot: ctInk3,
+      title: '已停止',
+      sub: '点击开关启动面板，启动后自动打开',
+      hint: '未运行',
+    ),
     PanelStatus.starting => (
-        dot: ctGold,
-        title: '正在启动',
-        sub: '正在拉起本地服务，稍候…',
-        hint: '连接中',
-      ),
+      dot: ctGold,
+      title: '正在启动',
+      sub: '正在拉起本地服务，稍候…',
+      hint: '连接中',
+    ),
+    PanelStatus.stopping => (
+      dot: ctGold,
+      title: '正在停止',
+      sub: '等待正在执行的写入完成…',
+      hint: '安全退出中',
+    ),
     PanelStatus.running => (
-        dot: ctAccent,
-        title: '运行中',
-        sub: '面板服务运行中 · 点击开关可暂停',
-        hint: '点击地址可复制',
-      ),
+      dot: ctAccent,
+      title: '运行中',
+      sub: '面板服务运行中 · 点击开关可暂停',
+      hint: '点击地址可复制',
+    ),
     PanelStatus.failed => (
-        dot: ctDanger,
-        title: '启动失败',
-        sub: failureReason ?? '请检查下方日志后重试',
-        hint: '服务未启动',
-      ),
+      dot: ctDanger,
+      title: '启动失败',
+      sub: failureReason ?? '请检查下方日志后重试',
+      hint: '服务未启动',
+    ),
   };
 }
 
@@ -199,9 +207,9 @@ enum _CtButtonKind { accent, ghost }
 
 class CtButton extends StatelessWidget {
   const CtButton.accent(this.label, {super.key, required this.onPressed})
-      : _kind = _CtButtonKind.accent;
+    : _kind = _CtButtonKind.accent;
   const CtButton.ghost(this.label, {super.key, required this.onPressed})
-      : _kind = _CtButtonKind.ghost;
+    : _kind = _CtButtonKind.ghost;
 
   final String label;
   final VoidCallback? onPressed;
@@ -258,7 +266,10 @@ class CtSettingRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 92,
-            child: Text(label, style: const TextStyle(fontSize: 13, color: ctInk2)),
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 13, color: ctInk2),
+            ),
           ),
           Expanded(child: child),
         ],

@@ -1,0 +1,2 @@
+{"type":"request","requestId":60,"method":"shutdown","workspaceRoot":"E:\\Proj\\gd","params":{}}
+{"type":"result","requestId":60,"workspaceId":"e:\\proj\\gd","seq":1,"payload":{"state":"closing"}}

@@ -1,0 +1,5 @@
+{"type":"request","requestId":20,"method":"export","workspaceRoot":"E:\\Proj\\gd","params":{"all":false}}
+{"type":"progress","requestId":20,"workspaceId":"e:\\proj\\gd","seq":1,"stage":"解析校验","done":0,"total":50}
+{"type":"log","requestId":20,"workspaceId":"e:\\proj\\gd","seq":2,"module":"export","level":"info","message":"开始增量导出"}
+{"type":"progress","requestId":20,"workspaceId":"e:\\proj\\gd","seq":3,"stage":"JSON","done":50,"total":50}
+{"type":"result","requestId":20,"workspaceId":"e:\\proj\\gd","seq":4,"payload":{"outcome":"succeeded","tables":50,"durationMs":1234,"stages":[{"name":"解析校验","elapsedMs":600},{"name":"JSON","elapsedMs":634}],"cache":{"hits":48,"misses":2},"issues":[]}}

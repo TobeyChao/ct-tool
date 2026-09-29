@@ -1,0 +1,22 @@
+
+> test
+> playwright test tests/resource-benchmark.spec.mjs --workers=1
+
+(node:2398) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+(node:2399) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2399) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(node:2399) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"resources":100,"firstPaintMs":278,"queryMs":26,"domNodes":299,"visibleRows":31,"heapBytes":10000000}
+  ✓  1 tests/resource-benchmark.spec.mjs:4:3 › resource list 100 entries stays virtualized and paints within budget (671ms)
+{"resources":1000,"firstPaintMs":154,"queryMs":14,"domNodes":299,"visibleRows":31,"heapBytes":10000000}
+  ✓  2 tests/resource-benchmark.spec.mjs:4:3 › resource list 1000 entries stays virtualized and paints within budget (366ms)
+{"resources":10000,"firstPaintMs":167,"queryMs":19,"domNodes":299,"visibleRows":31,"heapBytes":10000000}
+  ✓  3 tests/resource-benchmark.spec.mjs:4:3 › resource list 10000 entries stays virtualized and paints within budget (427ms)
+
+  3 passed (2.2s)

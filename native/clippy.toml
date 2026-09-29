@@ -1,0 +1,2 @@
+# 阈值随实现收紧；保持默认为主。
+too-many-arguments-threshold = 8

@@ -1,0 +1,293 @@
+{
+  "schema": "ct-bench/1",
+  "size": "r",
+  "seed": 20260918,
+  "fixture": {
+    "schema": "ct-bench-fixture/1",
+    "size": "r",
+    "seed": 20260918,
+    "tables": 818,
+    "configTables": 164,
+    "enumTables": 654,
+    "rows": 249569,
+    "rowsPerTable": null,
+    "columnsPerTable": null,
+    "dataCells": 3709512,
+    "writtenCells": 5210139,
+    "i18nFields": 127,
+    "translatedEntries": 1054314,
+    "translatedEntriesPerLang": 117146,
+    "vectorFields": 168,
+    "refEdges": 590,
+    "nestedRecords": 205,
+    "maxHeaderRows": 14,
+    "languages": [
+      "zh",
+      "en",
+      "ko",
+      "tw",
+      "th",
+      "ja",
+      "es",
+      "pt",
+      "de",
+      "fr"
+    ],
+    "shape": "shape-r.json（冻结清单：行数取运行时 dump，字段语法取导表期类清单）",
+    "uniform": "按冻结清单逐表形状生成：行数/字段数/嵌套深度/向量展开/enum 表/i18n 位置",
+    "unmodelled": [
+      "multi-area-columns",
+      "multi-table-workbooks",
+      "animevent-curves",
+      "track-binaries",
+      "translation-fill-rate",
+      "i18n-per-language-aggregation",
+      "vector-expansion-widths",
+      "long-table-names"
+    ],
+    "mutation": {
+      "table": "SupplyCrateForeTell",
+      "tableSource": "excel/SupplyCrateForeTell.xlsx",
+      "i18nLang": "en",
+      "i18nTarget": "i18n/en/SupplyCrateForeTell.json"
+    },
+    "inputDigest": "sha256:def7ea106baed819ad5bbb36c545fca71d45a9812fb7e077d571694908e26642",
+    "root": "E:\\Proj\\ct-tool\\native\\crates\\ct-xtask\\../../..\\native/target/bench\\bench-r"
+  },
+  "host": {
+    "os": "windows",
+    "arch": "x86_64",
+    "family": "windows",
+    "logicalCores": 28,
+    "measuredWithPowershell": true,
+    "rssMethod": "Process.PeakWorkingSet64"
+  },
+  "git": {
+    "commit": "5cdd01f9f030ea6bfe05cf631672c703b861ebe4",
+    "dirtyPaths": 13
+  },
+  "engines": {
+    "rust": {
+      "path": "E:\\Proj\\ct-tool\\native\\crates\\ct-xtask\\../../..\\native/target/release/ct.exe",
+      "version": "ct 0.0.0",
+      "argv": "export"
+    },
+    "python": null
+  },
+  "warmupRuns": 1,
+  "measuredRuns": 1,
+  "realWorkspaceUntouched": {
+    "gdDirtyBefore": 0,
+    "gdDirtyAfter": 0,
+    "unchanged": true
+  },
+  "results": [
+    {
+      "engine": "rust",
+      "scenario": "cold",
+      "runs": 1,
+      "artifacts": 10646,
+      "outputSha256": "06a5ebec314bbda7d92edc2f8406285a529754d3a1132caf7682b737ebc42da7",
+      "wallMs": {
+        "median": 431585.0,
+        "min": 431585.0,
+        "max": 431585.0,
+        "samples": [
+          431585.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 5705044.0,
+        "min": 5705044.0,
+        "max": 5705044.0,
+        "samples": [
+          5705044.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 5677960.0,
+        "min": 5677960.0,
+        "max": 5677960.0,
+        "samples": [
+          5677960.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "hot-cli",
+      "runs": 1,
+      "artifacts": 10646,
+      "outputSha256": "06a5ebec314bbda7d92edc2f8406285a529754d3a1132caf7682b737ebc42da7",
+      "wallMs": {
+        "median": 153065.0,
+        "min": 153065.0,
+        "max": 153065.0,
+        "samples": [
+          153065.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 2644028.0,
+        "min": 2644028.0,
+        "max": 2644028.0,
+        "samples": [
+          2644028.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 2543736.0,
+        "min": 2543736.0,
+        "max": 2543736.0,
+        "samples": [
+          2543736.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "hot-worker",
+      "runs": 1,
+      "artifacts": 10646,
+      "outputSha256": "06a5ebec314bbda7d92edc2f8406285a529754d3a1132caf7682b737ebc42da7",
+      "wallMs": {
+        "median": 149969.0,
+        "min": 149969.0,
+        "max": 149969.0,
+        "samples": [
+          149969.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 2642716.0,
+        "min": 2642716.0,
+        "max": 2642716.0,
+        "samples": [
+          2642716.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 2567456.0,
+        "min": 2567456.0,
+        "max": 2567456.0,
+        "samples": [
+          2567456.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "table",
+      "runs": 1,
+      "artifacts": 10646,
+      "outputSha256": "06a5ebec314bbda7d92edc2f8406285a529754d3a1132caf7682b737ebc42da7",
+      "wallMs": {
+        "median": 147405.0,
+        "min": 147405.0,
+        "max": 147405.0,
+        "samples": [
+          147405.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 2645528.0,
+        "min": 2645528.0,
+        "max": 2645528.0,
+        "samples": [
+          2645528.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 2602476.0,
+        "min": 2602476.0,
+        "max": 2602476.0,
+        "samples": [
+          2602476.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "i18n",
+      "runs": 1,
+      "artifacts": 10646,
+      "outputSha256": "2f305e5e3c9c3d6d1cbb1f16c3ae3db3eed3c1a8113b5f69afd4dd3179f77b54",
+      "wallMs": {
+        "median": 147809.0,
+        "min": 147809.0,
+        "max": 147809.0,
+        "samples": [
+          147809.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 2646720.0,
+        "min": 2646720.0,
+        "max": 2646720.0,
+        "samples": [
+          2646720.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 2571464.0,
+        "min": 2571464.0,
+        "max": 2571464.0,
+        "samples": [
+          2571464.0
+        ]
+      }
+    }
+  ],
+  "thresholds": {
+    "cold": {
+      "medianRatio": null,
+      "limit": 1.1,
+      "peakRssRatio": null,
+      "peakRssLimit": 2.5,
+      "peakRssAbsLimitKb": null,
+      "verdict": "regression-pass",
+      "baselineMode": "archived-run",
+      "allowedSlowdown": 1.25
+    },
+    "hot-cli": {
+      "medianRatio": null,
+      "limit": 1.1,
+      "peakRssRatio": null,
+      "peakRssLimit": 2.5,
+      "peakRssAbsLimitKb": null,
+      "verdict": "regression-pass",
+      "baselineMode": "archived-run",
+      "allowedSlowdown": 1.25
+    },
+    "hot-worker": {
+      "medianRatio": null,
+      "limit": null,
+      "peakRssRatio": null,
+      "peakRssLimit": 2.5,
+      "peakRssAbsLimitKb": null,
+      "verdict": "regression-pass",
+      "baselineMode": "archived-run",
+      "allowedSlowdown": 1.25
+    },
+    "table": {
+      "medianRatio": null,
+      "limit": 1.1,
+      "peakRssRatio": null,
+      "peakRssLimit": 2.5,
+      "peakRssAbsLimitKb": null,
+      "verdict": "regression-pass",
+      "baselineMode": "archived-run",
+      "allowedSlowdown": 1.25
+    },
+    "i18n": {
+      "medianRatio": null,
+      "limit": 1.1,
+      "peakRssRatio": null,
+      "peakRssLimit": 2.5,
+      "peakRssAbsLimitKb": null,
+      "verdict": "regression-pass",
+      "baselineMode": "archived-run",
+      "allowedSlowdown": 1.25
+    }
+  }
+}

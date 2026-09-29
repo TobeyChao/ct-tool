@@ -176,13 +176,14 @@ class _OverviewPageState extends State<OverviewPage> {
   }
 
   Widget _buildToggle(bool active) {
-    final starting = _status == PanelStatus.starting;
+    final starting =
+        _status == PanelStatus.starting || _status == PanelStatus.stopping;
     return GestureDetector(
       onTap: starting
           ? null
           : (_status == PanelStatus.running
-              ? widget.panel.stop
-              : widget.panel.start),
+                ? widget.panel.stop
+                : widget.panel.start),
       child: Container(
         width: 104,
         height: 104,
@@ -278,12 +279,14 @@ class _OverviewPageState extends State<OverviewPage> {
 
   Widget _buildStats() {
     final s = _stats;
-    final languages =
-        s == null || s.languages.isEmpty ? '-' : s.languages.join(' / ');
+    final languages = s == null || s.languages.isEmpty
+        ? '-'
+        : s.languages.join(' / ');
     final last = s?.lastExportAt;
     String two(int n) => n.toString().padLeft(2, '0');
-    final lastTime =
-        last == null ? '暂无' : '${two(last.hour)}:${two(last.minute)}';
+    final lastTime = last == null
+        ? '暂无'
+        : '${two(last.hour)}:${two(last.minute)}';
     return Row(
       children: [
         Expanded(

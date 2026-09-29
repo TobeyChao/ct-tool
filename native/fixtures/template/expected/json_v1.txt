@@ -1,0 +1,6 @@
+{
+  "Items": [
+    {"Id":1,"CodeName":"sword_iron","Rarity":"Common","Effect":{"X":1.5,"Y":0.0,"Z":-2.0},"Rewards":[{"ItemId":7,"Count":2}],"Tags":[1,2],"Desc":"铁剑","Active":true,"Score":99.5,"Big":"QuiteLongEnumValueName03"},
+    {"Id":2,"CodeName":"potion_red","Rarity":"Rare","Effect":{"X":0.0,"Y":0.0,"Z":0.0},"Rewards":[],"Tags":[],"Desc":"红药🎮","Active":false}
+  ]
+}

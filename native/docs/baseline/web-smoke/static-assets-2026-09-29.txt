@@ -1,0 +1,10 @@
+✔ the complete old Web asset tree and module imports are preserved (9.702333ms)
+✔ the native panel serves every migrated asset with its expected media type (90.72125ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 179.242917

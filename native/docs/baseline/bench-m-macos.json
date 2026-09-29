@@ -1,0 +1,500 @@
+{
+  "schema": "ct-bench/1",
+  "size": "m",
+  "seed": 20260918,
+  "fixture": {
+    "schema": "ct-bench-fixture/1",
+    "size": "m",
+    "seed": 20260918,
+    "tables": 50,
+    "rowsPerTable": 2000,
+    "columnsPerTable": 20,
+    "dataCells": 1848502,
+    "translatedEntries": 400000,
+    "languages": [
+      "zh",
+      "en",
+      "ja"
+    ],
+    "uniform": "偶数表填满、奇数表含 vector<Record>/vector<int32> 且约 12% 单元格留空",
+    "mutation": {
+      "table": "T001",
+      "tableSource": "excel/T001.xlsx",
+      "i18nLang": "en",
+      "i18nTarget": "i18n/en/T001.json"
+    },
+    "root": "/Users/tobeychao/Documents/Projects/ct-tool/native/target/bench/bench-m"
+  },
+  "host": {
+    "os": "macos",
+    "arch": "aarch64",
+    "family": "macos",
+    "logicalCores": 10,
+    "measuredWithPowershell": false,
+    "rssMethod": "ps process-tree RSS polling"
+  },
+  "git": {
+    "commit": "33829fd245c9a4157e4326a3db447076bcf7373e",
+    "dirtyPaths": 42
+  },
+  "engines": {
+    "rust": {
+      "path": "/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-xtask/../../../native/target/release/ct",
+      "version": "ct 0.0.0",
+      "argv": "export"
+    },
+    "python": {
+      "path": "/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-xtask/../../../ct/.venv/bin/python",
+      "version": "Python 3.14.7",
+      "argv": "/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-xtask/../../../native/tools/bench/python-entry.py export"
+    }
+  },
+  "warmupRuns": 1,
+  "measuredRuns": 5,
+  "realWorkspaceUntouched": {
+    "gdDirtyBefore": 0,
+    "gdDirtyAfter": 0,
+    "unchanged": true
+  },
+  "results": [
+    {
+      "engine": "rust",
+      "scenario": "cold",
+      "runs": 5,
+      "artifacts": 307,
+      "outputSha256": "070051cef9086da966c6e8199dcddee616739f42dc2df08d61c9482943ad29a1",
+      "wallMs": {
+        "median": 10122.0,
+        "min": 10072.0,
+        "max": 10178.0,
+        "samples": [
+          10072.0,
+          10083.0,
+          10122.0,
+          10160.0,
+          10178.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 1008752.0,
+        "min": 969424.0,
+        "max": 1037408.0,
+        "samples": [
+          969424.0,
+          1005568.0,
+          1008752.0,
+          1026256.0,
+          1037408.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 1008752.0,
+        "min": 969424.0,
+        "max": 1037408.0,
+        "samples": [
+          969424.0,
+          1005568.0,
+          1008752.0,
+          1026256.0,
+          1037408.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "hot-cli",
+      "runs": 5,
+      "artifacts": 307,
+      "outputSha256": "070051cef9086da966c6e8199dcddee616739f42dc2df08d61c9482943ad29a1",
+      "wallMs": {
+        "median": 5575.0,
+        "min": 5562.0,
+        "max": 5637.0,
+        "samples": [
+          5562.0,
+          5563.0,
+          5575.0,
+          5599.0,
+          5637.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 893296.0,
+        "min": 851776.0,
+        "max": 936576.0,
+        "samples": [
+          851776.0,
+          887952.0,
+          893296.0,
+          903888.0,
+          936576.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 893296.0,
+        "min": 851776.0,
+        "max": 936576.0,
+        "samples": [
+          851776.0,
+          887952.0,
+          893296.0,
+          903888.0,
+          936576.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "hot-worker",
+      "runs": 5,
+      "artifacts": 307,
+      "outputSha256": "070051cef9086da966c6e8199dcddee616739f42dc2df08d61c9482943ad29a1",
+      "wallMs": {
+        "median": 5633.0,
+        "min": 5584.0,
+        "max": 5644.0,
+        "samples": [
+          5584.0,
+          5621.0,
+          5633.0,
+          5634.0,
+          5644.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 913584.0,
+        "min": 870240.0,
+        "max": 915856.0,
+        "samples": [
+          870240.0,
+          902512.0,
+          913584.0,
+          913888.0,
+          915856.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 913584.0,
+        "min": 870240.0,
+        "max": 915856.0,
+        "samples": [
+          870240.0,
+          902512.0,
+          913584.0,
+          913888.0,
+          915856.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "table",
+      "runs": 5,
+      "artifacts": 307,
+      "outputSha256": "7006184c733246ca6f001d72251441d791e464c2124168a6234f9a164f74020d",
+      "wallMs": {
+        "median": 5879.0,
+        "min": 5828.0,
+        "max": 5903.0,
+        "samples": [
+          5828.0,
+          5858.0,
+          5879.0,
+          5897.0,
+          5903.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 931088.0,
+        "min": 904208.0,
+        "max": 956976.0,
+        "samples": [
+          904208.0,
+          911040.0,
+          931088.0,
+          938480.0,
+          956976.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 931088.0,
+        "min": 904208.0,
+        "max": 956976.0,
+        "samples": [
+          904208.0,
+          911040.0,
+          931088.0,
+          938480.0,
+          956976.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "i18n",
+      "runs": 5,
+      "artifacts": 307,
+      "outputSha256": "bdeb15e8ed75fa4cb2b433fea7f326df1e51f75936abe61731f3d1d7380df9d2",
+      "wallMs": {
+        "median": 5742.0,
+        "min": 5720.0,
+        "max": 5867.0,
+        "samples": [
+          5720.0,
+          5735.0,
+          5742.0,
+          5748.0,
+          5867.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 866336.0,
+        "min": 860768.0,
+        "max": 901056.0,
+        "samples": [
+          860768.0,
+          863024.0,
+          866336.0,
+          880048.0,
+          901056.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 866336.0,
+        "min": 860768.0,
+        "max": 901056.0,
+        "samples": [
+          860768.0,
+          863024.0,
+          866336.0,
+          880048.0,
+          901056.0
+        ]
+      }
+    },
+    {
+      "engine": "python",
+      "scenario": "cold",
+      "runs": 5,
+      "artifacts": 307,
+      "outputSha256": "070051cef9086da966c6e8199dcddee616739f42dc2df08d61c9482943ad29a1",
+      "wallMs": {
+        "median": 33024.0,
+        "min": 32754.0,
+        "max": 33882.0,
+        "samples": [
+          32754.0,
+          32972.0,
+          33024.0,
+          33664.0,
+          33882.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 552448.0,
+        "min": 551024.0,
+        "max": 553248.0,
+        "samples": [
+          551024.0,
+          551264.0,
+          552448.0,
+          552896.0,
+          553248.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 552448.0,
+        "min": 551024.0,
+        "max": 553248.0,
+        "samples": [
+          551024.0,
+          551264.0,
+          552448.0,
+          552896.0,
+          553248.0
+        ]
+      }
+    },
+    {
+      "engine": "python",
+      "scenario": "hot-cli",
+      "runs": 5,
+      "artifacts": 307,
+      "outputSha256": "070051cef9086da966c6e8199dcddee616739f42dc2df08d61c9482943ad29a1",
+      "wallMs": {
+        "median": 19420.0,
+        "min": 18790.0,
+        "max": 19462.0,
+        "samples": [
+          18790.0,
+          19384.0,
+          19420.0,
+          19424.0,
+          19462.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 371600.0,
+        "min": 370352.0,
+        "max": 373472.0,
+        "samples": [
+          370352.0,
+          371584.0,
+          371600.0,
+          371824.0,
+          373472.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 371600.0,
+        "min": 370352.0,
+        "max": 373472.0,
+        "samples": [
+          370352.0,
+          371584.0,
+          371600.0,
+          371824.0,
+          373472.0
+        ]
+      }
+    },
+    {
+      "engine": "python",
+      "scenario": "table",
+      "runs": 5,
+      "artifacts": 307,
+      "outputSha256": "7006184c733246ca6f001d72251441d791e464c2124168a6234f9a164f74020d",
+      "wallMs": {
+        "median": 19713.0,
+        "min": 19688.0,
+        "max": 19746.0,
+        "samples": [
+          19688.0,
+          19691.0,
+          19713.0,
+          19717.0,
+          19746.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 455600.0,
+        "min": 454624.0,
+        "max": 456640.0,
+        "samples": [
+          454624.0,
+          455216.0,
+          455600.0,
+          455792.0,
+          456640.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 455600.0,
+        "min": 454624.0,
+        "max": 456640.0,
+        "samples": [
+          454624.0,
+          455216.0,
+          455600.0,
+          455792.0,
+          456640.0
+        ]
+      }
+    },
+    {
+      "engine": "python",
+      "scenario": "i18n",
+      "runs": 5,
+      "artifacts": 307,
+      "outputSha256": "bdeb15e8ed75fa4cb2b433fea7f326df1e51f75936abe61731f3d1d7380df9d2",
+      "wallMs": {
+        "median": 19439.0,
+        "min": 19035.0,
+        "max": 19545.0,
+        "samples": [
+          19035.0,
+          19397.0,
+          19439.0,
+          19511.0,
+          19545.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 403168.0,
+        "min": 402368.0,
+        "max": 405312.0,
+        "samples": [
+          402368.0,
+          402768.0,
+          403168.0,
+          403568.0,
+          405312.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 403168.0,
+        "min": 402368.0,
+        "max": 405312.0,
+        "samples": [
+          402368.0,
+          402768.0,
+          403168.0,
+          403568.0,
+          405312.0
+        ]
+      }
+    }
+  ],
+  "thresholds": {
+    "cold": {
+      "medianRatio": 0.30650436046511625,
+      "limit": 0.5,
+      "peakRssRatio": 1.825967330861909,
+      "peakRssLimit": 2.5,
+      "peakRssAbsLimitKb": 1310720.0,
+      "verdict": "pass",
+      "baselineMode": "paired",
+      "allowedSlowdown": 1.25
+    },
+    "hot-cli": {
+      "medianRatio": 0.2870751802265705,
+      "limit": 0.35,
+      "peakRssRatio": 2.403918191603875,
+      "peakRssLimit": 2.5,
+      "peakRssAbsLimitKb": 1310720.0,
+      "verdict": "pass",
+      "baselineMode": "paired",
+      "allowedSlowdown": 1.25
+    },
+    "hot-worker": {
+      "medianRatio": null,
+      "limit": null,
+      "peakRssRatio": null,
+      "peakRssLimit": 2.5,
+      "peakRssAbsLimitKb": 1310720.0,
+      "verdict": "no-baseline",
+      "baselineMode": "none",
+      "allowedSlowdown": 1.25
+    },
+    "table": {
+      "medianRatio": 0.29822959468371124,
+      "limit": 0.35,
+      "peakRssRatio": 2.043652326602283,
+      "peakRssLimit": 2.5,
+      "peakRssAbsLimitKb": 1310720.0,
+      "verdict": "pass",
+      "baselineMode": "paired",
+      "allowedSlowdown": 1.25
+    },
+    "i18n": {
+      "medianRatio": 0.29538556510108543,
+      "limit": 0.35,
+      "peakRssRatio": 2.1488213350265895,
+      "peakRssLimit": 2.5,
+      "peakRssAbsLimitKb": 1310720.0,
+      "verdict": "pass",
+      "baselineMode": "paired",
+      "allowedSlowdown": 1.25
+    }
+  }
+}

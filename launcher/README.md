@@ -1,31 +1,30 @@
-# ct_launcher
+# ct Launcher
 
-ct 配表工具桌面启动器：一键启动面板、托盘常驻、开机自启。
+main 的 Flutter 桌面壳负责工作区、端口、日志、托盘与自启，启动原生 `ct panel` 并在服务就绪后打开浏览器。
+业务界面保留在 Web；没有引入完整 Flutter 工作台。
 
-## 构建
+运行时按“应用包内置 → 设置中的原生 ct 路径”查找，不回退 Python 或 venv。
+旧工作区、端口、托盘和自启偏好保留，旧 Python 工具目录不会作为原生路径迁移；新安装不默认绑定 `gd/`。
+停止/退出会通过 stdin EOF 等待服务完成当前发布，不做超时强杀。
 
-构建脚本会先用 PyInstaller 冻结 `ct` CLI 并嵌入应用包，产物自带运行时，目标机器无需安装 Python：
+## 开发与验证
 
-- macOS：`launcher/tool/build_macos.sh`（需 Flutter、Xcode + CocoaPods）
-- Windows：`launcher/tool/build_windows.ps1`（在 Windows 机器执行）
-
-产物分别为 `.app`（内置 `Contents/Resources/runtime/`）与 `Release/` 目录（`ct_launcher.exe` + 同级 `runtime\`）。
-
-### 只刷新内置运行时（改了 ct、外壳没改）
-
-外壳只按固定路径拉起 `runtime/ct`（见 `lib/services/panel_service.dart`），与 ct 版本无关，
-所以**改 ct 不必重建整个应用**，重新冻结运行时再覆盖即可：
-
-```bash
-cd ct && .venv/bin/python -m PyInstaller --noconfirm --distpath dist --workpath build packaging/ct.spec
-rm -rf <app>/Contents/Resources/runtime && mkdir -p <app>/Contents/Resources/runtime
-cp -R ct/dist/ct-runtime/. <app>/Contents/Resources/runtime/
-codesign --force --deep -s - <app>      # Resources 变了原签名即失效，不重签 macOS 拒绝启动
+```sh
+cargo build --manifest-path native/Cargo.toml -p ct-cli
+cd launcher
+flutter test
+flutter run -d macos
 ```
 
-Windows 侧把 `<app>` 换成 `ct_launcher.exe` 同级目录，运行时放到同级 `runtime\`。
-PyInstaller 不支持跨平台构建，Windows 运行时必须在 Windows 上冻结。
+在设置中选择工作区；未自动找到开发二进制时填写 `native/target/debug/ct` 的绝对路径。
 
-## 运行
+## 打包
 
-双击启动后，在设置页把「工作区」指向游戏数据目录（如 `Config/gd`，需含 `config/global.yaml`）；工具目录仅在应用包未内置运行时或需要外部开发环境时配置。
+先在 `native/` 执行 `cargo run -p ct-xtask -- dist`，再从仓库根目录执行：
+
+- macOS：`bash launcher/tool/build_macos.sh`（Flutter、Xcode、CocoaPods）。
+- Windows：`pwsh launcher/tool/build_windows.ps1`（Flutter、Visual Studio 桌面工作负载）。
+
+macOS 将原生二进制放到 `.app/Contents/Resources/runtime/ct`，生成 ad-hoc 签名的 `.app` 和 DMG；
+Windows 放到 `Release/runtime/ct.exe`。没有 PyInstaller/解释器负载。
+打包脚本可用 `RUNTIME_PACKAGE`（macOS）或 `-RuntimePackage`（Windows）指定原生包。

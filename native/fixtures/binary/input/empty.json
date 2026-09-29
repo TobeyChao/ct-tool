@@ -1,0 +1,43 @@
+{
+  "records": {
+    "Position": {"fields": [
+      {"name": "X", "type": {"scalar": "float"}},
+      {"name": "Y", "type": {"scalar": "float"}},
+      {"name": "Z", "type": {"scalar": "float"}}
+    ]},
+    "DropReward": {"fields": [
+      {"name": "ItemId", "type": {"scalar": "int32"}},
+      {"name": "Count", "type": {"scalar": "int32"}},
+      {"name": "Note", "type": {"scalar": "string"}}
+    ]},
+    "Effect": {"fields": [
+      {"name": "Kind", "type": {"named": "EffectKind"}},
+      {"name": "Params", "type": {"vector": {"element": {"scalar": "string"}}}},
+      {"name": "Pos", "type": {"named": "Position"}}
+    ]}
+  },
+  "enums": {
+    "ItemRarity": ["Common", "Rare", "Epic"],
+    "EffectKind": ["None", "Buff", "Debuff"]
+  },
+  "table": {
+    "name": "Item",
+    "primary": "Id",
+    "uniform": false,
+    "indexes": ["codename"],
+    "fields": [
+      {"name": "Id", "type": {"scalar": "int32"}},
+      {"name": "CodeName", "type": {"scalar": "string"}},
+      {"name": "Rarity", "type": {"named": "ItemRarity"}},
+      {"name": "Tags", "type": {"vector": {"element": {"scalar": "int32"}}}},
+      {"name": "Names", "type": {"vector": {"element": {"scalar": "string"}}}},
+      {"name": "Rewards", "type": {"vector": {"element": {"named": "DropReward"}}}},
+      {"name": "Effect", "type": {"named": "Effect"}},
+      {"name": "BigId", "type": {"scalar": "uint64"}},
+      {"name": "Score", "type": {"scalar": "double"}},
+      {"name": "Note", "type": {"scalar": "string"}},
+      {"name": "InternalMemo", "type": {"scalar": "string"}, "server_only": true}
+    ]
+  },
+  "rows": []
+}

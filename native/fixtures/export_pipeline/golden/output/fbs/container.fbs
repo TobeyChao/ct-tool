@@ -1,0 +1,9 @@
+table BundledTable {
+  name: string;
+  data: [ubyte];
+}
+table DataBundle {
+  tables: [BundledTable];
+}
+
+root_type DataBundle;

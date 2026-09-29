@@ -1,0 +1,71 @@
+{
+  "records": {
+    "Position": {"fields": [
+      {"name": "X", "type": {"scalar": "float"}},
+      {"name": "Y", "type": {"scalar": "float"}},
+      {"name": "Z", "type": {"scalar": "float"}}
+    ]},
+    "DropReward": {"fields": [
+      {"name": "ItemId", "type": {"scalar": "int32"}},
+      {"name": "Count", "type": {"scalar": "int32"}},
+      {"name": "Note", "type": {"scalar": "string"}}
+    ]},
+    "Effect": {"fields": [
+      {"name": "Kind", "type": {"named": "EffectKind"}},
+      {"name": "Params", "type": {"vector": {"element": {"scalar": "string"}}}},
+      {"name": "Pos", "type": {"named": "Position"}}
+    ]}
+  },
+  "enums": {
+    "ItemRarity": ["Common", "Rare", "Epic"],
+    "EffectKind": ["None", "Buff", "Debuff"]
+  },
+  "table": {
+    "name": "Item",
+    "primary": "Id",
+    "uniform": false,
+    "indexes": ["codename"],
+    "fields": [
+      {"name": "Id", "type": {"scalar": "int32"}},
+      {"name": "CodeName", "type": {"scalar": "string"}},
+      {"name": "Rarity", "type": {"named": "ItemRarity"}},
+      {"name": "Tags", "type": {"vector": {"element": {"scalar": "int32"}}}},
+      {"name": "Names", "type": {"vector": {"element": {"scalar": "string"}}}},
+      {"name": "Rewards", "type": {"vector": {"element": {"named": "DropReward"}}}},
+      {"name": "Effect", "type": {"named": "Effect"}},
+      {"name": "BigId", "type": {"scalar": "uint64"}},
+      {"name": "Score", "type": {"scalar": "double"}},
+      {"name": "Note", "type": {"scalar": "string"}},
+      {"name": "InternalMemo", "type": {"scalar": "string"}, "server_only": true}
+    ]
+  },
+  "rows": [
+    {
+      "Id": 3, "CodeName": "sword_great", "Rarity": "Epic",
+      "Tags": [1, 2, 3], "Names": ["大剑", "巨剑", "大剑"],
+      "Rewards": [{"ItemId": 7, "Count": 2, "Note": "保底"}, {"ItemId": 8, "Count": 1}],
+      "Effect": {"Kind": "Buff", "Params": ["攻击+10", ""], "Pos": {"X": 1.5, "Y": -2.25, "Z": 0.0}},
+      "BigId": 18446744073709551615, "Score": 99.5, "Note": "首把武器", "InternalMemo": "隐藏"
+    },
+    {
+      "Id": 1, "CodeName": "sword_iron", "Rarity": "Common",
+      "Tags": [], "Names": [], "Rewards": [],
+      "Effect": {"Kind": "None", "Params": [], "Pos": {"X": 0.0, "Y": 0.0, "Z": 0.0}},
+      "BigId": 0, "Score": 0.0, "Note": "", "InternalMemo": ""
+    },
+    {
+      "Id": 2, "CodeName": "potion_red", "Rarity": "Rare",
+      "Tags": [-1, 2147483647, -2147483648],
+      "Names": ["红药", "红药"],
+      "Rewards": [{"ItemId": 3, "Count": 0, "Note": ""}],
+      "Effect": {"Kind": "Debuff", "Params": ["减速🎮"]},
+      "BigId": 9007199254740993, "Score": -0.5, "Note": "中文备注🎮", "InternalMemo": "x"
+    },
+    {
+      "Id": 4, "CodeName": "sword_great", "Rarity": "Rare",
+      "Tags": [5], "Names": ["巨剑·改"],
+      "Effect": {},
+      "BigId": 1, "Score": 3.141592653589793, "InternalMemo": "y"
+    }
+  ]
+}

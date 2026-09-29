@@ -1,0 +1,106 @@
+{
+  "schemaRevision": {
+    "revision": "f5d4f674fa4849a43a7a447c07e2afe7c669fa06974e1608981cf8d4aa99ddcf",
+    "members": {
+      "schemas/item.yaml": "220c4b3d60e5b8631ceb14fcf3c0fc9d69996de09c008325ca78e96e06c6d689",
+      "schemas/monster.yaml": "8581fa519769e5584154f7c98ae48f1edb52ad91d3fd2578490c7e2a59b50ddd",
+      "types/drop_rule.yaml": "abea6619482719b7397ba1012bf5291fc94b6e244d91dd383f22e51caa627f25",
+      "types/rarity.yaml": "0d89d5513225578f0a13a921af6c00ebac26765a8078ef7fe8ac0af437b82399"
+    }
+  },
+  "configDigest": "4d873196ffdcb311e4ab32d29613d1cc87a4f26e83e434c5e73642a51f43faca",
+  "resourceHashes": {
+    "table:Item": "755af7e905388399cea7565f0cf55ad2da30b624f040c13f8a9c007fd848ec89",
+    "table:Monster": "c50f2bf9dea2cafa167a8c88fc223d756aa734631fa9b5ec6e17d9e6b3d49850",
+    "record:DropRule": "fc753d357c98aa4fcd934bc7cba06ac6d88b4ad01ec5fdda02d2275ab0aa05f4",
+    "enum:Rarity": "c86af0130949966a0934d17494a8c0525750ea6bb517a6384588d39969d5a3a8"
+  },
+  "schemaHashItem": "e242bdc9a9d10b6f",
+  "candidateHash": "4c1667295311133df4228d416b5f8c627bd786f7f84d9ce55e3aa3eeb39e33a2",
+  "netDiff": {
+    "format": "net-diff/1",
+    "changedResources": 5,
+    "isNoOp": false,
+    "resources": [
+      {
+        "resourceId": "enum:Rarity",
+        "kind": "enum",
+        "name": "Rarity",
+        "change": "modified",
+        "fields": [
+          {
+            "name": "MagicRare",
+            "change": "renamed",
+            "oldName": "Rare",
+            "details": [
+              "ordinal 1 不变 · API 名称变化"
+            ]
+          },
+          {
+            "name": "Epic",
+            "change": "added",
+            "details": [
+              "新增 ordinal 2"
+            ]
+          }
+        ]
+      },
+      {
+        "resourceId": "record:DropEntry",
+        "kind": "record",
+        "name": "DropEntry",
+        "change": "renamed",
+        "oldName": "DropRule"
+      },
+      {
+        "resourceId": "record:LootBonus",
+        "kind": "record",
+        "name": "LootBonus",
+        "change": "added"
+      },
+      {
+        "resourceId": "table:Goods",
+        "kind": "table",
+        "name": "Goods",
+        "change": "renamed",
+        "oldName": "Item",
+        "fields": [
+          {
+            "name": "Price",
+            "change": "renamed",
+            "oldName": "SellPrice",
+            "details": [
+              "type"
+            ]
+          },
+          {
+            "name": "CodeName",
+            "change": "modified",
+            "details": [
+              "comment"
+            ]
+          },
+          {
+            "name": "DropRules",
+            "change": "modified",
+            "details": [
+              "type"
+            ]
+          },
+          {
+            "name": "Bonus",
+            "change": "added"
+          }
+        ]
+      },
+      {
+        "resourceId": "table:Monster",
+        "kind": "table",
+        "name": "Monster",
+        "change": "removed"
+      }
+    ]
+  },
+  "goodsYaml": "table: Goods\nprimary: Id\nfields:\n  - name: Id\n    type: int32\n  - name: Price\n    type: int64\n  - name: CodeName\n    type: string\n    comment: 编码名\n  - name: Name\n    type: string\n    i18n: true\n  - name: Quality\n    type: Rarity\n  - name: DropRules\n    type: vector<DropEntry>\n    excel_columns: 2\n  - name: Bonus\n    type: LootBonus\nindexes:\n  - kind: codename\n",
+  "rarityYaml": "kind: enum\nname: Rarity\nvalues:\n  - name: Common\n  - name: MagicRare\n    comment: 稀有\n  - name: Epic\n"
+}

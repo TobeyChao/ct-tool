@@ -1,0 +1,22 @@
+{
+  "table": {
+    "name": "Buff",
+    "primary": "Id",
+    "uniform": false,
+    "fields": [
+      {
+        "name": "Id",
+        "type": "int32"
+      },
+      {
+        "name": "Desc",
+        "type": "string",
+        "i18n": true
+      },
+      {
+        "name": "Kind",
+        "type": "EffectKind"
+      }
+    ]
+  }
+}

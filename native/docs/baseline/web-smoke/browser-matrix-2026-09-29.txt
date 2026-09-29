@@ -1,0 +1,17 @@
+
+> test
+> playwright test tests/shell-projection.spec.mjs --grep physical viewport
+
+(node:2715) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:2718) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2718) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(node:2718) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/shell-projection.spec.mjs:209:1 › physical viewport and browser zoom matrix preserves projection and has no horizontal overflow (6.8s)
+
+  1 passed (7.5s)

@@ -1,0 +1,1 @@
+enum Rarity : byte { Common = 0, Rare = 1 }

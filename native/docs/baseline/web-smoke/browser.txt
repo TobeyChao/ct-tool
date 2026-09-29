@@ -1,0 +1,53 @@
+(node:58615) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 21 tests using 5 workers
+
+(node:58632) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:58636) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:58635) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:58633) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:58634) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:58636) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(node:58636) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:58632) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(node:58632) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:58635) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(node:58635) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:58634) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(node:58634) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:58633) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(node:58633) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 web/tests/draft-store.spec.mjs:6:3 › conflicting draft aliases preserve every record on commands (391ms)
+  ✓   5 web/tests/draft-store.spec.mjs:81:1 › identical aliases consolidate safely with full redo history (413ms)
+  ✓   4 web/tests/draft-store.spec.mjs:6:3 › conflicting draft aliases preserve every record on format (428ms)
+  ✓   3 web/tests/draft-store.spec.mjs:6:3 › conflicting draft aliases preserve every record on schemaRevision (457ms)
+  ✓   2 web/tests/draft-store.spec.mjs:6:3 › conflicting draft aliases preserve every record on cursor (483ms)
+  ✓   7 web/tests/draft-store.spec.mjs:153:36 › legacy draft is recomputed with redo and original baseline; stale=false (613ms)
+  ✓   8 web/tests/draft-store.spec.mjs:153:36 › legacy draft is recomputed with redo and original baseline; stale=true (763ms)
+  ✓   9 web/tests/draft-store.spec.mjs:208:1 › transient database open failure retries and clears warning after persistence (974ms)
+  ✓  10 web/tests/draft-store.spec.mjs:236:1 › unknown stored draft has a visible original-record viewer (946ms)
+  ✓   6 web/tests/draft-store.spec.mjs:126:1 › unavailable IndexedDB keeps editable draft and a persistent warning across modules (1.1s)
+  ✓  11 web/tests/draft-store.spec.mjs:276:1 › actual old Web IndexedDB record replays only its active prefix (714ms)
+  ✓  14 web/tests/native-browser.spec.mjs:57:39 › native shell layout 740 (764ms)
+  ✓  13 web/tests/native-browser.spec.mjs:57:39 › native shell layout 900 (855ms)
+  ✓  15 web/tests/native-browser.spec.mjs:57:39 › native shell layout 1280 (840ms)
+  ✓  17 web/tests/native-browser.spec.mjs:130:1 › legacy IndexedDB keeps history and redo; unknown drafts survive writes and discard (432ms)
+  ✓  16 web/tests/native-browser.spec.mjs:84:1 › save retains edits made while response is in flight (2.4s)
+  ✓  20 web/tests/recovery.spec.mjs:5:1 › recovery banner explicitly restores a Python crash before reloading the workspace (1.5s)
+  ✓  12 web/tests/native-browser.spec.mjs:5:1 › native five modules, resource creation, YAML save, template and export (3.4s)
+  ✓  19 web/tests/native-browser.spec.mjs:237:1 › creation forms retain incomplete, invalid and duplicate input without commands (2.3s)
+  ✓  21 web/tests/recovery.spec.mjs:54:1 › unknown Apply recovery stays blocked with original materials visible (541ms)
+  ✓  18 web/tests/native-browser.spec.mjs:210:1 › create table, record and enum; selection follows undo and draft survives refresh (2.7s)
+
+  21 passed (5.9s)

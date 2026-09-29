@@ -2,7 +2,7 @@
 
 动机见 proposal.md。以下为本次规划时的源码观察，不等于运行验收：
 
-- 本地 main 为 `8dc7b81`，当前分支为 `feat/native-workbench-cutover`；`ct/` 相对 main 仅文档变化，Web 代码可直接作为迁移基线。工作树存在其他任务的未提交改动，实施必须重新读取并记录采纳版本。
+- Web 基线为 main `8dc7b81`；2026-09-27 已按用户要求切换到 main，提案提交为 `55e3822`，native 从原分支检查点 `2d7dfc9` 按目录引入；`ct/` 相对 main 仅文档变化，Web 代码可直接作为迁移基线。此前其他改动已在原分支检查点提交，包含 gd 产物和完整 Flutter 工作台；本 change 不将它们整体合并到 main。
 - Flask 入口为 `ct/src/ct/web/app.py`，Schema API 为 `schema_workspace_api.py`；后者仍包含命令重放、守卫与发布编排。前端位于 `ct/src/ct/web/static/`，现有 API 以 `{ok,data}` / `{ok:false,error,...}` 封装。
 - `native/crates/ct-app/` 已有主要用例，worker methods 是 stdio DTO 适配。`workspace.snapshot` 只有计数/恢复状态，`workspace.status` 合并 missing/changed；`schema.candidate` 没有完整资源，`schema.save` 只回 revision，不能直接替代现有 Web API。
 - Web 草稿为 IndexedDB `ct-drafts` / `ct-draft-v2`，key 为工作区路径；Web 命令用 `type`，worker 用 `kind`。候选预检存在只发 commands 的路径，需要补上基线和代次。既有 native hash 对照测试为守卫接续提供基础，但仍需浏览器端实测。
@@ -20,7 +20,7 @@
 **Non-Goals:**
 
 - 不实现双内核、WASM、云服务、多人编辑、前端框架重写，也不新增 Web 部署页面。
-- 不改变 Flutter 产品方向；不复制 worker NDJSON 方法作为新的浏览器公共协议。
+- 保留 main 的 Web launcher 产品方向，仅接入原生 panel；不移植原分支完整 Flutter 工作台，不复制 worker NDJSON 方法作为新的浏览器公共协议。
 - 不承诺跨浏览器 origin 自动搬运 IndexedDB、不自动修复未知历史事务、不批量清理无关实验目录。
 
 ## Decisions
@@ -67,7 +67,7 @@ Web 继续轮询，不为本次迁移引入 WebSocket/SSE。后台任务拥有�
 ### 5. 一次性接续，而非双内核长期兼容
 
 - 草稿：默认 origin、路由、IndexedDB 名称/格式/key 保持连续；路径规范化变化提供已知旧 key 查找映射。恢复完整 commands/cursor 后向 Rust 重算候选；Schema 基线变更或未知格式保留原记录和查看入口，不能清空或把已撤销命令全部应用。不同 host/port/profile 的草稿无法自动访问，升级文档要求先在原地址保存，并明确此限制。
-- 历史：继续使用 native `history.json`，兼容现有 entry 形状供 Flutter 消费。读取时合并合法旧 panel 条目，按规范化内容生成稳定来源标识去重并取最近五条；首次成功写历史时在锁内原子持久化合并结果及导入来源摘要，源 panel 文件保留。不得让被裁剪旧记录在后续读取中重新导入。坏格式保留并提示；历史失败作为警告，不撤销已提交的导出。
+- 历史：继续使用 native `history.json`，兼容现有 entry 形状供原生 worker 消费。读取时合并合法旧 panel 条目，按规范化内容生成稳定来源标识去重并取最近五条；首次成功写历史时在锁内原子持久化合并结果及导入来源摘要，源 panel 文件保留。不得让被裁剪旧记录在后续读取中重新导入。坏格式保留并提示；历史失败作为警告，不撤销已提交的导出。
 - 恢复：用来自当前 Python 发布器的冻结故障夹具验证 `export-publication/1` 的 prepared/backed_up/publishing/committed，覆盖替换、新增、删除和幂等性。未知旧 apply-journal 保留并阻止写入，提供人工处理指引；不调用 Python 修复。
 - 缓存：保留成功账本含义并验证 native 可读旧状态；可丢弃计算缓存按版本失效重建。不能因工具切换删除业务文件或提前推进成功账本。
 
@@ -86,7 +86,11 @@ Web 继续轮询，不为本次迁移引入 WebSocket/SSE。后台任务拥有�
 
 保留现有 CSS 投影阈值 900/740px；移植截图矩阵按实际 viewport/zoom 推导，不照搬夹具里过时 route 字符串。真实原生服务和临时工作区是验收路径；mock 只能用于单元测试。冻结 JSON/FBS/Binary/Accessor golden 与 Excel 语义基线；适用的独立 C# 读取端验收不可被服务测试替代。
 
-### 7. 删除门槛覆盖运行、开发和再生链
+### 7. main launcher 保留浏览器入口
+
+保留 main 的 LauncherScreen、托盘、自启、工作区/端口偏好与打开浏览器流程。PanelService 只发现内置原生运行时或显式配置的原生可执行文件，删除 venv/Python 回退；旧 tool_dir 偏好不能误认 Python ct 包装器。构建脚本嵌入 native 发行包。关闭通过原生服务可验证的正常关闭通道到达安全边界，不沿用固定 3/5 秒强杀作为正常路径。验证启动参数、就绪探测、托盘/退出及打包后的无 Python 运行。
+
+### 8. 删除门槛覆盖运行、开发和再生链
 
 Rust 构建/测试与发行、Node 浏览器测试、Flutter 回归均不得启动 Python。替代 `native/fixtures/*/generate.py`、template compare、S/M/L 生成与 Python 对照入口；保留静态 golden 来源说明与校验摘要。`ct-xtask fingerprint`、coverage matrix、bench 等从“找不到 ct 就跳过”迁到稳定原生测试清单及留档回归，禁止删代码顺便缩减验收。
 
@@ -95,7 +99,7 @@ Rust 构建/测试与发行、Node 浏览器测试、Flutter 回归均不得启�
 ## Risks / Trade-offs
 
 - [Web API 依赖超出 worker DTO] → 直接扩充 app 结果，逐接口 fixture 对照，重点验证 schema validate 不读 Excel。
-- [共享任务抽取影响 Flutter] → 传输信封留在原层；worker 协议、取消、分页和 Flutter 客户端测试作为回归门槛。
+- [共享任务抽取影响 Flutter] → 传输信封留在原层；worker 协议、取消、分页和 main launcher 测试作为回归门槛。
 - [旧草稿和历史静默丢失] → 同源接续、未知格式保留、历史去重与一次性导入测试；地址变更限制写入迁移说明。
 - [Rust 任务阻塞 HTTP] → 有界后台执行、取消响应并发测试，负载/大消息验证，不以改语言推断性能收益。
 - [既有主规格与未归档 change 冲突] → 本提案明确恢复 panel，独立记录替代关系；实施期协调 rust-native-core 的删除任务，规格同步时先落其仍有效 delta，再应用本 change 的最终目录/安装规则，防止后归档覆盖新规则。

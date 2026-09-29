@@ -1,5 +1,10 @@
 ## Why
 
+> main 集成更新（2026-09-28）：用户选择保留 Web launcher，本 change 的完整
+> Flutter 工作台保留在原分支。main 产品入口由
+> [native-web-python-retirement](../native-web-python-retirement/scope-handoff.md)
+> 接管；本 change 的任务不因 main Web 验收而自动完成。
+
 当前 Flutter launcher 只负责启动本地 Flask 面板，编辑体验仍依赖浏览器。需要把它演进为美观、可独立安装的原生桌面工作台，并与 Rust 内核共用业务能力，保留成熟的 Schema、翻译与导出工作流。
 
 ## What Changes

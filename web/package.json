@@ -1,0 +1,14 @@
+{
+  "name": "ct-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:http": "node --test tests/native-api.test.mjs tests/schema-contract.test.mjs tests/frozen-web-contract.test.mjs tests/static-assets.test.mjs tests/resource-query.test.mjs tests/candidate-contract.test.mjs tests/save-contract.test.mjs tests/bigint-errors.test.mjs tests/template-flow.test.mjs tests/i18n-entry.test.mjs tests/panel-shutdown.test.mjs tests/codename-invariant.test.mjs",
+    "bench:panel": "node tools/measure-panel.mjs",
+    "check:parity": "node tools/check-parity.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.1"
+  }
+}

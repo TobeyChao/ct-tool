@@ -1,0 +1,98 @@
+{
+  "source": "main 8dc7b81 Flask static against native panel",
+  "workspace": "temporary identical root",
+  "viewport": "1280x900, reduced motion",
+  "old": {
+    "module": "export",
+    "projection": "docked",
+    "nav": [
+      "导出",
+      "翻译 i18n",
+      "Schema",
+      "日志",
+      "历史"
+    ],
+    "heading": "导出",
+    "badge": "准备就绪",
+    "buttons": [
+      {
+        "label": "重新生成模板",
+        "disabled": false
+      },
+      {
+        "label": "强制全量重建",
+        "disabled": false
+      },
+      {
+        "label": "开始导出",
+        "disabled": false
+      }
+    ],
+    "message": "完成首次导出后，这里会保留阶段结果",
+    "progress": "还没有导出记录 1 张表模板待更新",
+    "sidebar": {
+      "display": "flex",
+      "width": 236,
+      "height": 900
+    },
+    "main": {
+      "display": "flex",
+      "width": 1044,
+      "height": 900
+    },
+    "cssLinks": [
+      "/static/styles/tokens.css",
+      "/static/styles/base.css",
+      "/static/styles/layout.css",
+      "/static/styles/components.css"
+    ],
+    "pageErrors": []
+  },
+  "native": {
+    "module": "export",
+    "projection": "docked",
+    "nav": [
+      "导出",
+      "翻译 i18n",
+      "Schema",
+      "日志",
+      "历史"
+    ],
+    "heading": "导出",
+    "badge": "准备就绪",
+    "buttons": [
+      {
+        "label": "重新生成模板",
+        "disabled": false
+      },
+      {
+        "label": "强制全量重建",
+        "disabled": false
+      },
+      {
+        "label": "开始导出",
+        "disabled": false
+      }
+    ],
+    "message": "完成首次导出后，这里会保留阶段结果",
+    "progress": "还没有导出记录 1 张表模板待更新",
+    "sidebar": {
+      "display": "flex",
+      "width": 236,
+      "height": 900
+    },
+    "main": {
+      "display": "flex",
+      "width": 1044,
+      "height": 900
+    },
+    "cssLinks": [
+      "/static/styles/tokens.css",
+      "/static/styles/base.css",
+      "/static/styles/layout.css",
+      "/static/styles/components.css"
+    ],
+    "pageErrors": []
+  },
+  "match": true
+}

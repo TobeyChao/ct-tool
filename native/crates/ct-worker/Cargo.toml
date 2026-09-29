@@ -1,0 +1,19 @@
+[package]
+name = "ct-worker"
+description = "stdio worker 运行时：方法路由、事件队列与任务生命周期"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+ct-protocol.workspace = true
+ct-app.workspace = true
+ct-domain.workspace = true
+ct-excel.workspace = true
+ct-export.workspace = true
+ct-storage.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true

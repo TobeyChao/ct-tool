@@ -1,0 +1,70 @@
+{
+  "format": "panel-performance/1",
+  "at": "2026-09-29T13:34:36.560Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "node": "v26.8.2",
+  "fixture": "one Table, empty generated workbook; 1000 i18n source entries",
+  "native": {
+    "startupMs": 29,
+    "candidateMs": [
+      4,
+      2,
+      2,
+      2,
+      2,
+      1
+    ],
+    "candidateMedianMs": 2,
+    "exportMs": [
+      26,
+      25,
+      36
+    ],
+    "exportMedianMs": 26,
+    "largeResponseMs": [
+      28,
+      27,
+      27,
+      27,
+      27,
+      27
+    ],
+    "largeMedianMs": 27,
+    "largeBytes": 190920
+  },
+  "python": {
+    "startupMs": 317,
+    "candidateMs": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    "candidateMedianMs": 2,
+    "exportMs": [
+      27,
+      27,
+      27
+    ],
+    "exportMedianMs": 27,
+    "largeResponseMs": [
+      5,
+      4,
+      4,
+      6,
+      5,
+      5
+    ],
+    "largeMedianMs": 5,
+    "largeBytes": 238921
+  },
+  "ratios": {
+    "startupMs": 0.09,
+    "candidateMedianMs": 1,
+    "exportMedianMs": 0.96,
+    "largeMedianMs": 5.4
+  }
+}

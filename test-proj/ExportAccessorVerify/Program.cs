@@ -43,9 +43,8 @@ public static class Program
 
     private static void VerifyItem(string root, JsonDocument manifests)
     {
-        bool uniform = manifests.RootElement.GetProperty("Item").GetProperty("uniform").GetBoolean();
         var rows = Rows(root, "Item");
-        Console.WriteLine($"[Item] uniform={uniform}  {ItemAccessor.Count} 行");
+        Console.WriteLine($"[Item] {ItemAccessor.Count} 行");
         for (int i = 0; i < ItemAccessor.Count; i++)
         {
             var row = ItemAccessor.ByIndex(i)!.Value;
@@ -67,9 +66,8 @@ public static class Program
 
     private static void VerifyItemType(string root, JsonDocument manifests)
     {
-        bool uniform = manifests.RootElement.GetProperty("ItemType").GetProperty("uniform").GetBoolean();
         var rows = Rows(root, "ItemType");
-        Console.WriteLine($"[ItemType] uniform={uniform}  {ItemTypeAccessor.Count} 行");
+        Console.WriteLine($"[ItemType] {ItemTypeAccessor.Count} 行");
         for (int i = 0; i < ItemTypeAccessor.Count; i++)
         {
             var row = ItemTypeAccessor.ByID(rows[i].GetProperty("Id").GetInt32())!.Value;
@@ -81,9 +79,8 @@ public static class Program
 
     private static void VerifyQuest(string root, JsonDocument manifests)
     {
-        bool uniform = manifests.RootElement.GetProperty("Quest").GetProperty("uniform").GetBoolean();
         var rows = Rows(root, "Quest");
-        Console.WriteLine($"[Quest] uniform={uniform}  {QuestAccessor.Count} 行");
+        Console.WriteLine($"[Quest] {QuestAccessor.Count} 行");
         for (int i = 0; i < QuestAccessor.Count; i++)
         {
             var row = QuestAccessor.ByIndex(i)!.Value;
@@ -97,9 +94,8 @@ public static class Program
 
     private static void VerifyUIConfig(string root, JsonDocument manifests)
     {
-        bool uniform = manifests.RootElement.GetProperty("UIConfig").GetProperty("uniform").GetBoolean();
         var rows = Rows(root, "UIConfig");
-        Console.WriteLine($"[UIConfig] uniform={uniform}  {UIConfigAccessor.Count} 行（变长基线）");
+        Console.WriteLine($"[UIConfig] {UIConfigAccessor.Count} 行（变长基线）");
         for (int i = 0; i < UIConfigAccessor.Count; i++)
         {
             var row = UIConfigAccessor.ByIndex(i)!.Value;

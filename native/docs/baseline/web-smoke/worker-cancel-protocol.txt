@@ -1,0 +1,28 @@
+   Compiling ct-cache v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-cache)
+   Compiling ct-app v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-app)
+   Compiling ct-worker v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-worker)
+   Compiling ct-test-support v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-test-support)
+   Compiling ct-tests-protocol v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/tests/protocol)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.92s
+     Running tests/cancel.rs (target/debug/deps/cancel-13e92f21677ef94a)
+
+running 5 tests
+test requests_after_shutdown_are_rejected_as_busy ... ok
+test cancel_states_are_exhaustive ... ok
+test eof_disconnect_still_delivers_the_terminal_state ... ok
+test disconnect_without_reader_leaves_the_task_unknown ... ok
+test control_messages_are_served_while_a_write_task_runs ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.43s
+
+     Running tests/event_queue.rs (target/debug/deps/event_queue-930e84afc22bf130)
+
+running 6 tests
+test logs_are_dropped_when_the_queue_is_full ... ok
+test messages_are_still_delivered_after_the_reader_disappears ... ok
+test progress_merges_to_the_latest_per_request ... ok
+test terminal_drops_unflushed_progress ... ok
+test issue_events_block_instead_of_being_dropped ... ok
+test terminal_waits_for_queue_space_and_arrives_last ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s

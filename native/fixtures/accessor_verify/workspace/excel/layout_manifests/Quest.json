@@ -1,0 +1,110 @@
+{
+    "columns": [
+        {
+            "annotation": "int32",
+            "depth": 1,
+            "index": 1,
+            "leaf": "Id",
+            "stablePath": "table:Quest/Id",
+            "typeExpr": "int32"
+        },
+        {
+            "annotation": "string",
+            "depth": 1,
+            "index": 2,
+            "leaf": "Title",
+            "stablePath": "table:Quest/Title",
+            "typeExpr": "string"
+        },
+        {
+            "annotation": "string",
+            "depth": 1,
+            "index": 3,
+            "leaf": "Description",
+            "stablePath": "table:Quest/Description",
+            "typeExpr": "string"
+        },
+        {
+            "annotation": "int32",
+            "depth": 1,
+            "index": 4,
+            "leaf": "RewardItemId",
+            "stablePath": "table:Quest/RewardItemId",
+            "typeExpr": "int32"
+        },
+        {
+            "annotation": "int32",
+            "depth": 1,
+            "index": 5,
+            "leaf": "RequiredLevel",
+            "stablePath": "table:Quest/RequiredLevel",
+            "typeExpr": "int32"
+        }
+    ],
+    "format": "template-layout/2",
+    "header_rows": 2,
+    "nodes": [
+        {
+            "annotation": "int32",
+            "children": [],
+            "comment": "任务唯一ID，禁止修改",
+            "depth": 1,
+            "displayName": "Id",
+            "kind": "field",
+            "leafEnd": 1,
+            "leafStart": 1,
+            "slotIndex": null,
+            "stablePath": "table:Quest/Id"
+        },
+        {
+            "annotation": "string",
+            "children": [],
+            "comment": "任务标题（多语言）",
+            "depth": 1,
+            "displayName": "Title",
+            "kind": "field",
+            "leafEnd": 2,
+            "leafStart": 2,
+            "slotIndex": null,
+            "stablePath": "table:Quest/Title"
+        },
+        {
+            "annotation": "string",
+            "children": [],
+            "comment": "任务描述（多语言）",
+            "depth": 1,
+            "displayName": "Description",
+            "kind": "field",
+            "leafEnd": 3,
+            "leafStart": 3,
+            "slotIndex": null,
+            "stablePath": "table:Quest/Description"
+        },
+        {
+            "annotation": "int32",
+            "children": [],
+            "comment": "奖励道具ID，关联 Item.Id",
+            "depth": 1,
+            "displayName": "RewardItemId",
+            "kind": "field",
+            "leafEnd": 4,
+            "leafStart": 4,
+            "slotIndex": null,
+            "stablePath": "table:Quest/RewardItemId"
+        },
+        {
+            "annotation": "int32",
+            "children": [],
+            "comment": "接取等级要求",
+            "depth": 1,
+            "displayName": "RequiredLevel",
+            "kind": "field",
+            "leafEnd": 5,
+            "leafStart": 5,
+            "slotIndex": null,
+            "stablePath": "table:Quest/RequiredLevel"
+        }
+    ],
+    "schema_hash": "c382da02857c30b1",
+    "slot_offsets": []
+}

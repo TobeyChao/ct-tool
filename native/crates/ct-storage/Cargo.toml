@@ -1,0 +1,17 @@
+[package]
+name = "ct-storage"
+description = "工作区锁、可恢复发布 journal、恢复与历史"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+ct-domain.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+sha2.workspace = true
+fs2 = "0.4.3"

@@ -1,0 +1,6 @@
+{
+  "Items": [
+    {"Id":1001,"CodeName":"sword","Name":"Iron Sword","Quality":"Common","Price":320},
+    {"Id":1002,"CodeName":"shield","Name":"铁盾","Quality":"Rare","Price":480}
+  ]
+}

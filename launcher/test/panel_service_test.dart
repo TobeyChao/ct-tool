@@ -12,9 +12,9 @@ void main() {
       final macos = Directory('${root.path}/ct_launcher.app/Contents/MacOS')
         ..createSync(recursive: true);
       final exe = File('${macos.path}/ct_launcher')..createSync();
-      final runtime =
-          Directory('${root.path}/ct_launcher.app/Contents/Resources/runtime')
-            ..createSync(recursive: true);
+      final runtime = Directory(
+        '${root.path}/ct_launcher.app/Contents/Resources/runtime',
+      )..createSync(recursive: true);
       final ct = File('${runtime.path}/ct')..createSync();
 
       expect(
@@ -79,27 +79,36 @@ void main() {
   });
 
   group('buildLaunchCommand（三态选择）', () {
-    const panelArgs = ['--root', '/tmp/gd', '--host', '127.0.0.1', '--port', '8000', '--no-browser'];
+    const panelArgs = [
+      '--root',
+      '/tmp/gd',
+      '--host',
+      '127.0.0.1',
+      '--port',
+      '8000',
+      '--no-browser',
+    ];
 
     test('内置存在 → 使用内置运行时', () {
+      final root = Directory.systemTemp.createTempSync('ct_builtin_');
+      addTearDown(() => root.deleteSync(recursive: true));
+      final bundled = File('${root.path}/ct')..createSync();
       final cmd = PanelService.buildLaunchCommand(
-        bundledCtPath: '/bundled/runtime/ct',
-        ctCliPath: '/none/ct',
-        pythonPath: '/none/python',
+        bundledCtPath: bundled.path,
+        nativeRuntimePath: '/none/ct',
         panelArgs: panelArgs,
       );
       expect(cmd, isNotNull);
-      expect(cmd!.executable, '/bundled/runtime/ct');
+      expect(cmd!.executable, bundled.path);
       expect(cmd.args, ['panel', ...panelArgs]);
     });
 
-    test('内置缺失 + 工具目录 CLI 存在 → 回退 CLI', () {
+    test('内置缺失 + 原生路径 CLI 存在 → 回退 CLI', () {
       final root = Directory.systemTemp.createTempSync('ct_cli_');
       final cli = File('${root.path}/ct')..createSync();
       final cmd = PanelService.buildLaunchCommand(
         bundledCtPath: null,
-        ctCliPath: cli.path,
-        pythonPath: '/none/python',
+        nativeRuntimePath: cli.path,
         panelArgs: panelArgs,
       );
       expect(cmd, isNotNull);
@@ -108,26 +117,10 @@ void main() {
       root.deleteSync(recursive: true);
     });
 
-    test('内置缺失 + venv python 存在 → 回退 python -m ct.cli', () {
-      final root = Directory.systemTemp.createTempSync('ct_py_');
-      final python = File('${root.path}/python')..createSync();
-      final cmd = PanelService.buildLaunchCommand(
-        bundledCtPath: null,
-        ctCliPath: '/none/ct',
-        pythonPath: python.path,
-        panelArgs: panelArgs,
-      );
-      expect(cmd, isNotNull);
-      expect(cmd!.executable, python.path);
-      expect(cmd.args, ['-m', 'ct.cli', 'panel', ...panelArgs]);
-      root.deleteSync(recursive: true);
-    });
-
     test('内置与外部均缺失 → null', () {
       final cmd = PanelService.buildLaunchCommand(
         bundledCtPath: null,
-        ctCliPath: '/none/ct',
-        pythonPath: '/none/python',
+        nativeRuntimePath: '/none/ct',
         panelArgs: panelArgs,
       );
       expect(cmd, isNull);
@@ -137,7 +130,8 @@ void main() {
   group('真实启动', () {
     Directory tempWorkspace() {
       final root = Directory.systemTemp.createTempSync('ct_ws_');
-      final config = Directory('${root.path}/config')..createSync(recursive: true);
+      final config = Directory('${root.path}/config')
+        ..createSync(recursive: true);
       File('${config.path}/global.yaml').writeAsStringSync('''
 primary_lang: zh
 secondary_langs: []
@@ -164,11 +158,11 @@ fields:
       return root;
     }
 
-    test('内置与外部均缺失 → 报错提示内置运行时与工具目录', () async {
+    test('内置与外部均缺失 → 报错提示内置运行时与原生路径', () async {
       final ws = tempWorkspace();
       final settings = SettingsStore()
         ..workspacePath = ws.path
-        ..toolDir = '/nonexistent-tool-dir'
+        ..nativeRuntimePath = '/nonexistent-native-ct'
         ..port = 18121;
       final svc = PanelService(settings: settings);
 
@@ -176,21 +170,26 @@ fields:
 
       expect(svc.status, PanelStatus.failed);
       expect(svc.failureReason, contains('内置运行时'));
-      expect(svc.failureReason, contains('工具目录'));
+      expect(svc.failureReason, contains('原生 ct'));
       expect(svc.logs.any((e) => e.message.contains('内置运行时')), isTrue);
       ws.deleteSync(recursive: true);
     });
 
-    test('外部工具目录回退：venv ct 真实启动到 running', () async {
-      final venvCt = Platform.isWindows
-          ? '../ct/.venv/Scripts/ct.exe'
-          : '../ct/.venv/bin/ct';
-      expect(File(venvCt).existsSync(), isTrue,
-          reason: '需要 ct/.venv 存在（仓库内测试环境）');
+    test('外部原生路径回退：native ct 真实启动到 running', () async {
+      final nativeCt = File(
+        Platform.isWindows
+            ? '../native/target/debug/ct.exe'
+            : '../native/target/debug/ct',
+      ).absolute.path;
+      expect(
+        File(nativeCt).existsSync(),
+        isTrue,
+        reason: '先运行 cargo build -p ct-cli',
+      );
       final ws = tempWorkspace();
       final settings = SettingsStore()
         ..workspacePath = ws.path
-        ..toolDir = '${Directory.current.parent.path}/ct'
+        ..nativeRuntimePath = nativeCt
         ..port = 18122;
       final svc = PanelService(settings: settings);
 
@@ -214,12 +213,17 @@ fields:
       expect(ready, isTrue, reason: 'panel 应在 ${settings.port} 端口就绪');
       expect(svc.status, PanelStatus.running);
       expect(
-        svc.logs.any((e) => e.message.contains('工具目录运行时')),
+        svc.logs.any((e) => e.message.contains('外部原生运行时')),
         isTrue,
         reason: '回退模式应提示使用外部工具',
       );
 
       await svc.stop();
+      expect(svc.status, PanelStatus.stopped);
+      await svc.start();
+      await svc.stop(); // 即使在启动中关闭，也等待子进程退出
+      expect(svc.status, PanelStatus.stopped);
+      svc.dispose();
       client.close();
       ws.deleteSync(recursive: true);
     });

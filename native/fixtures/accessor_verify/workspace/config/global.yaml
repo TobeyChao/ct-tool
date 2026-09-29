@@ -1,0 +1,12 @@
+# 配表导出工具全局配置
+primary_lang: zh
+secondary_langs:
+  - en
+  - ja
+
+# 路径配置（相对于项目根目录）
+schemas_dir: config/schemas
+excel_dir: excel
+output_dir: output
+cache_dir: cache
+i18n_dir: i18n

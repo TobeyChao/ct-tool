@@ -1,0 +1,25 @@
+[package]
+name = "ct-xtask"
+description = "自动化任务：夹具生成、基准、协议 golden samples、打包"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "xtask"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+zip.workspace = true
+tempfile.workspace = true
+ct-domain.workspace = true
+ct-excel.workspace = true
+ct-app.workspace = true
+ct-export.workspace = true

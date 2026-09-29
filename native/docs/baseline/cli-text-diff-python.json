@@ -1,0 +1,332 @@
+{
+  "schema": "ct-cli-text-golden/1",
+  "generatedBy": "node native/tools/parity/cli-text-diff.mjs --live-python",
+  "fixture": "native\\fixtures\\export_pipeline\\workspace",
+  "pythonEntry": "ct\\.venv\\Scripts\\ct.exe",
+  "runs": [
+    {
+      "label": "ct export",
+      "code": 0,
+      "text": "解析 Item（2 行）\nItem：定宽（schema 声明）｜填充率 90.0%（264 B → 252 B，0.955x）\n枚举声明 1 个 → Enums.cs / Enums.lua\n增量导出：写入 11，复用 0；生成缓存命中 0\n导出完成: 1 张表\n[deploy] 无文件变更\n[stderr]\n[deploy] 未配置或未启用，跳过",
+      "tree": {
+        "entries": {
+          "binary/data_en.bin": {
+            "sha": "c96e2007742563ae90fb872c6726a8f8da53e0dbc64ae8422d7d10939279789a",
+            "bytes": 228
+          },
+          "binary/data_zh.bin": {
+            "sha": "f9ec026cfb6af5d7b6dbc2fcb742fd30fef0a7f17f4c48e0d6d3cfa604523479",
+            "bytes": 316
+          },
+          "fbs/container.fbs": {
+            "sha": "845e753f158cf4eae30066759503eb8fed84ef2f40290f60e55671f7fd4e7084",
+            "bytes": 126
+          },
+          "fbs/item.fbs": {
+            "sha": "af494fd0d39ff3f803ed8fe489fdb0fe1753ec34a3c97f25f3a04134aaac4e91",
+            "bytes": 461
+          },
+          "fbs/types.fbs": {
+            "sha": "0a11352285975bdbb980edfc6a9bef9fb78fa8744c90956e4fee5efaea7ecd28",
+            "bytes": 44
+          },
+          "generated/csharp/enums.cs": {
+            "sha": "9158ca9a17143cfb2ff057aaae8d0e2e546071b453d30d83c67c3309344344c8",
+            "bytes": 335
+          },
+          "generated/csharp/itemaccessor.cs": {
+            "sha": "883e8e96943fc16d55d2945b2964f1d0bbfd64912afea20249d1433b826087fb",
+            "bytes": 9524
+          },
+          "generated/lua/enums.lua": {
+            "sha": "56f11653fdf606d905bf19c5fad5e44ae57ce59df744516066256433b7342d5f",
+            "bytes": 181
+          },
+          "generated/lua/itemaccessor.lua": {
+            "sha": "7260a20a2a01880a2c4d7dcbd5808eb7e541ec072997c422fbecf1aaaa00382a",
+            "bytes": 2223
+          },
+          "json/item_en.json": {
+            "sha": "ad0707c24ae48ffebc72732f0651edca09dcb4ac5d5b53cbdf1f3083b224b01a",
+            "bytes": 189
+          },
+          "json/item_zh.json": {
+            "sha": "b194197271680014aff263133fe2cd09e3aad93180cbd86aff716be6528683c7",
+            "bytes": 185
+          }
+        },
+        "cache": "13 条（build_canonical_bundle 2、build_canonical_table_bytes 3、generate_csharp_accessor 1、generate_csharp_enums 1、generate_lua_accessor 1、generate_lua_enums 1、json 2、table_fbs_text 1、types_fbs_text 1）"
+      }
+    },
+    {
+      "label": "ct export",
+      "code": 0,
+      "text": "解析 Item（2 行）\nItem：定宽（schema 声明）｜填充率 90.0%（264 B → 252 B，0.955x）\n枚举声明 1 个 → Enums.cs / Enums.lua\n增量导出：写入 0，复用 11；生成缓存命中 13\n导出完成: 1 张表\n[deploy] 无文件变更\n[stderr]\n[deploy] 未配置或未启用，跳过",
+      "tree": {
+        "entries": {
+          "binary/data_en.bin": {
+            "sha": "c96e2007742563ae90fb872c6726a8f8da53e0dbc64ae8422d7d10939279789a",
+            "bytes": 228
+          },
+          "binary/data_zh.bin": {
+            "sha": "f9ec026cfb6af5d7b6dbc2fcb742fd30fef0a7f17f4c48e0d6d3cfa604523479",
+            "bytes": 316
+          },
+          "fbs/container.fbs": {
+            "sha": "845e753f158cf4eae30066759503eb8fed84ef2f40290f60e55671f7fd4e7084",
+            "bytes": 126
+          },
+          "fbs/item.fbs": {
+            "sha": "af494fd0d39ff3f803ed8fe489fdb0fe1753ec34a3c97f25f3a04134aaac4e91",
+            "bytes": 461
+          },
+          "fbs/types.fbs": {
+            "sha": "0a11352285975bdbb980edfc6a9bef9fb78fa8744c90956e4fee5efaea7ecd28",
+            "bytes": 44
+          },
+          "generated/csharp/enums.cs": {
+            "sha": "9158ca9a17143cfb2ff057aaae8d0e2e546071b453d30d83c67c3309344344c8",
+            "bytes": 335
+          },
+          "generated/csharp/itemaccessor.cs": {
+            "sha": "883e8e96943fc16d55d2945b2964f1d0bbfd64912afea20249d1433b826087fb",
+            "bytes": 9524
+          },
+          "generated/lua/enums.lua": {
+            "sha": "56f11653fdf606d905bf19c5fad5e44ae57ce59df744516066256433b7342d5f",
+            "bytes": 181
+          },
+          "generated/lua/itemaccessor.lua": {
+            "sha": "7260a20a2a01880a2c4d7dcbd5808eb7e541ec072997c422fbecf1aaaa00382a",
+            "bytes": 2223
+          },
+          "json/item_en.json": {
+            "sha": "ad0707c24ae48ffebc72732f0651edca09dcb4ac5d5b53cbdf1f3083b224b01a",
+            "bytes": 189
+          },
+          "json/item_zh.json": {
+            "sha": "b194197271680014aff263133fe2cd09e3aad93180cbd86aff716be6528683c7",
+            "bytes": 185
+          }
+        },
+        "cache": "13 条（build_canonical_bundle 2、build_canonical_table_bytes 3、generate_csharp_accessor 1、generate_csharp_enums 1、generate_lua_accessor 1、generate_lua_enums 1、json 2、table_fbs_text 1、types_fbs_text 1）"
+      }
+    },
+    {
+      "label": "ct export --all",
+      "code": 0,
+      "text": "解析 Item（2 行）\nItem：定宽（schema 声明）｜填充率 90.0%（264 B → 252 B，0.955x）\n枚举声明 1 个 → Enums.cs / Enums.lua\n强制重建：写入 11，复用 0；生成缓存命中 0\n导出完成: 1 张表\n[deploy] 无文件变更\n[stderr]\n[deploy] 未配置或未启用，跳过",
+      "tree": {
+        "entries": {
+          "binary/data_en.bin": {
+            "sha": "c96e2007742563ae90fb872c6726a8f8da53e0dbc64ae8422d7d10939279789a",
+            "bytes": 228
+          },
+          "binary/data_zh.bin": {
+            "sha": "f9ec026cfb6af5d7b6dbc2fcb742fd30fef0a7f17f4c48e0d6d3cfa604523479",
+            "bytes": 316
+          },
+          "fbs/container.fbs": {
+            "sha": "845e753f158cf4eae30066759503eb8fed84ef2f40290f60e55671f7fd4e7084",
+            "bytes": 126
+          },
+          "fbs/item.fbs": {
+            "sha": "af494fd0d39ff3f803ed8fe489fdb0fe1753ec34a3c97f25f3a04134aaac4e91",
+            "bytes": 461
+          },
+          "fbs/types.fbs": {
+            "sha": "0a11352285975bdbb980edfc6a9bef9fb78fa8744c90956e4fee5efaea7ecd28",
+            "bytes": 44
+          },
+          "generated/csharp/enums.cs": {
+            "sha": "9158ca9a17143cfb2ff057aaae8d0e2e546071b453d30d83c67c3309344344c8",
+            "bytes": 335
+          },
+          "generated/csharp/itemaccessor.cs": {
+            "sha": "883e8e96943fc16d55d2945b2964f1d0bbfd64912afea20249d1433b826087fb",
+            "bytes": 9524
+          },
+          "generated/lua/enums.lua": {
+            "sha": "56f11653fdf606d905bf19c5fad5e44ae57ce59df744516066256433b7342d5f",
+            "bytes": 181
+          },
+          "generated/lua/itemaccessor.lua": {
+            "sha": "7260a20a2a01880a2c4d7dcbd5808eb7e541ec072997c422fbecf1aaaa00382a",
+            "bytes": 2223
+          },
+          "json/item_en.json": {
+            "sha": "ad0707c24ae48ffebc72732f0651edca09dcb4ac5d5b53cbdf1f3083b224b01a",
+            "bytes": 189
+          },
+          "json/item_zh.json": {
+            "sha": "b194197271680014aff263133fe2cd09e3aad93180cbd86aff716be6528683c7",
+            "bytes": 185
+          }
+        },
+        "cache": "13 条（build_canonical_bundle 2、build_canonical_table_bytes 3、generate_csharp_accessor 1、generate_csharp_enums 1、generate_lua_accessor 1、generate_lua_enums 1、json 2、table_fbs_text 1、types_fbs_text 1）"
+      }
+    },
+    {
+      "label": "ct validate",
+      "code": 0,
+      "text": "校验通过",
+      "tree": {
+        "entries": {
+          "binary/data_en.bin": {
+            "sha": "c96e2007742563ae90fb872c6726a8f8da53e0dbc64ae8422d7d10939279789a",
+            "bytes": 228
+          },
+          "binary/data_zh.bin": {
+            "sha": "f9ec026cfb6af5d7b6dbc2fcb742fd30fef0a7f17f4c48e0d6d3cfa604523479",
+            "bytes": 316
+          },
+          "fbs/container.fbs": {
+            "sha": "845e753f158cf4eae30066759503eb8fed84ef2f40290f60e55671f7fd4e7084",
+            "bytes": 126
+          },
+          "fbs/item.fbs": {
+            "sha": "af494fd0d39ff3f803ed8fe489fdb0fe1753ec34a3c97f25f3a04134aaac4e91",
+            "bytes": 461
+          },
+          "fbs/types.fbs": {
+            "sha": "0a11352285975bdbb980edfc6a9bef9fb78fa8744c90956e4fee5efaea7ecd28",
+            "bytes": 44
+          },
+          "generated/csharp/enums.cs": {
+            "sha": "9158ca9a17143cfb2ff057aaae8d0e2e546071b453d30d83c67c3309344344c8",
+            "bytes": 335
+          },
+          "generated/csharp/itemaccessor.cs": {
+            "sha": "883e8e96943fc16d55d2945b2964f1d0bbfd64912afea20249d1433b826087fb",
+            "bytes": 9524
+          },
+          "generated/lua/enums.lua": {
+            "sha": "56f11653fdf606d905bf19c5fad5e44ae57ce59df744516066256433b7342d5f",
+            "bytes": 181
+          },
+          "generated/lua/itemaccessor.lua": {
+            "sha": "7260a20a2a01880a2c4d7dcbd5808eb7e541ec072997c422fbecf1aaaa00382a",
+            "bytes": 2223
+          },
+          "json/item_en.json": {
+            "sha": "ad0707c24ae48ffebc72732f0651edca09dcb4ac5d5b53cbdf1f3083b224b01a",
+            "bytes": 189
+          },
+          "json/item_zh.json": {
+            "sha": "b194197271680014aff263133fe2cd09e3aad93180cbd86aff716be6528683c7",
+            "bytes": 185
+          }
+        },
+        "cache": "13 条（build_canonical_bundle 2、build_canonical_table_bytes 3、generate_csharp_accessor 1、generate_csharp_enums 1、generate_lua_accessor 1、generate_lua_enums 1、json 2、table_fbs_text 1、types_fbs_text 1）"
+      }
+    },
+    {
+      "label": "ct status",
+      "code": 0,
+      "text": "[OK] 所有表已是最新（数据 + 模板）",
+      "tree": {
+        "entries": {
+          "binary/data_en.bin": {
+            "sha": "c96e2007742563ae90fb872c6726a8f8da53e0dbc64ae8422d7d10939279789a",
+            "bytes": 228
+          },
+          "binary/data_zh.bin": {
+            "sha": "f9ec026cfb6af5d7b6dbc2fcb742fd30fef0a7f17f4c48e0d6d3cfa604523479",
+            "bytes": 316
+          },
+          "fbs/container.fbs": {
+            "sha": "845e753f158cf4eae30066759503eb8fed84ef2f40290f60e55671f7fd4e7084",
+            "bytes": 126
+          },
+          "fbs/item.fbs": {
+            "sha": "af494fd0d39ff3f803ed8fe489fdb0fe1753ec34a3c97f25f3a04134aaac4e91",
+            "bytes": 461
+          },
+          "fbs/types.fbs": {
+            "sha": "0a11352285975bdbb980edfc6a9bef9fb78fa8744c90956e4fee5efaea7ecd28",
+            "bytes": 44
+          },
+          "generated/csharp/enums.cs": {
+            "sha": "9158ca9a17143cfb2ff057aaae8d0e2e546071b453d30d83c67c3309344344c8",
+            "bytes": 335
+          },
+          "generated/csharp/itemaccessor.cs": {
+            "sha": "883e8e96943fc16d55d2945b2964f1d0bbfd64912afea20249d1433b826087fb",
+            "bytes": 9524
+          },
+          "generated/lua/enums.lua": {
+            "sha": "56f11653fdf606d905bf19c5fad5e44ae57ce59df744516066256433b7342d5f",
+            "bytes": 181
+          },
+          "generated/lua/itemaccessor.lua": {
+            "sha": "7260a20a2a01880a2c4d7dcbd5808eb7e541ec072997c422fbecf1aaaa00382a",
+            "bytes": 2223
+          },
+          "json/item_en.json": {
+            "sha": "ad0707c24ae48ffebc72732f0651edca09dcb4ac5d5b53cbdf1f3083b224b01a",
+            "bytes": 189
+          },
+          "json/item_zh.json": {
+            "sha": "b194197271680014aff263133fe2cd09e3aad93180cbd86aff716be6528683c7",
+            "bytes": 185
+          }
+        },
+        "cache": "13 条（build_canonical_bundle 2、build_canonical_table_bytes 3、generate_csharp_accessor 1、generate_csharp_enums 1、generate_lua_accessor 1、generate_lua_enums 1、json 2、table_fbs_text 1、types_fbs_text 1）"
+      }
+    },
+    {
+      "label": "ct i18n status",
+      "code": 0,
+      "text": "[en]  100% [██████████] 0/0 translated, 0 missing, 0 stale, 0 orphan",
+      "tree": {
+        "entries": {
+          "binary/data_en.bin": {
+            "sha": "c96e2007742563ae90fb872c6726a8f8da53e0dbc64ae8422d7d10939279789a",
+            "bytes": 228
+          },
+          "binary/data_zh.bin": {
+            "sha": "f9ec026cfb6af5d7b6dbc2fcb742fd30fef0a7f17f4c48e0d6d3cfa604523479",
+            "bytes": 316
+          },
+          "fbs/container.fbs": {
+            "sha": "845e753f158cf4eae30066759503eb8fed84ef2f40290f60e55671f7fd4e7084",
+            "bytes": 126
+          },
+          "fbs/item.fbs": {
+            "sha": "af494fd0d39ff3f803ed8fe489fdb0fe1753ec34a3c97f25f3a04134aaac4e91",
+            "bytes": 461
+          },
+          "fbs/types.fbs": {
+            "sha": "0a11352285975bdbb980edfc6a9bef9fb78fa8744c90956e4fee5efaea7ecd28",
+            "bytes": 44
+          },
+          "generated/csharp/enums.cs": {
+            "sha": "9158ca9a17143cfb2ff057aaae8d0e2e546071b453d30d83c67c3309344344c8",
+            "bytes": 335
+          },
+          "generated/csharp/itemaccessor.cs": {
+            "sha": "883e8e96943fc16d55d2945b2964f1d0bbfd64912afea20249d1433b826087fb",
+            "bytes": 9524
+          },
+          "generated/lua/enums.lua": {
+            "sha": "56f11653fdf606d905bf19c5fad5e44ae57ce59df744516066256433b7342d5f",
+            "bytes": 181
+          },
+          "generated/lua/itemaccessor.lua": {
+            "sha": "7260a20a2a01880a2c4d7dcbd5808eb7e541ec072997c422fbecf1aaaa00382a",
+            "bytes": 2223
+          },
+          "json/item_en.json": {
+            "sha": "ad0707c24ae48ffebc72732f0651edca09dcb4ac5d5b53cbdf1f3083b224b01a",
+            "bytes": 189
+          },
+          "json/item_zh.json": {
+            "sha": "b194197271680014aff263133fe2cd09e3aad93180cbd86aff716be6528683c7",
+            "bytes": 185
+          }
+        },
+        "cache": "13 条（build_canonical_bundle 2、build_canonical_table_bytes 3、generate_csharp_accessor 1、generate_csharp_enums 1、generate_lua_accessor 1、generate_lua_enums 1、json 2、table_fbs_text 1、types_fbs_text 1）"
+      }
+    }
+  ]
+}

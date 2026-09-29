@@ -1,0 +1,23 @@
+   Compiling ct-test-support v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-test-support)
+   Compiling ct-cli v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.09s
+     Running tests/panel.rs (native/target/debug/deps/panel-4ad1f5547e14140d)
+
+running 15 tests
+test embedded_assets_and_invalid_workspace_remain_accessible ... ok
+test candidate_applies_only_active_cursor_prefix ... ok
+test legacy_apply_blocks_writes_and_survives_recovery_attempt ... ok
+test request_boundaries_and_port_conflict ... ok
+test schema_guards_candidate_undo_and_yaml_only_save ... ok
+test legacy_history_import_is_idempotent_and_preserves_source ... ok
+test missing_python_backup_refuses_recovery_and_preserves_journal ... ok
+test create_three_resource_kinds_and_roundtrip_net_noop ... ok
+test malformed_resource_commands_have_domain_field_locations_on_all_endpoints ... ok
+test schema_save_reports_busy_without_losing_yaml_when_cli_holds_lock ... ok
+test unknown_host_is_rejected_before_routing ... ok
+test validate_reports_unknown_commands_without_publishing ... ok
+test shared_lock_blocks_web_reads_and_cli_template_writes ... ok
+test translations_recompute_stale_and_reject_unsynchronized_save ... ok
+test explicit_http_recovery_consumes_frozen_python_journals_before_loading_config ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.09s

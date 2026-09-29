@@ -1,0 +1,2 @@
+{"type":"request","requestId":1,"method":"workspace.open","workspaceRoot":"E:\\Proj\\gd","params":{}}
+{"type":"result","requestId":1,"workspaceId":"e:\\proj\\gd","seq":1,"payload":{"revision":7,"status":"ready","recovery":{"needed":false,"journals":[]},"tables":12,"records":8,"enums":5}}

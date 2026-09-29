@@ -1,0 +1,16 @@
+[package]
+name = "ct-export"
+description = "JSON/FBS/FlatBuffers/C#/Lua 生成器、Bundle、i18n 与部署"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+ct-domain.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+sha2.workspace = true

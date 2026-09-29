@@ -1,0 +1,47 @@
+{
+  "format": "panel-performance/1",
+  "at": "2026-09-29T13:40:22.230Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "node": "v26.8.2",
+  "nativeBinary": "/Users/tobeychao/Documents/Projects/ct-tool/native/target/release/ct",
+  "pythonRuntime": null,
+  "fixture": "one Table, empty generated workbook; 1000 i18n source entries",
+  "native": {
+    "startupMs": [
+      26,
+      8,
+      7,
+      6,
+      6,
+      7
+    ],
+    "startupMedianMs": 7,
+    "candidateMs": [
+      2,
+      2,
+      1,
+      1,
+      1,
+      1
+    ],
+    "candidateMedianMs": 1,
+    "exportMs": [
+      13,
+      25,
+      25
+    ],
+    "exportMedianMs": 25,
+    "largeResponseMs": [
+      5,
+      5,
+      4,
+      4,
+      4,
+      4
+    ],
+    "largeMedianMs": 4,
+    "largeBytes": 190920,
+    "largeDataSha256": "b7eef07e28a2008ad5379f337211c21aff63bf23efab0c50324c15793904bfb0"
+  }
+}

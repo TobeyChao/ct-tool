@@ -1,0 +1,77 @@
+
+> test
+> playwright test
+
+(node:89425) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 41 tests using 5 workers
+
+(node:89428) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89429) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89426) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89427) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89430) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89430) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(node:89430) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89429) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(node:89429) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89427) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(node:89427) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89428) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(node:89428) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89426) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(node:89426) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   5 tests/draft-store.spec.mjs:81:1 › identical aliases consolidate safely with full redo history (382ms)
+  ✓   2 tests/draft-store.spec.mjs:6:3 › conflicting draft aliases preserve every record on format (389ms)
+  ✓   4 tests/draft-store.spec.mjs:6:3 › conflicting draft aliases preserve every record on schemaRevision (389ms)
+  ✓   3 tests/draft-store.spec.mjs:6:3 › conflicting draft aliases preserve every record on commands (411ms)
+  ✓   1 tests/draft-store.spec.mjs:6:3 › conflicting draft aliases preserve every record on cursor (433ms)
+  ✓   8 tests/draft-store.spec.mjs:153:36 › legacy draft is recomputed with redo and original baseline; stale=true (700ms)
+  ✓   7 tests/draft-store.spec.mjs:153:36 › legacy draft is recomputed with redo and original baseline; stale=false (755ms)
+  ✓  10 tests/draft-store.spec.mjs:208:1 › transient database open failure retries and clears warning after persistence (860ms)
+  ✓   9 tests/draft-store.spec.mjs:236:1 › unknown stored draft has a visible original-record viewer (925ms)
+  ✓   6 tests/draft-store.spec.mjs:126:1 › unavailable IndexedDB keeps editable draft and a persistent warning across modules (999ms)
+  ✓  14 tests/export-tasks.spec.mjs:93:1 › HTTP timeout after native acceptance never retries the write (263ms)
+  ✓  11 tests/draft-store.spec.mjs:276:1 › actual old Web IndexedDB record replays only its active prefix (612ms)
+  ✓  15 tests/export-tasks.spec.mjs:140:1 › unverifiable write stays marked unknown across refresh until the service is reachable (515ms)
+  ✓  13 tests/export-tasks.spec.mjs:67:1 › lost export response reattaches to the one real task without replaying POST (632ms)
+  ✓  18 tests/i18n-entry.spec.mjs:84:1 › sync refreshes visible entries and compact requires preview confirmation (1.9s)
+  ✓  17 tests/i18n-entry.spec.mjs:5:1 › translation editor filters non-i18n tables, saves long text, and clears a translation (2.3s)
+  ✓  21 tests/native-browser.spec.mjs:57:39 › native shell layout 740 (296ms)
+  ✓  22 tests/native-browser.spec.mjs:57:39 › native shell layout 900 (347ms)
+  ✓  23 tests/native-browser.spec.mjs:57:39 › native shell layout 1280 (369ms)
+  ✓  12 tests/export-tasks.spec.mjs:27:1 › export is service-owned across two tabs and refresh; explicit cancel keeps output untouched (4.3s)
+  ✓  16 tests/export-tasks.spec.mjs:172:1 › forced build and validation issues stay queryable in the export page (4.2s)
+  ✓  20 tests/native-browser.spec.mjs:5:1 › native five modules, resource creation, YAML save, template and export (2.1s)
+  ✓  26 tests/native-browser.spec.mjs:189:1 › legacy IndexedDB keeps history and redo; unknown drafts survive writes and discard (159ms)
+  ✓  25 tests/native-browser.spec.mjs:130:1 › failed save keeps the command history, cursor and old baseline across reload (1.1s)
+  ✓  28 tests/native-browser.spec.mjs:296:1 › creation forms retain incomplete, invalid and duplicate input without commands (829ms)
+  ✓  24 tests/native-browser.spec.mjs:84:1 › save retains edits made while response is in flight (1.9s)
+  ✓  29 tests/recovery.spec.mjs:5:1 › recovery banner explicitly restores a Python crash before reloading the workspace (503ms)
+  ✓  30 tests/recovery.spec.mjs:54:1 › unknown Apply recovery stays blocked with original materials visible (267ms)
+  ✓  32 tests/schema-flow.spec.mjs:88:1 › discard invalidates a delayed candidate response (1.0s)
+  ✓  33 tests/schema-flow.spec.mjs:140:1 › candidate refresh preserves the original baseline and disables save after an external change (1.1s)
+  ✓  27 tests/native-browser.spec.mjs:269:1 › create table, record and enum; selection follows undo and draft survives refresh (2.5s)
+  ✓  19 tests/logs.spec.mjs:3:1 › native logs filter by module, level and search; polling preserves reading position (6.8s)
+  ✓  35 tests/service-restart.spec.mjs:4:1 › a restarted service cannot make a lost write response look like a known task (585ms)
+  ✓  36 tests/startup-diagnostic.spec.mjs:5:1 › invalid workspace keeps the panel reachable and export disabled until repaired (461ms)
+  ✓  31 tests/schema-flow.spec.mjs:18:1 › candidate and save send the original baseline, full history and active cursor through undo and redo (2.0s)
+  ✓  37 tests/static-initial.spec.mjs:4:1 › healthy native first render matches the frozen Flask Web shell (232ms)
+  ✓  41 tests/transport.spec.mjs:5:1 › browser API and history view preserve a tagged integer and structured conflict (399ms)
+  ✓  34 tests/schema-flow.spec.mjs:190:1 › a failed status refresh after a successful save does not request another save (1.3s)
+  ✓  38 tests/template-flow.spec.mjs:5:1 › export page generates multiple missing templates one at a time and refreshes status (660ms)
+  ✓  39 tests/template-flow.spec.mjs:27:1 › drift refresh explains data migration and only runs after explicit confirmation (828ms)
+  ✓  40 tests/template-flow.spec.mjs:54:1 › new table offers template generation only after YAML save and across refresh (1.2s)
+
+  41 passed (10.9s)

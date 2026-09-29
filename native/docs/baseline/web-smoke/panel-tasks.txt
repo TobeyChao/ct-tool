@@ -1,0 +1,11 @@
+   Compiling ct-app v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.49s
+     Running unittests src/lib.rs (native/target/debug/deps/ct_app-aafb8aa215eb6404)
+
+running 4 tests
+test panel_tasks::tests::expired_error_leaves_projection_but_remains_queryable ... ok
+test panel_tasks::tests::fresh_error_can_be_dismissed_without_losing_details ... ok
+test panel_tasks::tests::running_stays_projected_and_cannot_be_dismissed ... ok
+test panel_tasks::tests::log_buffer_is_bounded_normalizes_levels_and_filters_modules ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.02s

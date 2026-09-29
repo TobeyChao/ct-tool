@@ -24,12 +24,15 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _autostartSwitch = false;
   late final TextEditingController _wsController;
   late final TextEditingController _portController;
+  late final TextEditingController _runtimeController;
 
   @override
   void initState() {
     super.initState();
-    _wsController =
-        TextEditingController(text: widget.settings.workspacePath);
+    _runtimeController = TextEditingController(
+      text: widget.settings.nativeRuntimePath,
+    );
+    _wsController = TextEditingController(text: widget.settings.workspacePath);
     _portController = TextEditingController(text: '${widget.settings.port}');
     widget.panel.addListener(_onPanelChanged);
     _syncAutostart();
@@ -40,6 +43,7 @@ class _SettingsPageState extends State<SettingsPage> {
     widget.panel.removeListener(_onPanelChanged);
     _wsController.dispose();
     _portController.dispose();
+    _runtimeController.dispose();
     super.dispose();
   }
 
@@ -50,7 +54,8 @@ class _SettingsPageState extends State<SettingsPage> {
   /// 面板服务运行中（含正在启动）：工作区/端口不可修改，需先停止。
   bool get _serviceActive =>
       widget.panel.status == PanelStatus.running ||
-      widget.panel.status == PanelStatus.starting;
+      widget.panel.status == PanelStatus.starting ||
+      widget.panel.status == PanelStatus.stopping;
 
   Future<void> _syncAutostart() async {
     try {
@@ -106,10 +111,7 @@ class _SettingsPageState extends State<SettingsPage> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildSettingsCard(),
-                const Spacer(),
-              ],
+              children: [_buildSettingsCard(), const Spacer()],
             ),
           ),
           const SizedBox(height: 8),
@@ -185,6 +187,19 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
           CtSettingRow(
+            label: '原生 ct',
+            child: TextField(
+              controller: _runtimeController,
+              style: ctMono.copyWith(fontSize: 12),
+              decoration: ctInputDecoration().copyWith(
+                hintText: '可执行文件路径（发行版优先使用内置运行时）',
+              ),
+              enabled: !_serviceActive,
+              onChanged: (value) =>
+                  widget.settings.setNativeRuntimePath(value.trim()),
+            ),
+          ),
+          CtSettingRow(
             label: '端口',
             child: Row(
               children: [
@@ -205,7 +220,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const SizedBox(width: 8),
                 const Text(
-                  '被占用时自动 +1',
+                  '被占用时请更换端口',
                   style: TextStyle(fontSize: 12, color: ctInk3),
                 ),
               ],

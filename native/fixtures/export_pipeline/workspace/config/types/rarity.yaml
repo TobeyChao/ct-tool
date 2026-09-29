@@ -1,0 +1,6 @@
+kind: enum
+name: Rarity
+values:
+  - name: Common
+  - name: Rare
+    comment: 稀有

@@ -1,0 +1,80 @@
+{
+  "inputs": {
+    "table": {
+      "table": "Item",
+      "primary": "Id",
+      "fields": [
+        {
+          "name": "Id",
+          "type": "int32"
+        }
+      ]
+    },
+    "dependencies": [
+      {
+        "kind": "enum",
+        "name": "Rarity",
+        "values": [
+          {
+            "name": "Common"
+          }
+        ]
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "codename"
+      }
+    ],
+    "codegen": "incremental/2-schema-layout",
+    "excelHash": "excel-sha",
+    "parsing": {
+      "parser": "canonical/1"
+    },
+    "lang": "en",
+    "primaryLang": "zh",
+    "enabledLangs": [
+      "zh",
+      "en"
+    ],
+    "validKeys": [
+      "1001.Name",
+      "1002.Name"
+    ],
+    "entries": {
+      "1001.Name": {
+        "text": "Iron Sword",
+        "confirmed": true,
+        "status": "confirmed",
+        "source": "铁剑"
+      },
+      "1002.Name": {
+        "text": "",
+        "confirmed": false,
+        "status": "missing",
+        "source": "铁盾"
+      },
+      "9999.Ghost": {
+        "text": "幽灵",
+        "confirmed": true,
+        "status": "orphan",
+        "source": "?"
+      }
+    }
+  },
+  "schemaFingerprint": "a28d8e4f3cf9747c6123a6771bb5d00be316fe593f5d90ecb1a710952fc69324",
+  "dataFingerprint": "5d36283afe3c0ef3864b75f5c154c9cfbc4971ce4eda589e8609abef98c90f57",
+  "i18nFingerprint": "824f95e50e1e8d000c59141558c01a21629c3e3a12556bce0effd1e06aa28449",
+  "semantics": [
+    [
+      "1001.Name",
+      "Iron Sword",
+      true
+    ],
+    [
+      "1002.Name",
+      "",
+      false
+    ]
+  ]
+}

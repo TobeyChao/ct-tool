@@ -1,0 +1,423 @@
+{
+  "sheet": "Item",
+  "cells": {
+    "1,1": "编号",
+    "1,12": "描述文本",
+    "2,1": "Id\nint32",
+    "2,2": "CodeName\nstring",
+    "2,3": "Rarity\nItemRarity",
+    "2,4": "Effect\nPosition",
+    "2,7": "Rewards\nvector<DropReward>[2]",
+    "2,11": "Tags\nvector<int32>",
+    "2,12": "Desc\nstring",
+    "2,13": "Active\nbool",
+    "2,14": "Score\ndouble",
+    "2,15": "Big\nLongEnum",
+    "4,4": "X\nPosition",
+    "4,5": "Y\nPosition",
+    "4,6": "Z\nPosition",
+    "4,7": "#1\nint32",
+    "4,9": "#2\nint32",
+    "6,7": "ItemId\nvector<DropReward>[2]",
+    "6,8": "Count\nvector<DropReward>[2]",
+    "6,9": "ItemId\nvector<DropReward>[2]",
+    "6,10": "Count\nvector<DropReward>[2]"
+  },
+  "fills": {
+    "1,1": "00DCE3EC",
+    "1,12": "00DCE3EC",
+    "2,1": "00FBE6A5",
+    "2,2": "00E2E8F0",
+    "2,3": "00E2E8F0",
+    "2,4": "00CFE8D8",
+    "2,7": "00D7E6FA",
+    "2,11": "00D7E6FA",
+    "2,12": "00E2E8F0",
+    "2,13": "00E2E8F0",
+    "2,14": "00E2E8F0",
+    "2,15": "00E2E8F0",
+    "4,4": "00E2E8F0",
+    "4,5": "00E2E8F0",
+    "4,6": "00E2E8F0",
+    "4,7": "00E7D9F7",
+    "4,9": "00E7D9F7",
+    "6,7": "00E2E8F0",
+    "6,8": "00E2E8F0",
+    "6,9": "00E2E8F0",
+    "6,10": "00E2E8F0"
+  },
+  "rich_runs": {
+    "2,1": [
+      {
+        "text": "Id\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "int32",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "2,2": [
+      {
+        "text": "CodeName\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "string",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "2,3": [
+      {
+        "text": "Rarity\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "ItemRarity",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "2,4": [
+      {
+        "text": "Effect\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "Position",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "2,7": [
+      {
+        "text": "Rewards\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "vector<DropReward>[2]",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "2,11": [
+      {
+        "text": "Tags\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "vector<int32>",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "2,12": [
+      {
+        "text": "Desc\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "string",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "2,13": [
+      {
+        "text": "Active\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "bool",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "2,14": [
+      {
+        "text": "Score\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "double",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "2,15": [
+      {
+        "text": "Big\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "LongEnum",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "4,4": [
+      {
+        "text": "X\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "Position",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "4,5": [
+      {
+        "text": "Y\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "Position",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "4,6": [
+      {
+        "text": "Z\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "Position",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "4,7": [
+      {
+        "text": "#1\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "int32",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "4,9": [
+      {
+        "text": "#2\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "int32",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "6,7": [
+      {
+        "text": "ItemId\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "vector<DropReward>[2]",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "6,8": [
+      {
+        "text": "Count\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "vector<DropReward>[2]",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "6,9": [
+      {
+        "text": "ItemId\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "vector<DropReward>[2]",
+        "font": "Consolas",
+        "bold": false
+      }
+    ],
+    "6,10": [
+      {
+        "text": "Count\n",
+        "font": "Aptos",
+        "bold": true
+      },
+      {
+        "text": "vector<DropReward>[2]",
+        "font": "Consolas",
+        "bold": false
+      }
+    ]
+  },
+  "merges": [
+    "A2:A6",
+    "B2:B6",
+    "C2:C6",
+    "D1:F1",
+    "D2:F2",
+    "D4:D6",
+    "E4:E6",
+    "F4:F6",
+    "G1:J1",
+    "G2:J2",
+    "G3:H3",
+    "G4:H4",
+    "I3:J3",
+    "I4:J4",
+    "K2:K6",
+    "L2:L6",
+    "M2:M6",
+    "N2:N6",
+    "O2:O6"
+  ],
+  "freeze": "A7",
+  "validations": [
+    {
+      "type": "whole",
+      "formula1": "-2147483648",
+      "formula2": "2147483647",
+      "operator": "between",
+      "sqref": "A7:A1048576"
+    },
+    {
+      "type": "list",
+      "formula1": "\"Common,Rare,Epic\"",
+      "formula2": null,
+      "operator": null,
+      "sqref": "C7:C1048576"
+    },
+    {
+      "type": "decimal",
+      "formula1": "-1E+307",
+      "formula2": "1E+307",
+      "operator": "between",
+      "sqref": "D7:D1048576"
+    },
+    {
+      "type": "decimal",
+      "formula1": "-1E+307",
+      "formula2": "1E+307",
+      "operator": "between",
+      "sqref": "E7:E1048576"
+    },
+    {
+      "type": "decimal",
+      "formula1": "-1E+307",
+      "formula2": "1E+307",
+      "operator": "between",
+      "sqref": "F7:F1048576"
+    },
+    {
+      "type": "whole",
+      "formula1": "-2147483648",
+      "formula2": "2147483647",
+      "operator": "between",
+      "sqref": "G7:G1048576"
+    },
+    {
+      "type": "whole",
+      "formula1": "-2147483648",
+      "formula2": "2147483647",
+      "operator": "between",
+      "sqref": "H7:H1048576"
+    },
+    {
+      "type": "whole",
+      "formula1": "-2147483648",
+      "formula2": "2147483647",
+      "operator": "between",
+      "sqref": "I7:I1048576"
+    },
+    {
+      "type": "whole",
+      "formula1": "-2147483648",
+      "formula2": "2147483647",
+      "operator": "between",
+      "sqref": "J7:J1048576"
+    },
+    {
+      "type": "whole",
+      "formula1": "-2147483648",
+      "formula2": "2147483647",
+      "operator": "between",
+      "sqref": "K7:K1048576"
+    },
+    {
+      "type": "list",
+      "formula1": "\"TRUE,FALSE\"",
+      "formula2": null,
+      "operator": null,
+      "sqref": "M7:M1048576"
+    },
+    {
+      "type": "decimal",
+      "formula1": "-1E+307",
+      "formula2": "1E+307",
+      "operator": "between",
+      "sqref": "N7:N1048576"
+    }
+  ],
+  "notes": {
+    "2,3": "类型：ItemRarity；稀有度\nCommon\nRare\nEpic",
+    "2,15": "类型：LongEnum\nQuiteLongEnumValueName00\nQuiteLongEnumValueName01\nQuiteLongEnumValueName02\nQuiteLongEnumValueName03\nQuiteLongEnumValueName04\nQuiteLongEnumValueName05\nQuiteLongEnumValueName06\nQuiteLongEnumValueName07\nQuiteLongEnumValueName08\nQuiteLongEnumValueName09\nQuiteLongEnumValueName10\nQuiteLongEnumValueName11\nQuiteLongEnumValueName12\nQuiteLongEnumValueName13\nQuiteLongEnumValueName14\nQuiteLongEnumValueName15\nQuiteLongEnumValueName16\nQuiteLongEnumValueName17\nQuiteLongEnumValueName18\nQuiteLongEnumValueName19"
+  },
+  "col_widths": {
+    "A": 16.0,
+    "B": 16.0,
+    "C": 16.0,
+    "D": 16.0,
+    "E": 16.0,
+    "F": 16.0,
+    "G": 16.0,
+    "H": 16.0,
+    "I": 16.0,
+    "J": 16.0,
+    "K": 16.0,
+    "L": 16.0,
+    "M": 16.0,
+    "N": 16.0,
+    "O": 16.0
+  },
+  "row_heights": {
+    "1": 30.0,
+    "2": 38.0,
+    "3": 30.0,
+    "4": 38.0,
+    "5": 30.0,
+    "6": 38.0
+  },
+  "props": {
+    "ct_tool_version": "ct",
+    "ct_table_name": "Item",
+    "ct_header_rows": 6,
+    "ct_schema_hash": "sha256:fixture0001",
+    "ct_generated_at": "<timestamp>"
+  }
+}

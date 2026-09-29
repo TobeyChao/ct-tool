@@ -1,0 +1,9 @@
+/target
+/dist
+
+# 防呆：历史上一曾因未规范化的 repo_root 生成过 native/native/target 双份路径
+/native/
+
+# Generated Python bytecode from optional historical fixture tools
+__pycache__/
+*.pyc

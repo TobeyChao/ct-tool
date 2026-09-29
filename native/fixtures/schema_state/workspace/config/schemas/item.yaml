@@ -1,0 +1,19 @@
+table: Item
+primary: Id
+fields:
+  - name: Id
+    type: int32
+  - name: CodeName
+    type: string
+  - name: Name
+    type: string
+    i18n: true
+  - name: Quality
+    type: Rarity
+  - name: DropRules
+    type: vector<DropRule>
+    excel_columns: 2
+  - name: SellPrice
+    type: int32
+indexes:
+  - kind: codename

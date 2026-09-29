@@ -1,0 +1,24 @@
+{
+  "file": "rich_text.xlsx",
+  "sheets": [
+    "主表"
+  ],
+  "active_sheet": "主表",
+  "epoch": "1900",
+  "max_row": 1,
+  "max_col": 2,
+  "cells": [
+    {
+      "row": 1,
+      "col": 1,
+      "kind": "text",
+      "value": "加粗普通"
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "kind": "int",
+      "value": 1
+    }
+  ]
+}

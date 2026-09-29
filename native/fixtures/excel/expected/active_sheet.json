@@ -1,0 +1,79 @@
+{
+  "file": "active_sheet.xlsx",
+  "sheets": [
+    "数据",
+    "补充"
+  ],
+  "active_sheet": "补充",
+  "epoch": "1900",
+  "max_row": 10,
+  "max_col": 2,
+  "cells": [
+    {
+      "row": 1,
+      "col": 1,
+      "kind": "text",
+      "value": "名称"
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "kind": "text",
+      "value": "数量"
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "kind": "text",
+      "value": "大剑"
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "kind": "int",
+      "value": 1
+    },
+    {
+      "row": 4,
+      "col": 1,
+      "kind": "text",
+      "value": "铁剑"
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "kind": "int",
+      "value": 0
+    },
+    {
+      "row": 6,
+      "col": 1,
+      "kind": "text",
+      "value": "中文🎮"
+    },
+    {
+      "row": 6,
+      "col": 2,
+      "kind": "float",
+      "value": 3.5
+    },
+    {
+      "row": 7,
+      "col": 1,
+      "kind": "bool",
+      "value": true
+    },
+    {
+      "row": 10,
+      "col": 1,
+      "kind": "text",
+      "value": "尾部"
+    },
+    {
+      "row": 10,
+      "col": 2,
+      "kind": "text",
+      "value": "[1, 2, 3]"
+    }
+  ]
+}

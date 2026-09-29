@@ -1,0 +1,6 @@
+{
+  "1.Title": {"source": "新手冒险", "text": "初心者の冒険", "confirmed": true, "status": "translated"},
+  "1.Description": {"source": "完成你的第一次冒险", "text": "初めての冒険をクリアしよう", "confirmed": true, "status": "translated"},
+  "2.Title": {"source": "屠龙勇士", "text": "ドラゴンスレイヤー", "confirmed": true, "status": "translated"},
+  "2.Description": {"source": "击败邪恶的巨龙", "text": "邪悪なドラゴンを倒そう", "confirmed": true, "status": "translated"}
+}

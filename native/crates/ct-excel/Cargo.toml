@@ -1,0 +1,21 @@
+[package]
+name = "ct-excel"
+description = "Excel 读取、布局计划与模板迁移"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+ct-domain.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+# 任务 1.5 原型选定；行为边界见 docs/excel-reading-findings.md。
+calamine.workspace = true
+# 仅用于读取 workbook.xml 的 activeTab/date1904（calamine 不暴露）。
+zip.workspace = true
+# 任务 1.6 原型选定；行为边界见 docs/excel-writing-findings.md。
+rust_xlsxwriter.workspace = true
+serde.workspace = true
+serde_json.workspace = true

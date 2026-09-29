@@ -1,0 +1,10 @@
+kind: record
+name: ItemDropRange
+comment: "掉落范围"
+fields:
+  - name: Min
+    type: int32
+    comment: "掉落数量下限"
+  - name: Max
+    type: int32
+    comment: "掉落数量上限"

@@ -21,6 +21,7 @@ main 分支的 Web 工作台已有完整的浏览器编辑流程，本分支 Rus
 ### Modified Capabilities
 
 - `web-panel`: 原生服务运行、增量导出及安全任务生命周期、YAML-only 表格管理和历史连续性。
+- `launcher`: 保留 main Web 桌面壳，运行时发现、打包和安全退出迁为原生 panel。
 - `cli-interface`: 原生 `ct panel` 启动契约，以及去除错误诊断对 Python traceback 的强制要求。
 - `tool-workspace-separation`: 原生工具、独立 Web 资源及无 Python 安装/测试入口，删除旧 Python 工程前的验收门槛。
 
@@ -29,6 +30,6 @@ main 分支的 Web 工作台已有完整的浏览器编辑流程，本分支 Rus
 - 拟新增 `native/crates/ct-web/`、`web/`，修改 `ct-app`、必要的公共任务基础设施、`ct-cli`、`ct-xtask`、原生发行流程及 CI；迁移 `ct/src/ct/web/static/`、`ct/tests/web/` 和仍有效的 `ct/docs/`。
 - 以本地 main `8dc7b81` 的 Web 行为为初始参照；实施前记录实际采纳提交与工作树差异。当前未提交的 native/launcher/gd 改动不由本提案覆盖或回滚。
 - 复用 `rust-native-core` 已实现能力，不重建内核。本提案取代其“不提供 ct panel / Web 退役”的范围决策，并承接最终 Python 退役门槛；不把其未完成的平台、恢复、性能或游戏端验证自动视为通过。
-- Flutter 工作台继续消费原生 worker，不改回浏览器 launcher；其既有功能和协议不得因共享模块调整而回归。本次不新增 Web 部署入口、云服务、多用户协作、前端框架重写或任意旧事务修复器。
+- 按 2026-09-27 用户确认，在 main 实施并保留 main 的 Flutter Web launcher，仅将内置/外部运行时与退出流程迁为原生 ct panel；不引入 feat/native-workbench-cutover 的完整 Flutter 工作台。原生 worker 的既有协议保持回归。本次不新增 Web 部署入口、云服务、多用户协作、前端框架重写或任意旧事务修复器。
 - 仓库历史提案、留档数据可保留 Python 来源说明；`test-proj/` 中实际仍参与受支持验收的 Python 脚本须替代，纯历史实验只归档说明、不批量删除用户资料。
 - 全程使用临时工作区夹具；对等与删除门槛见 design、specs、tasks，规划完成不代表运行验收通过。

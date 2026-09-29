@@ -1,0 +1,25 @@
+✔ frozen Python Web inputs and success/error contracts run against the native panel (68.058042ms)
+✔ frozen legacy history entry imports and normalizes its result code (13.134875ms)
+✔ native package serves assets and diagnostic workspace without Python (44.911458ms)
+✔ schema candidate, guarded YAML-only save, undo cursor and no-op (37.852167ms)
+✔ template generation, export and task endpoints (61.388458ms)
+✔ all legacy static entry assets and core dependency boundary (17.423083ms)
+✔ failed task can be dismissed across clients and is reset on the next run (64.730792ms)
+✔ concurrent page views do not contend as workspace writers (13.218292ms)
+✔ schema save publishes only changed YAML and a new baseline (53.896208ms)
+✔ no-op save preserves bytes and nanosecond mtime without a journal (20.750459ms)
+✔ save rejects stale revision, preserves external YAML and succeeds after fresh review (25.805625ms)
+✔ save requires both guards and locates malformed command histories (18.534875ms)
+✔ schema save never needs to read a malformed workbook (17.791625ms)
+✔ structurally invalid draft has issues and cannot write YAML (16.278958ms)
+✔ workspace status separates missing, changed and drifted in custom directories (34.90375ms)
+✔ save recovers a prepared publication before loading business resources (16.252667ms)
+✔ validation accepts a field draft and rejects i18n on a Record (17.0235ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 301.241791

@@ -1,0 +1,2 @@
+{"type":"request","requestId":41,"method":"table.preview","workspaceRoot":"E:\\Proj\\gd","params":{"table":"Item","page":{"cursor":"row:2","limit":2}}}
+{"type":"error","requestId":41,"workspaceId":"e:\\proj\\gd","seq":1,"error":{"code":"stale-page","message":"快照 revision 已从 7 变为 8，请重新查询"}}

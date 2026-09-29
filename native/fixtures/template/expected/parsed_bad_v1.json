@@ -1,0 +1,76 @@
+{
+  "rows": [
+    {
+      "Id": "abc",
+      "CodeName": "",
+      "Rarity": "Legendary!",
+      "Effect": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Z": 0.0
+      },
+      "Rewards": [],
+      "Tags": [],
+      "Desc": ""
+    },
+    {
+      "Id": 1,
+      "CodeName": "",
+      "Effect": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Z": 0.0
+      },
+      "Rewards": [],
+      "Tags": [],
+      "Desc": "",
+      "Score": "很双"
+    }
+  ],
+  "excel_rows": [
+    7,
+    8
+  ],
+  "issues": [
+    {
+      "table": "Item",
+      "code": "type",
+      "message": "期望 int32 类型",
+      "row_index": 1,
+      "excel_row": 7,
+      "column": 0,
+      "field": "table:Item/Id",
+      "value": "abc"
+    },
+    {
+      "table": "Item",
+      "code": "type",
+      "message": "第1个元素期望 int32 类型",
+      "row_index": 1,
+      "excel_row": 7,
+      "column": 10,
+      "field": "table:Item/Tags",
+      "value": "[1 2]"
+    },
+    {
+      "table": "Item",
+      "code": "type",
+      "message": "第2个元素期望 int32 类型",
+      "row_index": 2,
+      "excel_row": 8,
+      "column": 10,
+      "field": "table:Item/Tags",
+      "value": "[1, \"x\"]"
+    },
+    {
+      "table": "Item",
+      "code": "type",
+      "message": "期望 double 类型",
+      "row_index": 2,
+      "excel_row": 8,
+      "column": 13,
+      "field": "table:Item/Score",
+      "value": "很双"
+    }
+  ]
+}

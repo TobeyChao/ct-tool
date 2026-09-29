@@ -1,0 +1,2 @@
+{"type":"hello","protocolVersion":1,"coreVersion":"0.0.0","capabilities":["workspace","schema","template","validate","export","deploy","i18n","history","logs","tasks","cancel","shutdown"]}
+{"type":"hello","protocolVersion":1,"coreVersion":"0.0.0","capabilities":["workspace","schema","template","validate","export","deploy","i18n","history","logs","tasks","cancel","shutdown"]}

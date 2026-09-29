@@ -1,0 +1,84 @@
+{
+  "table": {
+    "name": "Item",
+    "primary": "Id",
+    "uniform": false,
+    "indexes": [],
+    "fields": [
+      {
+        "name": "Id",
+        "type": "int32",
+        "comment": "编号"
+      },
+      {
+        "name": "CodeName",
+        "type": "string"
+      },
+      {
+        "name": "Rarity",
+        "type": "ItemRarity"
+      },
+      {
+        "name": "Effect",
+        "type": "Position",
+        "comment": "效果位置"
+      },
+      {
+        "name": "Rewards",
+        "type": "vector<DropReward>",
+        "excel_columns": 2
+      },
+      {
+        "name": "Tags",
+        "type": "vector<int32>"
+      },
+      {
+        "name": "Desc",
+        "type": "string",
+        "comment": "描述文本"
+      },
+      {
+        "name": "Active",
+        "type": "bool"
+      },
+      {
+        "name": "Score",
+        "type": "double"
+      },
+      {
+        "name": "Big",
+        "type": "LongEnum"
+      }
+    ]
+  },
+  "records": {
+    "Position": {
+      "fields": [
+        {
+          "name": "X",
+          "type": "float"
+        },
+        {
+          "name": "Y",
+          "type": "float"
+        },
+        {
+          "name": "Z",
+          "type": "float"
+        }
+      ]
+    },
+    "DropReward": {
+      "fields": [
+        {
+          "name": "ItemId",
+          "type": "int32"
+        },
+        {
+          "name": "Count",
+          "type": "int32"
+        }
+      ]
+    }
+  }
+}

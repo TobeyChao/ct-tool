@@ -1,0 +1,2 @@
+{"type":"request","requestId":11,"method":"schema.save","workspaceRoot":"E:\\Proj\\gd","params":{"schemaRevision":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","candidateHash":"sha256:9f2c7a1b"}}
+{"type":"result","requestId":11,"workspaceId":"e:\\proj\\gd","seq":1,"payload":{"schemaRevision":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}}

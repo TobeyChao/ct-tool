@@ -1,0 +1,30 @@
+{
+  "file": "formula_cache.xlsx",
+  "sheets": [
+    "主表"
+  ],
+  "active_sheet": "主表",
+  "epoch": "1900",
+  "max_row": 1,
+  "max_col": 3,
+  "cells": [
+    {
+      "row": 1,
+      "col": 1,
+      "kind": "int",
+      "value": 5
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "kind": "int",
+      "value": 10
+    },
+    {
+      "row": 1,
+      "col": 3,
+      "kind": "text",
+      "value": "hello"
+    }
+  ]
+}

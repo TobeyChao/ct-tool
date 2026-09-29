@@ -1,0 +1,35 @@
+import hashlib,json,tempfile
+from pathlib import Path
+from ct.web.app import create_app
+from web_helpers import build_project
+repo=Path.cwd()
+with tempfile.TemporaryDirectory(prefix='ct-web-baseline-中文 ') as directory:
+ root=build_project(Path(directory)/'workspace',schemas=[{'table':'Item','primary':'Id','fields':[{'name':'Id','type':'int32'},{'name':'Name','type':'string','i18n':True}]},{'table':'Quest','primary':'Id','fields':[{'name':'Id','type':'int32'}]}])
+ files_before={str(p.relative_to(root)):{'text':p.read_text(),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in sorted(root.rglob('*')) if p.is_file()}
+ client=create_app(root).test_client()
+ captures={}
+ def fetch(name,method,path,payload=None):
+  result=client.open(path,method=method,json=payload)
+  captures[name]={'request':{'method':method,'path':path,'body':payload},'status':result.status_code,'response':result.get_json()}
+ fetch('workspace','GET','/api/workspace')
+ fetch('schema','GET','/api/schema-workspace')
+ revision=captures['schema']['response']['data']['schemaRevision']
+ commands=[{'type':'set_property','payload':{'owner':'table:Item','name':'Name','property':'comment','value':'冻结注释'}}]
+ fetch('candidate_valid','POST','/api/schema-workspace/candidate',{'schemaRevision':revision,'commands':commands,'cursor':1,'draftGeneration':3})
+ fetch('validate_invalid','POST','/api/schema-workspace/validate',{'schemaRevision':revision,'commands':[{'type':'frobnicate','payload':{}}],'cursor':1})
+ fetch('save_missing_guard','POST','/api/schema-workspace/save',{'schemaRevision':revision,'commands':commands})
+ fetch('save_forged_hash','POST','/api/schema-workspace/save',{'schemaRevision':revision,'commands':commands,'candidateHash':'0'*64})
+ fetch('tasks_idle','GET','/api/tasks')
+ fetch('history_empty','GET','/api/history')
+ fetch('logs_empty','GET','/api/logs')
+ fetch('template_unknown','POST','/api/schema-workspace/gen-template',{'table':'Missing'})
+ hash_=captures['candidate_valid']['response']['data']['candidateHash']
+ fetch('save_valid','POST','/api/schema-workspace/save',{'schemaRevision':revision,'commands':commands,'cursor':1,'candidateHash':hash_})
+ fetch('schema_after','GET','/api/schema-workspace')
+ files={str(p.relative_to(root)):{'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':len(p.read_bytes())} for p in sorted(root.rglob('*')) if p.is_file() and not p.relative_to(root).parts[0] in {'cache','.ct'}}
+ serial=json.dumps({'captures':captures,'filesBefore':files_before,'filesAfterSave':files},ensure_ascii=False)
+ serial=serial.replace(str(root.resolve()),'${ROOT}').replace(str(root),'${ROOT}')
+ sources=['ct/src/ct/web/app.py','ct/src/ct/web/schema_workspace_api.py','ct/src/ct/web/static/js/core/draft-store.js']
+ output={'format':'python-web-http-fixtures/1','sourceCommit':'8dc7b81412ddf712fca54a4200d216fb8af05aca','sourceSha256':{s:hashlib.sha256((repo/s).read_bytes()).hexdigest() for s in sources},'fixture':'ct/tests/web/web_helpers.py::build_project; Item + Quest, no Excel; temporary Chinese-and-space workspace','normalization':'Only absolute temporary workspace root replaced with ${ROOT}; success and error payloads are actual Flask test_client results. Allowed migration differences are documented in web-http-contract.md.','data':json.loads(serial)}
+ (repo/'native/docs/baseline/web-http-python.json').write_text(json.dumps(output,ensure_ascii=False,indent=2)+'\n')
+ print('Captured',len(captures),'old Web HTTP request/response pairs')

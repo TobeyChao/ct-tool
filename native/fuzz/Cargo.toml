@@ -1,0 +1,35 @@
+[package]
+name = "ct-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+# 独立 workspace：fuzz 目标需要 nightly + cargo-fuzz，不进主 workspace。
+[workspace]
+
+[dependencies]
+libfuzzer-sys = "0.4"
+ct-domain = { path = "../crates/ct-domain" }
+ct-excel = { path = "../crates/ct-excel" }
+ct-protocol = { path = "../crates/ct-protocol" }
+
+[[bin]]
+name = "schema_yaml"
+path = "fuzz_targets/schema_yaml.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "excel_reader"
+path = "fuzz_targets/excel_reader.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "protocol_ndjson"
+path = "fuzz_targets/protocol_ndjson.rs"
+test = false
+doc = false

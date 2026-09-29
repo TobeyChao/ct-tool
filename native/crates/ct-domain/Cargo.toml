@@ -1,0 +1,17 @@
+[package]
+name = "ct-domain"
+description = "Schema 领域模型：类型系统、资源图、命令、候选与净差异"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+serde.workspace = true
+serde_yaml_ng.workspace = true
+serde_json.workspace = true
+serde_path_to_error = "0.1"
+thiserror.workspace = true
+sha2.workspace = true
+unicode-ident.workspace = true

@@ -1,0 +1,121 @@
+{
+  "ItemRarity": {
+    "comment": "稀有度",
+    "values": [
+      {
+        "name": "Common",
+        "comment": ""
+      },
+      {
+        "name": "Rare",
+        "comment": ""
+      },
+      {
+        "name": "Epic",
+        "comment": ""
+      }
+    ]
+  },
+  "EffectKind": {
+    "comment": "",
+    "values": [
+      {
+        "name": "None",
+        "comment": ""
+      },
+      {
+        "name": "Buff",
+        "comment": ""
+      },
+      {
+        "name": "Debuff",
+        "comment": ""
+      }
+    ]
+  },
+  "LongEnum": {
+    "comment": "",
+    "values": [
+      {
+        "name": "QuiteLongEnumValueName00",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName01",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName02",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName03",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName04",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName05",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName06",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName07",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName08",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName09",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName10",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName11",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName12",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName13",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName14",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName15",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName16",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName17",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName18",
+        "comment": ""
+      },
+      {
+        "name": "QuiteLongEnumValueName19",
+        "comment": ""
+      }
+    ]
+  }
+}

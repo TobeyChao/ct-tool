@@ -1,0 +1,5 @@
+{
+  "1.Name": {"source": "消耗品", "text": "Consumable", "confirmed": true, "status": "translated"},
+  "2.Name": {"source": "装备", "text": "Equipment", "confirmed": true, "status": "translated"},
+  "3.Name": {"source": "材料", "text": "Material", "confirmed": true, "status": "translated"}
+}

@@ -1,0 +1,14 @@
+[
+  {"kind": "add_resource", "payload": {"kind": "record", "resource": {"kind": "record", "name": "LootBonus", "fields": [{"name": "Rate", "type": "float"}]}}},
+  {"kind": "add_field", "payload": {"owner": "table:Item", "field": {"name": "Bonus", "type": "LootBonus"}}},
+  {"kind": "rename_resource", "payload": {"old": "DropRule", "new": "DropEntry"}},
+  {"kind": "rename_field", "payload": {"owner": "table:Item", "old": "SellPrice", "new": "Price"}},
+  {"kind": "rename_resource", "payload": {"old": "Item", "new": "Goods"}},
+  {"kind": "set_property", "payload": {"owner": "table:Goods", "name": "CodeName", "property": "comment", "value": "编码名"}},
+  {"kind": "set_type", "payload": {"owner": "table:Goods", "name": "Price", "type_text": "int64"}},
+  {"kind": "set_enum_values", "payload": {"name": "enum:Rarity", "values": [{"name": "Common"}, {"name": "Rare", "comment": "稀有"}, {"name": "Epic"}]}},
+  {"kind": "rename_enum_item", "payload": {"name": "enum:Rarity", "oldName": "Rare", "newName": "MagicRare", "originalOrdinal": 1}},
+  {"kind": "set_indexes", "payload": {"table": "table:Goods", "indexes": [{"kind": "codename"}]}},
+  {"kind": "delete_resource", "payload": {"name": "table:Monster"}},
+  {"kind": "move_field", "payload": {"owner": "table:Goods", "name": "Price", "to": 1}}
+]

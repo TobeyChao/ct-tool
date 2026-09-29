@@ -1,0 +1,21 @@
+[package]
+name = "ct-tests-protocol"
+description = "worker 协议契约测试（不依赖 Flutter）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+ct-protocol.workspace = true
+ct-test-support.workspace = true
+ct-worker.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+jsonschema.workspace = true
+tempfile.workspace = true
+ct-app.workspace = true
+ct-domain.workspace = true
+ct-storage.workspace = true

@@ -1,0 +1,131 @@
+{
+    "columns": [
+        {
+            "annotation": "int32",
+            "depth": 1,
+            "index": 1,
+            "leaf": "Id",
+            "stablePath": "table:Item/Id",
+            "typeExpr": "int32"
+        },
+        {
+            "annotation": "string",
+            "depth": 1,
+            "index": 2,
+            "leaf": "CodeName",
+            "stablePath": "table:Item/CodeName",
+            "typeExpr": "string"
+        },
+        {
+            "annotation": "string",
+            "depth": 1,
+            "index": 3,
+            "leaf": "Name",
+            "stablePath": "table:Item/Name",
+            "typeExpr": "string"
+        },
+        {
+            "annotation": "Rarity",
+            "depth": 1,
+            "index": 4,
+            "leaf": "Quality",
+            "stablePath": "table:Item/Quality",
+            "typeExpr": "Rarity"
+        },
+        {
+            "annotation": "int32",
+            "depth": 1,
+            "index": 5,
+            "leaf": "Price",
+            "stablePath": "table:Item/Price",
+            "typeExpr": "int32"
+        }
+    ],
+    "format": "template-layout/2",
+    "header_rows": 2,
+    "nodes": [
+        {
+            "annotation": "int32",
+            "children": [],
+            "comment": "",
+            "depth": 1,
+            "displayName": "Id",
+            "kind": "field",
+            "leafEnd": 1,
+            "leafStart": 1,
+            "slotIndex": null,
+            "stablePath": "table:Item/Id"
+        },
+        {
+            "annotation": "string",
+            "children": [],
+            "comment": "",
+            "depth": 1,
+            "displayName": "CodeName",
+            "kind": "field",
+            "leafEnd": 2,
+            "leafStart": 2,
+            "slotIndex": null,
+            "stablePath": "table:Item/CodeName"
+        },
+        {
+            "annotation": "string",
+            "children": [],
+            "comment": "",
+            "depth": 1,
+            "displayName": "Name",
+            "kind": "field",
+            "leafEnd": 3,
+            "leafStart": 3,
+            "slotIndex": null,
+            "stablePath": "table:Item/Name"
+        },
+        {
+            "annotation": "Rarity",
+            "children": [],
+            "comment": "",
+            "depth": 1,
+            "displayName": "Quality",
+            "kind": "field",
+            "leafEnd": 4,
+            "leafStart": 4,
+            "slotIndex": null,
+            "stablePath": "table:Item/Quality"
+        },
+        {
+            "annotation": "int32",
+            "children": [],
+            "comment": "",
+            "depth": 1,
+            "displayName": "Price",
+            "kind": "field",
+            "leafEnd": 5,
+            "leafStart": 5,
+            "slotIndex": null,
+            "stablePath": "table:Item/Price"
+        }
+    ],
+    "schema_hash": "4289e04f01e2c8f1",
+    "slot_offsets": [
+        [
+            4,
+            4
+        ],
+        [
+            6,
+            8
+        ],
+        [
+            8,
+            12
+        ],
+        [
+            10,
+            16
+        ],
+        [
+            12,
+            20
+        ]
+    ]
+}

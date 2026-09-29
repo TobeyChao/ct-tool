@@ -6,39 +6,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// 启动器配置：工作区 / 工具目录 / 端口 / 自启 / 托盘常驻。
 class SettingsStore extends ChangeNotifier {
   static const kWorkspacePath = 'workspace_path';
-  static const kToolDir = 'tool_dir';
+  static const kNativeRuntimePath = 'native_runtime_path';
   static const kPort = 'port';
   static const kAutoStart = 'auto_start';
   static const kTrayResident = 'tray_resident';
 
   String workspacePath = '';
-  String toolDir = '';
+  String nativeRuntimePath = '';
   int port = 8000;
   bool autoStart = false;
   bool trayResident = false;
   bool _loaded = false;
-
-  String get pythonPath {
-    final base = toolDir.isEmpty ? '' : '$toolDir/.venv';
-    return Platform.isWindows ? '$base\\Scripts\\python.exe' : '$base/bin/python';
-  }
-
-  /// ct 控制台入口（pyproject [project.scripts] 安装的 wrapper）。
-  String get ctCliPath {
-    final base = toolDir.isEmpty ? '' : '$toolDir/.venv';
-    return Platform.isWindows ? '$base\\Scripts\\ct.exe' : '$base/bin/ct';
-  }
 
   String get baseUrl => 'http://127.0.0.1:$port';
 
   Future<void> load() async {
     if (_loaded) return;
     final prefs = await SharedPreferences.getInstance();
-    final defaults = _inferDefaults();
-    final defaultTool = defaults.$1;
-    final defaultWs = defaults.$2;
-    workspacePath = prefs.getString(kWorkspacePath) ?? defaultWs;
-    toolDir = prefs.getString(kToolDir) ?? defaultTool;
+    workspacePath = prefs.getString(kWorkspacePath) ?? '';
+    // 旧 tool_dir 指向 Python 源码，不将它作为原生可执行文件迁移。
+    nativeRuntimePath = prefs.getString(kNativeRuntimePath) ?? _inferRuntime();
     port = prefs.getInt(kPort) ?? 8000;
     autoStart = prefs.getBool(kAutoStart) ?? false;
     trayResident = prefs.getBool(kTrayResident) ?? false;
@@ -46,28 +33,21 @@ class SettingsStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 开发期默认值推断：从可执行文件向上找 Flutter 项目根（launcher/），
-  /// 得到工具目录 ct/ 与工作区仓库根/gd。打包分发后找不到项目结构，
-  /// 返回空值，由用户在设置中配置。
-  static (String, String) _inferDefaults() {
+  /// 仅推断开发运行时，工作区由用户明确选择。
+  static String _inferRuntime() {
     var dir = File(Platform.resolvedExecutable).parent;
     for (var i = 0; i < 12; i++) {
       if (File('${dir.path}/pubspec.yaml').existsSync() &&
           Directory('${dir.path}/lib').existsSync()) {
-        // 仓库布局：launcher/ 与 ct/、gd/ 平级于仓库根
-        final repoRoot = dir.parent.path;
-        final ctDir = '$repoRoot/ct';
-        final ws = '$repoRoot/gd';
-        // 校验工具目录存在（含 venv 或 src/ct 包），不存在则留给用户配置
-        if (!Directory('$ctDir/.venv').existsSync() &&
-            !Directory('$ctDir/src/ct').existsSync()) {
-          return ('', '');
+        final name = Platform.isWindows ? 'ct.exe' : 'ct';
+        for (final profile in ['debug', 'release']) {
+          final path = '${dir.parent.path}/native/target/$profile/$name';
+          if (File(path).existsSync()) return path;
         }
-        return (ctDir, ws);
       }
       dir = dir.parent;
     }
-    return ('', '');
+    return '';
   }
 
   Future<void> setWorkspacePath(String value) async {
@@ -75,9 +55,9 @@ class SettingsStore extends ChangeNotifier {
     await _save(kWorkspacePath, value);
   }
 
-  Future<void> setToolDir(String value) async {
-    toolDir = value;
-    await _save(kToolDir, value);
+  Future<void> setNativeRuntimePath(String value) async {
+    nativeRuntimePath = value;
+    await _save(kNativeRuntimePath, value);
   }
 
   Future<void> setPort(int value) async {

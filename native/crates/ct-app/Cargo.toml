@@ -1,0 +1,22 @@
+[package]
+name = "ct-app"
+description = "用例编排层：CLI 与 worker 的唯一业务入口"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+ct-domain.workspace = true
+ct-excel.workspace = true
+ct-export.workspace = true
+ct-storage.workspace = true
+ct-cache.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+serde_yaml_ng.workspace = true
+chrono = { version = "0.4", default-features = false, features = ["clock"] }

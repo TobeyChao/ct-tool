@@ -1,0 +1,29 @@
+
+> test:http
+> node --test tests/native-api.test.mjs tests/schema-contract.test.mjs tests/frozen-web-contract.test.mjs
+
+✔ frozen Python Web inputs and success/error contracts run against the native panel (54.762ms)
+✔ frozen legacy history entry imports and normalizes its result code (12.581625ms)
+✔ native package serves assets and diagnostic workspace without Python (43.486083ms)
+✔ schema candidate, guarded YAML-only save, undo cursor and no-op (26.558875ms)
+✔ template generation, export and task endpoints (53.454583ms)
+✔ all legacy static entry assets and core dependency boundary (13.401292ms)
+✔ failed task can be dismissed across clients and is reset on the next run (57.628708ms)
+✔ concurrent page views do not contend as workspace writers (11.022042ms)
+✔ schema save publishes only changed YAML and a new baseline (46.555209ms)
+✔ no-op save preserves bytes and nanosecond mtime without a journal (14.498917ms)
+✔ save rejects stale revision, preserves external YAML and succeeds after fresh review (18.286875ms)
+✔ save requires both guards and locates malformed command histories (14.355792ms)
+✔ schema save never needs to read a malformed workbook (14.397583ms)
+✔ structurally invalid draft has issues and cannot write YAML (12.462125ms)
+✔ workspace status separates missing, changed and drifted in custom directories (21.042041ms)
+✔ save recovers a prepared publication before loading business resources (11.519834ms)
+✔ validation accepts a field draft and rejects i18n on a Record (11.118667ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 263.941334

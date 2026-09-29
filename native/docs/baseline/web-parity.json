@@ -1,0 +1,1093 @@
+{
+  "format": "web-parity/1",
+  "webBaseline": "8dc7b81412ddf712fca54a4200d216fb8af05aca",
+  "nativeBaseline": "2d7dfc9b8d92ab5aaab53d528c410c512faa37c3",
+  "integrationBranch": "main",
+  "launcher": "main browser launcher; no native Flutter workbench import",
+  "files": [
+    {
+      "file": "ct/tests/web/test_add_resource_api.py",
+      "sha256": "eaa66726b086cf3e9e685be3a7a240c63ae86aa6e44b7ef0c8a8b906fb762182"
+    },
+    {
+      "file": "ct/tests/web/test_assets.py",
+      "sha256": "309b780be0333c8cf2c118f43277dee7831da12cfd16de01295d51aa16bb882c"
+    },
+    {
+      "file": "ct/tests/web/test_browser_baseline.py",
+      "sha256": "c774de10f193120b04a3e09d0d69965350f8a04c04ca85cd71436fb921a1bae2"
+    },
+    {
+      "file": "ct/tests/web/test_fuzzy_browser.py",
+      "sha256": "73b13b1289cce88dfe22176306a884e5cc5cac1b1789693087c66ba988a36617"
+    },
+    {
+      "file": "ct/tests/web/test_history.py",
+      "sha256": "a8143444e181bd69e1357d978952e5c3f19fde0a5fe514fde91f80d28e72666d"
+    },
+    {
+      "file": "ct/tests/web/test_logs.py",
+      "sha256": "c5038543b9615f262719c3e79d2f2d70a42e7f64a8a9a7456222a9c8ef6c50fb"
+    },
+    {
+      "file": "ct/tests/web/test_matrix_browser.py",
+      "sha256": "a0b1b38c65cce83c980580994231fe50ea220ff2f488917fbed35a3db5d8723a"
+    },
+    {
+      "file": "ct/tests/web/test_module_pages_browser.py",
+      "sha256": "d982c1f5ea785898b5c666749e4c180b5acf0d2ac41446fb4d5703ab1f543c3a"
+    },
+    {
+      "file": "ct/tests/web/test_resource_benchmark.py",
+      "sha256": "dd8e87bfc7e51e917a03f279181ee0f015a7cd85a9d0eb2d413fe4be654c6a19"
+    },
+    {
+      "file": "ct/tests/web/test_schema_create_browser.py",
+      "sha256": "0b899d086ecd4dd0e3aabf6d792ba51741865a62d0b60bf05f28e57933e1211b"
+    },
+    {
+      "file": "ct/tests/web/test_schema_editor_browser.py",
+      "sha256": "29c024c982ec6a13793aef8fae8e5f112fee67f618b08774b0c72bced575296a"
+    },
+    {
+      "file": "ct/tests/web/test_schema_save_api.py",
+      "sha256": "bf7f8154c8e1129b48d60b011f803b52205d38ce3408538011899aae83d324f9"
+    },
+    {
+      "file": "ct/tests/web/test_schema_workspace_api.py",
+      "sha256": "1694c7807d903273058b1396bbe37a6d20838d43e97364348b9959de70d441b7"
+    },
+    {
+      "file": "ct/tests/web/test_shell_browser.py",
+      "sha256": "90d60fa60e18215b24d083ce2458b90353255d3be08bf185517914542c05db72"
+    },
+    {
+      "file": "ct/tests/web/test_tasks_projection.py",
+      "sha256": "cbaa7f4639e9a9e2680c88eff588af48bd5b70e1b9027f2e2714e940d75c9b46"
+    }
+  ],
+  "scenarios": [
+    {
+      "source": "ct/tests/web/test_add_resource_api.py::test_create_three_kinds_in_one_draft_and_save",
+      "target": "native/crates/ct-cli/tests/panel.rs",
+      "scenario": "create_three_resource_kinds_and_roundtrip_net_noop",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_add_resource_api.py::test_create_then_delete_is_a_noop",
+      "target": "native/crates/ct-cli/tests/panel.rs",
+      "scenario": "create_three_resource_kinds_and_roundtrip_net_noop",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_add_resource_api.py::test_malformed_payloads_are_client_errors_with_locations",
+      "target": "native/crates/ct-cli/tests/panel.rs",
+      "scenario": "malformed_resource_commands_have_domain_field_locations_on_all_endpoints",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_add_resource_api.py::test_unknown_command_type_is_reported_not_silently_dropped",
+      "target": "native/crates/ct-cli/tests/panel.rs",
+      "scenario": "validate_reports_unknown_commands_without_publishing",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_assets.py::test_assets_are_served",
+      "target": "web/tests/native-api.test.mjs",
+      "scenario": "all legacy static entry assets and core dependency boundary",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_assets.py::test_index_references_all_styles_and_module_entry",
+      "target": "web/tests/native-api.test.mjs",
+      "scenario": "all legacy static entry assets and core dependency boundary",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_assets.py::test_core_has_no_business_module_imports",
+      "target": "web/tests/native-api.test.mjs",
+      "scenario": "all legacy static entry assets and core dependency boundary",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_browser_baseline.py::test_local_panel_screenshot_matrix",
+      "target": "web/tests/shell-projection.spec.mjs",
+      "scenario": "physical viewport and browser zoom matrix preserves projection and has no horizontal overflow",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_fuzzy_browser.py::test_subsequence_abbreviation_matches",
+      "target": "web/tests/fuzzy.spec.mjs",
+      "scenario": "fuzzy subsequence abbreviations rank tighter matches and reject nonmatches",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_fuzzy_browser.py::test_rank_ties_are_deterministic",
+      "target": "web/tests/fuzzy.spec.mjs",
+      "scenario": "fuzzy ranking breaks ties deterministically by name",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_fuzzy_browser.py::test_highlight_ranges",
+      "target": "web/tests/fuzzy.spec.mjs",
+      "scenario": "fuzzy highlighting returns matched source ranges and none for nonmatches",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_fuzzy_browser.py::test_highlight_ranges_respect_unicode_boundaries",
+      "target": "web/tests/fuzzy.spec.mjs",
+      "scenario": "fuzzy highlighting respects astral and length-changing Unicode boundaries",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_history.py::test_make_entry_writes_status_code",
+      "target": "native/tests/protocol/tests/desktop_state.rs",
+      "scenario": "history_survives_worker_restart",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_history.py::test_legacy_display_string_result_is_normalized",
+      "target": "native/crates/ct-cli/tests/panel.rs",
+      "scenario": "legacy_history_import_is_idempotent_and_preserves_source",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_logs.py::test_module_for_logger_maps_every_panel_module",
+      "target": "native/crates/ct-app/src/panel_tasks.rs",
+      "scenario": "native_log_categories_and_level_names_match_panel_filters",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_logs.py::test_level_names_are_normalized",
+      "target": "native/crates/ct-app/src/panel_tasks.rs",
+      "scenario": "native_log_categories_and_level_names_match_panel_filters",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_logs.py::test_buffer_normalizes_levels_on_write",
+      "target": "native/crates/ct-app/src/panel_tasks.rs",
+      "scenario": "log_buffer_is_bounded_normalizes_levels_and_filters_modules",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_logs.py::test_frontend_module_pills_match_backend_modules",
+      "target": "web/tests/logs.spec.mjs",
+      "scenario": "native logs filter by module, level and search; polling preserves reading position",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_logs.py::test_ct_logger_records_reach_the_panel_exactly_once",
+      "target": "web/tests/logs.spec.mjs",
+      "scenario": "native logs filter by module, level and search; polling preserves reading position",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_logs.py::test_i18n_sync_entry_and_compact_write_panel_logs",
+      "target": "web/tests/i18n-entry.test.mjs",
+      "scenario": "sync and compact stay within table/language scope, preview without writes, and emit logs",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_logs.py::test_i18n_failures_stay_out_of_the_panel",
+      "target": "web/tests/i18n-entry.test.mjs",
+      "scenario": "sync and compact stay within table/language scope, preview without writes, and emit logs",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_logs.py::test_template_flow_writes_template_module",
+      "target": "web/tests/logs.spec.mjs",
+      "scenario": "native logs filter by module, level and search; polling preserves reading position",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_matrix_browser.py::test_shell_matrix",
+      "target": "web/tests/shell-projection.spec.mjs",
+      "scenario": "physical viewport and browser zoom matrix preserves projection and has no horizontal overflow",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_export_module_renders",
+      "target": "web/tests/export-tasks.spec.mjs",
+      "scenario": "forced build and validation issues stay queryable in the export page",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_export_summary_refreshes_after_run",
+      "target": "web/tests/export-tasks.spec.mjs",
+      "scenario": "forced build and validation issues stay queryable in the export page",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_export_offers_missing_template_regeneration",
+      "target": "web/tests/template-flow.spec.mjs",
+      "scenario": "export page generates multiple missing templates one at a time and refreshes status",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_export_failure_message_wraps_inside_context_card",
+      "target": "web/tests/export-tasks.spec.mjs",
+      "scenario": "failed export messages with a long workspace path stay inside the context card",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_taskbar_dismiss_shows_toast_when_request_fails",
+      "target": "web/tests/export-tasks.spec.mjs",
+      "scenario": "failed task dismiss shows a toast and task card returns after polling",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_i18n_module_renders_lang_rows",
+      "target": "web/tests/i18n-entry.spec.mjs",
+      "scenario": "translation editor filters non-i18n tables, saves long text, and clears a translation",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_i18n_orphan_status_uses_localized_badge",
+      "target": "web/tests/i18n-entry.spec.mjs",
+      "scenario": "translation editor filters non-i18n tables, saves long text, and clears a translation",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_logs_module_renders",
+      "target": "web/tests/logs.spec.mjs",
+      "scenario": "native logs filter by module, level and search; polling preserves reading position",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_history_module_renders_empty",
+      "target": "web/tests/module-pages.spec.mjs",
+      "scenario": "fresh native workspace renders an empty export history",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_history_success_uses_success_badge",
+      "target": "web/tests/module-pages.spec.mjs",
+      "scenario": "native history displays both stored and imported legacy successes with success badges",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_logs_level_and_search_filters",
+      "target": "web/tests/logs.spec.mjs",
+      "scenario": "native logs filter by module, level and search; polling preserves reading position",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_logs_refresh_while_visible",
+      "target": "web/tests/logs.spec.mjs",
+      "scenario": "native logs filter by module, level and search; polling preserves reading position",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_logs_keep_reading_position_and_offer_jump_to_bottom",
+      "target": "web/tests/logs.spec.mjs",
+      "scenario": "native logs filter by module, level and search; polling preserves reading position",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_logs_polling_does_not_replace_scroll_viewport_when_unchanged",
+      "target": "web/tests/logs.spec.mjs",
+      "scenario": "native logs filter by module, level and search; polling preserves reading position",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_logs_compact_rows_keep_field_labels",
+      "target": "web/tests/module-pages.spec.mjs",
+      "scenario": "compact log rows retain time, module, level and message labels at 390px",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_i18n_progress_modal_closes",
+      "target": "web/tests/i18n-entry.spec.mjs",
+      "scenario": "sync refreshes visible entries and compact requires preview confirmation",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_i18n_table_picker_filters_and_empty",
+      "target": "web/tests/i18n-entry.spec.mjs",
+      "scenario": "translation editor filters non-i18n tables, saves long text, and clears a translation",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_i18n_table_picker_click_select",
+      "target": "web/tests/module-pages.spec.mjs",
+      "scenario": "translation table picker selects another i18n Table by click without keyboard highlight",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_i18n_entry_table_alignment",
+      "target": "web/tests/module-pages.spec.mjs",
+      "scenario": "translation source and target columns align with action buttons",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_i18n_entry_table_preserves_text_columns_on_narrow_view",
+      "target": "web/tests/module-pages.spec.mjs",
+      "scenario": "390px translation table scrolls horizontally while preserving full text column widths",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_i18n_narrow_header_keeps_title_and_actions_centered",
+      "target": "web/tests/module-pages.spec.mjs",
+      "scenario": "520px translation header keeps title and wrapped actions vertically centered",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_i18n_fullscreen_editor_saves_and_cancels",
+      "target": "web/tests/i18n-entry.spec.mjs",
+      "scenario": "translation editor filters non-i18n tables, saves long text, and clears a translation",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_i18n_column_visibility_persists_across_rerender",
+      "target": "web/tests/module-pages.spec.mjs",
+      "scenario": "translation column visibility persists across rerender and menu closes on outside click or Escape",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_i18n_source_expand_tail",
+      "target": "web/tests/module-pages.spec.mjs",
+      "scenario": "long translation source can expand and collapse its tail",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_i18n_inline_blur_saves_only_changed_drafts",
+      "target": "web/tests/module-pages.spec.mjs",
+      "scenario": "translation blur saves changed inline drafts but leaves untouched entries unconfirmed",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_module_pages_browser.py::test_i18n_reactivation_recomputes_sticky_offset",
+      "target": "web/tests/module-pages.spec.mjs",
+      "scenario": "reactivating translation after a viewport change recomputes sticky ID width",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_resource_benchmark.py::test_resources_render_within_budget",
+      "target": "web/tests/resource-benchmark.spec.mjs",
+      "scenario": "resource list ${count} entries stays virtualized and paints within budget",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_create_browser.py::test_creation_entries_and_table_form",
+      "target": "web/tests/schema-create.spec.mjs",
+      "scenario": "header and group creation entries choose the correct form; a Table starts with Id only",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_create_browser.py::test_create_from_empty_workspace",
+      "target": "web/tests/schema-create.spec.mjs",
+      "scenario": "an empty workspace can start a Record draft from its empty-state entry",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_create_browser.py::test_forms_require_first_content_and_keep_input",
+      "target": "web/tests/native-browser.spec.mjs",
+      "scenario": "creation forms retain incomplete, invalid and duplicate input without commands",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_create_browser.py::test_invalid_and_duplicate_names_add_no_command",
+      "target": "web/tests/schema-create.spec.mjs",
+      "scenario": "invalid or cross-kind duplicate names keep the form open without adding commands",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_create_browser.py::test_double_submit_adds_exactly_one_command",
+      "target": "web/tests/schema-create.spec.mjs",
+      "scenario": "two immediate submit clicks add one Table command and one resource row",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_create_browser.py::test_create_and_reference_without_saving",
+      "target": "web/tests/schema-create.spec.mjs",
+      "scenario": "unsaved Enum, Record and Table are immediately usable as field types, ref targets and Quick Open resources",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_create_browser.py::test_selection_follows_creation_and_falls_back_on_undo",
+      "target": "web/tests/native-browser.spec.mjs",
+      "scenario": "create table, record and enum; selection follows undo and draft survives refresh",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_create_browser.py::test_created_draft_survives_refresh",
+      "target": "web/tests/native-browser.spec.mjs",
+      "scenario": "create table, record and enum; selection follows undo and draft survives refresh",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_create_browser.py::test_unsaved_table_explains_template_requires_save",
+      "target": "web/tests/template-flow.spec.mjs",
+      "scenario": "new table offers template generation only after YAML save and across refresh",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_create_browser.py::test_template_entry_survives_reload",
+      "target": "web/tests/template-flow.spec.mjs",
+      "scenario": "new table offers template generation only after YAML save and across refresh",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_create_browser.py::test_record_and_enum_have_no_template_entry",
+      "target": "web/tests/schema-create.spec.mjs",
+      "scenario": "saving new Record and Enum resources never offers a Table template entry",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_create_browser.py::test_create_flow_keyboard_and_narrow_viewport",
+      "target": "web/tests/schema-create.spec.mjs",
+      "scenario": "at 390px the creation entry supports keyboard focus, Escape and explicit submit",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_create_browser.py::test_record_ref_entry_removed_and_primary_rename_blocked",
+      "target": "web/tests/schema-create.spec.mjs",
+      "scenario": "Record creation and field editing omit ref while Table primary cannot be renamed",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_resource_groups_and_filter",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "resource groups filter across kinds and highlight fuzzy matched characters",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_collapsed_group_is_temporarily_expanded_by_search_and_restored",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "search temporarily expands a collapsed group and preserves its preference on reload",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_add_field_dialog_emits_draft",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "add-field dialog rejects an invalid name and adds one complete draft field",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_add_field_i18n_role_locks_string_type",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "I18N add-field role restricts the type picker to string",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_add_field_code_codename_locks_fields",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "CodeName constraint fixes name and type and disables incompatible controls",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_save_changes_writes_yaml_without_review_dialog",
+      "target": "web/tests/schema-editor-basics.spec.mjs",
+      "scenario": "global draftbar saves a field to YAML without a mandatory review dialog",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_discard_draft_from_draftbar",
+      "target": "web/tests/schema-editor-basics.spec.mjs",
+      "scenario": "discard confirmation removes an unsaved field and clears the command history",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_quick_open_filters_and_selects",
+      "target": "web/tests/schema-quick-open.spec.mjs",
+      "scenario": "Quick Open filters resources across kinds and selects the matching Enum",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_quick_open_empty_query_prioritizes_recent_resources",
+      "target": "web/tests/schema-quick-open.spec.mjs",
+      "scenario": "an empty Quick Open query starts from the recent resource",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_quick_open_falls_back_when_recent_resources_are_from_another_workspace",
+      "target": "web/tests/schema-quick-open.spec.mjs",
+      "scenario": "stale recent-resource names from another workspace fall back to current resources",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_quick_open_escape_clears_query_first",
+      "target": "web/tests/schema-quick-open.spec.mjs",
+      "scenario": "first Escape clears Quick Open search; second closes and restores opener focus",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_draft_persists_across_reload",
+      "target": "web/tests/schema-editor-basics.spec.mjs",
+      "scenario": "an unsaved field and its undo cursor survive reload without applying the redo branch",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_field_rename_delete_move_set_type_emit_commands",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "renaming, moving, changing type and deleting a field records net deletion from the original schema",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_inspector_field_properties_are_read_only",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "inspector shows selected field properties as a read-only summary",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_undo_redo_via_draftbar",
+      "target": "web/tests/schema-flow.spec.mjs",
+      "scenario": "candidate and save send the original baseline, full history and active cursor through undo and redo",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_compact_field_rows_at_390",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "390px field cards hide table headers and retain accessible actions without page overflow",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_primary_field_actions_are_locked",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "primary field locks reordering, type change and deletion but permits comment editing",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_query_index_cards_emit_set_indexes",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "CodeName index card emits one index command and YAML-only draft summary",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_query_index_cards_restore_persisted_and_draft_state",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "persisted CodeName index can be disabled in draft and remains disabled after reload",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_codename_badge_shows_only_when_index_declared",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "CodeName badge appears only when the index is declared",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_delete_codename_field_offers_explicit_index_cascade",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "deleting indexed CodeName explicitly removes its index in the same draft",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_rename_codename_field_offers_explicit_index_cascade",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "renaming indexed CodeName explicitly removes its index in the same draft",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_enum_editor_value_operations",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "Enum editor adds, renames and removes values in one draft",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_blocked_delete_with_references",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "referenced Record deletion is blocked with its referring field disclosed",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_record_editor_hides_table_only_field_options",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "Record editor hides table-only role options but keeps vector available",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_quick_open_keyboard_navigation",
+      "target": "web/tests/schema-quick-open.spec.mjs",
+      "scenario": "ArrowDown and Enter select the second Quick Open result",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_keyboard_a11y_walkthrough",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "module navigation remains keyboard reachable and Quick Open restores Schema from another module",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_type_picker_selects_named_type",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "field type picker offers a named Enum and emits a set-type draft command",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_filter_counts_keyboard_and_pref_persistence",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "resource count, keyboard selection and filter preference survive reload",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_resizable_panes_persist_width",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "inspector resize widens the pane and saves its preferred width",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_ref_link_jumps_to_referenced_table",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "ref field link navigates to its referenced Table",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_net_difference_toggle_round_trip_keeps_history",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "turning an index on and off leaves zero net difference but preserves undo history",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_persistence_failure_warning_stays_visible",
+      "target": "web/tests/draft-store.spec.mjs",
+      "scenario": "unavailable IndexedDB keeps editable draft and a persistent warning across modules",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_persistence_retries_after_transient_database_open_failure",
+      "target": "web/tests/draft-store.spec.mjs",
+      "scenario": "transient database open failure retries and clears warning after persistence",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_save_conflict_keeps_draft_and_blocks_overwrite",
+      "target": "web/tests/native-browser.spec.mjs",
+      "scenario": "failed save keeps the command history, cursor and old baseline across reload",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_save_busy_keeps_draft",
+      "target": "web/tests/schema-editor-basics.spec.mjs",
+      "scenario": "a busy Schema save response keeps the draft and original YAML for retry",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_status_refresh_failure_does_not_misreport_save",
+      "target": "web/tests/schema-flow.spec.mjs",
+      "scenario": "a failed status refresh after a successful save does not request another save",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_save_refreshes_template_status_without_rebuilding",
+      "target": "web/tests/schema-editor-basics.spec.mjs",
+      "scenario": "saving Schema refreshes drift status without rebuilding Excel until explicit template update",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_no_false_template_drift_notice",
+      "target": "web/tests/schema-editor-basics.spec.mjs",
+      "scenario": "a clean workspace status after Schema save does not show a false template drift notice",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_deleting_resource_yaml_keeps_excel_and_outputs",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "deleting a Table saves YAML only and retains its Excel and exported JSON",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_candidate_refresh_freezes_save_and_preserves_original_baseline",
+      "target": "web/tests/schema-flow.spec.mjs",
+      "scenario": "candidate refresh preserves the original baseline and disables save after an external change",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_editor_browser.py::test_broken_schema_yaml_reports_the_reason",
+      "target": "web/tests/schema-resource-browser.spec.mjs",
+      "scenario": "broken Schema YAML shows its file error and recovers after the file is removed",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_save_api.py::test_save_publishes_yaml_and_returns_new_baseline",
+      "target": "web/tests/native-api.test.mjs",
+      "scenario": "schema candidate, guarded YAML-only save, undo cursor and no-op",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_save_api.py::test_save_noop_writes_nothing",
+      "target": "web/tests/native-api.test.mjs",
+      "scenario": "schema candidate, guarded YAML-only save, undo cursor and no-op",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_save_api.py::test_save_rejects_forged_candidate_hash",
+      "target": "native/crates/ct-cli/tests/panel.rs",
+      "scenario": "schema_guards_candidate_undo_and_yaml_only_save",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_save_api.py::test_save_rejects_stale_schema_revision",
+      "target": "web/tests/schema-contract.test.mjs",
+      "scenario": "save rejects stale revision, preserves external YAML and succeeds after fresh review",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_save_api.py::test_save_rejects_structural_issues",
+      "target": "web/tests/schema-contract.test.mjs",
+      "scenario": "structurally invalid draft has issues and cannot write YAML",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_save_api.py::test_save_succeeds_without_excel_data",
+      "target": "native/crates/ct-cli/tests/panel.rs",
+      "scenario": "schema_guards_candidate_undo_and_yaml_only_save",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_save_api.py::test_save_reports_busy_when_workspace_is_locked",
+      "target": "native/crates/ct-cli/tests/panel.rs",
+      "scenario": "schema_save_reports_busy_without_losing_yaml_when_cli_holds_lock",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_save_api.py::test_save_recovers_an_interrupted_publication",
+      "target": "web/tests/schema-contract.test.mjs",
+      "scenario": "save recovers a prepared publication before loading business resources",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_save_api.py::test_save_retry_after_conflict_succeeds",
+      "target": "web/tests/schema-contract.test.mjs",
+      "scenario": "save rejects stale revision, preserves external YAML and succeeds after fresh review",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_save_api.py::test_save_requires_both_guards",
+      "target": "web/tests/schema-contract.test.mjs",
+      "scenario": "save requires both guards and locates malformed command histories",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_save_api.py::test_save_malformed_commands_return_located_client_errors",
+      "target": "web/tests/schema-contract.test.mjs",
+      "scenario": "save requires both guards and locates malformed command histories",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_save_api.py::test_save_response_never_reads_excel",
+      "target": "web/tests/schema-contract.test.mjs",
+      "scenario": "schema save never needs to read a malformed workbook",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_save_api.py::test_candidate_rejects_old_baseline",
+      "target": "native/crates/ct-cli/tests/panel.rs",
+      "scenario": "schema_guards_candidate_undo_and_yaml_only_save",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_workspace_api.py::test_workspace_snapshot_endpoint",
+      "target": "web/tests/frozen-web-contract.test.mjs",
+      "scenario": "frozen Python Web inputs and success/error contracts run against the native panel",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_workspace_api.py::test_validate_accepts_valid_draft",
+      "target": "web/tests/schema-contract.test.mjs",
+      "scenario": "validation accepts a field draft and rejects i18n on a Record",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_workspace_api.py::test_validate_reports_role_violation",
+      "target": "web/tests/schema-contract.test.mjs",
+      "scenario": "validation accepts a field draft and rejects i18n on a Record",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_workspace_api.py::test_generate_template_endpoint_for_table",
+      "target": "web/tests/native-api.test.mjs",
+      "scenario": "template generation, export and task endpoints",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_workspace_api.py::test_generate_template_endpoint_rejects_unknown_table",
+      "target": "web/tests/native-api.test.mjs",
+      "scenario": "template generation, export and task endpoints",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_workspace_api.py::test_tasks_endpoint",
+      "target": "web/tests/frozen-web-contract.test.mjs",
+      "scenario": "frozen Python Web inputs and success/error contracts run against the native panel",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_workspace_api.py::test_tasks_endpoint_includes_export_projection",
+      "target": "web/tests/native-api.test.mjs",
+      "scenario": "failed task can be dismissed across clients and is reset on the next run",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_workspace_api.py::test_deleted_table_index_is_not_inherited_by_reused_name",
+      "target": "web/tests/codename-invariant.test.mjs",
+      "scenario": "deleting an indexed table before reusing its name does not transfer the old index",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_workspace_api.py::test_codename_field_commands_violate_invariant_without_index_removal",
+      "target": "web/tests/codename-invariant.test.mjs",
+      "scenario": "deleting or renaming CodeName while the codename index remains is invalid",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_schema_workspace_api.py::test_codename_field_commands_with_explicit_index_removal_are_valid",
+      "target": "web/tests/codename-invariant.test.mjs",
+      "scenario": "explicitly removing the codename index makes either CodeName edit valid",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_shell_browser.py::test_projection_state_machine",
+      "target": "web/tests/shell-projection.spec.mjs",
+      "scenario": "projection switches at 900px and 740px without page-level overflow",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_shell_browser.py::test_selection_survives_projection_and_module_switch",
+      "target": "web/tests/shell-projection.spec.mjs",
+      "scenario": "Schema selection survives module switches and a narrow-to-wide projection round trip",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_shell_browser.py::test_panes_default_collapsed_and_two_state_toggle",
+      "target": "web/tests/shell-projection.spec.mjs",
+      "scenario": "docked resource and inspector panes start collapsed and toggle between two states",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_shell_browser.py::test_panes_become_drawers_below_900",
+      "target": "web/tests/shell-projection.spec.mjs",
+      "scenario": "at 800px resource pane acts as an inert offscreen drawer and selection or Escape closes it",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_shell_browser.py::test_open_drawer_closes_cleanly_when_widening",
+      "target": "web/tests/shell-projection.spec.mjs",
+      "scenario": "widening an open drawer closes it and removes editor inert state",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_shell_browser.py::test_hidden_pages_are_inert",
+      "target": "web/tests/shell-projection.spec.mjs",
+      "scenario": "hidden module pages remain inert",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_shell_browser.py::test_about_and_help_dialogs",
+      "target": "web/tests/shell-projection.spec.mjs",
+      "scenario": "about and help dialogs show product and shortcut details and close on Escape",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_shell_browser.py::test_reduced_motion_disables_pane_transition",
+      "target": "web/tests/shell-projection.spec.mjs",
+      "scenario": "reduced motion eliminates workspace pane transitions",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_tasks_projection.py::test_running_task_stays_projected",
+      "target": "native/crates/ct-app/src/panel_tasks.rs",
+      "scenario": "running_stays_projected_and_cannot_be_dismissed",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_tasks_projection.py::test_fresh_error_is_projected_with_started_at",
+      "target": "native/crates/ct-app/src/panel_tasks.rs",
+      "scenario": "fresh_error_can_be_dismissed_without_losing_details",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_tasks_projection.py::test_expired_error_leaves_taskbar",
+      "target": "native/crates/ct-app/src/panel_tasks.rs",
+      "scenario": "expired_error_leaves_projection_but_remains_queryable",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_tasks_projection.py::test_fail_marks_settle_time_for_new_run",
+      "target": "web/tests/native-api.test.mjs",
+      "scenario": "failed task can be dismissed across clients and is reset on the next run",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_tasks_projection.py::test_dismissed_error_leaves_taskbar_until_next_run",
+      "target": "web/tests/native-api.test.mjs",
+      "scenario": "failed task can be dismissed across clients and is reset on the next run",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_tasks_projection.py::test_dismiss_is_rejected_while_running",
+      "target": "native/crates/ct-app/src/panel_tasks.rs",
+      "scenario": "running_stays_projected_and_cannot_be_dismissed",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_tasks_projection.py::test_tasks_dismiss_endpoint_hides_error",
+      "target": "web/tests/native-api.test.mjs",
+      "scenario": "failed task can be dismissed across clients and is reset on the next run",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_tasks_projection.py::test_tasks_dismiss_endpoint_rejects_unknown_id",
+      "target": "web/tests/native-api.test.mjs",
+      "scenario": "failed task can be dismissed across clients and is reset on the next run",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_tasks_projection.py::test_tasks_endpoint_drops_expired_error",
+      "target": "native/crates/ct-app/src/panel_tasks.rs",
+      "scenario": "expired_error_leaves_projection_but_remains_queryable",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    },
+    {
+      "source": "ct/tests/web/test_tasks_projection.py::test_tasks_endpoint_keeps_fresh_error",
+      "target": "native/crates/ct-app/src/panel_tasks.rs",
+      "scenario": "fresh_error_can_be_dismissed_without_losing_details",
+      "status": "verified",
+      "evidence": "native/docs/baseline/web-smoke/verification.md"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+table: Monster
+primary: Id
+fields:
+  - name: Id
+    type: int32
+  - name: LootItem
+    type: int32
+    ref: Item.Id

@@ -1,0 +1,1 @@
+{"bundles": {"ja": "legacy-bundle-ja"}, "excel_hashes": {"LegacyOnly": "legacy-excel-sha256"}, "format": "canonical-cache/1", "tables": {"LegacyOnly": {"data": "legacy-data", "i18n": {"en": "legacy-en"}, "schema": "legacy-schema"}}}

@@ -1,0 +1,40 @@
+{
+  "records": {
+    "Position": {"fields": [
+      {"name": "X", "type": {"scalar": "float"}},
+      {"name": "Y", "type": {"scalar": "float"}},
+      {"name": "Z", "type": {"scalar": "float"}}
+    ]},
+    "DropReward": {"fields": [
+      {"name": "ItemId", "type": {"scalar": "int32"}},
+      {"name": "Count", "type": {"scalar": "int32"}},
+      {"name": "Note", "type": {"scalar": "string"}}
+    ]},
+    "Effect": {"fields": [
+      {"name": "Kind", "type": {"named": "EffectKind"}},
+      {"name": "Params", "type": {"vector": {"element": {"scalar": "string"}}}},
+      {"name": "Pos", "type": {"named": "Position"}}
+    ]}
+  },
+  "enums": {
+    "ItemRarity": ["Common", "Rare", "Epic"],
+    "EffectKind": ["None", "Buff", "Debuff"]
+  },
+  "table": {
+    "name": "Buff",
+    "primary": "Id",
+    "uniform": false,
+    "fields": [
+      {"name": "Id", "type": {"scalar": "int32"}},
+      {"name": "Duration", "type": {"scalar": "float"}},
+      {"name": "Kind", "type": {"named": "EffectKind"}},
+      {"name": "Tags", "type": {"vector": {"element": {"scalar": "string"}}}},
+      {"name": "Desc", "type": {"scalar": "string"}}
+    ]
+  },
+  "rows": [
+    {"Id": 1},
+    {"Id": 2, "Duration": 1.5, "Kind": "Buff", "Tags": ["a"], "Desc": "x"},
+    {"Id": 3, "Kind": "None"}
+  ]
+}

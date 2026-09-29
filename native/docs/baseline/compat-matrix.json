@@ -1,0 +1,663 @@
+{
+  "schema": "ct-compat-matrix/1",
+  "source": "openspec/changes/rust-native-core/coverage.md",
+  "baselineFingerprint": "native/docs/baseline/source-tree.json",
+  "note": "本文件是 coverage.md 表格的机器可读形式：每行必须能被自动检查（Python 参照测试存在、原生验收锚点存在且含测试）。",
+  "requiredFamilies": [
+    "cli",
+    "schema",
+    "excel",
+    "i18n",
+    "publication"
+  ],
+  "excludedPythonDirs": [
+    "ct/tests/web",
+    "ct/tests/architecture"
+  ],
+  "statusVocabulary": [
+    "verified",
+    "partial",
+    "in-progress",
+    "environment-limited",
+    "ui-change"
+  ],
+  "rows": [
+    {
+      "id": "cli-interface",
+      "family": "cli",
+      "owner": "kernel",
+      "capability": "cli-interface；ct/cli.py；test_cli_filter_and_i18n_output",
+      "behaviors": "export 的 all/table/lang/verbose/for-build/root，validate/status/gen-template，i18n sync/status/compact，deploy；退出码和纯 JSON stdout；单值精确过滤",
+      "change": "内核 6.1",
+      "pythonTests": [
+        "ct/tests/app/test_cli_and_web_service.py",
+        "ct/tests/app/test_cli_filter_and_i18n_output.py",
+        "ct/tests/app/test_canonical_status.py"
+      ],
+      "nativeTests": [
+        "native/crates/ct-cli/tests/cli.rs",
+        "native/crates/ct-cli/tests/worker_chain.rs"
+      ],
+      "nativeAnchors": [
+        "native/crates/ct-cli/tests/cli.rs::export_happy_path_writes_artifacts_and_ledger",
+        "native/crates/ct-cli/tests/cli.rs::export_unknown_table_and_bad_lang_exit_one",
+        "native/crates/ct-cli/tests/cli.rs::export_validation_failure_reports_issue_list",
+        "native/crates/ct-cli/tests/cli.rs::i18n_sync_status_json_and_compact_dry_run",
+        "native/crates/ct-cli/tests/cli.rs::deploy_without_config_reports_no_change",
+        "native/crates/ct-cli/tests/cli.rs::help_lists_full_command_surface"
+      ],
+      "status": "verified",
+      "note": "命令级文本/退出码/JSON 形状由 cli.rs 15 例覆盖（含写入/复用计数与缓存命中汇总行）；worker 侧另有 worker_chain.rs 全链对照。"
+    },
+    {
+      "id": "tool-workspace-separation",
+      "family": "workspace",
+      "owner": "kernel+ui",
+      "capability": "tool-workspace-separation",
+      "behaviors": "数据目录不放源码，从 cwd 或 --root 运行；独立安装及隔离开发测试",
+      "change": "内核 6.6–6.9",
+      "pythonTests": [],
+      "nativeTests": [
+        "native/crates/ct-cli/tests/cli.rs"
+      ],
+      "nativeAnchors": [
+        "native/crates/ct-cli/tests/cli.rs::panel_command_exposes_native_web_options"
+      ],
+      "status": "partial",
+      "note": "Windows 侧已验收：发行包自检 + gd 真实工作区只读对照（isolation-check.md）；macOS/Linux 的包与 PATH 隔离随任务 6.6 在真机/CI 复跑。"
+    },
+    {
+      "id": "schema-management",
+      "family": "schema",
+      "owner": "kernel",
+      "capability": "schema-management；schema tests",
+      "behaviors": "YAML 解码、未知字段拒绝、命名/类型/角色、深度/循环、确定顺序、主键 int32、CodeName、Enum wire type、uniform 默认省略",
+      "change": "内核 2.1–2.5",
+      "pythonTests": [
+        "ct/tests/schema/test_canonical_workspace.py",
+        "ct/tests/schema/test_enum_wire_type.py",
+        "ct/tests/schema/test_identity.py",
+        "ct/tests/schema/test_name_validation.py",
+        "ct/tests/schema/test_naming.py",
+        "ct/tests/schema/test_old_format_rejection.py",
+        "ct/tests/schema/test_primary_key_type.py",
+        "ct/tests/schema/test_resource_graph.py",
+        "ct/tests/schema/test_resource_repository.py",
+        "ct/tests/schema/test_role_boundaries.py",
+        "ct/tests/schema/test_uniform_layout_flag.py",
+        "ct/tests/app/test_schema_workspace.py"
+      ],
+      "nativeTests": [
+        "native/tests/compat/tests/schema_loading.rs",
+        "native/tests/compat/tests/schema_parity.rs",
+        "native/tests/compat/tests/resource_graph.rs",
+        "native/crates/ct-domain/tests/config.rs",
+        "native/crates/ct-domain/tests/type_expression.rs"
+      ],
+      "nativeAnchors": [
+        "native/crates/ct-domain/tests/type_expression.rs::primary_key_type_is_int32",
+        "native/crates/ct-domain/tests/type_expression.rs::vector_grammar",
+        "native/crates/ct-domain/tests/config.rs::custom_dirs_resolve_against_root"
+      ],
+      "status": "verified",
+      "note": "schema 加载/拒绝/顺序与资源图由 schema_loading.rs、resource_graph.rs 覆盖；与 Python 逐值对照在 schema_parity.rs。"
+    },
+    {
+      "id": "schema-type-system-reader",
+      "family": "schema",
+      "owner": "kernel",
+      "capability": "schema-editor/type-system；test_canonical_reader",
+      "behaviors": "所有标量、嵌套 Record、固定/变长 vector、括号文法、Enum token 域、固定空槽默认",
+      "change": "内核 2.4–2.5",
+      "pythonTests": [
+        "ct/tests/excel/test_canonical_reader.py",
+        "ct/tests/schema/test_type_expression.py"
+      ],
+      "nativeTests": [
+        "native/tests/compat/tests/canonical_read.rs",
+        "native/crates/ct-domain/tests/type_expression.rs",
+        "native/tests/compat/tests/template_semantics.rs"
+      ],
+      "nativeAnchors": [
+        "native/tests/compat/tests/canonical_read.rs::clean_rows_match_python",
+        "native/tests/compat/tests/canonical_read.rs::bad_rows_match_python_issues",
+        "native/tests/compat/tests/canonical_read.rs::vector_cell_grammar"
+      ],
+      "status": "verified",
+      "note": "同一批夹具上 Rust 与 openpyxl 逐单元格/逐问题对照（含坏值）。"
+    },
+    {
+      "id": "query-indexes",
+      "family": "schema",
+      "owner": "kernel",
+      "capability": "schema-editor/query-indexes；test_query_indexes",
+      "behaviors": "id/codename/hash 查询、碰撞比较、稳定顺序、合法角色和重复键闸门",
+      "change": "内核 3.4–3.6",
+      "pythonTests": [
+        "ct/tests/export/test_query_indexes.py"
+      ],
+      "nativeTests": [
+        "native/tests/compat/tests/binary_golden.rs",
+        "native/tests/compat/tests/validate_gates.rs"
+      ],
+      "nativeAnchors": [
+        "native/tests/compat/tests/binary_golden.rs::bundle_bytes_match",
+        "native/tests/compat/tests/validate_gates.rs::duplicate_primary_key_rejected",
+        "native/tests/compat/tests/validate_gates.rs::codename_empty_and_duplicate_rejected"
+      ],
+      "status": "verified",
+      "note": "索引与 Bundle 字节一致（含碰撞/顺序），闸门在 validate_gates.rs。"
+    },
+    {
+      "id": "schema-workspace-draft",
+      "family": "schema",
+      "owner": "kernel+ui",
+      "capability": "schema-editor/workspace-draft；schema_save/add_resource tests",
+      "behaviors": "所有结构命令、逐步 undo/redo/字段撤销、净差异、基线/hash、YAML-only、零变更不写、来源路径与 Excel 归属、事务恢复",
+      "change": "内核 3.10–3.12、4.6；界面 3.3–3.9",
+      "pythonTests": [
+        "ct/tests/app/test_add_resource_atomicity.py",
+        "ct/tests/app/test_add_resource_candidate.py",
+        "ct/tests/app/test_add_resource_commands.py",
+        "ct/tests/app/test_add_resource_netdiff.py",
+        "ct/tests/app/test_add_resource_paths.py",
+        "ct/tests/app/test_add_resource_workflow.py",
+        "ct/tests/app/test_schema_net_diff.py",
+        "ct/tests/app/test_schema_save.py",
+        "ct/tests/app/test_schema_save_atomicity.py",
+        "ct/tests/app/test_schema_save_workflow.py",
+        "ct/tests/schema/test_commands.py",
+        "ct/tests/schema/test_canonical_hashing.py"
+      ],
+      "nativeTests": [
+        "native/tests/compat/tests/schema_draft.rs",
+        "native/tests/compat/tests/schema_save.rs",
+        "native/tests/compat/tests/resource_graph.rs"
+      ],
+      "nativeAnchors": [
+        "native/tests/compat/tests/schema_save.rs::save_stale_revision_rejected_and_untouched",
+        "native/tests/compat/tests/schema_save.rs::save_bad_candidate_hash_rejected",
+        "native/tests/compat/tests/schema_save.rs::save_writes_only_changed_yaml",
+        "native/tests/compat/tests/schema_save.rs::save_noop_touches_nothing",
+        "native/tests/compat/tests/schema_save.rs::excel_path_conflict_rejected",
+        "native/tests/compat/tests/schema_save.rs::recovery_changes_baseline_and_rejects_pre_recovery_draft"
+      ],
+      "status": "verified",
+      "note": "内核侧命令重放/候选/净差异/YAML-only 全部通过；界面编辑器由 native-flutter-workbench 承接。"
+    },
+    {
+      "id": "schema-workbench-ui",
+      "family": "ui",
+      "owner": "ui",
+      "capability": "schema-editor/workbench；fuzzy/schema browser tests",
+      "behaviors": "三类编辑器、Enum item/ordinal 风险、引用跳转、全局 Quick Open、搜索折叠恢复、类型/索引/依赖视图",
+      "change": "native-web-python-retirement",
+      "pythonTests": [],
+      "nativeTests": [],
+      "nativeAnchors": [],
+      "status": "ui-change",
+      "note": "属于 native-flutter-workbench；本次内核验收只保证协议与数据可用。 main 接管：保留 Web 桌面壳；上述 Flutter 工作台测试仅保留来源。Web UI 完整验收见 web-parity.json，尚未通过 G1。",
+      "historicalNativeTests": {
+        "commit": "2d7dfc9",
+        "paths": [
+          "launcher/test/workbench_test.dart",
+          "launcher/test/workbench_golden_test.dart"
+        ]
+      }
+    },
+    {
+      "id": "excel-processing",
+      "family": "excel",
+      "owner": "kernel",
+      "capability": "excel-processing；test_reading_compat/test_layout/test_planning",
+      "behaviors": "活跃 Sheet、布局 hash/manifest、原始行号、缺失/损坏 manifest 分支、路径迁移、禁止非空数据丢失",
+      "change": "内核 1.5–1.6、2.3、3.9、3.13",
+      "pythonTests": [
+        "ct/tests/excel/test_layout.py",
+        "ct/tests/excel/test_planning.py",
+        "ct/tests/excel/test_canonical_v2_regressions.py",
+        "ct/tests/app/test_reading_compat.py"
+      ],
+      "nativeTests": [
+        "native/tests/compat/tests/layout_manifest.rs",
+        "native/tests/compat/tests/excel_edge.rs",
+        "native/tests/compat/tests/template_semantics.rs"
+      ],
+      "nativeAnchors": [
+        "native/tests/compat/tests/layout_manifest.rs::header_nodes_deterministic",
+        "native/tests/compat/tests/layout_manifest.rs::manifest_payload_matches_golden",
+        "native/tests/compat/tests/excel_edge.rs::fixture_active_sheet",
+        "native/tests/compat/tests/excel_edge.rs::fixture_formula_cache",
+        "native/tests/compat/tests/excel_edge.rs::fixture_errors"
+      ],
+      "status": "verified",
+      "note": "读取端与 Python 逐值一致；模板/迁移语义在 template_semantics.rs。"
+    },
+    {
+      "id": "excel-template-styling",
+      "family": "excel",
+      "owner": "kernel",
+      "capability": "excel-template-styling；test_canonical_template",
+      "behaviors": "2D 表头、富文本两行字体、合并边框、行列尺寸、A(2D+1)冻结、Enum Note、下拉255限制及 warning、不建隐藏辅助 Sheet、白色数据区",
+      "change": "内核 1.6、3.9",
+      "pythonTests": [
+        "ct/tests/excel/test_canonical_template.py"
+      ],
+      "nativeTests": [
+        "native/tests/compat/tests/template_semantics.rs",
+        "native/tests/compat/tests/template_flow.rs",
+        "native/tests/compat/tests/template_edge.rs"
+      ],
+      "nativeAnchors": [
+        "native/tests/compat/tests/template_semantics.rs::template_v1_structure",
+        "native/tests/compat/tests/template_semantics.rs::template_v2a_structure",
+        "native/tests/compat/tests/template_semantics.rs::template_readback_via_calamine",
+        "native/tests/compat/tests/template_edge.rs::long_enum_dropdown_skipped_with_warning",
+        "native/tests/compat/tests/template_flow.rs::missing_manifest_refuses_overwrite"
+      ],
+      "status": "verified",
+      "note": "ZIP 内样式 XML 结构断言 + calamine 回读；不承诺任意工作簿无损保留。"
+    },
+    {
+      "id": "data-validation",
+      "family": "schema",
+      "owner": "kernel",
+      "capability": "data-validation；test_enum_token_gate/test_canonical_validate",
+      "behaviors": "类型/主键/CodeName/ref/Enum、批量结构化错误、Excel 位置；辅助数据验证不是唯一数据闸门",
+      "change": "内核 2.4–2.6",
+      "pythonTests": [
+        "ct/tests/app/test_canonical_validate.py",
+        "ct/tests/app/test_enum_token_gate.py"
+      ],
+      "nativeTests": [
+        "native/tests/compat/tests/validate_gates.rs",
+        "native/tests/compat/tests/stage_profile.rs"
+      ],
+      "nativeAnchors": [
+        "native/tests/compat/tests/validate_gates.rs::unknown_enum_token_rejected",
+        "native/tests/compat/tests/validate_gates.rs::bad_ref_rejected_even_with_table_filter",
+        "native/tests/compat/tests/validate_gates.rs::deterministic_issue_order",
+        "native/tests/compat/tests/stage_profile.rs::validation_issues_are_carried_by_the_error_once"
+      ],
+      "status": "verified",
+      "note": "闸门失败零产物改动由 incremental_matrix.rs::illegal_data_fails_both_modes_and_touches_nothing 佐证。"
+    },
+    {
+      "id": "json-export",
+      "family": "export",
+      "owner": "kernel",
+      "capability": "json-export / json-single-line-records",
+      "behaviors": "每语言、server_only、嵌套序列化、单记录一行、顺序/Unicode/数字格式",
+      "change": "内核 3.1、3.7；字节对照",
+      "pythonTests": [
+        "ct/tests/export/test_canonical_json.py"
+      ],
+      "nativeTests": [
+        "native/tests/compat/tests/json_export.rs",
+        "native/tests/compat/tests/export_pipeline.rs"
+      ],
+      "nativeAnchors": [
+        "native/tests/compat/tests/json_export.rs::json_bytes_match_python",
+        "native/tests/compat/tests/json_export.rs::json_single_line_records",
+        "native/tests/compat/tests/json_export.rs::json_empty_table"
+      ],
+      "status": "verified",
+      "note": "server_only 与三语言组合在 export_pipeline.rs 全产物字节对照内。"
+    },
+    {
+      "id": "flatbuffers-export",
+      "family": "export",
+      "owner": "kernel",
+      "capability": "flatbuffers-export / csharp-binary-reader-test",
+      "behaviors": "FBS、Bundle、uniform vtable、C#/Lua namespace/API、字段类型、O(1)索引、字符串缓存、ref cache、vector base、稀疏i18n行对齐、语言切换generation与fallback",
+      "change": "内核 3.2–3.7",
+      "pythonTests": [
+        "ct/tests/export/test_canonical_binary.py",
+        "ct/tests/export/test_canonical_fbs.py",
+        "ct/tests/export/test_canonical_accessor.py",
+        "ct/tests/export/test_uniform_layout.py",
+        "ct/tests/app/test_uniform_bloat_notice.py"
+      ],
+      "nativeTests": [
+        "native/tests/compat/tests/binary_golden.rs",
+        "native/tests/compat/tests/fbs_export.rs",
+        "native/tests/compat/tests/accessor_golden.rs"
+      ],
+      "nativeAnchors": [
+        "native/tests/compat/tests/binary_golden.rs::item_nonuniform_bytes_match",
+        "native/tests/compat/tests/binary_golden.rs::item_uniform_bytes_match",
+        "native/tests/compat/tests/binary_golden.rs::sparse_uniform_bytes_match",
+        "native/tests/compat/tests/binary_golden.rs::bundle_bytes_match",
+        "native/tests/compat/tests/fbs_export.rs::types_fbs_matches_python",
+        "native/tests/compat/tests/accessor_golden.rs::csharp_item_offsets_mode",
+        "native/tests/compat/tests/accessor_golden.rs::lua_item_and_buff"
+      ],
+      "status": "partial",
+      "note": "生成端字节/API 已验收；Unity 工程内 C# 实读与语言切换 generation/fallback 对照需游戏端环境，本环境未运行（任务 6.12 记为环境受限）。"
+    },
+    {
+      "id": "i18n-pipeline",
+      "family": "i18n",
+      "owner": "kernel+ui",
+      "capability": "i18n-pipeline；test_canonical_i18n/test_state",
+      "behaviors": "source骨架、四态、confirmed、orphan、compact dry-run、状态分母、有效译文合并和格式",
+      "change": "内核 3.7–3.8；界面 4.1–4.3",
+      "pythonTests": [
+        "ct/tests/i18n/test_state.py",
+        "ct/tests/app/test_canonical_i18n.py"
+      ],
+      "nativeTests": [
+        "native/tests/compat/tests/i18n_flow.rs",
+        "native/crates/ct-cli/tests/cli.rs"
+      ],
+      "nativeAnchors": [
+        "native/tests/compat/tests/i18n_flow.rs::sync_status_compact_roundtrip",
+        "native/tests/compat/tests/i18n_flow.rs::serialize_format_matches_python",
+        "native/tests/compat/tests/i18n_flow.rs::merge_entry_rules",
+        "native/tests/compat/tests/i18n_flow.rs::status_machine"
+      ],
+      "status": "verified",
+      "note": "翻译工作台界面由 native-flutter-workbench 承接（界面 4.1–4.3）。"
+    },
+    {
+      "id": "incremental-export",
+      "family": "publication",
+      "owner": "kernel",
+      "capability": "incremental-export",
+      "behaviors": "无变更mtime、强制写、局部Bundle、输出修复、账本独立、类型/译文依赖；新增解析/ref缓存不得漏校验",
+      "change": "内核 5.1–5.6；变更/损坏矩阵",
+      "pythonTests": [
+        "ct/tests/app/test_incremental_export.py",
+        "ct/tests/cache/test_canonical_state.py",
+        "ct/tests/cache/test_fingerprints.py"
+      ],
+      "nativeTests": [
+        "native/tests/compat/tests/incremental_matrix.rs",
+        "native/tests/compat/tests/cache_artifacts.rs",
+        "native/tests/compat/tests/fingerprints.rs",
+        "native/tests/compat/tests/stage_profile.rs"
+      ],
+      "nativeAnchors": [
+        "native/tests/compat/tests/incremental_matrix.rs::unchanged_inputs_keep_bytes_and_mtime_but_all_rewrites",
+        "native/tests/compat/tests/incremental_matrix.rs::effective_translation_change_updates_only_that_language",
+        "native/tests/compat/tests/incremental_matrix.rs::inert_translation_metadata_does_not_rebuild_anything",
+        "native/tests/compat/tests/incremental_matrix.rs::corrupt_cache_and_unknown_ledger_version_rebuild_without_changing_bytes",
+        "native/tests/compat/tests/fingerprints.rs::ref_target_primary_key_change_invalidates_schema",
+        "native/tests/compat/tests/cache_artifacts.rs::same_mtime_content_change_recomputes"
+      ],
+      "status": "verified",
+      "note": "变更/损坏矩阵与阶段 profile 均已通过（阶段合计耗时、写入/复用计数）。"
+    },
+    {
+      "id": "export-publication",
+      "family": "publication",
+      "owner": "kernel",
+      "capability": "export-publication；storage/app publication/input tests",
+      "behaviors": "输入捕获、锁、恢复先于加载、新增清理、删除恢复、晚取消、失败账本、未恢复只读诊断、过滤不清理无关产物",
+      "change": "内核 4.1–4.6；各阶段故障注入",
+      "pythonTests": [
+        "ct/tests/app/test_input_snapshot.py",
+        "ct/tests/app/test_publication_boundary.py",
+        "ct/tests/app/test_export_service.py",
+        "ct/tests/app/test_exporting_models.py",
+        "ct/tests/app/test_canonical_export_regression.py",
+        "ct/tests/storage/test_files.py",
+        "ct/tests/storage/test_publication.py",
+        "ct/tests/storage/test_workspace_lock.py",
+        "ct/tests/storage/test_workspace_transaction.py",
+        "ct/tests/cutover/test_e2e_safety.py",
+        "ct/tests/cutover/test_canonical_export_smoke.py"
+      ],
+      "nativeTests": [
+        "native/tests/compat/tests/export_pipeline.rs",
+        "native/tests/compat/tests/publication_recovery.rs",
+        "native/tests/compat/tests/workspace_lock.rs",
+        "native/tests/protocol/tests/cancel.rs"
+      ],
+      "nativeAnchors": [
+        "native/tests/compat/tests/export_pipeline.rs::pipeline_matches_python_byte_for_byte",
+        "native/tests/compat/tests/export_pipeline.rs::input_change_during_build_blocks_publish",
+        "native/tests/compat/tests/export_pipeline.rs::partial_export_keeps_other_ledger_entries",
+        "native/tests/compat/tests/publication_recovery.rs::crash_mid_publish_restores_content_and_mtime_and_removes_created",
+        "native/tests/compat/tests/publication_recovery.rs::missing_backup_keeps_materials_and_blocks",
+        "native/tests/compat/tests/workspace_lock.rs::cross_process_busy_and_death_release",
+        "native/tests/protocol/tests/cancel.rs::control_messages_are_served_while_a_write_task_runs"
+      ],
+      "status": "verified",
+      "note": "含 CLI 只读诊断（cli.rs::validate_and_status_report_recovery_needed）。"
+    },
+    {
+      "id": "unity-deploy",
+      "family": "publication",
+      "owner": "kernel",
+      "capability": "unity-deploy；test_sync_dir/test_deploy",
+      "behaviors": "enabled降级、source/dest解析、for-build、同内容不写、代码meta保留/删除、缺源失败、热导出仍部署、CLI失败账本",
+      "change": "内核 4.4–4.5；界面 4.4",
+      "pythonTests": [
+        "ct/tests/deploy/test_deploy.py",
+        "ct/tests/deploy/test_sync_dir.py"
+      ],
+      "nativeTests": [
+        "native/tests/compat/tests/export_pipeline.rs",
+        "native/crates/ct-cli/tests/cli.rs",
+        "native/crates/ct-domain/tests/config.rs"
+      ],
+      "nativeAnchors": [
+        "native/tests/compat/tests/export_pipeline.rs::deploy_syncs_and_preserves_meta",
+        "native/tests/compat/tests/export_pipeline.rs::deploy_failure_keeps_ledger_untouched",
+        "native/crates/ct-cli/tests/cli.rs::deploy_without_config_reports_no_change",
+        "native/crates/ct-domain/tests/config.rs::deploy_targets_expand"
+      ],
+      "status": "verified",
+      "note": ".meta 保留/删除与缺源失败在临时夹具真实验证；界面独立部署入口属 native-flutter-workbench。"
+    },
+    {
+      "id": "web-panel",
+      "family": "ui",
+      "owner": "ui",
+      "capability": "web-panel",
+      "behaviors": "翻译表选择器只含i18n、状态筛选/列显隐/长文本、同步和进度、模板状态、模块日志与五条历史",
+      "change": "native-web-python-retirement",
+      "pythonTests": [],
+      "nativeTests": [
+        "native/tests/compat/tests/desktop_history.rs",
+        "native/tests/protocol/tests/desktop_state.rs"
+      ],
+      "nativeAnchors": [
+        "native/tests/compat/tests/desktop_history.rs::history_appends_newest_first_and_trims_to_five",
+        "native/tests/protocol/tests/desktop_state.rs::module_logs_filter_by_module_and_level",
+        "native/tests/protocol/tests/desktop_state.rs::task_issues_page_and_dismiss_are_connection_scoped"
+      ],
+      "status": "partial",
+      "note": "内核侧历史/日志/任务问题分页已验收；工作台视觉与交互由 native-flutter-workbench 承接。 main 接管：保留 Web 桌面壳；上述 Flutter 工作台测试仅保留来源。Web UI 完整验收见 web-parity.json，尚未通过 G1。",
+      "historicalNativeTests": {
+        "commit": "2d7dfc9",
+        "paths": [
+          "launcher/test/workbench_test.dart"
+        ]
+      }
+    },
+    {
+      "id": "web-panel-design-system",
+      "family": "ui",
+      "owner": "ui",
+      "capability": "web-panel-design-system",
+      "behaviors": "统一视觉、跨模块草稿/任务、持续错误、危险确认、help/about/docs、保存响应不清后续编辑",
+      "change": "native-web-python-retirement",
+      "pythonTests": [],
+      "nativeTests": [],
+      "nativeAnchors": [],
+      "status": "ui-change",
+      "note": "设计令牌与页面回归在 native-flutter-workbench 验收。 main 接管：保留 Web 桌面壳；上述 Flutter 工作台测试仅保留来源。Web UI 完整验收见 web-parity.json，尚未通过 G1。",
+      "historicalNativeTests": {
+        "commit": "2d7dfc9",
+        "paths": [
+          "launcher/test/workbench_test.dart",
+          "launcher/test/workbench_golden_test.dart"
+        ]
+      }
+    },
+    {
+      "id": "launcher",
+      "family": "launcher",
+      "owner": "ui",
+      "capability": "launcher；main.dart/settings/auto_launch/tray/single_instance",
+      "behaviors": "单实例、自启/托盘、窗口生命周期、偏好迁移、内置运行时、安装路径",
+      "change": "native-web-python-retirement",
+      "pythonTests": [],
+      "nativeTests": [
+        "launcher/test/panel_service_test.dart"
+      ],
+      "nativeAnchors": [],
+      "status": "environment-limited",
+      "note": "Dart 协议侧在 Windows 已跑（launcher/test/protocol）；macOS 托盘/自启与安装路径需真机验收。 main 接管：保留 Web 桌面壳；上述 Flutter 工作台测试仅保留来源。Web UI 完整验收见 web-parity.json，尚未通过 G1。",
+      "historicalNativeTests": {
+        "commit": "2d7dfc9",
+        "paths": [
+          "launcher/test/protocol/wire_cases_test.dart"
+        ]
+      }
+    },
+    {
+      "id": "worker-protocol",
+      "family": "protocol",
+      "owner": "kernel",
+      "capability": "新增 worker 协议",
+      "behaviors": "握手、能力、所有业务方法、history/logs/tasks、分页revision、大整数、代次、取消/shutdown、重复ID、未知终态",
+      "change": "内核 1.4、6.2–6.3、6.10；界面 1.5、2.1、4.6",
+      "pythonTests": [],
+      "nativeTests": [
+        "native/tests/protocol/tests/handshake.rs",
+        "native/tests/protocol/tests/envelope.rs",
+        "native/tests/protocol/tests/request_id.rs",
+        "native/tests/protocol/tests/cancel.rs",
+        "native/tests/protocol/tests/pagination.rs",
+        "native/tests/protocol/tests/event_queue.rs",
+        "native/tests/protocol/tests/contract_cases.rs",
+        "native/tests/protocol/tests/method_names.rs",
+        "native/tests/protocol/tests/bigint.rs"
+      ],
+      "nativeAnchors": [
+        "native/tests/protocol/tests/handshake.rs::handshake_declares_version_and_capabilities",
+        "native/tests/protocol/tests/request_id.rs::duplicate_write_request_executes_only_once",
+        "native/tests/protocol/tests/pagination.rs::successful_write_invalidates_older_pages",
+        "native/tests/protocol/tests/event_queue.rs::issue_events_block_instead_of_being_dropped",
+        "native/tests/protocol/tests/contract_cases.rs::every_case_executes_against_the_real_worker",
+        "native/tests/protocol/tests/bigint.rs::out_of_range_integers_are_tagged_recursively"
+      ],
+      "status": "verified",
+      "note": "同源契约夹具同时由 Dart 解码（launcher/test/protocol/wire_cases_test.dart）。"
+    },
+    {
+      "id": "performance",
+      "family": "performance",
+      "owner": "kernel",
+      "capability": "性能目标",
+      "behaviors": "冷全量、热CLI/worker、改单表、译文；输出等价与阶段/RSS配对测量",
+      "change": "内核 1.2、6.5；界面 5.2",
+      "pythonTests": [],
+      "nativeTests": [
+        "native/tests/compat/tests/parallel_determinism.rs",
+        "native/tests/compat/tests/stage_profile.rs"
+      ],
+      "nativeAnchors": [
+        "native/tests/compat/tests/parallel_determinism.rs::peak_memory_recorded_for_bounded_parallelism",
+        "native/tests/compat/tests/stage_profile.rs::incremental_export_writes_nothing_and_forced_rewrites_all"
+      ],
+      "status": "in-progress",
+      "note": "S/M/L 夹具与配对测量在任务 1.2/6.5 落地；本环境只有 Windows 真机。"
+    }
+  ],
+  "explicitChecks": [
+    {
+      "item": "server_only 字段只进 JSON、不进客户端产物",
+      "anchor": "native/tests/compat/tests/json_export.rs::json_bytes_match_python",
+      "verdict": "已验收",
+      "note": "server_only 与三语言组合在 export_pipeline.rs 的 11 产物字节对照内。"
+    },
+    {
+      "item": "游戏读取端缓存 / 语言切换 generation 与 fallback",
+      "anchor": "native/tests/compat/tests/binary_golden.rs::bundle_bytes_match",
+      "verdict": "部分（环境受限）",
+      "note": "Bundle 字节、稀疏 i18n 行对齐与主语言 fallback 已在产物侧对照；Unity 工程内 C# 实读与 generation 切换需游戏端环境，本环境未运行。"
+    },
+    {
+      "item": "部署保留/删除代码 .meta",
+      "anchor": "native/tests/compat/tests/export_pipeline.rs::deploy_syncs_and_preserves_meta",
+      "verdict": "已验收",
+      "note": "临时夹具里预置旧文件+旧 .meta+孤儿 .meta，验证 GUID 保留与连带删除。"
+    },
+    {
+      "item": "for-build 目标范围",
+      "anchor": "native/crates/ct-cli/tests/cli.rs::deploy_without_config_reports_no_change",
+      "verdict": "已验收",
+      "note": "CLI --for-build 与 worker deploy 共用 ct_export::deploy；未配置时输出与 Python 一致的跳过提示。"
+    },
+    {
+      "item": "部署缺源失败且账本不推进",
+      "anchor": "native/tests/compat/tests/export_pipeline.rs::deploy_failure_keeps_ledger_untouched",
+      "verdict": "已验收",
+      "note": "本地产物保留、cache/state.json 不写入，错误分类为 RunError::Deploy。"
+    },
+    {
+      "item": "解析/ref 缓存不得漏掉校验",
+      "anchor": "native/tests/compat/tests/incremental_matrix.rs::illegal_data_fails_both_modes_and_touches_nothing",
+      "verdict": "已验收",
+      "note": "非法数据在增量与 --all 两种模式下都失败且零改动；ref 目标主键变更由 fingerprints.rs 触发失效。"
+    },
+    {
+      "item": "独立运行时包不依赖 Python",
+      "anchor": "native/crates/ct-xtask/src/dist.rs",
+      "verdict": "已验收（仅 Windows 真跑）",
+      "note": "dist 自检把 PATH 收敛为包内单目录并清 PYTHON* 变量，真跑 validate/status/export/worker；macOS/Linux 需在 CI 或真机复跑。"
+    },
+    {
+      "item": "旧格式不迁移（不做旧工具链兼容）",
+      "anchor": "native/tests/compat/tests/desktop_history.rs::unknown_history_format_is_ignored_then_replaced",
+      "verdict": "已验收",
+      "note": "旧 apply-journal/1、旧桌面历史、旧锁文件不迁移：保留材料并拒绝在其上写入（publication_recovery.rs 同组）。"
+    }
+  ],
+  "excludedSpecs": [
+    {
+      "item": "Web 面板「保存自动改 Excel/删除 Excel」",
+      "reason": "与现行 YAML-only 冲突，按 coverage.md 决策保留 YAML-only；模板/翻译/导出为显式操作。"
+    },
+    {
+      "item": "浏览器 HTML/CSS/inert/IndexedDB 草稿与 localStorage",
+      "reason": "改为 Flutter 工作台 + 应用目录持久化；旧 IndexedDB 草稿不自动导入（native-flutter-workbench）。"
+    },
+    {
+      "item": "720×460 固定 launcher 窗口、手机 390px 布局、Linux GUI",
+      "reason": "改为可调原生工作台（最小 1024×700），首发桌面 Windows/macOS；手机与 Linux GUI 不在范围内。"
+    },
+    {
+      "item": "ct panel / Flask 端口与工具目录回退",
+      "reason": "由原生入口替代；旧 Python 只作隔离对照，不是新运行依赖。"
+    },
+    {
+      "item": "incremental-export 的「每次重新解析」表述",
+      "reason": "本次明确改为有效缓存复用（任务 5.1–5.6 已验收），规格文字在 6.8 同步。"
+    },
+    {
+      "item": "i18n-pipeline 中标注未实现的 stale 告警/旧 fingerprint 联动",
+      "reason": "不自动扩成本次必做；新的有效输入缓存按自己的 delta 验收。"
+    },
+    {
+      "item": "unity-deploy 的 Web Deploy 阶段与 ct status 部署输出",
+      "reason": "不照搬；保留现有五阶段与 status 三类，原生独立部署为新增入口。"
+    },
+    {
+      "item": "任意附加 Sheet/宏/图表/公式文本的无损保留",
+      "reason": "模板重建只承诺当前数据值迁移，不提供公式计算器，也不宣传为完整 Excel 编辑。"
+    },
+    {
+      "item": "excel-processing 的 custom properties 旧意图",
+      "reason": "以现行 layout manifest 实现与测试为准，不恢复废弃元数据格式。"
+    },
+    {
+      "item": "Excel ZIP 容器时间戳等字节级一致",
+      "reason": "容器按单元格/样式/迁移语义验证；只有导出产物要求逐字节一致。"
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ct-tool.local/protocol/v1.json",
+  "title": "ct worker protocol v1",
+  "description": "NDJSON 消息信封与共享结构。与 crates/ct-protocol 的 Rust 类型同源；examples/*.ndjson 必须逐行通过本 schema。",
+  "oneOf": [
+    { "$ref": "#/$defs/hello" },
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/progressEvent" },
+    { "$ref": "#/$defs/logEvent" },
+    { "$ref": "#/$defs/issueEvent" },
+    { "$ref": "#/$defs/resultResponse" },
+    { "$ref": "#/$defs/errorResponse" }
+  ],
+  "$defs": {
+    "hello": {
+      "type": "object",
+      "required": ["type", "protocolVersion", "coreVersion", "capabilities"],
+      "properties": {
+        "type": { "const": "hello" },
+        "protocolVersion": { "type": "integer", "minimum": 1 },
+        "coreVersion": { "type": "string" },
+        "capabilities": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "request": {
+      "type": "object",
+      "required": ["type", "requestId", "method", "workspaceRoot", "params"],
+      "properties": {
+        "type": { "const": "request" },
+        "requestId": { "type": "integer", "minimum": 0 },
+        "method": {
+          "type": "string",
+          "enum": [
+            "workspace.open", "workspace.snapshot", "workspace.status", "workspace.recover",
+            "resources.list", "table.preview",
+            "schema.candidate", "schema.save",
+            "template.plan", "template.generate",
+            "validate", "export", "deploy",
+            "i18n.query", "i18n.save", "i18n.sync", "i18n.status", "i18n.compact",
+            "history.list", "logs.list",
+            "tasks.list", "tasks.issues", "tasks.dismiss",
+            "cancel", "shutdown"
+          ]
+        },
+        "workspaceRoot": { "type": "string" },
+        "params": { "type": "object" }
+      }
+    },
+    "progressEvent": {
+      "type": "object",
+      "required": ["type", "requestId", "workspaceId", "seq", "stage", "done", "total"],
+      "properties": {
+        "type": { "const": "progress" },
+        "requestId": { "type": "integer" },
+        "workspaceId": { "type": "string" },
+        "seq": { "type": "integer", "minimum": 1 },
+        "stage": { "type": "string" },
+        "done": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "logEvent": {
+      "type": "object",
+      "required": ["type", "requestId", "workspaceId", "seq", "module", "level", "message"],
+      "properties": {
+        "type": { "const": "log" },
+        "requestId": { "type": "integer" },
+        "workspaceId": { "type": "string" },
+        "seq": { "type": "integer", "minimum": 1 },
+        "module": { "type": "string" },
+        "level": { "type": "string" },
+        "message": { "type": "string" }
+      }
+    },
+    "issueEvent": {
+      "type": "object",
+      "required": ["type", "requestId", "workspaceId", "seq", "issue"],
+      "properties": {
+        "type": { "const": "issue" },
+        "requestId": { "type": "integer" },
+        "workspaceId": { "type": "string" },
+        "seq": { "type": "integer", "minimum": 1 },
+        "issue": { "$ref": "#/$defs/issue" }
+      }
+    },
+    "resultResponse": {
+      "type": "object",
+      "required": ["type", "requestId", "workspaceId", "seq", "payload"],
+      "properties": {
+        "type": { "const": "result" },
+        "requestId": { "type": "integer" },
+        "workspaceId": { "type": "string" },
+        "seq": { "type": "integer", "minimum": 1 },
+        "payload": true
+      }
+    },
+    "errorResponse": {
+      "type": "object",
+      "required": ["type", "error"],
+      "properties": {
+        "type": { "const": "error" },
+        "requestId": { "type": "integer" },
+        "workspaceId": { "type": "string" },
+        "seq": { "type": "integer", "minimum": 1 },
+        "error": { "$ref": "#/$defs/errorBody" }
+      }
+    },
+    "errorBody": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "protocol-mismatch", "malformed-message", "message-too-large",
+            "unknown-method", "duplicate-request-id", "stale-page",
+            "busy", "recovery-needed", "internal"
+          ]
+        },
+        "message": { "type": "string" }
+      }
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "resource": { "type": "string" },
+        "fieldPath": { "type": "string" },
+        "excelRow": { "type": "integer", "minimum": 1 },
+        "file": { "type": "string" }
+      }
+    },
+    "pageRequest": {
+      "type": "object",
+      "properties": {
+        "cursor": { "type": "string" },
+        "limit": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "bigint": {
+      "type": "object",
+      "description": "超出 ±(2^53-1) 的整数标签表示",
+      "required": ["$int"],
+      "properties": { "$int": { "type": "string", "pattern": "^-?[0-9]+$" } },
+      "additionalProperties": false
+    }
+  }
+}

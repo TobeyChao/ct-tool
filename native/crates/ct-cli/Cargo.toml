@@ -1,0 +1,31 @@
+[package]
+name = "ct-cli"
+description = "ct 命令行：export/validate/status/gen-template/i18n/deploy/worker"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "ct"
+path = "src/main.rs"
+
+[dependencies]
+ct-web = { path = "../ct-web" }
+ct-app.workspace = true
+ct-domain.workspace = true
+ct-export.workspace = true
+ct-storage.workspace = true
+ct-worker.workspace = true
+clap.workspace = true
+anyhow.workspace = true
+serde_json.workspace = true
+[dev-dependencies]
+ct-test-support.workspace = true
+tempfile.workspace = true
+ct-protocol.workspace = true
+ct-storage.workspace = true
+ct-domain.workspace = true
+rust_xlsxwriter.workspace = true
+serde_json.workspace = true

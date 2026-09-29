@@ -1,0 +1,43 @@
+[workspace]
+resolver = "2"
+members = ["crates/*", "tests/*"]
+exclude = ["fuzz"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.85"
+license = "MIT"
+
+# 内部 crate 统一 0.0.0，不发布；依赖通过 workspace.dependencies 管理。
+[workspace.dependencies]
+ct-domain = { path = "crates/ct-domain", version = "0.0.0" }
+ct-excel = { path = "crates/ct-excel", version = "0.0.0" }
+ct-export = { path = "crates/ct-export", version = "0.0.0" }
+ct-storage = { path = "crates/ct-storage", version = "0.0.0" }
+ct-cache = { path = "crates/ct-cache", version = "0.0.0" }
+ct-app = { path = "crates/ct-app", version = "0.0.0" }
+ct-protocol = { path = "crates/ct-protocol", version = "0.0.0" }
+ct-worker = { path = "crates/ct-worker", version = "0.0.0" }
+ct-test-support = { path = "crates/ct-test-support", version = "0.0.0" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+serde_yaml_ng = "0.10"
+unicode-ident = "1"
+thiserror = "2"
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+sha2 = "0.10"
+jsonschema = "0.56"
+tempfile = "3"
+calamine = "0.36"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+rust_xlsxwriter = "0.99"
+
+# Excel 读写库选型在 rust-native-core 任务 1.5/1.6 原型验证后再锁定：
+# 读：calamine；写：rust_xlsxwriter（均为候选，不作为产品契约）。
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

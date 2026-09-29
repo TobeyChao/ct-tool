@@ -1,0 +1,238 @@
+/* Application frame: light resident sidebar (text module nav + footer entries),
+   no desktop topbar; <740px a narrow topbar (hamburger + brand + workspace
+   name) with the sidebar as a hamburger drawer. Workbench panes dock >=900px
+   and become slide-out drawers below (one-cut, no page stack, no bottom nav). */
+.ct-app {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  height: 100dvh;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Narrow-screen topbar: hidden on desktop, appears <740 with the drawer. */
+.ct-topbar {
+  display: none;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 0 14px;
+  background: var(--ct-surface);
+  border-bottom: 1px solid var(--ct-border);
+}
+.ct-hamb {
+  display: none;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ct-ink-2);
+  cursor: pointer;
+  font-size: 16px;
+}
+.ct-hamb:hover { background: var(--ct-surface-2); color: var(--ct-ink); }
+.ct-topbar-brand { display: flex; align-items: center; gap: 10px; padding: 0 6px; }
+.ct-topbar-brand .ct-brand-mark { width: 30px; height: 30px; }
+.ct-topbar .ct-ws { min-width: 0; display: flex; align-items: center; gap: 9px; margin-left: auto; padding: 0 8px; white-space: nowrap; }
+.ct-topbar .ct-ws-name { color: var(--ct-ink-2); font-weight: 600; font-size: 13px; }
+
+.ct-shell {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--ct-sidebar-w) minmax(0, 1fr);
+  overflow: hidden;
+}
+
+/* Resident sidebar (DeepSeek-style light) */
+.ct-sidebar {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--ct-surface);
+  border-right: 1px solid var(--ct-border);
+}
+.ct-side-head { min-height: 58px; display: flex; align-items: center; gap: 10px; padding: 0 16px; }
+.ct-side-head .ct-brand-mark { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: var(--ct-primary); color: #fff; font: 800 12px/1 var(--ct-font-mono); }
+.ct-side-head .ct-side-title { font-weight: 680; font-size: 13.5px; }
+.ct-side-head .ct-side-back { display: none; }
+.ct-side-nav { flex: 1; overflow: auto; padding: 12px 12px 8px; }
+.ct-side-sec { font-size: 11.5px; font-weight: 700; color: var(--ct-ink-3); letter-spacing: 0.09em; text-transform: uppercase; padding: 6px 8px 5px; }
+.ct-sitem { display: flex; align-items: center; gap: 11px; width: 100%; padding: 9px 11px; border: 0; border-radius: 8px; background: transparent; color: var(--ct-ink-2); font-family: inherit; font-size: 13px; font-weight: 560; text-align: left; cursor: pointer; transition: background var(--ct-motion), color var(--ct-motion); }
+.ct-sitem:hover { background: var(--ct-surface-2); color: var(--ct-ink); }
+.ct-sitem.active { background: var(--ct-accent-softer); color: var(--ct-accent); font-weight: 650; }
+.ct-sfoot { margin-top: auto; border-top: 1px solid var(--ct-border); padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.ct-ssec { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ct-ink-3); font-family: inherit; font-size: 12.5px; text-align: left; cursor: pointer; }
+.ct-ssec:hover { background: var(--ct-surface-2); color: var(--ct-ink-2); }
+a.ct-ssec { text-decoration: none; }
+.ct-side-backdrop { position: fixed; inset: 0; z-index: 65; background: rgba(16, 28, 22, 0.4); opacity: 0; pointer-events: none; transition: opacity var(--ct-pane-motion); }
+.ct-side-backdrop.show { opacity: 1; pointer-events: auto; }
+
+.ct-main { min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.ct-page { display: none; min-width: 0; min-height: 0; overflow: auto; flex: 1 1 auto; }
+.ct-page.active { display: block; }
+#page-schema.active, #page-i18n.active { display: flex; flex-direction: column; overflow: hidden; }
+.ct-workbench-page { height: 100%; width: 100%; display: flex; flex-direction: column; }
+.ct-workbench-page .ct-workspace-layout { height: auto; flex: 1 1 auto; min-height: 0; }
+.ct-workbench-page .ct-panel-head, .ct-i18n-page .ct-panel-head { flex: 0 0 auto; }
+/* i18n keeps its toolbar pinned and lets the entry table fill the rest */
+#page-i18n.active .ct-page-wrap { height: 100%; display: flex; flex-direction: column; }
+#page-i18n.active .ct-panel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border: 0; }
+#page-i18n.active .ct-panel-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+#page-i18n.active .ct-i18n-table { flex: 1 1 auto; min-height: 0; max-height: none; }
+#ct-taskbar { position: fixed; right: 18px; bottom: 18px; z-index: 60; max-width: 420px; }
+
+/* Schema workbench: resource pane | editor | inspector | inspector tab. */
+.ct-workspace-layout {
+  --ct-left-track: var(--ct-resource-w);
+  --ct-right-track: var(--ct-inspector-w);
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--ct-left-track) minmax(0, 1fr) var(--ct-right-track) var(--ct-right-activity-w);
+  overflow: hidden;
+  transition: grid-template-columns var(--ct-pane-motion);
+}
+.ct-workspace-layout[data-resource-open="false"] { --ct-left-track: 0px; }
+.ct-workspace-layout[data-inspector-open="false"] { --ct-right-track: 0px; }
+.ct-resource-pane, .ct-editor, .ct-side {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ct-surface);
+}
+.ct-resource-pane { border-right: 1px solid var(--ct-border); }
+.ct-resource-pane-inner, .ct-side-inner {
+  width: var(--ct-resource-w);
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.ct-side { border-left: 1px solid var(--ct-border); }
+.ct-side-inner { width: var(--ct-inspector-w); margin-left: auto; }
+.ct-workspace-layout .ct-pane-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(16, 28, 22, 0.4); opacity: 0; pointer-events: none; transition: opacity var(--ct-pane-motion); }
+.ct-workspace-layout .ct-pane-backdrop.show { opacity: 1; pointer-events: auto; }
+.ct-editor { display: grid; grid-template-rows: auto minmax(0, 1fr); }
+.ct-right-activity {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 4px;
+  border-left: 1px solid var(--ct-border);
+  background: #edf1ec;
+}
+.ct-side-tab {
+  position: relative;
+  width: 32px;
+  min-height: 74px;
+  display: grid;
+  place-items: center;
+  padding: 8px 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ct-ink-2);
+  font: 700 11px/1.2 var(--ct-font-sans);
+  letter-spacing: 0.1em;
+  writing-mode: vertical-rl;
+  cursor: pointer;
+}
+.ct-side-tab:hover { border-color: var(--ct-border-strong); background: white; color: var(--ct-ink); }
+.ct-side-tab[aria-pressed="true"] { border-color: var(--ct-border); background: white; color: var(--ct-accent); }
+.ct-side-tab[aria-pressed="true"]::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 2px;
+  background: #57a878;
+}
+.ct-activity-spacer { flex: 1; min-height: 0; }
+.ct-side-body { min-height: 0; overflow: auto; padding: 14px; }
+/* virtual-list rows are modeled at a fixed 34px height — keep them exactly that tall */
+.ct-resource-row {
+  width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ct-ink);
+  font-family: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.ct-resource-row:hover { background: var(--ct-surface-2); }
+.ct-resource-row.active { background: var(--ct-accent-soft); color: var(--ct-primary); font-weight: 650; }
+
+/* ---- breakpoint <900: content panes become slide-out drawers (one-cut) ---- */
+@media (max-width: 899px) {
+  .ct-workspace-layout { display: block; }
+  .ct-workspace-layout .ct-resource-pane,
+  .ct-workspace-layout .ct-side {
+    position: fixed;
+    bottom: 0;
+    z-index: 50;
+    width: min(86vw, 340px);
+    height: auto;
+    background: var(--ct-surface);
+    box-shadow: -16px 0 48px rgba(20, 30, 25, 0.16);
+    transition: transform var(--ct-pane-motion);
+    will-change: transform;
+  }
+  .ct-workspace-layout .ct-resource-pane { top: 0; left: 0; transform: translateX(-104%); border-radius: 0 12px 12px 0; border-right: 0; }
+  .ct-workspace-layout .ct-side { top: 0; right: 0; transform: translateX(104%); border-radius: 12px 0 0 12px; border-left: 0; box-shadow: 16px 0 48px rgba(20, 30, 25, 0.16); }
+  .ct-workspace-layout[data-resource-open="true"] .ct-resource-pane { transform: translateX(0); }
+  .ct-workspace-layout[data-inspector-open="true"] .ct-side { transform: translateX(0); }
+  .ct-resource-pane-inner, .ct-side-inner { width: 100%; }
+  .ct-right-activity { display: none; }
+  .ct-m-only { display: inline-flex !important; }
+  .ct-d-only { display: none !important; }
+}
+@media (min-width: 900px) {
+  .ct-m-only { display: none !important; }
+  .ct-d-only { display: inline-flex !important; }
+}
+
+/* ---- breakpoint <740: topbar appears, sidebar becomes hamburger drawer ---- */
+@media (max-width: 739px) {
+  .ct-app { grid-template-rows: var(--ct-topbar-h) minmax(0, 1fr); }
+  .ct-hamb { display: grid; }
+  .ct-topbar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; }
+  .ct-shell { grid-template-columns: minmax(0, 1fr); }
+  .ct-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 70;
+    width: min(84vw, 300px);
+    transform: translateX(-104%);
+    transition: transform var(--ct-pane-motion);
+    box-shadow: -16px 0 48px rgba(20, 30, 25, 0.16);
+    border-radius: 0 12px 12px 0;
+  }
+  .ct-sidebar.open { transform: translateX(0); }
+  .ct-side-head .ct-side-back { display: grid; }
+  /* drawers sit under the narrow topbar */
+  .ct-workspace-layout .ct-resource-pane, .ct-workspace-layout .ct-side { top: var(--ct-topbar-h); }
+}
+/* 740–899: no topbar, drawers flush to the top edge */
+@media (min-width: 740px) and (max-width: 899px) {
+  .ct-workspace-layout .ct-resource-pane, .ct-workspace-layout .ct-side { top: 0; }
+}

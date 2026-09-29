@@ -1,0 +1,24 @@
+[package]
+name = "ct-tests-compat"
+description = "产物格式与行为对照验收测试"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+ct-test-support.workspace = true
+ct-app.workspace = true
+ct-domain.workspace = true
+ct-excel.workspace = true
+ct-export.workspace = true
+ct-storage.workspace = true
+ct-cache.workspace = true
+anyhow.workspace = true
+serde_json.workspace = true
+serde.workspace = true
+zip.workspace = true
+tempfile.workspace = true
+rust_xlsxwriter.workspace = true
+calamine.workspace = true

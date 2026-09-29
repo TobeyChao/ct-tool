@@ -1,0 +1,582 @@
+{
+  "format": "python-web-http-fixtures/1",
+  "sourceCommit": "8dc7b81412ddf712fca54a4200d216fb8af05aca",
+  "sourceSha256": {
+    "ct/src/ct/web/app.py": "3574ca0eb807a0a69334640b9d9d05ee89b921e6cd72038e275b121fde13bab5",
+    "ct/src/ct/web/schema_workspace_api.py": "9d874f7574001b07eabfc38143d31ec53c3ae89bdee7bb15fbc4a2454ed5c1e2",
+    "ct/src/ct/web/static/js/core/draft-store.js": "48918f280f4b0950c7735426ee2f31a2bff66a67bb3a2d00b3221f0f068f8aa8",
+    "ct/src/ct/web/history.py": "5681306e6d52b52bee77b1aaee1f0a3b7131bd1fa05ecd795b1a141e5de97c32",
+    "ct/tests/web/web_helpers.py": "b9844ab9bf946c8c6b387b4062ca8398f5626fcb14d677289bf59ca59041725b"
+  },
+  "fixture": "ct/tests/web/web_helpers.py::build_project; Item + Quest, no Excel; temporary Chinese-and-space workspace",
+  "normalization": "Only absolute temporary workspace root replaced with ${ROOT}; success and error payloads are actual Flask test_client results. Allowed migration differences are documented in web-http-contract.md.",
+  "data": {
+    "captures": {
+      "workspace": {
+        "request": {
+          "method": "GET",
+          "path": "/api/workspace",
+          "body": null
+        },
+        "status": 200,
+        "response": {
+          "data": {
+            "config": {
+              "deploy": {
+                "enabled": false,
+                "targets": [],
+                "unity_project": ""
+              },
+              "primary_lang": "zh",
+              "schema_format": "yaml",
+              "secondary_langs": [
+                "en"
+              ]
+            },
+            "root": "${ROOT}",
+            "status": {
+              "changed": [],
+              "drifted": [],
+              "missing": [
+                "Item",
+                "Quest"
+              ]
+            }
+          },
+          "ok": true
+        }
+      },
+      "schema": {
+        "request": {
+          "method": "GET",
+          "path": "/api/schema-workspace",
+          "body": null
+        },
+        "status": 200,
+        "response": {
+          "data": {
+            "changed": [],
+            "resources": [
+              {
+                "fields": [
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "Id",
+                    "server_only": false,
+                    "type": "int32"
+                  },
+                  {
+                    "comment": "",
+                    "i18n": true,
+                    "name": "Name",
+                    "server_only": false,
+                    "type": "string"
+                  }
+                ],
+                "indexes": [],
+                "kind": "table",
+                "name": "Item",
+                "primary": "Id",
+                "resourceId": "table:Item",
+                "table": "Item",
+                "uniform": true
+              },
+              {
+                "fields": [
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "Id",
+                    "server_only": false,
+                    "type": "int32"
+                  }
+                ],
+                "indexes": [],
+                "kind": "table",
+                "name": "Quest",
+                "primary": "Id",
+                "resourceId": "table:Quest",
+                "table": "Quest",
+                "uniform": true
+              }
+            ],
+            "reverseRefs": {},
+            "revision": "c6a4451099569657645ddbcc2970467885a9953e1ec6527e3804ad430f7befa7",
+            "schemaRevision": "54162ed73ef6db5028cf17c020d4fbd0deecab77b7f4121b29f375f069b6408c"
+          },
+          "ok": true
+        }
+      },
+      "candidate_valid": {
+        "request": {
+          "method": "POST",
+          "path": "/api/schema-workspace/candidate",
+          "body": {
+            "schemaRevision": "54162ed73ef6db5028cf17c020d4fbd0deecab77b7f4121b29f375f069b6408c",
+            "commands": [
+              {
+                "type": "set_property",
+                "payload": {
+                  "owner": "table:Item",
+                  "name": "Name",
+                  "property": "comment",
+                  "value": "冻结注释"
+                }
+              }
+            ],
+            "cursor": 1,
+            "draftGeneration": 3
+          }
+        },
+        "status": 200,
+        "response": {
+          "data": {
+            "candidateHash": "045df8d1410a5dfaa1a058b005cfadc02d99a4322339955f559adf74867ea15d",
+            "issues": [],
+            "netDiff": {
+              "changedResources": 1,
+              "format": "net-diff/1",
+              "isNoOp": false,
+              "resources": [
+                {
+                  "change": "modified",
+                  "fields": [
+                    {
+                      "change": "modified",
+                      "details": [
+                        "comment"
+                      ],
+                      "name": "Name"
+                    }
+                  ],
+                  "kind": "table",
+                  "name": "Item",
+                  "resourceId": "table:Item"
+                }
+              ]
+            },
+            "resources": [
+              {
+                "fields": [
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "Id",
+                    "server_only": false,
+                    "type": "int32"
+                  },
+                  {
+                    "comment": "冻结注释",
+                    "i18n": true,
+                    "name": "Name",
+                    "server_only": false,
+                    "type": "string"
+                  }
+                ],
+                "indexes": [],
+                "kind": "table",
+                "name": "Item",
+                "primary": "Id",
+                "resourceId": "table:Item",
+                "table": "Item",
+                "uniform": true
+              },
+              {
+                "fields": [
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "Id",
+                    "server_only": false,
+                    "type": "int32"
+                  }
+                ],
+                "indexes": [],
+                "kind": "table",
+                "name": "Quest",
+                "primary": "Id",
+                "resourceId": "table:Quest",
+                "table": "Quest",
+                "uniform": true
+              }
+            ],
+            "schemaRevision": {
+              "members": {
+                "schemas/Item.yaml": "ae84b1faece1bbd6af0c2cd6a0bdd4e60631ca78cd9af4d475c2a5d79107dc6b",
+                "schemas/Quest.yaml": "e509eb81dc14c7342831394990793b4b6f416d04eab9e82f45d0c3dface16668"
+              },
+              "revision": "54162ed73ef6db5028cf17c020d4fbd0deecab77b7f4121b29f375f069b6408c"
+            }
+          },
+          "ok": true
+        }
+      },
+      "validate_invalid": {
+        "request": {
+          "method": "POST",
+          "path": "/api/schema-workspace/validate",
+          "body": {
+            "schemaRevision": "54162ed73ef6db5028cf17c020d4fbd0deecab77b7f4121b29f375f069b6408c",
+            "commands": [
+              {
+                "type": "frobnicate",
+                "payload": {}
+              }
+            ],
+            "cursor": 1
+          }
+        },
+        "status": 200,
+        "response": {
+          "data": {
+            "issues": [
+              {
+                "kind": "blocker",
+                "location": "commands[0]",
+                "message": "命令 frobnicate 无法执行：未知命令类型: frobnicate"
+              }
+            ],
+            "netDiff": null,
+            "valid": false
+          },
+          "ok": true
+        }
+      },
+      "save_missing_guard": {
+        "request": {
+          "method": "POST",
+          "path": "/api/schema-workspace/save",
+          "body": {
+            "schemaRevision": "54162ed73ef6db5028cf17c020d4fbd0deecab77b7f4121b29f375f069b6408c",
+            "commands": [
+              {
+                "type": "set_property",
+                "payload": {
+                  "owner": "table:Item",
+                  "name": "Name",
+                  "property": "comment",
+                  "value": "冻结注释"
+                }
+              }
+            ]
+          }
+        },
+        "status": 400,
+        "response": {
+          "error": "保存必须提供 schemaRevision 和 candidateHash",
+          "ok": false
+        }
+      },
+      "save_forged_hash": {
+        "request": {
+          "method": "POST",
+          "path": "/api/schema-workspace/save",
+          "body": {
+            "schemaRevision": "54162ed73ef6db5028cf17c020d4fbd0deecab77b7f4121b29f375f069b6408c",
+            "commands": [
+              {
+                "type": "set_property",
+                "payload": {
+                  "owner": "table:Item",
+                  "name": "Name",
+                  "property": "comment",
+                  "value": "冻结注释"
+                }
+              }
+            ],
+            "candidateHash": "0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        },
+        "status": 409,
+        "response": {
+          "conflict": {
+            "kind": "candidate-hash"
+          },
+          "error": "候选内容与服务器重建结果不一致，保存被拒绝，未写入任何文件。",
+          "ok": false
+        }
+      },
+      "tasks_idle": {
+        "request": {
+          "method": "GET",
+          "path": "/api/tasks",
+          "body": null
+        },
+        "status": 200,
+        "response": {
+          "data": [],
+          "ok": true
+        }
+      },
+      "history_empty": {
+        "request": {
+          "method": "GET",
+          "path": "/api/history",
+          "body": null
+        },
+        "status": 200,
+        "response": {
+          "data": [],
+          "ok": true
+        }
+      },
+      "logs_empty": {
+        "request": {
+          "method": "GET",
+          "path": "/api/logs",
+          "body": null
+        },
+        "status": 200,
+        "response": {
+          "data": [],
+          "ok": true
+        }
+      },
+      "template_unknown": {
+        "request": {
+          "method": "POST",
+          "path": "/api/schema-workspace/gen-template",
+          "body": {
+            "table": "Missing"
+          }
+        },
+        "status": 404,
+        "response": {
+          "error": "未找到表: Missing",
+          "ok": false
+        }
+      },
+      "save_valid": {
+        "request": {
+          "method": "POST",
+          "path": "/api/schema-workspace/save",
+          "body": {
+            "schemaRevision": "54162ed73ef6db5028cf17c020d4fbd0deecab77b7f4121b29f375f069b6408c",
+            "commands": [
+              {
+                "type": "set_property",
+                "payload": {
+                  "owner": "table:Item",
+                  "name": "Name",
+                  "property": "comment",
+                  "value": "冻结注释"
+                }
+              }
+            ],
+            "cursor": 1,
+            "candidateHash": "045df8d1410a5dfaa1a058b005cfadc02d99a4322339955f559adf74867ea15d"
+          }
+        },
+        "status": 200,
+        "response": {
+          "data": {
+            "changedResources": 1,
+            "deleted": [],
+            "isNoOp": false,
+            "netDiff": {
+              "changedResources": 0,
+              "format": "net-diff/1",
+              "isNoOp": true,
+              "resources": []
+            },
+            "notes": [],
+            "recovery": null,
+            "resources": [
+              {
+                "fields": [
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "Id",
+                    "server_only": false,
+                    "type": "int32"
+                  },
+                  {
+                    "comment": "冻结注释",
+                    "i18n": true,
+                    "name": "Name",
+                    "server_only": false,
+                    "type": "string"
+                  }
+                ],
+                "indexes": [],
+                "kind": "table",
+                "name": "Item",
+                "primary": "Id",
+                "resourceId": "table:Item",
+                "table": "Item",
+                "uniform": true
+              },
+              {
+                "fields": [
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "Id",
+                    "server_only": false,
+                    "type": "int32"
+                  }
+                ],
+                "indexes": [],
+                "kind": "table",
+                "name": "Quest",
+                "primary": "Id",
+                "resourceId": "table:Quest",
+                "table": "Quest",
+                "uniform": true
+              }
+            ],
+            "reverseRefs": {},
+            "revision": "8c0301abd7fb5169668bfe26d6d2d5e36c086680f59fa13aa518cc51db673ddb",
+            "schemaRevision": "8c0301abd7fb5169668bfe26d6d2d5e36c086680f59fa13aa518cc51db673ddb",
+            "unchanged": [
+              "${ROOT}/config/schemas/Quest.yaml"
+            ],
+            "written": [
+              "${ROOT}/config/schemas/Item.yaml"
+            ]
+          },
+          "ok": true
+        }
+      },
+      "schema_after": {
+        "request": {
+          "method": "GET",
+          "path": "/api/schema-workspace",
+          "body": null
+        },
+        "status": 200,
+        "response": {
+          "data": {
+            "changed": [],
+            "resources": [
+              {
+                "fields": [
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "Id",
+                    "server_only": false,
+                    "type": "int32"
+                  },
+                  {
+                    "comment": "冻结注释",
+                    "i18n": true,
+                    "name": "Name",
+                    "server_only": false,
+                    "type": "string"
+                  }
+                ],
+                "indexes": [],
+                "kind": "table",
+                "name": "Item",
+                "primary": "Id",
+                "resourceId": "table:Item",
+                "table": "Item",
+                "uniform": true
+              },
+              {
+                "fields": [
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "Id",
+                    "server_only": false,
+                    "type": "int32"
+                  }
+                ],
+                "indexes": [],
+                "kind": "table",
+                "name": "Quest",
+                "primary": "Id",
+                "resourceId": "table:Quest",
+                "table": "Quest",
+                "uniform": true
+              }
+            ],
+            "reverseRefs": {},
+            "revision": "086428f9c8fdb72e3b9776eee9a688a27b0b5770d02443209ceff95b1fc3ecce",
+            "schemaRevision": "8c0301abd7fb5169668bfe26d6d2d5e36c086680f59fa13aa518cc51db673ddb"
+          },
+          "ok": true
+        }
+      }
+    },
+    "filesBefore": {
+      "config/global.yaml": {
+        "text": "primary_lang: zh\nsecondary_langs:\n- en\n",
+        "sha256": "16da2140cefea8c7f1c3752817b67e82dd91d3a30dca4042ae40a2a17ab549cd"
+      },
+      "config/schemas/Item.yaml": {
+        "text": "table: Item\nprimary: Id\nfields:\n- name: Id\n  type: int32\n- name: Name\n  type: string\n  i18n: true\n",
+        "sha256": "ae84b1faece1bbd6af0c2cd6a0bdd4e60631ca78cd9af4d475c2a5d79107dc6b"
+      },
+      "config/schemas/Quest.yaml": {
+        "text": "table: Quest\nprimary: Id\nfields:\n- name: Id\n  type: int32\n",
+        "sha256": "e509eb81dc14c7342831394990793b4b6f416d04eab9e82f45d0c3dface16668"
+      }
+    },
+    "filesAfterSave": {
+      "config/global.yaml": {
+        "sha256": "16da2140cefea8c7f1c3752817b67e82dd91d3a30dca4042ae40a2a17ab549cd",
+        "bytes": 39
+      },
+      "config/schemas/Item.yaml": {
+        "sha256": "78aa49779189704909fc1e48e7869d98730bd7fd7bc61700a9c495e999807d5b",
+        "bytes": 134
+      },
+      "config/schemas/Quest.yaml": {
+        "sha256": "e509eb81dc14c7342831394990793b4b6f416d04eab9e82f45d0c3dface16668",
+        "bytes": 58
+      }
+    },
+    "legacyDraft": {
+      "db": "ct-drafts",
+      "store": "drafts",
+      "origin": "http://127.0.0.1:${PORT}",
+      "record": {
+        "key": "draft:${ROOT}",
+        "format": "ct-draft-v2",
+        "schemaRevision": "old-baseline",
+        "commands": [
+          {
+            "type": "set_property",
+            "payload": {
+              "owner": "table:Item",
+              "name": "Id",
+              "property": "comment",
+              "value": "active"
+            }
+          },
+          {
+            "type": "set_property",
+            "payload": {
+              "owner": "table:Item",
+              "name": "Id",
+              "property": "comment",
+              "value": "redo"
+            }
+          }
+        ],
+        "cursor": 1,
+        "savedAt": 1780000000000
+      }
+    },
+    "legacyHistory": {
+      "sourceFile": "cache/panel_history.json",
+      "sourceText": "[\n  {\n    \"time\": \"2026-01-01 00:00:00\",\n    \"scope\": \"全部表 × 全量语言\",\n    \"result\": \"成功\",\n    \"tables\": 1,\n    \"elapsed\": 0.1,\n    \"forced\": false,\n    \"error\": \"\"\n  }\n]\n",
+      "readResponse": [
+        {
+          "time": "2026-01-01 00:00:00",
+          "scope": "全部表 × 全量语言",
+          "result": "success",
+          "tables": 1,
+          "elapsed": 0.1,
+          "forced": false,
+          "error": ""
+        }
+      ]
+    }
+  }
+}

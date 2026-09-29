@@ -1,0 +1,48 @@
+
+> test:http
+> node --test tests/native-api.test.mjs tests/schema-contract.test.mjs tests/frozen-web-contract.test.mjs tests/static-assets.test.mjs tests/resource-query.test.mjs tests/candidate-contract.test.mjs tests/save-contract.test.mjs tests/bigint-errors.test.mjs tests/template-flow.test.mjs tests/i18n-entry.test.mjs tests/panel-shutdown.test.mjs
+
+✔ HTTP serializes unsafe integers as exact decimal tags at every depth (57.711458ms)
+✔ 400, 404, 409 and publication 500 remain structured without changing YAML (48.413875ms)
+✔ candidate and validation use only the requested command prefix and echo its generation (100.844583ms)
+✔ malformed active command pinpoints its position; inactive redo is not applied (58.740083ms)
+✔ stale baseline rejects the draft and candidate or validation never reads Excel or writes files (39.591833ms)
+✔ frozen Python Web inputs and success/error contracts run against the native panel (130.412709ms)
+✔ frozen legacy history entry imports and normalizes its result code (33.343791ms)
+✔ translation listing exposes every entry beyond a page, four states, and exact single-entry writes (180.1515ms)
+✔ sync and compact stay within table/language scope, preview without writes, and emit logs (74.931375ms)
+✔ native package serves assets and diagnostic workspace without Python (58.88725ms)
+✔ schema candidate, guarded YAML-only save, undo cursor and no-op (95.899417ms)
+✔ template generation, export and task endpoints (78.375ms)
+✔ all legacy static entry assets and core dependency boundary (24.655583ms)
+✔ failed task can be dismissed across clients and is reset on the next run (65.397625ms)
+✔ concurrent page views do not contend as workspace writers (16.789584ms)
+✔ SIGINT waits for an accepted export to publish a complete file set and restart gets a new instance (5509.83175ms)
+✔ stdin EOF waits for an accepted export to publish a complete file set and restart gets a new instance (5340.584541ms)
+✔ custom-directory status, all resources and reverse references match frozen Web responses (159.046042ms)
+✔ template and success ledger roll back together when custom cache target cannot publish (45.366417ms)
+✔ rename save updates references and reports an exact YAML-only receipt and fresh snapshot (131.653458ms)
+✔ new Table save warns about its existing workbook without reading or changing it (37.778083ms)
+✔ net-zero command history does not touch YAML or create a publication journal (27.643792ms)
+✔ target path conflict rejects the entire save and preserves the draft baseline (28.68075ms)
+✔ schema save publishes only changed YAML and a new baseline (71.471333ms)
+✔ no-op save preserves bytes and nanosecond mtime without a journal (47.42775ms)
+✔ save rejects stale revision, preserves external YAML and succeeds after fresh review (52.207375ms)
+✔ save requires both guards and locates malformed command histories (29.787125ms)
+✔ schema save never needs to read a malformed workbook (30.442542ms)
+✔ structurally invalid draft has issues and cannot write YAML (24.609208ms)
+✔ workspace status separates missing, changed and drifted in custom directories (46.606875ms)
+✔ save recovers a prepared publication before loading business resources (19.89225ms)
+✔ validation accepts a field draft and rejects i18n on a Record (18.473625ms)
+✔ the complete old Web asset tree and module imports are preserved (19.792708ms)
+✔ the native panel serves every migrated asset with its expected media type (55.322167ms)
+✔ template generation uses saved Schema and stays independent from YAML save and export (72.457875ms)
+✔ missing manifest and malformed workbook reject regeneration without changing the original files (29.806917ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 36
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10927.910125

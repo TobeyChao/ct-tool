@@ -1,0 +1,317 @@
+{
+  "format": "web-resource-query-python/1",
+  "sourceCommit": "8dc7b81",
+  "sourceSha256": {
+    "ct/src/ct/web/app.py": "3574ca0eb807a0a69334640b9d9d05ee89b921e6cd72038e275b121fde13bab5",
+    "ct/src/ct/web/schema_workspace_api.py": "9d874f7574001b07eabfc38143d31ec53c3ae89bdee7bb15fbc4a2454ed5c1e2",
+    "ct/src/ct/app/canonical_workspace.py": "b5e8f46d195df8b6191f776dcb4d96940c07371cae8579e18604b3536a753927",
+    "ct/src/ct/app/canonical_commands.py": "46ac5afb8495a6284b7fd8ab478596988c88ac04b4a800a87ba482893a32787b"
+  },
+  "fixture": {
+    "files": {
+      "config/global.yaml": "primary_lang: zh\nsecondary_langs: [en]\nschemas_dir: data/schemas\ntypes_dir: data/types\nexcel_dir: data/books\ncache_dir: data/cache\ni18n_dir: data/i18n\n",
+      "data/schemas/Item.yaml": "table: Item\nprimary: Id\nfields:\n  - name: Id\n    type: int32\n  - name: CodeName\n    type: string\n  - name: Name\n    type: string\n    i18n: true\n  - name: Quality\n    type: Rarity\n  - name: DropRules\n    type: vector<DropRule>\n    excel_columns: 2\n  - name: SellPrice\n    type: int32\nindexes:\n  - kind: codename\n",
+      "data/schemas/Monster.yaml": "table: Monster\nprimary: Id\nfields:\n  - name: Id\n    type: int32\n  - name: LootItem\n    type: int32\n    ref: Item.Id\n",
+      "data/types/DropRule.yaml": "kind: record\nname: DropRule\nfields:\n  - name: Min\n    type: int32\n  - name: Max\n    type: int32\n",
+      "data/types/Rarity.yaml": "kind: enum\nname: Rarity\nvalues:\n  - name: Common\n  - name: Rare\n    comment: 稀有\n"
+    },
+    "operations": [
+      "generate-template:Item",
+      "generate-template:Monster",
+      "insert-field:Item.Added",
+      "append-byte:Monster.xlsx"
+    ]
+  },
+  "captures": {
+    "before": {
+      "workspace": {
+        "status": 200,
+        "body": {
+          "data": {
+            "config": {
+              "deploy": {
+                "enabled": false,
+                "targets": [],
+                "unity_project": ""
+              },
+              "primary_lang": "zh",
+              "schema_format": "yaml",
+              "secondary_langs": [
+                "en"
+              ]
+            },
+            "root": "${ROOT}",
+            "status": {
+              "changed": [],
+              "drifted": [],
+              "missing": [
+                "Item",
+                "Monster"
+              ]
+            }
+          },
+          "ok": true
+        }
+      },
+      "schema": {
+        "status": 200,
+        "body": {
+          "data": {
+            "changed": [],
+            "resources": [
+              {
+                "fields": [
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "Id",
+                    "server_only": false,
+                    "type": "int32"
+                  },
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "CodeName",
+                    "server_only": false,
+                    "type": "string"
+                  },
+                  {
+                    "comment": "",
+                    "i18n": true,
+                    "name": "Name",
+                    "server_only": false,
+                    "type": "string"
+                  },
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "Quality",
+                    "server_only": false,
+                    "type": "Rarity"
+                  },
+                  {
+                    "comment": "",
+                    "excel_columns": 2,
+                    "i18n": false,
+                    "name": "DropRules",
+                    "server_only": false,
+                    "type": "vector<DropRule>"
+                  },
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "SellPrice",
+                    "server_only": false,
+                    "type": "int32"
+                  }
+                ],
+                "indexes": [
+                  {
+                    "kind": "codename"
+                  }
+                ],
+                "kind": "table",
+                "name": "Item",
+                "primary": "Id",
+                "resourceId": "table:Item",
+                "table": "Item",
+                "uniform": true
+              },
+              {
+                "fields": [
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "Id",
+                    "server_only": false,
+                    "type": "int32"
+                  },
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "LootItem",
+                    "ref": "Item.Id",
+                    "server_only": false,
+                    "type": "int32"
+                  }
+                ],
+                "indexes": [],
+                "kind": "table",
+                "name": "Monster",
+                "primary": "Id",
+                "resourceId": "table:Monster",
+                "table": "Monster",
+                "uniform": true
+              },
+              {
+                "comment": "",
+                "fields": [
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "Min",
+                    "server_only": false,
+                    "type": "int32"
+                  },
+                  {
+                    "comment": "",
+                    "i18n": false,
+                    "name": "Max",
+                    "server_only": false,
+                    "type": "int32"
+                  }
+                ],
+                "kind": "record",
+                "name": "DropRule",
+                "resourceId": "record:DropRule"
+              },
+              {
+                "comment": "",
+                "kind": "enum",
+                "name": "Rarity",
+                "resourceId": "enum:Rarity",
+                "values": [
+                  {
+                    "comment": "",
+                    "name": "Common"
+                  },
+                  {
+                    "comment": "稀有",
+                    "name": "Rare"
+                  }
+                ]
+              }
+            ],
+            "reverseRefs": {
+              "enum:Rarity": [
+                {
+                  "field": "table:Item/Quality",
+                  "kind": "named",
+                  "owner": "table:Item"
+                }
+              ],
+              "record:DropRule": [
+                {
+                  "field": "table:Item/DropRules",
+                  "kind": "named",
+                  "owner": "table:Item"
+                }
+              ],
+              "table:Item": [
+                {
+                  "field": "table:Monster/LootItem",
+                  "kind": "ref",
+                  "owner": "table:Monster"
+                }
+              ],
+              "table:Item/Id": [
+                {
+                  "field": "table:Monster/LootItem",
+                  "kind": "ref",
+                  "owner": "table:Monster"
+                }
+              ]
+            },
+            "revision": "975c43f785de10c52650a6bfb037f30f11ab5d4e739a79e74f58099c6b3b1938",
+            "schemaRevision": "d6c6c458186271adc5628fbd8cb1f552b0f5235ca25440773d495646a096d515"
+          },
+          "ok": true
+        }
+      }
+    },
+    "templateStatus": {
+      "Item": 200,
+      "Monster": 200
+    },
+    "afterTemplates": {
+      "workspace": {
+        "status": 200,
+        "body": {
+          "data": {
+            "config": {
+              "deploy": {
+                "enabled": false,
+                "targets": [],
+                "unity_project": ""
+              },
+              "primary_lang": "zh",
+              "schema_format": "yaml",
+              "secondary_langs": [
+                "en"
+              ]
+            },
+            "root": "${ROOT}",
+            "status": {
+              "changed": [],
+              "drifted": [],
+              "missing": []
+            }
+          },
+          "ok": true
+        }
+      }
+    },
+    "afterDrift": {
+      "workspace": {
+        "status": 200,
+        "body": {
+          "data": {
+            "config": {
+              "deploy": {
+                "enabled": false,
+                "targets": [],
+                "unity_project": ""
+              },
+              "primary_lang": "zh",
+              "schema_format": "yaml",
+              "secondary_langs": [
+                "en"
+              ]
+            },
+            "root": "${ROOT}",
+            "status": {
+              "changed": [],
+              "drifted": [
+                "Item"
+              ],
+              "missing": []
+            }
+          },
+          "ok": true
+        }
+      }
+    },
+    "afterChangedAndDrift": {
+      "workspace": {
+        "status": 200,
+        "body": {
+          "data": {
+            "config": {
+              "deploy": {
+                "enabled": false,
+                "targets": [],
+                "unity_project": ""
+              },
+              "primary_lang": "zh",
+              "schema_format": "yaml",
+              "secondary_langs": [
+                "en"
+              ]
+            },
+            "root": "${ROOT}",
+            "status": {
+              "changed": [
+                "Monster"
+              ],
+              "drifted": [
+                "Item"
+              ],
+              "missing": []
+            }
+          },
+          "ok": true
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+   Compiling ct-tests-compat v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/tests/compat)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.84s
+     Running tests/export_pipeline.rs (target/debug/deps/export_pipeline-085db10308dfe4d4)
+
+running 10 tests
+test capture_verify_unit ... ok
+test cancellation_before_publish_keeps_output_unpublished ... ok
+test input_change_translation_blocks ... ok
+test input_change_during_build_blocks_publish ... ok
+test input_change_directory_membership_blocks ... ok
+test deploy_failure_keeps_ledger_untouched ... ok
+test cancellation_after_publish_boundary_preserves_success ... ok
+test deploy_syncs_and_preserves_meta ... ok
+test pipeline_matches_python_byte_for_byte ... ok
+test partial_export_keeps_other_ledger_entries ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
+     Running tests/publication_recovery.rs (target/debug/deps/publication_recovery-aa0d7a187eb7438e)
+
+running 10 tests
+test out_of_scope_journal_path_rejected ... ok
+test crash_after_prepared_cleans_private_only ... ok
+test missing_backup_keeps_materials_and_blocks ... ok
+test sweep_staging_respects_journal ... ok
+test crash_after_committed_keeps_new_version ... ok
+test dropping_staged_payloads_leaves_targets_untouched ... ok
+test crash_mid_publish_restores_content_and_mtime_and_removes_created ... ok
+test publish_then_recover_is_noop ... ok
+test staged_payload_does_not_touch_targets ... ok
+test publish_failure_rolls_back_with_mtime ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s

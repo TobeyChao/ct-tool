@@ -1,0 +1,3 @@
+{"type":"request","requestId":50,"method":"validate","workspaceRoot":"E:\\Proj\\gd","params":{}}
+{"type":"request","requestId":50,"method":"validate","workspaceRoot":"E:\\Proj\\gd","params":{}}
+{"type":"error","requestId":50,"workspaceId":"e:\\proj\\gd","seq":1,"error":{"code":"duplicate-request-id","message":"requestId 50 已在本连接中使用"}}

@@ -1,5 +1,9 @@
 ## Why
 
+> main 集成更新（2026-09-28）：panel 退役与 Python 最终删除的范围由
+> [native-web-python-retirement](../native-web-python-retirement/scope-handoff.md)
+> 接管。本文其余 canonical/worker 能力及任务验收保持原状，后续规格同步不得恢复旧 panel 退役决策。
+
 当前 Python 管线在生成缓存命中前仍逐表解析校验 Excel，缓存键还会重复遍历和序列化输入。需要以可测量的性能收益为目标，建设跨平台 Rust 核心，让 CLI 与原生桌面共享唯一业务链路，同时保留现有产物格式和可靠发布语义。
 
 ## What Changes

@@ -1,0 +1,16 @@
+[package]
+name = "ct-test-support"
+description = "测试夹具与构造器：临时工作区、构建器、协议测试客户端"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+ct-domain.workspace = true
+ct-excel.workspace = true
+ct-app.workspace = true
+ct-protocol.workspace = true
+anyhow.workspace = true
+serde_json.workspace = true

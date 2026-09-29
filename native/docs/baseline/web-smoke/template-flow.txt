@@ -1,0 +1,23 @@
+   Compiling ct-app v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-app)
+   Compiling ct-test-support v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-test-support)
+   Compiling ct-tests-compat v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/tests/compat)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.83s
+     Running tests/template_edge.rs (target/debug/deps/template_edge-b8ad3b46439feac6)
+
+running 4 tests
+test long_enum_dropdown_skipped_with_warning ... ok
+test unconvertible_type_change_blocks ... ok
+test deleted_field_with_data_blocks_and_keeps_original ... ok
+test migration_preserves_data_but_not_arbitrary_sheets ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/template_flow.rs (target/debug/deps/template_flow-5d30f03247cdc0a7)
+
+running 4 tests
+test requires_scope_flag ... ok
+test missing_manifest_refuses_overwrite ... ok
+test fresh_template_and_manifest ... ok
+test migration_with_manifest_preserves_data ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s

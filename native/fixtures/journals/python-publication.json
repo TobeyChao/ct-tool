@@ -1,0 +1,809 @@
+{
+  "format": "python-publication-fixtures/1",
+  "sourceCommit": "8dc7b81412ddf712fca54a4200d216fb8af05aca",
+  "sourcePath": "ct/src/ct/storage/publication.py",
+  "sourceSha256": "edfb9428cf46718b2dd9c261c821901f66a47cf5e49103582236455e4ce3fad0",
+  "capture": "Actual Python FilePublisher.publish; os._exit(86) immediately after each journal write; expected state from Python recover, followed by idempotent second recover. Only root, operation id, and new-file timestamps normalized. Existing and backup nanosecond mtimes retained.",
+  "cases": [
+    {
+      "name": "prepared-0",
+      "journal": {
+        "allowed_dirs": [
+          "${ROOT}/config",
+          "${ROOT}/output"
+        ],
+        "entries": [
+          {
+            "backup": null,
+            "done": false,
+            "existed": true,
+            "new_hash": "dfb07b4a7dbc7705e3e5fea80cdaad90c3d268b60b0754826f6470ac63627a90",
+            "old_hash": "2ae5d302f77a056fb3d0ed7a8b12272ca7549b5c14c7aaf719dec9d36504f770",
+            "op": "replace",
+            "path": "${ROOT}/config/global.yaml",
+            "staged": "${ROOT}/config/.ct-stage-16ts7jbl"
+          },
+          {
+            "backup": null,
+            "done": false,
+            "existed": true,
+            "new_hash": "29b47270bf02349fb715b212c2b73ed66c6cc4a701af57a2195a619c4320383d",
+            "old_hash": "1f879fae28709913f3634c84cc9648f49d53d01d707f7392ae3090139a2bdab9",
+            "op": "replace",
+            "path": "${ROOT}/output/replace.txt",
+            "staged": "${ROOT}/output/.ct-stage-bg1rupgc"
+          },
+          {
+            "backup": null,
+            "done": false,
+            "existed": false,
+            "new_hash": "a5db8b2359296e4df583878e64bd37145382c112c312c5fed56e2a8f62514358",
+            "old_hash": null,
+            "op": "create",
+            "path": "${ROOT}/output/create.txt",
+            "staged": "${ROOT}/output/.ct-stage-4ujyl25i"
+          },
+          {
+            "backup": null,
+            "done": false,
+            "existed": true,
+            "new_hash": null,
+            "old_hash": "cd3d0d7eb218edd1be13cd3d931a574348153f971793e3ef4691587cb2453fbb",
+            "op": "delete",
+            "path": "${ROOT}/output/delete.txt",
+            "staged": null
+          }
+        ],
+        "format": "export-publication/1",
+        "operation_id": "fixture-operation",
+        "phase": "prepared",
+        "root": "${ROOT}"
+      },
+      "before": {
+        "config/.ct-stage-16ts7jbl": {
+          "text": "[invalid config\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "config/global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/.ct-stage-4ujyl25i": {
+          "text": "new creation\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/.ct-stage-bg1rupgc": {
+          "text": "new replacement\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        }
+      },
+      "after": {
+        "config/global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        }
+      }
+    },
+    {
+      "name": "backed_up-0",
+      "journal": {
+        "allowed_dirs": [
+          "${ROOT}/config",
+          "${ROOT}/output"
+        ],
+        "entries": [
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/102-global.yaml",
+            "done": false,
+            "existed": true,
+            "new_hash": "dfb07b4a7dbc7705e3e5fea80cdaad90c3d268b60b0754826f6470ac63627a90",
+            "old_hash": "2ae5d302f77a056fb3d0ed7a8b12272ca7549b5c14c7aaf719dec9d36504f770",
+            "op": "replace",
+            "path": "${ROOT}/config/global.yaml",
+            "staged": "${ROOT}/config/.ct-stage-x44bm9fm"
+          },
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/102-replace.txt",
+            "done": false,
+            "existed": true,
+            "new_hash": "29b47270bf02349fb715b212c2b73ed66c6cc4a701af57a2195a619c4320383d",
+            "old_hash": "1f879fae28709913f3634c84cc9648f49d53d01d707f7392ae3090139a2bdab9",
+            "op": "replace",
+            "path": "${ROOT}/output/replace.txt",
+            "staged": "${ROOT}/output/.ct-stage-mzhtznp9"
+          },
+          {
+            "backup": null,
+            "done": false,
+            "existed": false,
+            "new_hash": "a5db8b2359296e4df583878e64bd37145382c112c312c5fed56e2a8f62514358",
+            "old_hash": null,
+            "op": "create",
+            "path": "${ROOT}/output/create.txt",
+            "staged": "${ROOT}/output/.ct-stage-gn8_r8o8"
+          },
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/101-delete.txt",
+            "done": false,
+            "existed": true,
+            "new_hash": null,
+            "old_hash": "cd3d0d7eb218edd1be13cd3d931a574348153f971793e3ef4691587cb2453fbb",
+            "op": "delete",
+            "path": "${ROOT}/output/delete.txt",
+            "staged": null
+          }
+        ],
+        "format": "export-publication/1",
+        "operation_id": "fixture-operation",
+        "phase": "backed_up",
+        "root": "${ROOT}"
+      },
+      "before": {
+        ".ct/backup/fixture-operation/101-delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        ".ct/backup/fixture-operation/102-global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        ".ct/backup/fixture-operation/102-replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "config/.ct-stage-x44bm9fm": {
+          "text": "[invalid config\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "config/global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/.ct-stage-gn8_r8o8": {
+          "text": "new creation\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/.ct-stage-mzhtznp9": {
+          "text": "new replacement\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        }
+      },
+      "after": {
+        "config/global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        }
+      }
+    },
+    {
+      "name": "publishing-0",
+      "journal": {
+        "allowed_dirs": [
+          "${ROOT}/config",
+          "${ROOT}/output"
+        ],
+        "entries": [
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/102-global.yaml",
+            "done": false,
+            "existed": true,
+            "new_hash": "dfb07b4a7dbc7705e3e5fea80cdaad90c3d268b60b0754826f6470ac63627a90",
+            "old_hash": "2ae5d302f77a056fb3d0ed7a8b12272ca7549b5c14c7aaf719dec9d36504f770",
+            "op": "replace",
+            "path": "${ROOT}/config/global.yaml",
+            "staged": "${ROOT}/config/.ct-stage-4gpmjius"
+          },
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/102-replace.txt",
+            "done": false,
+            "existed": true,
+            "new_hash": "29b47270bf02349fb715b212c2b73ed66c6cc4a701af57a2195a619c4320383d",
+            "old_hash": "1f879fae28709913f3634c84cc9648f49d53d01d707f7392ae3090139a2bdab9",
+            "op": "replace",
+            "path": "${ROOT}/output/replace.txt",
+            "staged": "${ROOT}/output/.ct-stage-3_jwgula"
+          },
+          {
+            "backup": null,
+            "done": false,
+            "existed": false,
+            "new_hash": "a5db8b2359296e4df583878e64bd37145382c112c312c5fed56e2a8f62514358",
+            "old_hash": null,
+            "op": "create",
+            "path": "${ROOT}/output/create.txt",
+            "staged": "${ROOT}/output/.ct-stage-smgebzdr"
+          },
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/101-delete.txt",
+            "done": false,
+            "existed": true,
+            "new_hash": null,
+            "old_hash": "cd3d0d7eb218edd1be13cd3d931a574348153f971793e3ef4691587cb2453fbb",
+            "op": "delete",
+            "path": "${ROOT}/output/delete.txt",
+            "staged": null
+          }
+        ],
+        "format": "export-publication/1",
+        "operation_id": "fixture-operation",
+        "phase": "publishing",
+        "root": "${ROOT}"
+      },
+      "before": {
+        ".ct/backup/fixture-operation/101-delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        ".ct/backup/fixture-operation/102-global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        ".ct/backup/fixture-operation/102-replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "config/.ct-stage-4gpmjius": {
+          "text": "[invalid config\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "config/global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/.ct-stage-3_jwgula": {
+          "text": "new replacement\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/.ct-stage-smgebzdr": {
+          "text": "new creation\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        }
+      },
+      "after": {
+        "config/global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        }
+      }
+    },
+    {
+      "name": "publishing-1",
+      "journal": {
+        "allowed_dirs": [
+          "${ROOT}/config",
+          "${ROOT}/output"
+        ],
+        "entries": [
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/102-global.yaml",
+            "done": true,
+            "existed": true,
+            "new_hash": "dfb07b4a7dbc7705e3e5fea80cdaad90c3d268b60b0754826f6470ac63627a90",
+            "old_hash": "2ae5d302f77a056fb3d0ed7a8b12272ca7549b5c14c7aaf719dec9d36504f770",
+            "op": "replace",
+            "path": "${ROOT}/config/global.yaml",
+            "staged": "${ROOT}/config/.ct-stage-xeazdouu"
+          },
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/102-replace.txt",
+            "done": false,
+            "existed": true,
+            "new_hash": "29b47270bf02349fb715b212c2b73ed66c6cc4a701af57a2195a619c4320383d",
+            "old_hash": "1f879fae28709913f3634c84cc9648f49d53d01d707f7392ae3090139a2bdab9",
+            "op": "replace",
+            "path": "${ROOT}/output/replace.txt",
+            "staged": "${ROOT}/output/.ct-stage-zsy1dw49"
+          },
+          {
+            "backup": null,
+            "done": false,
+            "existed": false,
+            "new_hash": "a5db8b2359296e4df583878e64bd37145382c112c312c5fed56e2a8f62514358",
+            "old_hash": null,
+            "op": "create",
+            "path": "${ROOT}/output/create.txt",
+            "staged": "${ROOT}/output/.ct-stage-gejg8n2l"
+          },
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/101-delete.txt",
+            "done": false,
+            "existed": true,
+            "new_hash": null,
+            "old_hash": "cd3d0d7eb218edd1be13cd3d931a574348153f971793e3ef4691587cb2453fbb",
+            "op": "delete",
+            "path": "${ROOT}/output/delete.txt",
+            "staged": null
+          }
+        ],
+        "format": "export-publication/1",
+        "operation_id": "fixture-operation",
+        "phase": "publishing",
+        "root": "${ROOT}"
+      },
+      "before": {
+        ".ct/backup/fixture-operation/101-delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        ".ct/backup/fixture-operation/102-global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        ".ct/backup/fixture-operation/102-replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "config/global.yaml": {
+          "text": "[invalid config\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/.ct-stage-gejg8n2l": {
+          "text": "new creation\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/.ct-stage-zsy1dw49": {
+          "text": "new replacement\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        }
+      },
+      "after": {
+        "config/global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        }
+      }
+    },
+    {
+      "name": "publishing-2",
+      "journal": {
+        "allowed_dirs": [
+          "${ROOT}/config",
+          "${ROOT}/output"
+        ],
+        "entries": [
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/102-global.yaml",
+            "done": true,
+            "existed": true,
+            "new_hash": "dfb07b4a7dbc7705e3e5fea80cdaad90c3d268b60b0754826f6470ac63627a90",
+            "old_hash": "2ae5d302f77a056fb3d0ed7a8b12272ca7549b5c14c7aaf719dec9d36504f770",
+            "op": "replace",
+            "path": "${ROOT}/config/global.yaml",
+            "staged": "${ROOT}/config/.ct-stage-m8pom2hq"
+          },
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/102-replace.txt",
+            "done": true,
+            "existed": true,
+            "new_hash": "29b47270bf02349fb715b212c2b73ed66c6cc4a701af57a2195a619c4320383d",
+            "old_hash": "1f879fae28709913f3634c84cc9648f49d53d01d707f7392ae3090139a2bdab9",
+            "op": "replace",
+            "path": "${ROOT}/output/replace.txt",
+            "staged": "${ROOT}/output/.ct-stage-21s1cb3q"
+          },
+          {
+            "backup": null,
+            "done": false,
+            "existed": false,
+            "new_hash": "a5db8b2359296e4df583878e64bd37145382c112c312c5fed56e2a8f62514358",
+            "old_hash": null,
+            "op": "create",
+            "path": "${ROOT}/output/create.txt",
+            "staged": "${ROOT}/output/.ct-stage-c76trwnk"
+          },
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/101-delete.txt",
+            "done": false,
+            "existed": true,
+            "new_hash": null,
+            "old_hash": "cd3d0d7eb218edd1be13cd3d931a574348153f971793e3ef4691587cb2453fbb",
+            "op": "delete",
+            "path": "${ROOT}/output/delete.txt",
+            "staged": null
+          }
+        ],
+        "format": "export-publication/1",
+        "operation_id": "fixture-operation",
+        "phase": "publishing",
+        "root": "${ROOT}"
+      },
+      "before": {
+        ".ct/backup/fixture-operation/101-delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        ".ct/backup/fixture-operation/102-global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        ".ct/backup/fixture-operation/102-replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "config/global.yaml": {
+          "text": "[invalid config\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/.ct-stage-c76trwnk": {
+          "text": "new creation\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/replace.txt": {
+          "text": "new replacement\n",
+          "mtimeNs": "1600000100654321000"
+        }
+      },
+      "after": {
+        "config/global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        }
+      }
+    },
+    {
+      "name": "publishing-3",
+      "journal": {
+        "allowed_dirs": [
+          "${ROOT}/config",
+          "${ROOT}/output"
+        ],
+        "entries": [
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/102-global.yaml",
+            "done": true,
+            "existed": true,
+            "new_hash": "dfb07b4a7dbc7705e3e5fea80cdaad90c3d268b60b0754826f6470ac63627a90",
+            "old_hash": "2ae5d302f77a056fb3d0ed7a8b12272ca7549b5c14c7aaf719dec9d36504f770",
+            "op": "replace",
+            "path": "${ROOT}/config/global.yaml",
+            "staged": "${ROOT}/config/.ct-stage-v4qtfi86"
+          },
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/102-replace.txt",
+            "done": true,
+            "existed": true,
+            "new_hash": "29b47270bf02349fb715b212c2b73ed66c6cc4a701af57a2195a619c4320383d",
+            "old_hash": "1f879fae28709913f3634c84cc9648f49d53d01d707f7392ae3090139a2bdab9",
+            "op": "replace",
+            "path": "${ROOT}/output/replace.txt",
+            "staged": "${ROOT}/output/.ct-stage-9yag5ubt"
+          },
+          {
+            "backup": null,
+            "done": true,
+            "existed": false,
+            "new_hash": "a5db8b2359296e4df583878e64bd37145382c112c312c5fed56e2a8f62514358",
+            "old_hash": null,
+            "op": "create",
+            "path": "${ROOT}/output/create.txt",
+            "staged": "${ROOT}/output/.ct-stage-jze6w73h"
+          },
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/101-delete.txt",
+            "done": false,
+            "existed": true,
+            "new_hash": null,
+            "old_hash": "cd3d0d7eb218edd1be13cd3d931a574348153f971793e3ef4691587cb2453fbb",
+            "op": "delete",
+            "path": "${ROOT}/output/delete.txt",
+            "staged": null
+          }
+        ],
+        "format": "export-publication/1",
+        "operation_id": "fixture-operation",
+        "phase": "publishing",
+        "root": "${ROOT}"
+      },
+      "before": {
+        ".ct/backup/fixture-operation/101-delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        ".ct/backup/fixture-operation/102-global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        ".ct/backup/fixture-operation/102-replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "config/global.yaml": {
+          "text": "[invalid config\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/create.txt": {
+          "text": "new creation\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/replace.txt": {
+          "text": "new replacement\n",
+          "mtimeNs": "1600000100654321000"
+        }
+      },
+      "after": {
+        "config/global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        }
+      }
+    },
+    {
+      "name": "publishing-4",
+      "journal": {
+        "allowed_dirs": [
+          "${ROOT}/config",
+          "${ROOT}/output"
+        ],
+        "entries": [
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/102-global.yaml",
+            "done": true,
+            "existed": true,
+            "new_hash": "dfb07b4a7dbc7705e3e5fea80cdaad90c3d268b60b0754826f6470ac63627a90",
+            "old_hash": "2ae5d302f77a056fb3d0ed7a8b12272ca7549b5c14c7aaf719dec9d36504f770",
+            "op": "replace",
+            "path": "${ROOT}/config/global.yaml",
+            "staged": "${ROOT}/config/.ct-stage-s8obo3pl"
+          },
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/102-replace.txt",
+            "done": true,
+            "existed": true,
+            "new_hash": "29b47270bf02349fb715b212c2b73ed66c6cc4a701af57a2195a619c4320383d",
+            "old_hash": "1f879fae28709913f3634c84cc9648f49d53d01d707f7392ae3090139a2bdab9",
+            "op": "replace",
+            "path": "${ROOT}/output/replace.txt",
+            "staged": "${ROOT}/output/.ct-stage-bwgoot35"
+          },
+          {
+            "backup": null,
+            "done": true,
+            "existed": false,
+            "new_hash": "a5db8b2359296e4df583878e64bd37145382c112c312c5fed56e2a8f62514358",
+            "old_hash": null,
+            "op": "create",
+            "path": "${ROOT}/output/create.txt",
+            "staged": "${ROOT}/output/.ct-stage-jmmfpvun"
+          },
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/101-delete.txt",
+            "done": true,
+            "existed": true,
+            "new_hash": null,
+            "old_hash": "cd3d0d7eb218edd1be13cd3d931a574348153f971793e3ef4691587cb2453fbb",
+            "op": "delete",
+            "path": "${ROOT}/output/delete.txt",
+            "staged": null
+          }
+        ],
+        "format": "export-publication/1",
+        "operation_id": "fixture-operation",
+        "phase": "publishing",
+        "root": "${ROOT}"
+      },
+      "before": {
+        ".ct/backup/fixture-operation/101-delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        ".ct/backup/fixture-operation/102-global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        ".ct/backup/fixture-operation/102-replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "config/global.yaml": {
+          "text": "[invalid config\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/create.txt": {
+          "text": "new creation\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/replace.txt": {
+          "text": "new replacement\n",
+          "mtimeNs": "1600000100654321000"
+        }
+      },
+      "after": {
+        "config/global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "output/replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        }
+      }
+    },
+    {
+      "name": "committed-4",
+      "journal": {
+        "allowed_dirs": [
+          "${ROOT}/config",
+          "${ROOT}/output"
+        ],
+        "entries": [
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/102-global.yaml",
+            "done": true,
+            "existed": true,
+            "new_hash": "dfb07b4a7dbc7705e3e5fea80cdaad90c3d268b60b0754826f6470ac63627a90",
+            "old_hash": "2ae5d302f77a056fb3d0ed7a8b12272ca7549b5c14c7aaf719dec9d36504f770",
+            "op": "replace",
+            "path": "${ROOT}/config/global.yaml",
+            "staged": "${ROOT}/config/.ct-stage-ioc1o_sg"
+          },
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/102-replace.txt",
+            "done": true,
+            "existed": true,
+            "new_hash": "29b47270bf02349fb715b212c2b73ed66c6cc4a701af57a2195a619c4320383d",
+            "old_hash": "1f879fae28709913f3634c84cc9648f49d53d01d707f7392ae3090139a2bdab9",
+            "op": "replace",
+            "path": "${ROOT}/output/replace.txt",
+            "staged": "${ROOT}/output/.ct-stage-ndzox2y9"
+          },
+          {
+            "backup": null,
+            "done": true,
+            "existed": false,
+            "new_hash": "a5db8b2359296e4df583878e64bd37145382c112c312c5fed56e2a8f62514358",
+            "old_hash": null,
+            "op": "create",
+            "path": "${ROOT}/output/create.txt",
+            "staged": "${ROOT}/output/.ct-stage-ayvczwid"
+          },
+          {
+            "backup": "${ROOT}/.ct/backup/fixture-operation/101-delete.txt",
+            "done": true,
+            "existed": true,
+            "new_hash": null,
+            "old_hash": "cd3d0d7eb218edd1be13cd3d931a574348153f971793e3ef4691587cb2453fbb",
+            "op": "delete",
+            "path": "${ROOT}/output/delete.txt",
+            "staged": null
+          }
+        ],
+        "format": "export-publication/1",
+        "operation_id": "fixture-operation",
+        "phase": "committed",
+        "root": "${ROOT}"
+      },
+      "before": {
+        ".ct/backup/fixture-operation/101-delete.txt": {
+          "text": "original deletion\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        ".ct/backup/fixture-operation/102-global.yaml": {
+          "text": "primary_lang: zh\nsecondary_langs: [en]\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        ".ct/backup/fixture-operation/102-replace.txt": {
+          "text": "original replacement\n",
+          "mtimeNs": "1600000000123456000"
+        },
+        "config/global.yaml": {
+          "text": "[invalid config\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/create.txt": {
+          "text": "new creation\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/replace.txt": {
+          "text": "new replacement\n",
+          "mtimeNs": "1600000100654321000"
+        }
+      },
+      "after": {
+        "config/global.yaml": {
+          "text": "[invalid config\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/create.txt": {
+          "text": "new creation\n",
+          "mtimeNs": "1600000100654321000"
+        },
+        "output/replace.txt": {
+          "text": "new replacement\n",
+          "mtimeNs": "1600000100654321000"
+        }
+      }
+    }
+  ]
+}

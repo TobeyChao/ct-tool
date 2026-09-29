@@ -1,0 +1,130 @@
+{
+  "format": "web-static-manifest/1",
+  "sourceCommit": "8dc7b81",
+  "sourceRoot": "ct/src/ct/web/static",
+  "files": [
+    {
+      "path": "index.html",
+      "legacySha256": "ce04d2a4660c7dff0c9de307333650abff146d8809faeeea3145264e64e36f66",
+      "migration": "identical"
+    },
+    {
+      "path": "js/app-shell.js",
+      "legacySha256": "f0ef3ab65ad485b53b039fa6bfa6d086e166347b72462eecd31c068ecb19ccee",
+      "migration": "identical"
+    },
+    {
+      "path": "js/core/api.js",
+      "legacySha256": "4dae7737fff0e542006bd83b2da6f69d11fc3c43a96f678e534f226c906d5ce5",
+      "migration": "adapted",
+      "reason": "连接中断或超时时明确提示写入结果未知，且不自动重放"
+    },
+    {
+      "path": "js/core/dialog.js",
+      "legacySha256": "c35de2f04ed01c4f0179b29e817eab3cacbbf5229b59af9c53bde07bb644d274",
+      "migration": "adapted",
+      "reason": "已关闭弹窗的延迟过渡回调不再重新打开弹窗"
+    },
+    {
+      "path": "js/core/dom.js",
+      "legacySha256": "0eea796b8620a5ed41e8fe18735e24b07117a7b5bcb303904b80b1a666da99ab",
+      "migration": "identical"
+    },
+    {
+      "path": "js/core/draft-store.js",
+      "legacySha256": "48918f280f4b0950c7735426ee2f31a2bff66a67bb3a2d00b3221f0f068f8aa8",
+      "migration": "adapted",
+      "reason": "旧 IndexedDB 草稿和未知格式接续"
+    },
+    {
+      "path": "js/core/fuzzy.js",
+      "legacySha256": "2ef47e780b428b2a43745915ec8e3dd0b3b5c215a4dbb69b688d84e4a94e9f21",
+      "migration": "identical"
+    },
+    {
+      "path": "js/core/labels.js",
+      "legacySha256": "39da06a5cec99f422b2be3bbe22b5183596fcb7ee27bbee3c6c17ee4afe6bc11",
+      "migration": "identical"
+    },
+    {
+      "path": "js/core/projection.js",
+      "legacySha256": "b45079c25bc125db489269880591ba7e63bca0e538ddfea7ad45ce4a48850f0f",
+      "migration": "identical"
+    },
+    {
+      "path": "js/core/router.js",
+      "legacySha256": "27cd66f3fd84cc36b168283d1f20e43581944745a8a54ea17cf9a4cc0eed2b83",
+      "migration": "identical"
+    },
+    {
+      "path": "js/core/task.js",
+      "legacySha256": "34dec7e7e68f5f298f6775ee435476966f95a6880818fc61119daf8309594222",
+      "migration": "adapted",
+      "reason": "原生服务实例与显式恢复状态"
+    },
+    {
+      "path": "js/core/virtual-list.js",
+      "legacySha256": "ed9db3042079f330a58b7114a162e32fdb7048a9e147f7ef0a322d7722d35637",
+      "migration": "identical"
+    },
+    {
+      "path": "js/module-registry.js",
+      "legacySha256": "70d09c38cefb57f924a75f4cb7f96d1bf4a3454a3c16bdfebe48996771ac0f8c",
+      "migration": "identical"
+    },
+    {
+      "path": "js/modules/export.js",
+      "legacySha256": "1274d2d0ec1830c04344b372031a394260565068eb39d705b6530fa9d85a818a",
+      "migration": "adapted",
+      "reason": "增量导出、工作区忙碌诊断、任务重附着、未知结果核实和模板串行迁移"
+    },
+    {
+      "path": "js/modules/history.js",
+      "legacySha256": "4f3f7b9f97894101cad01d621b83fbe38fc2879be82534d8bb0e6ab463824e3b",
+      "migration": "adapted",
+      "reason": "原生历史状态兼容"
+    },
+    {
+      "path": "js/modules/i18n.js",
+      "legacySha256": "39aefc353af5fbb2a03282d1c4b2ccd745411c4c40d89ea3a6c4f8067ce16e89",
+      "migration": "identical"
+    },
+    {
+      "path": "js/modules/logs.js",
+      "legacySha256": "74f894a1e91822fc969f34d673161abe0a7f88c75d86d49697db1fc8bb24ff87",
+      "migration": "adapted",
+      "reason": "日志分类契约注释改为指向原生 panel 写入源；用户行为不变"
+    },
+    {
+      "path": "js/modules/schema-dialogs.js",
+      "legacySha256": "e0a2ae1e7207ff4289ae016818fe6d2813be00c31996052ec845954af2005e57",
+      "migration": "identical"
+    },
+    {
+      "path": "js/modules/schema.js",
+      "legacySha256": "78257857488c3d095e83d136288f9ad98a58bcc88b299afe03c717912fda77cf",
+      "migration": "adapted",
+      "reason": "完整命令与双守卫的原生 Schema 请求"
+    },
+    {
+      "path": "styles/base.css",
+      "legacySha256": "1d16933bfa1115c184e31bee6d84cb08efd09c9cd81e60da6e45e1fd6235a88c",
+      "migration": "identical"
+    },
+    {
+      "path": "styles/components.css",
+      "legacySha256": "de93086eceba4418dc7f9bd3add6c5dca47a1dd56231c0df62232a9a86f87ae0",
+      "migration": "identical"
+    },
+    {
+      "path": "styles/layout.css",
+      "legacySha256": "06a2c92e15053dafe9a9a34cd85dc3b7ddcff1a2d8634a2857db74fb49fbd087",
+      "migration": "identical"
+    },
+    {
+      "path": "styles/tokens.css",
+      "legacySha256": "4296de9a8f9b2f783bbc0149eb0773448b15d07937e4829e1fbc0a93c860a5dc",
+      "migration": "identical"
+    }
+  ]
+}

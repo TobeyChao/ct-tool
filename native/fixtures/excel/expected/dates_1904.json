@@ -1,0 +1,24 @@
+{
+  "file": "dates_1904.xlsx",
+  "sheets": [
+    "日期"
+  ],
+  "active_sheet": "日期",
+  "epoch": "1904",
+  "max_row": 2,
+  "max_col": 1,
+  "cells": [
+    {
+      "row": 1,
+      "col": 1,
+      "kind": "datetime",
+      "value": "2024-01-15T10:30:00"
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "kind": "datetime",
+      "value": "2000-02-29T23:59:59"
+    }
+  ]
+}

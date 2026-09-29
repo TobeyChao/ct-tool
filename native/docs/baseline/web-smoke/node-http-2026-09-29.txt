@@ -1,0 +1,51 @@
+
+> test:http
+> node --test tests/native-api.test.mjs tests/schema-contract.test.mjs tests/frozen-web-contract.test.mjs tests/static-assets.test.mjs tests/resource-query.test.mjs tests/candidate-contract.test.mjs tests/save-contract.test.mjs tests/bigint-errors.test.mjs tests/template-flow.test.mjs tests/i18n-entry.test.mjs tests/panel-shutdown.test.mjs tests/codename-invariant.test.mjs
+
+✔ HTTP serializes unsafe integers as exact decimal tags at every depth (64.349542ms)
+✔ 400, 404, 409 and publication 500 remain structured without changing YAML (93.922791ms)
+✔ candidate and validation use only the requested command prefix and echo its generation (82.451542ms)
+✔ malformed active command pinpoints its position; inactive redo is not applied (63.960833ms)
+✔ stale baseline rejects the draft and candidate or validation never reads Excel or writes files (34.691958ms)
+✔ deleting an indexed table before reusing its name does not transfer the old index (73.981416ms)
+✔ deleting or renaming CodeName while the codename index remains is invalid (51.264083ms)
+✔ explicitly removing the codename index makes either CodeName edit valid (29.37425ms)
+✔ frozen Python Web inputs and success/error contracts run against the native panel (121.68725ms)
+✔ frozen legacy history entry imports and normalizes its result code (21.697084ms)
+✔ translation listing exposes every entry beyond a page, four states, and exact single-entry writes (182.379958ms)
+✔ sync and compact stay within table/language scope, preview without writes, and emit logs (65.8395ms)
+✔ native package serves assets and diagnostic workspace without Python (65.877167ms)
+✔ schema candidate, guarded YAML-only save, undo cursor and no-op (75.569834ms)
+✔ template generation, export and task endpoints (82.372042ms)
+✔ all legacy static entry assets and core dependency boundary (23.758625ms)
+✔ failed task can be dismissed across clients and is reset on the next run (66.913875ms)
+✔ concurrent page views do not contend as workspace writers (15.849583ms)
+✔ SIGINT waits for an accepted export to publish a complete file set and restart gets a new instance (5376.515917ms)
+✔ stdin EOF waits for an accepted export to publish a complete file set and restart gets a new instance (5179.547833ms)
+✔ custom-directory status, all resources and reverse references match frozen Web responses (172.41625ms)
+✔ template and success ledger roll back together when custom cache target cannot publish (38.858875ms)
+✔ rename save updates references and reports an exact YAML-only receipt and fresh snapshot (115.107042ms)
+✔ new Table save warns about its existing workbook without reading or changing it (36.819417ms)
+✔ net-zero command history does not touch YAML or create a publication journal (35.07725ms)
+✔ target path conflict rejects the entire save and preserves the draft baseline (26.813209ms)
+✔ schema save publishes only changed YAML and a new baseline (57.883875ms)
+✔ no-op save preserves bytes and nanosecond mtime without a journal (22.666083ms)
+✔ save rejects stale revision, preserves external YAML and succeeds after fresh review (25.761833ms)
+✔ save requires both guards and locates malformed command histories (16.962417ms)
+✔ schema save never needs to read a malformed workbook (19.736542ms)
+✔ structurally invalid draft has issues and cannot write YAML (16.561959ms)
+✔ workspace status separates missing, changed and drifted in custom directories (42.969791ms)
+✔ save recovers a prepared publication before loading business resources (17.012792ms)
+✔ validation accepts a field draft and rejects i18n on a Record (17.005125ms)
+✔ the complete old Web asset tree and module imports are preserved (12.922875ms)
+✔ the native panel serves every migrated asset with its expected media type (58.945875ms)
+✔ template generation uses saved Schema and stays independent from YAML save and export (76.42375ms)
+✔ missing manifest and malformed workbook reject regeneration without changing the original files (28.141291ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 39
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10629.451833

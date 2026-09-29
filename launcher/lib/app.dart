@@ -45,7 +45,7 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
         await openPanelInBrowser(_panel.baseUrl);
       },
     );
-    // 拦截 Cmd+Q / Dock 退出：先停 Flask 子进程再真正退出，避免孤儿进程。
+    // 拦截 Cmd+Q / Dock 退出：先停 原生子进程再真正退出，避免孤儿进程。
     _lifecycleListener = AppLifecycleListener(
       onExitRequested: () async {
         await _panel.stop();
@@ -78,10 +78,9 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
       }
       return;
     }
-    // 退出：3 秒兜底强制退出，避免任何残留（对齐 FlClash handleExit）
-    Future.delayed(const Duration(seconds: 3), () => exit(0));
+    // 等待服务完成发布，正常退出不得强杀。
     try {
-      await _panel.stop().timeout(const Duration(seconds: 8), onTimeout: () {});
+      await _panel.stop();
       await windowManager.destroy();
     } finally {
       exit(0);
