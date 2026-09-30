@@ -31,8 +31,8 @@ class WorkbenchDraftBanners extends StatelessWidget {
         _banner(
           key: 'wb.draftConflict',
           text:
-              '发现上次未保存的草稿，但 Schema 基线已变（${data.conflictReason ?? '基线不符'}）：'
-              '未自动套用，也没有删除草稿文件。',
+              '草稿的 Schema 基线已变（${data.conflictReason ?? '基线不符'}）：'
+              '原始草稿已保留，编辑和保存已暂停；请先核对并处理该草稿。',
           fg: ctDanger,
           bg: ctDangerSoft,
           action: CtButton.ghost(
@@ -48,7 +48,7 @@ class WorkbenchDraftBanners extends StatelessWidget {
       found.add(
         _banner(
           key: 'wb.draftDamaged',
-          text: '用户目录里的草稿格式不认识，已保留供查看：$damaged；未静默清空。',
+          text: '用户目录里的草稿格式不认识，已保留供查看：$damaged；编辑已暂停，请先核对该文件。',
           action: CtButton.ghost(
             '移除该文件',
             key: const ValueKey('wb.draftRemoveDamaged'),

@@ -4,6 +4,7 @@ import 'package:ct_launcher/services/protocol/protocol.dart';
 import 'package:ct_launcher/services/settings_store.dart';
 import 'package:ct_launcher/services/worker_service.dart';
 import 'package:ct_launcher/state/workbench_repository.dart';
+import 'package:ct_launcher/state/draft_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// 双守卫保存（native-flutter-workbench 任务 3.4）与候选呈现（3.3）——直连真实 `ct worker`。
@@ -20,8 +21,9 @@ void main() {
   const skipReason = '未构建原生 ct 二进制（先 cargo build -p ct-cli）';
 
   Future<({WorkbenchRepository repo, WorkerService worker, Directory ws})> open(
-    String? copyFrom,
-  ) async {
+    String? copyFrom, {
+    DraftStore? store,
+  }) async {
     final ws = await Directory.systemTemp.createTemp('ct-save-');
     if (copyFrom == null) {
       Directory('${ws.path}/config/schemas').createSync(recursive: true);
@@ -52,7 +54,7 @@ void main() {
       connect: () async => transport,
     );
     await worker.start();
-    final repo = WorkbenchRepository(worker: worker);
+    final repo = WorkbenchRepository(worker: worker, store: store);
     await repo.switchWorkspace(ws.path);
     return (repo: repo, worker: worker, ws: ws);
   }
@@ -135,13 +137,14 @@ void main() {
   );
 
   test(
-    '外部改动使旧基线被拒：不动文件、草稿保留、基线刷新',
+    '外部改动使旧基线被拒：不动文件、草稿与原始基线保留',
     () async {
       if (!available) return;
       final ctx = await open(null);
       ctx.repo.createTable('Hero');
       await ctx.repo.requestCandidate();
       final before = digestConfig(ctx.ws);
+      final baseline = ctx.repo.schemaBaseline;
 
       // 外部改一个 schema 成员（模拟并行编辑），保存必须拒绝
       File('${ctx.ws.path}/config/schemas/outsider.yaml').writeAsStringSync(
@@ -170,12 +173,101 @@ void main() {
           reason: '${entry.key} 不应被改写',
         );
       }
-      // 基线已刷新：重算候选后即可保存
       expect(ctx.repo.candidate, isNull, reason: '旧候选应作废');
-      expect(ctx.repo.schemaBaseline.length, 64);
-      final recalc = await ctx.repo.requestCandidate();
-      expect(recalc, isNotNull, reason: ctx.repo.draftError ?? '');
+      expect(ctx.repo.schemaBaseline, baseline);
+      expect(ctx.repo.hasDraftConflict, isTrue);
+      expect(ctx.repo.conflictingDraft!.baseline, baseline);
+      expect(await ctx.repo.requestCandidate(), isNull);
+      expect(await ctx.repo.saveDraft(), isNull);
       await shutdown(ctx);
+    },
+    skip: available ? false : skipReason,
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
+
+  test(
+    'external field comment conflict preserves original envelope across retry exit and restart',
+    () async {
+      final draftRoot = await Directory.systemTemp.createTemp(
+        'ct-save-drafts-',
+      );
+      final store = DraftStore(rootOverride: draftRoot);
+      final ctx = await open(null, store: store);
+      WorkbenchRepository? restarted;
+      try {
+        ctx.repo.createTable('Hero');
+        ctx.repo.setFieldComment('table:Hero', 'Id', 'original saved comment');
+        expect(await ctx.repo.requestCandidate(), isNotNull);
+        expect(await ctx.repo.saveDraft(), isNotNull);
+        await ctx.repo.persistSettled;
+        final baseline = ctx.repo.schemaBaseline;
+        ctx.repo.setFieldComment('table:Hero', 'Id', 'local draft comment');
+        await ctx.repo.persistSettled;
+        expect(await ctx.repo.requestCandidate(), isNotNull);
+        final yaml = File('${ctx.ws.path}/config/schemas/hero.yaml');
+        final external = yaml.readAsStringSync().replaceFirst(
+          'original saved comment',
+          'external field comment',
+        );
+        expect(external, contains('external field comment'));
+        yaml.writeAsStringSync(external);
+        expect(await ctx.repo.saveDraft(), isNull);
+        expect(ctx.repo.schemaBaseline, baseline);
+        expect(ctx.repo.hasDraftConflict, isTrue);
+        expect(ctx.repo.conflictingDraft!.baseline, baseline);
+        expect(ctx.repo.draftCount, 1);
+        expect(ctx.repo.canSave, isFalse);
+        ctx.repo.setFieldComment('table:Hero', 'Id', 'blocked edit');
+        expect(ctx.repo.commands, hasLength(1));
+        expect(await ctx.repo.requestCandidate(), isNull);
+        expect(await ctx.repo.saveDraft(), isNull);
+        await ctx.repo.persistDraft();
+        expect(await ctx.repo.flushDraft(), isTrue);
+        expect(await ctx.repo.restoreDraft(), DraftOutcome.conflict);
+        expect(ctx.repo.editingFrozen, isTrue);
+        expect(ctx.repo.schemaBaseline, baseline);
+        expect(yaml.readAsStringSync(), external);
+        final file = await store.fileFor(ctx.ws.path);
+        final envelope = await store.load(
+          workspaceKey: ctx.ws.path,
+          baseline: baseline,
+        );
+        expect(envelope.outcome, DraftOutcome.restored);
+        expect(envelope.envelope!.baseline, baseline);
+        expect(envelope.envelope!.cursor, 1);
+        expect(
+          envelope.envelope!.commands.single.payload['value'],
+          'local draft comment',
+        );
+        final originalBytes = file.readAsBytesSync();
+        restarted = WorkbenchRepository(worker: ctx.worker, store: store);
+        await restarted.switchWorkspace(ctx.ws.path);
+        expect(restarted.hasDraftConflict, isTrue);
+        expect(restarted.conflictingDraft!.baseline, baseline);
+        expect(
+          restarted.conflictingDraft!.commands.single.payload['value'],
+          'local draft comment',
+        );
+        restarted.setFieldComment('table:Hero', 'Id', 'another blocked edit');
+        restarted.discardDraft();
+        await restarted.persistDraft();
+        expect(await restarted.flushDraft(), isTrue);
+        expect(file.readAsBytesSync(), originalBytes);
+        expect(yaml.readAsStringSync(), external);
+        expect(await restarted.discardDraftAndPersist(), isTrue);
+        expect(file.existsSync(), isFalse);
+        expect(restarted.editingFrozen, isFalse);
+        restarted.setFieldComment('table:Hero', 'Id', 'explicit new edit');
+        expect(await restarted.requestCandidate(), isNotNull);
+        expect(await restarted.saveDraft(), isNotNull);
+        expect(yaml.readAsStringSync(), contains('explicit new edit'));
+        await restarted.persistSettled;
+      } finally {
+        restarted?.dispose();
+        await ctx.repo.persistSettled;
+        await shutdown(ctx);
+        await draftRoot.delete(recursive: true);
+      }
     },
     skip: available ? false : skipReason,
     timeout: const Timeout(Duration(minutes: 3)),

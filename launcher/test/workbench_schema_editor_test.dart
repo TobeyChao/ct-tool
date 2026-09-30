@@ -288,7 +288,12 @@ void main() {
     final sent = gateway.candidates.last;
     expect(sent['schemaRevision'], 'baseline-sha');
     expect(sent['cursor'], '1');
-    expect(sent['draftGeneration'], 2);
+    expect(
+      sent['draftGeneration'],
+      greaterThan(gateway.candidates.first['draftGeneration']! as int),
+      reason: '显式刷新使用新的候选代次，编辑和加载也会使代次递增',
+    );
+    expect(repo.candidate!.draftGeneration, sent['draftGeneration']);
   });
 
   testWidgets('撤销/重做/丢弃都反映到清单与按钮可用性', (tester) async {

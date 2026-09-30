@@ -97,6 +97,16 @@ class _DelayedDraftStore extends DraftStore {
   }
 }
 
+class _FailClearFiles extends DraftFileAccess {
+  bool fail = true;
+
+  @override
+  Future<void> delete(File file) async {
+    if (fail) throw StateError('clear blocked');
+    await super.delete(file);
+  }
+}
+
 void main() {
   late Directory root;
   late DraftStore store;
@@ -266,8 +276,33 @@ void main() {
       reason: '也不删文件',
     );
 
+    final file = await store.fileFor(workspace);
+    final original = file.readAsStringSync();
+    expect(second.editingFrozen, isTrue);
+    second.createTable('Overwrite');
+    second.undoDraft();
+    second.redoDraft();
+    second.undoTo(0);
+    second.discardDraft();
+    expect(second.draftError, contains('基线已变'));
+    await second.persistDraft();
+    expect(await second.flushDraft(), isTrue);
+    expect(second.commands, isEmpty);
+    expect(file.readAsStringSync(), original);
+    expect(second.conflictingDraft!.baseline, 'baseline-1');
+    expect(await second.switchWorkspace('D:/game/B'), isTrue);
+    expect(file.readAsStringSync(), original);
+    expect(await second.switchWorkspace(workspace), isTrue);
+    expect(second.hasDraftConflict, isTrue);
+
     await second.discardStoredDraft();
     expect(second.hasDraftConflict, isFalse);
+    expect(second.editingFrozen, isFalse);
+    second.createTable('Fresh');
+    await second.persistSettled;
+    expect(second.draftCount, 1);
+    second.discardDraft();
+    await second.persistSettled;
     expect((await store.fileFor(workspace)).existsSync(), isFalse);
     second.dispose();
   });
@@ -281,8 +316,83 @@ void main() {
     expect(found.damagedDraftPath, contains('draft-'));
     expect(found.draftCount, 0);
     expect(file.existsSync(), isTrue, reason: '留给用户自己看');
+    expect(found.editingFrozen, isTrue);
+    found.createTable('Overwrite');
+    found.undoDraft();
+    found.redoDraft();
+    found.discardDraft();
+    expect(found.draftError, contains('草稿损坏'));
+    await found.persistDraft();
+    expect(await found.flushDraft(), isTrue);
+    expect(file.readAsStringSync(), '{ not json at all');
+    expect(found.commands, isEmpty);
+    expect(await found.switchWorkspace('D:/game/B'), isTrue);
+    expect(file.readAsStringSync(), '{ not json at all');
+    expect(await found.switchWorkspace(workspace), isTrue);
+    expect(found.damagedDraftPath, isNotNull);
+    expect(await found.discardDraftAndPersist(), isTrue);
+    expect(file.existsSync(), isFalse);
+    expect(found.damagedDraftPath, isNull);
+    expect(found.editingFrozen, isFalse);
+    found.createTable('Fresh');
+    await found.persistSettled;
+    expect(found.draftCount, 1);
     found.dispose();
   });
+
+  for (final damaged in [false, true]) {
+    test(
+      'failed explicit discard keeps ${damaged ? 'damaged' : 'conflict'} file and identity until clear retry',
+      () async {
+        final file = await store.fileFor(workspace);
+        if (damaged) {
+          file.writeAsStringSync('{damaged');
+        } else {
+          final original = repo(_FakeGateway());
+          await original.switchWorkspace(workspace);
+          original.createTable('Original');
+          await original.persistSettled;
+          original.dispose();
+        }
+        final bytes = file.readAsBytesSync();
+        final access = _FailClearFiles();
+        final retainedStore = DraftStore(
+          rootOverride: root,
+          fileAccess: access,
+        );
+        final found = WorkbenchRepository(
+          worker: _FakeGateway(baseline: 'external'),
+          store: retainedStore,
+        );
+        await found.switchWorkspace(workspace);
+        final identity = found.conflictingDraft;
+        final reason = damaged ? found.damagedReason : found.conflictReason;
+        expect(await found.discardDraftAndPersist(), isFalse);
+        found.createTable('Blocked');
+        found.discardDraft();
+        await found.persistDraft();
+        expect(await found.flushDraft(), isFalse);
+        expect(file.readAsBytesSync(), bytes);
+        expect(found.editingFrozen, isTrue);
+        expect(found.conflictingDraft, same(identity));
+        expect(damaged ? found.damagedReason : found.conflictReason, reason);
+        expect(found.persistError, contains('clear blocked'));
+        access.fail = false;
+        expect(await found.discardDraftAndPersist(), isTrue);
+        expect(file.existsSync(), isFalse);
+        expect(found.editingFrozen, isFalse);
+        found.createTable('Fresh');
+        await found.persistSettled;
+        final loaded = await retainedStore.load(
+          workspaceKey: workspace,
+          baseline: 'external',
+        );
+        expect(loaded.outcome, DraftOutcome.restored);
+        expect(loaded.envelope!.commands, hasLength(1));
+        found.dispose();
+      },
+    );
+  }
 
   test('落盘失败：内存编辑仍在并持续警告，成功后警告消失', () async {
     // 用一个"名字已被文件占用"的目录逼出真实写失败。

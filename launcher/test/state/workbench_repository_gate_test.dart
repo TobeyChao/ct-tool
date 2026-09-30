@@ -15,7 +15,8 @@ class _Gate implements KernelGateway {
   final bool netDiffChanged;
   final bool failListAfterSave;
   final List<String> methods = [];
-  final Map<int, Completer<Object?>> heldCandidates = {};
+  Completer<Object?>? heldCandidate;
+  final List<Map<String, Object?>> candidateParams = [];
   Completer<Object?>? heldSave;
   String baseline = 'base-1';
   int saves = 0;
@@ -71,9 +72,17 @@ class _Gate implements KernelGateway {
             },
           ],
         };
+      case Methods.workspaceRecover:
+        return {
+          'outcome': 'noop',
+          'revision': 1,
+          'detail': 'no recovery needed',
+        };
       case Methods.schemaCandidate:
         final gen = params['draftGeneration']! as int;
-        final gate = heldCandidates[gen];
+        candidateParams.add(params);
+        final gate = heldCandidate;
+        heldCandidate = null;
         if (gate != null) await gate.future;
         return {
           'candidateHash': 'hash-$gen',
@@ -113,19 +122,199 @@ void main() {
     final gate = _Gate();
     final repo = await opened(gate);
     final stale = Completer<Object?>();
-    gate.heldCandidates[1] = stale;
+    gate.heldCandidate = stale;
 
-    final first = repo.requestCandidate(); // draftGeneration = 1，挂起
-    final second = await repo.requestCandidate(); // = 2，立刻回
-    expect(second!.candidateHash, 'hash-2');
-    expect(repo.candidate!.candidateHash, 'hash-2');
+    final first = repo.requestCandidate();
+    final second = await repo.requestCandidate();
+    final latestGeneration = gate.candidateParams.last['draftGeneration'];
+    expect(second!.candidateHash, 'hash-$latestGeneration');
+    expect(repo.candidate!.candidateHash, second.candidateHash);
+    expect(repo.candidateBusy, isTrue, reason: '旧请求仍在途，不得提前解除忙碌');
 
     stale.complete(null);
-    await first;
-    expect(repo.candidate!.candidateHash, 'hash-2', reason: '第 1 代的迟到响应必须被丢弃');
+    expect(await first, isNull);
+    expect(repo.candidate!.candidateHash, second.candidateHash);
+    expect(repo.candidateBusy, isFalse);
     expect(repo.schemaBaseline, 'base-1', reason: '刷新候选不得推进基线');
     repo.dispose();
   });
+
+  for (final action in ['edit', 'undo', 'redo', 'undoTo', 'discard', 'clear']) {
+    for (final failure in ['none', 'structured', 'generic']) {
+      test(
+        '$action invalidates pending candidate including $failure responses',
+        () async {
+          final gate = _Gate();
+          final repo = await opened(gate);
+          if (action == 'redo') repo.undoDraft();
+          final held = Completer<Object?>();
+          gate.heldCandidate = held;
+          final pending = repo.requestCandidate();
+          final sentGeneration =
+              gate.candidateParams.last['draftGeneration']! as int;
+          switch (action) {
+            case 'edit':
+              repo.createTable('Fresh');
+            case 'undo':
+              repo.undoDraft();
+            case 'redo':
+              repo.redoDraft();
+            case 'undoTo':
+              expect(repo.undoTo(0), isTrue);
+            case 'discard':
+              repo.discardDraft();
+            case 'clear':
+              expect(await repo.discardDraftAndPersist(), isTrue);
+          }
+          expect(repo.candidate, isNull);
+          if (failure == 'none') {
+            held.complete(null);
+          } else if (failure == 'structured') {
+            held.completeError(
+              WorkerRequestException(
+                const ErrorBody(
+                  code: 'invalid',
+                  message: 'stale rejection',
+                  issues: [
+                    Issue(
+                      code: 'old',
+                      message: 'old field issue',
+                      resource: 'table:Hero/Id',
+                    ),
+                  ],
+                ),
+              ),
+            );
+          } else {
+            held.completeError(StateError('stale failure'));
+          }
+          expect(await pending, isNull);
+          expect(repo.candidate, isNull);
+          expect(repo.candidateProblems, isEmpty);
+          expect(repo.draftError, isNull);
+          expect(repo.candidateBusy, isFalse);
+          expect(repo.canSave, isFalse);
+          final fresh = await repo.requestCandidate();
+          expect(fresh, isNotNull);
+          expect(
+            gate.candidateParams.last['draftGeneration'],
+            greaterThan(sentGeneration),
+          );
+          repo.dispose();
+        },
+      );
+    }
+  }
+
+  for (final failOld in [false, true]) {
+    test(
+      'switch resets busy and old ${failOld ? 'error' : 'success'} cannot clear new busy',
+      () async {
+        final gate = _Gate();
+        final repo = await opened(gate);
+        final old = Completer<Object?>();
+        gate.heldCandidate = old;
+        final pendingOld = repo.requestCandidate();
+        expect(repo.candidateBusy, isTrue);
+        expect(await repo.switchWorkspace('D:/game/B'), isTrue);
+        expect(repo.candidateBusy, isFalse);
+        repo.createTable('Current');
+        final current = Completer<Object?>();
+        gate.heldCandidate = current;
+        final pendingCurrent = repo.requestCandidate();
+        if (failOld) {
+          old.completeError(StateError('old workspace failure'));
+        } else {
+          old.complete(null);
+        }
+        expect(await pendingOld, isNull);
+        expect(repo.candidateBusy, isTrue);
+        expect(repo.draftError, isNull);
+        expect(repo.candidate, isNull);
+        current.complete(null);
+        expect(await pendingCurrent, isNotNull);
+        expect(repo.candidateBusy, isFalse);
+        expect(repo.canSave, isTrue);
+        repo.dispose();
+      },
+    );
+  }
+
+  test('stale error cannot replace a newer accepted candidate', () async {
+    final gate = _Gate();
+    final repo = await opened(gate);
+    final held = Completer<Object?>();
+    gate.heldCandidate = held;
+    final pending = repo.requestCandidate();
+    final current = await repo.requestCandidate();
+    held.completeError(
+      WorkerRequestException(
+        const ErrorBody(code: 'invalid', message: 'old rejection'),
+      ),
+    );
+    expect(await pending, isNull);
+    expect(repo.candidate, same(current));
+    expect(repo.draftError, isNull);
+    expect(repo.candidateProblems, isEmpty);
+    expect(repo.canSave, isTrue);
+    repo.dispose();
+  });
+
+  test(
+    'workspace hook runs after reset and before any load, including empty roots',
+    () async {
+      final gate = _Gate();
+      final repo = await opened(gate);
+      final queries = gate.methods.length;
+      final release = Completer<void>();
+      final switching = repo.switchWorkspace(
+        'D:/game/B',
+        beforeLoad: () async {
+          expect(repo.workspaceRoot, 'D:/game/B');
+          expect(repo.resources, isEmpty);
+          expect(repo.commands, isEmpty);
+          expect(gate.methods, hasLength(queries));
+          await release.future;
+        },
+      );
+      await pump();
+      expect(gate.methods, hasLength(queries));
+      release.complete();
+      expect(await switching, isTrue);
+      var emptied = false;
+      final afterB = gate.methods.length;
+      expect(
+        await repo.switchWorkspace('', beforeLoad: () async => emptied = true),
+        isTrue,
+      );
+      expect(emptied, isTrue);
+      expect(gate.methods, hasLength(afterB));
+      repo.dispose();
+    },
+  );
+
+  test(
+    'workspace hook failure retains empty destination and sends no old worker reads',
+    () async {
+      final gate = _Gate();
+      final repo = await opened(gate);
+      final queries = gate.methods.length;
+      expect(
+        await repo.switchWorkspace(
+          'D:/game/B',
+          beforeLoad: () async {
+            throw StateError('startup failed');
+          },
+        ),
+        isTrue,
+      );
+      expect(repo.workspaceRoot, 'D:/game/B');
+      expect(repo.resources, isEmpty);
+      expect(repo.loadError, contains('startup failed'));
+      expect(gate.methods, hasLength(queries));
+      repo.dispose();
+    },
+  );
 
   test('保存进行中冻结编辑：任何编辑入口都不改草稿并给出可见原因', () async {
     final gate = _Gate()..heldSave = Completer<Object?>();
@@ -138,6 +327,8 @@ void main() {
     await pump();
     expect(repo.editingFrozen, isTrue);
     expect(repo.busy, isTrue);
+    expect(await repo.switchWorkspace('D:/game/B'), isFalse);
+    expect(repo.workspaceRoot, root);
 
     repo.createTable('Boss');
     repo.renameField('table:Item', 'Id', 'Nope');
@@ -222,7 +413,25 @@ void main() {
     repo.dispose();
   });
 
-  test('守卫失配被拒：草稿保留、旧候选作废、基线刷新为内核值', () async {
+  test('reload preserves baseline even when all commands are undone', () async {
+    final gate = _Gate();
+    final repo = await opened(gate);
+    repo.undoDraft();
+    expect(repo.hasDraft, isFalse);
+    expect(repo.hasDraftHistory, isTrue);
+    gate.baseline = 'external';
+    expect(await repo.recover(), isNotNull);
+    expect(repo.schemaBaseline, 'base-1');
+    expect(repo.hasDraftConflict, isTrue);
+    expect(repo.conflictingDraft!.cursor, 0);
+    expect(repo.conflictingDraft!.commands, hasLength(1));
+    repo.redoDraft();
+    expect(repo.cursor, 0);
+    expect(repo.draftError, contains('基线已变'));
+    repo.dispose();
+  });
+
+  test('守卫失配被拒：保留原始基线并明确冲突，不能重算后覆盖外部修改', () async {
     final gate = _Gate();
     final repo = await opened(gate);
     await repo.requestCandidate();
@@ -232,8 +441,15 @@ void main() {
     expect(repo.saveError, contains('基线已变'));
     expect(repo.canSave, isFalse, reason: '旧 hash 不许复用，必须重算候选');
     expect(repo.candidate, isNull);
-    expect(repo.schemaBaseline, 'base-external', reason: '基线要跟上内核');
+    expect(repo.schemaBaseline, 'base-1', reason: '旧草稿不得自动换基线');
+    expect(repo.hasDraftConflict, isTrue);
+    expect(repo.conflictingDraft!.baseline, 'base-1');
+    expect(await repo.requestCandidate(), isNull);
+    expect(await repo.saveDraft(), isNull);
     expect(repo.draftPersisted, isTrue);
+    expect(await repo.discardDraftAndPersist(), isTrue);
+    expect(repo.schemaBaseline, 'base-external');
+    expect(repo.editingFrozen, isFalse);
     repo.dispose();
   });
 }

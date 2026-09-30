@@ -386,7 +386,8 @@ void main() {
       );
       expect(call.params['schemaRevision'], 'baseline-sha');
       expect(call.params['cursor'], '1');
-      expect(call.params['draftGeneration'], 1);
+      expect(call.params['draftGeneration'], result.draftGeneration);
+      expect(result.draftGeneration, greaterThan(0));
       final commands = call.params['commands']! as List<Object?>;
       expect(commands.single! as Map<String, Object?>, {
         'kind': 'add_resource',

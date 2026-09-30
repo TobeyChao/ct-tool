@@ -14,6 +14,11 @@ class _FakeTransport implements WorkerTransport {
   final _inbound = StreamController<Message>.broadcast();
   final sent = <Message>[];
   final List<int> closed = [];
+  Object? sendError;
+  Object? closeError;
+  Completer<void>? closeGate;
+  final closeStarted = Completer<void>();
+  final helloSent = Completer<void>();
 
   /// 回给客户端的 hello 版本；改小写测试不兼容分支。
   final bool replyHello;
@@ -25,7 +30,9 @@ class _FakeTransport implements WorkerTransport {
 
   @override
   void send(Message message) {
+    if (sendError case final error?) throw error;
     sent.add(message);
+    if (message is Hello && !helloSent.isCompleted) helloSent.complete();
     switch (message) {
       case Request(method: 'hello'):
         break;
@@ -62,6 +69,10 @@ class _FakeTransport implements WorkerTransport {
 
   void emit(Message message) => _inbound.add(message);
 
+  void emitError(Object error) => _inbound.addError(error);
+
+  Future<void> endMessages() => _inbound.close();
+
   int? lastRequestId() {
     for (final message in sent.reversed) {
       if (message is Request) return message.requestId;
@@ -72,6 +83,12 @@ class _FakeTransport implements WorkerTransport {
   @override
   Future<void> close() async {
     closed.add(1);
+    if (!closeStarted.isCompleted) closeStarted.complete();
+    if (closeError case final error?) {
+      closeError = null;
+      throw error;
+    }
+    await closeGate?.future;
     await _inbound.close();
   }
 
@@ -121,6 +138,10 @@ void main() {
       expect(service.protocolCompatible, isFalse);
       expect(service.writeBlockReason(method: Methods.export), isNotNull);
       expect(service.failureReason, contains('协议版本不兼容'));
+      expect(transport.closed, hasLength(1));
+      await service.stop();
+      expect(transport.closed, hasLength(1));
+      service.dispose();
     });
 
     test('worker 不回 hello → 超时后报失败，不谎称就绪', () async {
@@ -128,11 +149,185 @@ void main() {
       final service = WorkerService(
         settings: _settings('/ws'),
         connect: () async => transport,
+        handshakeTimeout: const Duration(milliseconds: 30),
       );
-      await service.start().timeout(const Duration(seconds: 30));
+      await service.start().timeout(const Duration(seconds: 2));
       expect(service.status, WorkerStatus.failed);
       expect(service.failureReason, contains('握手超时'));
+      expect(transport.closed, hasLength(1));
+      await service.stop();
+      expect(transport.closed, hasLength(1));
+      service.dispose();
     });
+
+    for (final failure in ['connection error', 'stream error', 'EOF']) {
+      test(
+        '$failure during hello promptly closes the owned transport',
+        () async {
+          final transport = _FakeTransport(replyHello: false);
+          final service = WorkerService(
+            settings: _settings('/ws'),
+            connect: () async => transport,
+            // The test must finish long before this timeout.
+            handshakeTimeout: const Duration(seconds: 30),
+          );
+          final starting = service.start();
+          await transport.helloSent.future;
+          switch (failure) {
+            case 'connection error':
+              transport.emit(
+                ErrorMessage(
+                  error: const ErrorBody(
+                    code: 'bad-hello',
+                    message: 'rejected',
+                  ),
+                ),
+              );
+            case 'stream error':
+              transport.emitError(const FormatException('bad frame'));
+            case 'EOF':
+              await transport.endMessages();
+          }
+          await starting.timeout(const Duration(seconds: 2));
+          expect(service.status, WorkerStatus.failed);
+          expect(transport.closed, hasLength(1));
+          await service.stop();
+          expect(transport.closed, hasLength(1));
+          service.dispose();
+        },
+      );
+    }
+
+    test('throwing hello send closes the attached transport', () async {
+      final transport = _FakeTransport()..sendError = StateError('send failed');
+      final service = await _ready(transport);
+      expect(service.status, WorkerStatus.failed);
+      expect(service.failureReason, contains('send failed'));
+      expect(transport.closed, hasLength(1));
+      await service.stop();
+      expect(transport.closed, hasLength(1));
+      service.dispose();
+    });
+
+    test(
+      'failed handshake waits for close and concurrent stop shares teardown',
+      () async {
+        final transport = _FakeTransport()
+          ..helloVersion = 99
+          ..closeGate = Completer<void>();
+        final service = WorkerService(
+          settings: _settings('/ws'),
+          connect: () async => transport,
+        );
+        var startFinished = false;
+        var stopFinished = false;
+        final starting = service.start().then((_) => startFinished = true);
+        await transport.closeStarted.future;
+        final stopping = service.stop().then((_) => stopFinished = true);
+        await pumpEventQueue();
+        expect(startFinished, isFalse);
+        expect(stopFinished, isFalse);
+        expect(transport.closed, hasLength(1));
+        transport.closeGate!.complete();
+        await Future.wait([starting, stopping]);
+        expect(service.status, WorkerStatus.stopped);
+        expect(transport.closed, hasLength(1));
+        service.dispose();
+      },
+    );
+
+    test('failed close retains ownership so stop can retry', () async {
+      final transport = _FakeTransport()
+        ..helloVersion = 99
+        ..closeError = StateError('close failed');
+      final service = await _ready(transport);
+      expect(service.status, WorkerStatus.failed);
+      expect(transport.closed, hasLength(1));
+      expect(
+        service.logs.any((log) => log.message.contains('close failed')),
+        isTrue,
+      );
+      await service.stop();
+      expect(transport.closed, hasLength(2));
+      expect(service.status, WorkerStatus.stopped);
+      service.dispose();
+    });
+  });
+
+  group('live stdio failed-handshake cleanup', () {
+    for (final failure in [
+      'incompatible hello',
+      'malformed frame',
+      'silent worker',
+    ]) {
+      test(
+        '$failure closes stdin, drains stdout and awaits EOF cleanup',
+        () async {
+          final root = await Directory.systemTemp.createTemp('ct-hello-close-');
+          final marker = File('${root.path}/eof-cleanup');
+          final reply = switch (failure) {
+            'incompatible hello' => const NdjsonCodec().encodeLine(
+              const Hello(
+                protocolVersion: 99,
+                coreVersion: 'fixture',
+                capabilities: [],
+              ),
+            ),
+            'malformed frame' => 'invalid JSON\n',
+            _ => '',
+          };
+          late StdioWorkerTransport transport;
+          final service = WorkerService(
+            settings: _settings(root.path),
+            handshakeTimeout: failure == 'silent worker'
+                ? const Duration(milliseconds: 100)
+                : const Duration(seconds: 15),
+            connect: () async => transport = await StdioWorkerTransport.start(
+              executable: '/bin/sh',
+              arguments: [
+                '-c',
+                'IFS= read -r hello\n'
+                    'printf "%s" "\$1"\n'
+                    'while IFS= read -r line; do :; done\n'
+                    // More output than a pipe buffer even after protocol decoding fails.
+                    'dd if=/dev/zero bs=65536 count=8 2>/dev/null\n'
+                    'sleep "\$3"\n'
+                    'printf complete > "\$2"\n',
+                'ct-handshake-fixture',
+                reply,
+                marker.path,
+                failure == 'incompatible hello' ? '6' : '0.1',
+              ],
+            ),
+          );
+          try {
+            await service.start().timeout(const Duration(seconds: 12));
+            expect(service.status, WorkerStatus.failed);
+            expect(
+              service.failureReason,
+              contains(switch (failure) {
+                'incompatible hello' => '协议版本不兼容',
+                'malformed frame' => '协议流异常',
+                _ => '握手超时',
+              }),
+            );
+            expect(
+              await transport.exitCode.timeout(const Duration(seconds: 1)),
+              0,
+            );
+            expect(await marker.readAsString(), 'complete');
+            await service.stop();
+            expect(service.status, WorkerStatus.stopped);
+          } finally {
+            await service.stop();
+            service.dispose();
+            await root.delete(recursive: true);
+          }
+        },
+        skip: Platform.isWindows,
+        timeout: const Timeout(Duration(seconds: 20)),
+      );
+    }
   });
 
   group('请求关联与终态', () {
@@ -264,6 +459,30 @@ void main() {
       expect(transport.closed, hasLength(1));
       service.dispose();
     });
+
+    test(
+      'stop preserves accepted publishing terminal results until EOF',
+      () async {
+        final transport = _FakeTransport()..closeGate = Completer<void>();
+        final service = await _ready(transport);
+        var taskFinished = false;
+        final publishing = service.request(Methods.export).then((result) {
+          taskFinished = true;
+          return result;
+        });
+        final requestId = _sentRequestIds(transport).last;
+        final stopping = service.stop();
+        await transport.closeStarted.future;
+        await pumpEventQueue();
+        expect(taskFinished, isFalse);
+        transport.respond(requestId, {'outcome': 'succeeded'});
+        expect(await publishing, {'outcome': 'succeeded'});
+        transport.closeGate!.complete();
+        await stopping;
+        expect(service.status, WorkerStatus.stopped);
+        service.dispose();
+      },
+    );
 
     test('启动中 stop 等待连接建立后安全关闭', () async {
       final transport = _FakeTransport();

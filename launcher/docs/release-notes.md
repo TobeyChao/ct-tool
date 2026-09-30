@@ -84,7 +84,7 @@ macOS：打开 DMG，把 `ct_launcher.app` 拖到 Applications 后启动；卸�
    与 Python 的比值（≤2.5×）才是真实约束；这是显式修订过的口径，不是「已达绝对低内存」。
 7. **旧设置迁移只做清理不做搬运**：`tool_dir`、`port`、`python_path` 等 Python 面板时代的键在检测到时
    清除并一次性提示，不尝试转换成新配置。
-8. **草稿基线不跨版本**：保存要求 `schemaRevision` + `candidateHash` 双守卫，工作区基线变了旧草稿会被拒绝，
-   需要重算候选——这是防覆盖设计，不是缺陷，但升级后重开旧草稿会看到「基线已变」。
+8. **草稿基线不跨版本**：保存要求 `schemaRevision` + `candidateHash` 双守卫。工作区基线改变时保留原始草稿与文件，
+   暂停 Schema 编辑和保存；刷新候选或重试落盘不会自动换基线。核对保留的草稿后，需显式放弃并在当前 Schema 上重新编辑。
 9. **导出/部署面板含真实耗时**：这些数字每次不同，因此截图证据不做像素比对（见 `launcher/test/evidence/chain-text-log.md`
    的同源文字留档）。

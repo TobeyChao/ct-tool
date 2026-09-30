@@ -82,11 +82,18 @@ final class StdioWorkerTransport implements WorkerTransport {
   /// worker 的 stderr 行（不属于协议；仅用于诊断与「错误架构」类失败定位）。
   final List<String> stderrLines = [];
 
+  Stream<List<int>>? _stdout;
   Stream<Message>? _messages;
+  Future<void>? _closing;
+
+  // 广播字节流在协议解码失败、解码订阅取消后仍持续读取 stdout。
+  // worker 可能还在发布，不能让诊断坏帧造成管道背压并阻塞安全退出。
+  Stream<List<int>> get _stdoutBytes =>
+      _stdout ??= _process.stdout.asBroadcastStream();
 
   @override
   Stream<Message> get messages => _messages ??= NdjsonCodec()
-      .decodeStream(_process.stdout)
+      .decodeStream(_stdoutBytes)
       .asBroadcastStream();
 
   @override
@@ -97,7 +104,15 @@ final class StdioWorkerTransport implements WorkerTransport {
   /// 关闭：先冲掉待发，再关 stdin（v1.md §6：shutdown 后 worker 会读到 EOF 才退出），
   /// 等待正在执行的发布收尾，不以超时强杀代替安全关闭。
   @override
-  Future<void> close() async {
+  Future<void> close() => _closing ??= _close();
+
+  Future<void> _close() async {
+    final stdoutDone = Completer<void>();
+    _stdoutBytes.listen(
+      (_) {},
+      onError: (Object _) {},
+      onDone: stdoutDone.complete,
+    );
     try {
       await _process.stdin.flush();
     } catch (_) {
@@ -107,6 +122,7 @@ final class StdioWorkerTransport implements WorkerTransport {
       await _process.stdin.close();
     } catch (_) {}
     await _process.exitCode;
+    await stdoutDone.future;
   }
 
   Future<int> get exitCode => _process.exitCode;
@@ -115,11 +131,15 @@ final class StdioWorkerTransport implements WorkerTransport {
 /// `ct worker` 客户端：握手、请求关联、事件转发、写入口门禁与安全关闭
 /// （native-flutter-workbench 任务 2.1）。
 class WorkerService extends ChangeNotifier implements KernelGateway {
-  WorkerService({required this.settings, WorkerConnector? connect})
-    : _connectOverride = connect;
+  WorkerService({
+    required this.settings,
+    WorkerConnector? connect,
+    this.handshakeTimeout = const Duration(seconds: 15),
+  }) : _connectOverride = connect;
 
   final SettingsStore settings;
   final WorkerConnector? _connectOverride;
+  final Duration handshakeTimeout;
 
   @override
   WorkerStatus status = WorkerStatus.stopped;
@@ -182,9 +202,11 @@ class WorkerService extends ChangeNotifier implements KernelGateway {
 
   Future<void> _start({String? workspaceRoot}) async {
     if (status == WorkerStatus.starting || status == WorkerStatus.ready) return;
+    // 失败的旧连接仍归本服务所有；重连前先等其安全关闭。
+    if (_transport != null) await _detach();
     _setStatus(WorkerStatus.starting);
     failureReason = null;
-    _hello = Completer<Hello>();
+    _hello = Completer<Hello?>();
     _lastWorkspaceId = null;
     _append(LogLevel.info, '启动原生内核 worker…');
 
@@ -221,6 +243,15 @@ class WorkerService extends ChangeNotifier implements KernelGateway {
           _append(LogLevel.error, 'worker stderr: $line');
         }
       }
+    } finally {
+      if (status != WorkerStatus.ready) {
+        try {
+          await _detach();
+        } catch (e) {
+          // 关闭失败时保留所有权，stop 或下次 start 仍可重试收尾。
+          _append(LogLevel.error, 'worker 关闭失败：$e');
+        }
+      }
     }
   }
 
@@ -230,7 +261,11 @@ class WorkerService extends ChangeNotifier implements KernelGateway {
     _sub = transport.messages.listen(
       _onMessage,
       onDone: _onClosed,
-      onError: (Object e) => _fail('协议流异常：$e'),
+      onError: (Object e) {
+        if (status == WorkerStatus.starting || status == WorkerStatus.ready) {
+          _fail('协议流异常：$e');
+        }
+      },
     );
     transport.send(
       const Hello(
@@ -242,12 +277,10 @@ class WorkerService extends ChangeNotifier implements KernelGateway {
     final reply = await _awaitHello();
     if (reply == null) {
       if (failureReason == null) _fail('握手超时：worker 未回 hello');
-      await _detach();
       return;
     }
     if (status != WorkerStatus.starting) {
-      // 例如协议版本不兼容已被 _fail 关闭：只读可见，写入口保持禁用。
-      await _detach();
+      // 例如协议版本不兼容已置失败：由启动收尾关闭传输。
       return;
     }
     _setStatus(WorkerStatus.ready);
@@ -263,19 +296,21 @@ class WorkerService extends ChangeNotifier implements KernelGateway {
     final waiting = _hello;
     if (waiting == null) return null;
     try {
-      return await waiting.future.timeout(const Duration(seconds: 15));
+      return await waiting.future.timeout(handshakeTimeout);
     } on TimeoutException {
       return null;
     }
   }
 
-  /// 断开当前传输：终态未知的请求统一按连接断开处理。
+  /// 断开当前传输：先关闭 stdin 并等 EOF/进程退出，再释放所有权。
   Future<void> _detach() async {
+    await _transport?.close();
     await _sub?.cancel();
+    // 安全关闭期间仍接收已受理任务的终态；只在 EOF 后结算未知请求。
+    _failPending();
     _sub = null;
     _transport = null;
     _stdio = null;
-    _failPending();
   }
 
   void _failPending() {
@@ -296,7 +331,7 @@ class WorkerService extends ChangeNotifier implements KernelGateway {
   }
 
   /// 本次握手的 hello 投递点；每次 [start] 重建，避免重启后卡在旧 completer。
-  Completer<Hello>? _hello;
+  Completer<Hello?>? _hello;
 
   void _onMessage(Message message) {
     _noteWorkspaceId(message);
@@ -467,15 +502,13 @@ class WorkerService extends ChangeNotifier implements KernelGateway {
     } catch (e) {
       _append(LogLevel.warn, 'shutdown 未得到终态（按关闭处理）：$e');
     }
-    await transport.close();
-    await _sub?.cancel();
-    _sub = null;
-    _transport = null;
-    _stdio = null;
-    _pending.clear();
-    _hello = null;
-    _setStatus(WorkerStatus.stopped);
-    _stopping = false;
+    try {
+      await _detach();
+      _hello = null;
+      _setStatus(WorkerStatus.stopped);
+    } finally {
+      _stopping = false;
+    }
   }
 
   void _onClosed() {
@@ -487,6 +520,11 @@ class WorkerService extends ChangeNotifier implements KernelGateway {
   }
 
   void _fail(String reason) {
+    if (status == WorkerStatus.starting) {
+      if (_hello case final waiting? when !waiting.isCompleted) {
+        waiting.complete(null);
+      }
+    }
     failureReason = reason;
     _setStatus(WorkerStatus.failed);
     _append(LogLevel.error, reason);

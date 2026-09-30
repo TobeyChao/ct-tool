@@ -1,6 +1,6 @@
-import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// 单实例文件锁（对齐 FlClash 的 SingleInstanceLock 做法）：
@@ -20,27 +20,38 @@ class SingleInstanceLock {
       dirOverride ?? await getApplicationSupportDirectory();
 
   Future<bool> acquire() async {
+    if (held) return true;
+    final Directory dir;
     try {
-      final dir = await _directory();
-      await Directory(dir.path).create(recursive: true);
-      final lockFile = File('${dir.path}/ct_launcher.lock');
-      await lockFile.create();
-      _accessFile = await lockFile.open(mode: FileMode.write);
-      // 500ms 内拿不到锁视为已有实例（FlClash 为阻塞式，这里避免挂起）
-      await _accessFile!.lock().timeout(const Duration(milliseconds: 500));
+      dir = await _directory();
+    } on MissingPluginException catch (e) {
+      // 无桌面插件的宿主（例如 widget 测试）不能取得默认目录。
+      // 只允许这个有明确证据的分支绕过；实际文件锁失败一律拒绝启动。
+      if (dirOverride != null) rethrow;
+      stderr.writeln('默认单实例目录插件不可用，跳过检测：$e');
       return true;
-    } on TimeoutException {
-      // 明确是「另一个实例持有」——这才是单实例语义。
-      await _accessFile?.close();
-      _accessFile = null;
-      return false;
     } catch (e) {
-      // 查不出来（插件缺失、权限等）不能当成「已有实例」：
-      // 否则应用永远起不来。这里放行并留一行诊断。
-      stderr.writeln('单实例检测失败，按可启动处理：$e');
-      await _accessFile?.close();
-      _accessFile = null;
+      stderr.writeln('无法取得单实例锁目录：$e');
+      return false;
+    }
+
+    RandomAccessFile? file;
+    try {
+      await dir.create(recursive: true);
+      file = await File(
+        '${dir.path}/ct_launcher.lock',
+      ).open(mode: FileMode.append);
+      // exclusive 是非阻塞锁；竞争时立即抛错（macOS errno 35）。
+      // 不对阻塞锁套 timeout：timeout 不会取消仍待完成的 OS 锁操作。
+      await file.lock(FileLock.exclusive);
+      _accessFile = file;
       return true;
+    } catch (e) {
+      stderr.writeln('无法取得单实例文件锁，拒绝启动：$e');
+      try {
+        await file?.close();
+      } catch (_) {}
+      return false;
     }
   }
 
@@ -50,9 +61,12 @@ class SingleInstanceLock {
     if (file == null) return;
     try {
       await file.unlock();
-      await file.close();
     } catch (_) {
-      // 进程退出时 OS 会自行释放
+      // 即使解锁失败也要关闭句柄，让 OS 释放锁。
+    } finally {
+      try {
+        await file.close();
+      } catch (_) {}
     }
   }
 }

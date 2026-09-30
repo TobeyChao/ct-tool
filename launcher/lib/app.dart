@@ -149,7 +149,7 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
 
   /// 壳层操作串行：退出冻结后不接受新的切换、重载或运行时修改。
   Future<void> _workspaceOperation(Future<void> Function() operation) {
-    if (_exitCoordinator.pending || _repo.editingFrozen) {
+    if (_exitCoordinator.pending || _repo.saving) {
       return Future.value();
     }
     final pending = _workspaceFuture;
@@ -202,30 +202,30 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
   });
 
   Future<void> _changeWorkspace(String root) => _workspaceOperation(() async {
-    // 未绑定时也需要可用的 worker 才能读取候选工作区。
-    await _worker.start(workspaceRoot: _repo.workspaceRoot);
     if (_exitCoordinator.pending) return;
     var accepted = false;
     try {
       await switchShellWorkspace(
         root,
-        switchWorkspace: _repo.switchWorkspace,
+        switchWorkspace: (root) => switchWorkerWorkspace(
+          root,
+          repository: _repo,
+          worker: _worker,
+          onConnecting: () async {
+            _rebuildRunner('');
+            await _desktop.bind('');
+            await _translations.bind('');
+          },
+        ),
         onAccepted: () async {
           accepted = true;
           _repo.freezeDraftEditing();
-          // B 已生效：在偏好/连接等待期间也不能留下 A 的写入口。
-          _rebuildRunner('');
-          await _desktop.bind('');
-          await _translations.bind('');
+          // 新工作区已加载：提交偏好和绑定业务视图期间保持冻结。
         },
         persistWorkspace: widget.settings.setWorkspacePath,
         connectWorkspace: (root) async {
-          await _worker.stop();
-          if (root.isNotEmpty) {
-            await _worker.start(workspaceRoot: root);
-            if (_worker.status != WorkerStatus.ready) {
-              throw StateError(_worker.failureReason ?? '内核连接失败');
-            }
+          if (root.isNotEmpty && _worker.status != WorkerStatus.ready) {
+            throw StateError(_worker.failureReason ?? '内核连接失败');
           }
           await _bindWorkspace(root);
         },
@@ -449,7 +449,26 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
   }
 }
 
-/// 仓库确认出站草稿安全后，才提交偏好并重连对应 worker。
+/// 排空出站草稿后，在加载新 Schema 和恢复草稿前重连对应 worker。
+Future<bool> switchWorkerWorkspace(
+  String root, {
+  required WorkbenchRepository repository,
+  required WorkerService worker,
+  Future<void> Function()? onConnecting,
+}) => repository.switchWorkspace(
+  root,
+  beforeLoad: () async {
+    await onConnecting?.call();
+    await worker.stop();
+    if (root.isEmpty) return;
+    await worker.start(workspaceRoot: root);
+    if (worker.status != WorkerStatus.ready) {
+      throw StateError(worker.failureReason ?? '内核连接失败');
+    }
+  },
+);
+
+/// 仓库确认出站草稿安全后，才提交偏好并绑定对应业务视图。
 Future<bool> switchShellWorkspace(
   String root, {
   required Future<bool> Function(String) switchWorkspace,

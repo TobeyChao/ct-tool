@@ -41,13 +41,14 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
 
   final CommandLog _log = CommandLog();
   String _schemaBaseline = '';
+  String _loadedSchemaRevision = '';
   int _draftGeneration = 0;
   SchemaCandidateResult? _candidate;
 
   /// 候选被内核直接拒掉时回传的结构化问题（用于定位，不丢弃）。
   List<Issue> _rejectedProblems = const [];
   String? _draftError;
-  bool _candidateBusy = false;
+  final Set<int> _pendingCandidates = {};
 
   bool _saving = false;
   Completer<void>? _saveSettled;
@@ -239,13 +240,19 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
     _previews.clear();
     _pendingPreviews.clear();
     _schemaBaseline = '';
+    _loadedSchemaRevision = '';
+    _invalidateCandidate();
+    _pendingCandidates.clear();
     _error = null;
     _loading = false;
     notifyListeners();
   }
 
   /// 切换工作区：先清空旧视图与草稿，再读快照与清单；旧请求的回包一律丢弃。
-  Future<bool> switchWorkspace(String root) async {
+  Future<bool> switchWorkspace(
+    String root, {
+    Future<void> Function()? beforeLoad,
+  }) async {
     if (_disposed || _editFreezeDepth > 0 || _saving) return false;
     final request = ++_switchRequest;
     if (_root.isNotEmpty) {
@@ -279,16 +286,18 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
     _error = null;
     _previewError = null;
     _log.clear();
-    _candidate = null;
-    _rejectedProblems = const [];
-    _draftError = null;
+    _loadedSchemaRevision = '';
+    _invalidateCandidate();
+    _pendingCandidates.clear();
     _saveError = null;
     _refreshError = null;
     _lastSave = null;
     _loading = root.isNotEmpty;
     notifyListeners();
-    if (root.isEmpty) return true;
     try {
+      await beforeLoad?.call();
+      if (!_isCurrent(generation)) return false;
+      if (root.isEmpty) return true;
       await _reload(generation: generation, clearDraft: true);
       if (_isCurrent(generation)) await restoreDraft();
     } on Object catch (e) {
@@ -354,22 +363,31 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
     required int generation,
     required bool clearDraft,
   }) async {
+    final root = _root;
     final openPayload = await worker.query(
       Methods.workspaceOpen,
-      workspaceRoot: _root,
+      workspaceRoot: root,
     );
+    if (!_isCurrent(generation)) return;
     final listPayload = await worker.query(
       Methods.resourcesList,
-      workspaceRoot: _root,
+      workspaceRoot: root,
     );
     if (!_isCurrent(generation)) return;
     _snapshot = WorkspaceSnapshot.fromJson(_map(openPayload));
     final listed = ResourcesListResult.fromJson(_map(listPayload));
     _entries = listed.resources;
-    _schemaBaseline = listed.schemaRevision;
+    _loadedSchemaRevision = listed.schemaRevision;
+    if (clearDraft || (!hasDraftHistory && !hasDraftConflict)) {
+      _schemaBaseline = listed.schemaRevision;
+    } else if (_schemaBaseline != listed.schemaRevision && !hasDraftConflict) {
+      // Refreshing disk state must never rebase active or undone commands.
+      _conflictingDraft = _draftEnvelope();
+      _conflictReason = 'Schema 基线已变，原草稿已保留；请检查并显式放弃后重新编辑';
+      _schedulePersist();
+    }
     _workspaceId = worker.lastWorkspaceId;
-    _candidate = null;
-    _rejectedProblems = const [];
+    _invalidateCandidate();
     if (clearDraft) {
       _log.clear();
       _previews.clear();
@@ -510,9 +528,8 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
     if (_frozenWhileSaving()) return false;
     final moved = _log.undoTo(target);
     if (!moved) return false;
+    _invalidateCandidate();
     _schedulePersist();
-    _candidate = null;
-    _rejectedProblems = const [];
     notifyListeners();
     return true;
   }
@@ -536,12 +553,24 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
 
   String? get draftError => _draftError;
 
-  bool get candidateBusy => _candidateBusy;
+  bool get candidateBusy => _pendingCandidates.isNotEmpty;
+
+  void _invalidateCandidate() {
+    _draftGeneration++;
+    _candidate = null;
+    _rejectedProblems = const [];
+    _draftError = null;
+  }
 
   /// 保存进行中禁止编辑：否则保存请求携带的命令集与提交后的状态不一致，
   /// 用户会看到"已保存"却又冒出新的草稿。
   bool get editingFrozen =>
-      _saving || _loading || _editFreezeDepth > 0 || _switchFreezeDepth > 0;
+      _saving ||
+      _loading ||
+      _editFreezeDepth > 0 ||
+      _switchFreezeDepth > 0 ||
+      hasDraftConflict ||
+      _damagedPath != null;
 
   String? get refreshError => _refreshError;
 
@@ -552,7 +581,13 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   bool _frozenWhileSaving() {
     if (_disposed) return true;
     if (!editingFrozen) return false;
-    _draftError = _saving ? '保存进行中，编辑已冻结（等本次提交结束）' : '正在保留草稿，编辑暂时冻结';
+    _draftError = hasDraftConflict
+        ? _conflictReason ?? '草稿基线冲突，请显式放弃保留的草稿后再编辑'
+        : _damagedPath != null
+        ? '草稿损坏，已保留原文件；请显式放弃后再编辑：${_damagedReason ?? _damagedPath}'
+        : _saving
+        ? '保存进行中，编辑已冻结（等本次提交结束）'
+        : '正在保留草稿，编辑暂时冻结';
     notifyListeners();
     return true;
   }
@@ -560,9 +595,7 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   void _enqueue(SchemaCommand command) {
     if (_frozenWhileSaving()) return;
     _log.append(command);
-    _candidate = null;
-    _rejectedProblems = const [];
-    _draftError = null;
+    _invalidateCandidate();
     _schedulePersist();
     notifyListeners();
   }
@@ -674,35 +707,36 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   void undoDraft() {
     if (_frozenWhileSaving()) return;
     _log.undo();
+    _invalidateCandidate();
     _schedulePersist();
-    _candidate = null;
-    _rejectedProblems = const [];
     notifyListeners();
   }
 
   void redoDraft() {
     if (_frozenWhileSaving()) return;
     _log.redo();
+    _invalidateCandidate();
     _schedulePersist();
-    _candidate = null;
-    _rejectedProblems = const [];
     notifyListeners();
   }
 
   void discardDraft() {
     if (_frozenWhileSaving()) return;
     _log.clear();
+    _invalidateCandidate();
     _schedulePersist();
-    _candidate = null;
-    _rejectedProblems = const [];
-    _draftError = null;
     _saveError = null;
     notifyListeners();
   }
 
   /// 让内核按同一批命令算候选：有阻塞问题时界面须禁用保存。
   Future<SchemaCandidateResult?> requestCandidate() async {
-    if (_root.isEmpty || _schemaBaseline.isEmpty) return null;
+    if (_disposed ||
+        _root.isEmpty ||
+        _schemaBaseline.isEmpty ||
+        editingFrozen) {
+      return null;
+    }
     final generation = _generation;
     final baseline = _schemaBaseline;
     final sentGeneration = ++_draftGeneration;
@@ -712,7 +746,11 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
       cursor: '${_log.cursor}',
       draftGeneration: sentGeneration,
     );
-    _candidateBusy = true;
+    bool acceptsResponse() =>
+        _isCurrent(generation) &&
+        _schemaBaseline == baseline &&
+        sentGeneration == _draftGeneration;
+    _pendingCandidates.add(sentGeneration);
     notifyListeners();
     try {
       final payload = await worker.query(
@@ -720,9 +758,7 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
         params: params.toJson(),
         workspaceRoot: _root,
       );
-      if (!_isCurrent(generation) || _schemaBaseline != baseline) {
-        return _candidate;
-      }
+      if (!acceptsResponse()) return null;
       final result = SchemaCandidateResult.fromJson(
         payload! as Map<String, Object?>,
       );
@@ -730,14 +766,14 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
       // 最新代次——否则「旧请求晚到」会把新编辑算出的候选覆盖回旧结论。
       if (result.draftGeneration != sentGeneration ||
           sentGeneration != _draftGeneration) {
-        return _candidate;
+        return null;
       }
       _candidate = result;
       _rejectedProblems = const [];
       _draftError = null;
       return result;
     } on WorkerRequestException catch (e) {
-      if (!_isCurrent(generation)) return null;
+      if (!acceptsResponse()) return null;
       _draftError = '${e.code}：${e.message}';
       _candidate = null;
       // 内核对非法草稿是「拒绝候选」而不是返回空候选：
@@ -745,14 +781,14 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
       _rejectedProblems = e.issues;
       return null;
     } on Object catch (e) {
-      if (!_isCurrent(generation)) return null;
+      if (!acceptsResponse()) return null;
       _draftError = '候选计算失败：$e';
       _candidate = null;
       _rejectedProblems = const [];
       return null;
     } finally {
       if (_isCurrent(generation)) {
-        _candidateBusy = false;
+        _pendingCandidates.remove(sentGeneration);
         notifyListeners();
       }
     }
@@ -772,7 +808,7 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   /// （候选计算中与净差异为零也要禁：前者结论未出，后者是空事务，不该占用一次保存。
   bool get canSave {
     final found = _candidate;
-    if (found == null || editingFrozen || _candidateBusy || _loading) {
+    if (found == null || editingFrozen || candidateBusy || _loading) {
       return false;
     }
     final diff = found.netDiff;
@@ -832,7 +868,7 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
       _saveError = '${e.code}：${e.message}';
       _candidate = null;
       _rejectedProblems = const [];
-      // 基线可能已被外部改动：刷新基线好让界面重算候选，草稿原样保留。
+      // 刷新磁盘状态并检测冲突；原草稿基线和完整历史必须保留。
       try {
         await _reload(generation: generation, clearDraft: false);
       } on Object {
@@ -1172,20 +1208,13 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   bool _acceptsPersistence(int generation, int revision) =>
       _isCurrent(generation) && revision == _persistRevision;
 
-  /// 入队时捕获完整信封，重试也参与相同的等待和状态守卫。
-  Future<void> persistDraft() {
-    if (_disposed) return Future.value();
-    final sink = store;
-    final key = draftKey;
-    if (sink == null || key.isEmpty) return Future.value();
-    final generation = _generation;
-    final revision = ++_persistRevision;
+  DraftEnvelope _draftEnvelope() {
     final copied =
         jsonDecode(jsonEncode(_log.commands.map((c) => c.toJson()).toList()))
             as List;
-    final envelope = DraftEnvelope(
+    return DraftEnvelope(
       formatVersion: DraftEnvelope.currentFormat,
-      workspaceKey: key,
+      workspaceKey: draftKey,
       baseline: _schemaBaseline,
       commands: copied
           .map((c) => SchemaCommand.fromJson(c as Map<String, Object?>))
@@ -1193,6 +1222,22 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
       cursor: _log.cursor,
       savedAt: DateTime.now(),
     );
+  }
+
+  /// 入队时捕获完整信封，重试也参与相同的等待和状态守卫。
+  Future<void> persistDraft() {
+    if (_disposed) return Future.value();
+    final sink = store;
+    final key = draftKey;
+    if (sink == null || key.isEmpty) return Future.value();
+    // Recovered files have no active log to persist. Only explicit discard may
+    // replace their conflict/damage identity or delete the original bytes.
+    if (_damagedPath != null || (hasDraftConflict && !hasDraftHistory)) {
+      return Future.value();
+    }
+    final generation = _generation;
+    final revision = ++_persistRevision;
+    final envelope = _conflictingDraft ?? _draftEnvelope();
     _draftPersisted = false;
     _persistError = null;
     final operation = envelope.commands.isEmpty
@@ -1247,7 +1292,8 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
 
   /// 明确放弃：文件清理成功前保留内存和冲突身份，失败允许重试。
   Future<bool> discardDraftAndPersist() async {
-    if (_disposed) return false;
+    if (_disposed || _saving || _loading) return false;
+    _invalidateCandidate();
     final sink = store;
     final key = draftKey;
     if (sink == null || key.isEmpty) {
@@ -1273,9 +1319,8 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
 
   void _clearDiscardedDraft() {
     _log.clear();
-    _candidate = null;
-    _rejectedProblems = const [];
-    _draftError = null;
+    _schemaBaseline = _loadedSchemaRevision;
+    _invalidateCandidate();
     _saveError = null;
     _conflictingDraft = null;
     _conflictReason = null;
@@ -1293,9 +1338,10 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
     final generation = _generation;
     final revision = _persistRevision;
     final key = draftKey;
-    final baseline = _schemaBaseline;
+    final baseline = _loadedSchemaRevision;
     final loaded = await sink.load(workspaceKey: key, baseline: baseline);
     if (!_acceptsPersistence(generation, revision)) return DraftOutcome.none;
+    _invalidateCandidate();
     _conflictingDraft = null;
     _conflictReason = null;
     _damagedPath = null;
@@ -1316,7 +1362,7 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
         _draftSavedAt = envelope.savedAt;
         _draftPersisted = true;
         _persistError = null;
-        _candidate = null;
+        _invalidateCandidate();
         notifyListeners();
         return DraftOutcome.restored;
       case DraftOutcome.conflict:
