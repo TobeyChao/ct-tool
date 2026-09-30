@@ -256,7 +256,10 @@ mod tests {
             ("", "INFO"),
         ] {
             tasks.log("系统", input, input);
-            assert_eq!(tasks.logs("系统").as_array().unwrap().last().unwrap()["level"], expected);
+            assert_eq!(
+                tasks.logs("系统").as_array().unwrap().last().unwrap()["level"],
+                expected
+            );
         }
     }
 }

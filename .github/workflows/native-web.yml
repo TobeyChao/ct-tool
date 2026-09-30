@@ -1,9 +1,9 @@
 name: Native Web
 on:
   push:
-    paths: ['native/**', 'web/**', 'launcher/**', 'test-proj/**', '.github/workflows/native-web.yml']
+    paths: ['native/**', 'web/**', 'launcher/**', 'test-proj/**', 'docs/**', 'README.md', 'AGENTS.md', '.github/workflows/native-web.yml']
   pull_request:
-    paths: ['native/**', 'web/**', 'launcher/**', 'test-proj/**', '.github/workflows/native-web.yml']
+    paths: ['native/**', 'web/**', 'launcher/**', 'test-proj/**', 'docs/**', 'README.md', 'AGENTS.md', '.github/workflows/native-web.yml']
 jobs:
   native:
     runs-on: macos-latest
@@ -17,6 +17,10 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
+      - name: Verify Python retirement scope and active documentation
+        run: |
+          node native/tools/check-retirement.mjs --after-deletion
+          node native/tools/check-docs.mjs
       - run: cargo test --manifest-path native/Cargo.toml --workspace --locked
       - run: cargo build --manifest-path native/Cargo.toml -p ct-cli --locked
       - name: Compare six frozen CLI scenarios and artifact digests

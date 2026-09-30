@@ -18,9 +18,8 @@ pub struct Options {
     pub runs: usize,
     pub fixture_root: PathBuf,
     pub rust: PathBuf,
-    pub python: Option<PathBuf>,
     pub out: Option<PathBuf>,
-    /// 无 Python 参照时用于回归判定的本机留档报告（默认取
+    /// 用于原生回归判定的本机留档报告（默认取
     /// `native/docs/baseline/bench-<尺寸>-<平台>.json`）。
     pub against: Option<PathBuf>,
     pub record_baseline: bool,
@@ -44,34 +43,6 @@ fn repo_root() -> PathBuf {
 
 fn measure_script() -> PathBuf {
     repo_root().join("native/tools/bench/measure.ps1")
-}
-
-/// Python 参照必须跑在真正的解释器进程里：venv 的 `ct.exe` 是控制台脚本存根，
-/// 采样到的内存不是真实工作集，因此改走 `python.exe tools/bench/python-entry.py`。
-fn python_engine(exe: &Path) -> (PathBuf, String) {
-    let entry = repo_root().join("native/tools/bench/python-entry.py");
-    let name = exe
-        .file_name()
-        .map(|text| text.to_string_lossy().to_ascii_lowercase())
-        .unwrap_or_default();
-    let python = if name.starts_with("python") {
-        Some(exe.to_path_buf())
-    } else {
-        let sibling = exe.with_file_name(if cfg!(windows) {
-            "python.exe"
-        } else {
-            "python"
-        });
-        if sibling.is_file() {
-            Some(sibling)
-        } else {
-            None
-        }
-    };
-    match (python, entry.is_file()) {
-        (Some(python), true) => (python, format!("{} ", entry.display())),
-        _ => (exe.to_path_buf(), String::new()),
-    }
 }
 
 fn fixture_dir(root: &Path, size: &str) -> PathBuf {
@@ -479,17 +450,9 @@ pub fn run(options: Options) -> Result<()> {
     let use_powershell = powershell_available();
     let gd_before = git_lines(&["status", "--porcelain", "gd"]);
 
-    let mut engines: Vec<(&'static str, PathBuf, String)> =
+    let engines: Vec<(&'static str, PathBuf, String)> =
         vec![("rust", options.rust.clone(), String::new())];
-    if let Some(python) = options.python.clone() {
-        if python.is_file() {
-            let (exe, prefix) = python_engine(&python);
-            engines.push(("python", exe, prefix));
-        } else {
-            bail!("显式 Python 参照入口不存在：{}", python.display());
-        }
-    }
-    // 参照实现不在位时，不谎称「无法判定」：改用本机留档做回归判定。
+    // 使用固定的本机原生留档做回归判定。
     let reference_path = options.against.clone().unwrap_or_else(|| {
         let suffix = if ["s", "m", "l"].contains(&options.size.as_str()) {
             "-native"
@@ -502,8 +465,8 @@ pub fn run(options: Options) -> Result<()> {
             platform_tag()
         ))
     });
-    let reference = if engines.len() > 1 || options.record_baseline {
-        None // 配对或显式记录新基线；记录本身不宣称回归通过
+    let reference = if options.record_baseline {
+        None // 显式记录新基线；记录本身不宣称回归通过
     } else {
         Some(
             load_reference(&reference_path, meta["inputDigest"].as_str(), &options.size).context(
@@ -520,10 +483,6 @@ pub fn run(options: Options) -> Result<()> {
         // 建立「成功状态」快照：一次不计时的导出（缓存、账本、产物齐备）
         measure(exe, &format!("{prefix}export"), &warm, None, use_powershell)?;
         for scenario in SCENARIOS {
-            if *scenario == "hot-worker" && *name != "rust" {
-                // Python 参照没有 worker 入口，只记录原生侧
-                continue;
-            }
             let runner = Runner {
                 engine: name,
                 exe,
@@ -566,15 +525,7 @@ pub fn run(options: Options) -> Result<()> {
             "dirtyPaths": git_lines(&["status", "--porcelain"]).len(),
         },
         "engines": {
-            "rust": { "path": options.rust, "version": command_version(&engines[0].1), "argv": "export" },
-            "python": engines
-                .iter()
-                .find(|(name, _, _)| *name == "python")
-                .map(|(_, path, prefix)| json!({
-                    "path": path,
-                    "version": command_version(path),
-                    "argv": format!("{prefix}export"),
-                }))
+            "rust": { "path": options.rust, "version": command_version(&engines[0].1), "argv": "export" }
         },
         "warmupRuns": 1,
         "measuredRuns": options.runs,

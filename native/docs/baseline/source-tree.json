@@ -1,8 +1,8 @@
 {
   "schema": "ct-source-tree/2",
   "git": {
-    "commit": "89cb70ac8524316b49ddcfd57efdac1fef23dce6",
-    "dirtyPaths": 28
+    "commit": "a55cc093ef287d9d43d3d7fb38e2cc54a8cff8f6",
+    "dirtyPaths": 305
   },
   "toolchain": {
     "rustc": "unavailable",
@@ -10,14 +10,14 @@
     "pythonRuntimeRequired": false
   },
   "tree": {
-    "sha256": "348ec030adce8b90c844a9c54663d28bd8ba64a97424f047e337817c710e3a02",
-    "files": 1151
+    "sha256": "cb33fc04f4b714bbb1651c9ce6fb402efe8f8672e33271622f9d85782ec09fcc",
+    "files": 1139
   },
   "scopes": {
     "native": {
-      "files": 652,
-      "bytes": 9029065,
-      "sha256": "c40b137cd7b86451da5cadad79428dab68c499b3811600e7ed75ed5163f25808",
+      "files": 643,
+      "bytes": 9001342,
+      "sha256": "306498b7fef8679dc769724fd891d756a99ec99b8eb1ce5301a1d088ad2bc392",
       "entries": {
         ".gitignore": "e899756b962f25261eca57ba87fa2e878892daa40bca86f0871d7935d038a520",
         "Cargo.lock": "c20c6e340a325f179b95c85fae87c4c5c9092cdc0d33d08f89d4c7144b86c464",
@@ -34,7 +34,7 @@
         "crates/ct-app/src/lib.rs": "df12e6cb4321f6a7a7aecf2a467cfdaeb0a7c0835aa9da8ad2de765025ae69b7",
         "crates/ct-app/src/memdiag.rs": "0977bdbeccb280682fb73fb68af7d2eadd35c4b0a973c57e377b5c2c6a30af99",
         "crates/ct-app/src/panel.rs": "5c6d7775b9677d015ec9a5428fc3e751134748a0d2e2ed6bc4dceef5e8420974",
-        "crates/ct-app/src/panel_tasks.rs": "eb45867f6935df20ed7d697f99c2ef1158b1336a12b1597f1084ff2519b2b3b4",
+        "crates/ct-app/src/panel_tasks.rs": "9c814da593c81eddc48a73bff2847fd0d9d5c93c2d6fa14732b76b00f6ff9c7e",
         "crates/ct-app/src/schema.rs": "2eb00f455cc90318adaf9ada3257876f87496015e49e69e0f668086cc57f158b",
         "crates/ct-app/src/snapshot.rs": "bc6018e88e3e944678aff0a6b8f5ba0c19b0402f08e5e772d328114b8c607cbb",
         "crates/ct-app/src/status.rs": "6d9e39e5cde2d4f38798c97402a59de09b12d114a9e15abac3de67f7636c859f",
@@ -82,7 +82,7 @@
         "crates/ct-domain/tests/type_expression.rs": "fcd813df93f5a6a32ba84dda39ed932585e832cfecca62c4481e51a153fefd1e",
         "crates/ct-excel/Cargo.toml": "177553a096c363272eba33ef869d144de2be8fccd0fe95f03804cb277cff4f60",
         "crates/ct-excel/src/canonical.rs": "5c6b59f419cef51a5c1b9befbd99ff3dadbb4c8c4ca134a52f06c44b5481752f",
-        "crates/ct-excel/src/compat.rs": "48579461dc973640060d749b268f6dcbf221e8f01e8bfe42764d0e92487b0e52",
+        "crates/ct-excel/src/compat.rs": "6fa941baebdeb93ee302c1cef5859adc37fb99e277dac6334bf8847c8868abd6",
         "crates/ct-excel/src/layout.rs": "0771c009b451d845297e9fcf152b7c86a5fc9666efd40fbc7a89bd80d09d08c9",
         "crates/ct-excel/src/lib.rs": "7455af5fd6116458f1dd1eed348d433cb242cb3e1481f9180f02d00079cac048",
         "crates/ct-excel/src/manifest.rs": "d61795a213ce40d7db31a1b1262c123a7449cd4986e605b73bee2cc052d040bd",
@@ -137,7 +137,7 @@
         "crates/ct-test-support/src/fixture_archive.rs": "d1b29446d7f61158ad7653db158132215340c96f224c56bf4a0e0076a04da032",
         "crates/ct-test-support/src/i18n_builder.rs": "7efcc817f6210de1b332175378d5c05b5478ab1bde796d41193e3128bb7d9581",
         "crates/ct-test-support/src/journal_builder.rs": "a1631fcbe2a122773920ab2edcacd3d0b2ca943589ac75b13d24436c0444a6e5",
-        "crates/ct-test-support/src/lib.rs": "5244a52b4466cb397b6d82497685ff090c36294945470f69be1fcc0898073f99",
+        "crates/ct-test-support/src/lib.rs": "5f3b39b6b8c0ff8640dbe7bc81dc46eff37286a717d1a057c3a2c05f749859f2",
         "crates/ct-test-support/src/protocol_client.rs": "04cc86f2f3e2813d26557ed2d89abe1afcb6fd8fb126c962cec759742ccab349",
         "crates/ct-test-support/src/reference_inventory.rs": "b3237e6adf127f39f1e08cd61a0f87fe0866fd2e04d7fc89e93510459491941b",
         "crates/ct-test-support/src/schema_builder.rs": "e84a6eab4bf8875cfd71d8a9602d6edad52f534d151f82f663d52b3382bb47d7",
@@ -171,11 +171,11 @@
         "crates/ct-worker/src/task.rs": "1d378a718b695b5aa6c058f3d5bd463a6bd5bb8bfde8ff8a064bc30e8f2d4147",
         "crates/ct-xtask/Cargo.toml": "7df907e1bf49c063d51045e6c8c21319b0185da94802b22b7a8945de01d153d5",
         "crates/ct-xtask/src/accessor_fixtures.rs": "2c04f2de8f9c80fcdd1c36ac08da0b54a2b8ad198656debb65300b151c09d467",
-        "crates/ct-xtask/src/bench.rs": "03d98a84f3d25b1ed110a6097da230e4c99240362d8bdd9597b2fd0affb31171",
+        "crates/ct-xtask/src/bench.rs": "cb3ee3b0a89994bf86bdf9f841e3994dcdcbdfb6672b3acb28ce44a557f032b0",
         "crates/ct-xtask/src/dist.rs": "7c85157b1b5813b6825b010f686e1836c9c45613b8098d5df34b6cacff53dc88",
         "crates/ct-xtask/src/fingerprint.rs": "e3ec482e2dd6f29bf006a725c04ad70fe06bb6ced5e643ae3bf71d64789cceb1",
         "crates/ct-xtask/src/fixtures.rs": "789db1d22bf5b68a494c6e7edf3f197a16b11ef1501d133818878290680ac8d6",
-        "crates/ct-xtask/src/main.rs": "a601ef63f075daf642d430ba80d5b9a4d0023588ee46787d6a5a22829f003fb4",
+        "crates/ct-xtask/src/main.rs": "fe28ea5d0ff4b951d7dee35ece220c5778407c9ae5662cf60466ba66bf54dfc8",
         "crates/ct-xtask/src/real_fixture.rs": "fc8c3bbd483565e3baef6a6189bd52ed62930381fda1f4e619493b2893f79172",
         "crates/ct-xtask/src/samples.rs": "a7d6023683c5abcb158e1a396a20a6a4434b4ff9560e2b9c844b6f336bb77de2",
         "crates/ct-xtask/src/shape.rs": "126e9313066b026e15625f557d4ba4746125fb0a119ef8a67e354a5c10ea95a3",
@@ -253,7 +253,7 @@
         "docs/baseline/macos-g3/validate-l.txt": "ee0fb0d57a2fedea417f2b8c1b7521b1f16cea797b853058007db7a1cd13b963",
         "docs/baseline/macos-g3/validate-m.txt": "ee0fb0d57a2fedea417f2b8c1b7521b1f16cea797b853058007db7a1cd13b963",
         "docs/baseline/macos-g3/validate-s.txt": "ee0fb0d57a2fedea417f2b8c1b7521b1f16cea797b853058007db7a1cd13b963",
-        "docs/baseline/native-documentation-commands.txt": "30b02a65b0212cd364f00784c84f0ebe9634d76e5ecc95724824191d28083ee8",
+        "docs/baseline/native-documentation-commands.txt": "0b0bf9c0cb99281378a456e4fe888f8f32e1869e152d52f747debe48a96a8d72",
         "docs/baseline/parity-report.md": "8c288eb627809797ee35d242e7608958f03be0d11156e743753f1963f02014b8",
         "docs/baseline/python-free-cli-parity.md": "751c2b122b7a59009a9e04e71a405ffb48ba973317a91ca712bbac783a5e7176",
         "docs/baseline/python-free-environment.json": "6c4e7ba0b4ad803e683a20d6c909bcc0cb91c402afaa852d88c2a16f3660e568",
@@ -270,6 +270,7 @@
         "docs/baseline/recovery-drill.md": "f20d2b3f265a975798faafc1a521e6dac504422f2cdb3ad4411ac6611bc9d9ff",
         "docs/baseline/reference-tests.json": "798ca9b70b14dce556d24246024ae368644bb79ee507f36e63dcf463bee32f65",
         "docs/baseline/reference-tests.sha256": "a93bc8596f08369717db9d43e093af3651b5fda47a674dd671bc0f0bc287424c",
+        "docs/baseline/retired-files.json": "e1927a9f1632b524a10be82e6d246afa62c6017cd20038b399ad3063565f24f5",
         "docs/baseline/retirement-inventory-verification.md": "e82d4868133d1f8d426e39cfcdefc62af3f8e6535ce5af7a206010dfd95eff9e",
         "docs/baseline/source/bench-python-entry.py.txt": "4b627162b4caba05b8edf12fa9482e27584128e2a6df110b201552b440464b9b",
         "docs/baseline/source/capture-python-journals.py.txt": "f7999057ca0935c7e9e9a21ee726fd86d7b9dd30323ef8d6ef16092b77467fed",
@@ -449,9 +450,7 @@
         "fixtures/accessor_verify/workspace/i18n/source/ItemType.json": "e5db6ed03a8a124d2f213ba461a140300a837aafd5c7d1e2b165cf2762d2074d",
         "fixtures/accessor_verify/workspace/i18n/source/Quest.json": "f6b4996e2cdf9a0e2e240531f87caddcf9aad5e529d1b5ee5e7641c09fbfbe04",
         "fixtures/bench/README.md": "29b305da12d830191d00692231045137f52a32d5dd5740a7e6044293ea939cc4",
-        "fixtures/bench/generate.py": "de9e0e83db674fe5fc829a633a473972a1ee43e2f0a1bc15c406001798d99080",
         "fixtures/bench/shape-r.json": "b99db41e81562a0e5cea03833511d3cdf1063f1bcb183a777e352edcd6e94e85",
-        "fixtures/binary/generate.py": "2ef8bc32b5cca249983422a399ebf3940af16f4b8ea9dada34c005b21929dcde",
         "fixtures/binary/golden/bundle.bin": "8553d439f3c4717fce81217d88966af5137a78bae9598c928d075c3e1387bb09",
         "fixtures/binary/golden/bundle_bundle.bin": "039becbf18b821b34169e459f2ca7b923d6b8f6ea387336619e2d10052660ba2",
         "fixtures/binary/golden/empty.bin": "05553d2c840bb79fc7aaa8c745c9366e2c5fa1fac50ddb59478853898c81238f",
@@ -480,7 +479,6 @@
         "fixtures/excel/expected/formula_cache.json": "c87ef455984337a24d56c95e9901ebc857c4433c9decf372d6738ca03939d436",
         "fixtures/excel/expected/rich_text.json": "613459257fad81943a8480faf94b424af482b806bd0f5618117ca9e62147e42e",
         "fixtures/excel/formula_cache.xlsx": "aee71eb8df1fe99ce3488149434214be08f34b3602cf9d36df599c5d9728a252",
-        "fixtures/excel/generate.py": "e998f14188d1162dde0d8d4c6d4b18bbf044f3851cf56b19457c4ba03b4a7220",
         "fixtures/excel/rich_text.xlsx": "a031645388e3d53f016f7d26dc6817bdffc898ef05d2596db6a4f802eb53dfb1",
         "fixtures/excel/source/active_sheet/[Content_Types].xml": "8b17c67fc07ed1bc8cddabf0c66e4fb2195cfdb89689998adc2dccbaca1fb71b",
         "fixtures/excel/source/active_sheet/_rels/.rels": "ec869ae44fc833c25e58afa6ae766147aa72a99147522f6070e511475222827d",
@@ -529,7 +527,6 @@
         "fixtures/excel/source/rich_text/xl/sharedStrings.xml": "bc7b57967f687f8f09a8d632c29f76b271239ba77404a221f43a9b236bd0a619",
         "fixtures/excel/source/rich_text/xl/workbook.xml": "e72db24ea31d2cbf1de3760214e3f4f4a2c837e5a09d095ee3b9a44b3f136448",
         "fixtures/excel/source/rich_text/xl/worksheets/sheet1.xml": "1341188e3c60df3c0ba1cf7bf3c155b6fd9dae1e12a63a75107bc0f54550b7cf",
-        "fixtures/export_pipeline/generate.py": "4eeb23a35a68a6c5ed6fc791488b260762829cc769d8afdcf1864e8870df4042",
         "fixtures/export_pipeline/golden/excel/layout_manifests/item.json": "33895bcad2a8b68b30119d477c8faf177f8a15df23fb682d8bea13f1abd44751",
         "fixtures/export_pipeline/golden/output/binary/data_en.bin": "c96e2007742563ae90fb872c6726a8f8da53e0dbc64ae8422d7d10939279789a",
         "fixtures/export_pipeline/golden/output/binary/data_zh.bin": "f9ec026cfb6af5d7b6dbc2fcb742fd30fef0a7f17f4c48e0d6d3cfa604523479",
@@ -549,7 +546,6 @@
         "fixtures/export_pipeline/workspace/excel/layout_manifests/item.json": "33895bcad2a8b68b30119d477c8faf177f8a15df23fb682d8bea13f1abd44751",
         "fixtures/export_pipeline/workspace/i18n/en/Item.json": "045d9879162e08408b28e08d3a8af19409830b8ad369f0e13f3347b5239506f2",
         "fixtures/fingerprints/.gitattributes": "a79691a93b46e49ce460c26ef22afcc03d6eca1e63bf2edbc20e96159510f6c9",
-        "fixtures/fingerprints/generate.py": "b6971c6c4f685bb74cf6e3766544c79b47d9dae3c1a30b5c3428b0a524be9eac",
         "fixtures/fingerprints/golden.json": "9786e8b6d83770098ce304bb5ec60a48642c1d29ea647df4a3a7c3c5500b6487",
         "fixtures/journals/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "fixtures/journals/README.md": "ab7e89b683b1dbabe5e8ad79d1852ceab469b2ac1fa9541a9e3b1bc03788e992",
@@ -559,14 +555,12 @@
         "fixtures/schema/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "fixtures/schema_state/.gitattributes": "a79691a93b46e49ce460c26ef22afcc03d6eca1e63bf2edbc20e96159510f6c9",
         "fixtures/schema_state/commands.json": "0b9d205aade9c8b7157a872c2c7bfda96c7625d21aef04149fedda796a47d9f1",
-        "fixtures/schema_state/generate.py": "c77a1db93c9804547eb1878a8e38d1f71860ccb10a080198db9ddcd4bb00753f",
         "fixtures/schema_state/golden.json": "d34118f1fb44616a2df3e03d3588090bac88521ea72c74f3e6291f81dbc21bc5",
         "fixtures/schema_state/workspace/config/global.yaml": "4d873196ffdcb311e4ab32d29613d1cc87a4f26e83e434c5e73642a51f43faca",
         "fixtures/schema_state/workspace/config/schemas/item.yaml": "220c4b3d60e5b8631ceb14fcf3c0fc9d69996de09c008325ca78e96e06c6d689",
         "fixtures/schema_state/workspace/config/schemas/monster.yaml": "8581fa519769e5584154f7c98ae48f1edb52ad91d3fd2578490c7e2a59b50ddd",
         "fixtures/schema_state/workspace/config/types/drop_rule.yaml": "abea6619482719b7397ba1012bf5291fc94b6e244d91dd383f22e51caa627f25",
         "fixtures/schema_state/workspace/config/types/rarity.yaml": "0d89d5513225578f0a13a921af6c00ebac26765a8078ef7fe8ac0af437b82399",
-        "fixtures/template/compare_semantics.py": "5b658e642f877ef13433f078d8f280761ee145f07a6171380ce38e9dda958a73",
         "fixtures/template/enums.json": "d1dc3084e9fb4ea6cb285fe8754a452e07f8f1f2458a85440a74e6f2a05de150",
         "fixtures/template/expected/Buff.fbs.txt": "7b816ed3413cdac09a7b0fd497f3151cac813b98092230e2fcf5681661a0559b",
         "fixtures/template/expected/Buff_accessor.cs.txt": "98fb7f7f949999aa76c00de61d5c629bb6f2893eb455a84679d466c03418b85e",
@@ -584,7 +578,6 @@
         "fixtures/template/expected/template_v1.semantics.json": "4803a8966720b4fbd7190c5de8f1faa1c0d75c6b2ab27b91a47255fd71a286f3",
         "fixtures/template/expected/template_v2a.semantics.json": "0c99dc46ac26640b0c074d75b9178a781041d208bb8d21f29904ea1371546f1a",
         "fixtures/template/expected/types.fbs.txt": "e9c70db5c0e016c51421c97f149e66efbf86beb7ff3b00af1521f7bbfe7a46ed",
-        "fixtures/template/generate.py": "4ed807506540c5d451a357394d9852f24b6e6f22f9eacac8cefcbfe56e94f6d7",
         "fixtures/template/golden/bad_data_v1.xlsx": "20533964b660d61678fb85e323528c3c57ead843f5cceb95a95a77276327f2f2",
         "fixtures/template/golden/data_v1.xlsx": "1310fc1e94e16128acac1e926327fa141d2eecbef54bb1bd3a27da1c2d1bf436",
         "fixtures/template/golden/manifest_v1.json": "e33ab22e4a14fc28da6ee87d93944ecae3ff882cb1436c0138b751e53ef1de54",
@@ -662,9 +655,7 @@
         "tests/protocol/tests/method_names.rs": "a617fd7ae4309ab0329a47d1bc154e60c82d57e9fd21c12d5e43c249956fa6bf",
         "tests/protocol/tests/pagination.rs": "66adf1670373f35e83d7ef32495b5e1c16854bdff847f5a68ee2193479d84576",
         "tests/protocol/tests/request_id.rs": "a043546d165ab4a219258eedab5bb034d87c186f1d739f545a80b80a7671fd7a",
-        "tools/bench/isolation-check.mjs": "c8781988c9eedb92953db6e5f9d87fdfd8ac35834c80001c5aa3215d88df3b10",
         "tools/bench/measure.ps1": "f192b514b297247a06b1d5b51254f9c7b3040f0fc52a684adbe6cfe509b11a2b",
-        "tools/bench/python-entry.py": "4b627162b4caba05b8edf12fa9482e27584128e2a6df110b201552b440464b9b",
         "tools/bench/recovery-drill.mjs": "78c2d434568ac1df9742981c9f11af6ff1f07af647b9e65c5865b3faf91943d5",
         "tools/check-docs.mjs": "33b1738ad8735292f76d6026e89f3ef924326611ffbeacd05994cdc468aa2253",
         "tools/check-package.mjs": "461de9c34de00389fbf57ce86c7370653e0bf48139fdb7102801635feb2d8277",
@@ -675,8 +666,8 @@
     },
     "web": {
       "files": 66,
-      "bytes": 504983,
-      "sha256": "01074c7d892a1f0572165ddb9ae2ac3adf679d79b77b986a3e24ac07855ca696"
+      "bytes": 503809,
+      "sha256": "f87c378c7a3e7a00d24dd2ab44159eb89e8bfa3072f8623b13becfe9db376bb5"
     },
     "launcher": {
       "files": 81,
@@ -685,18 +676,18 @@
     },
     "openspec": {
       "files": 249,
-      "bytes": 2104131,
-      "sha256": "a1b536520aa75adf157e5c6d24b0d0f8481d685f495313ded9b38272dc70d9b3"
+      "bytes": 2104765,
+      "sha256": "2c8c318190ecc91a057848e6ae799b72f5a1aeb51acda9e6c8b77c5684c4d651"
     },
     ".github": {
-      "files": 2,
-      "bytes": 4610,
-      "sha256": "e7ce97e966cbc31bf47666125adb0f57ef48f1cd012f5621bf967ad406226943"
+      "files": 1,
+      "bytes": 3866,
+      "sha256": "027774e579ab023b56dd888de6217056353dfa4c0ee343737d88b05286c0c997"
     },
     "test-proj": {
-      "files": 101,
-      "bytes": 16505213,
-      "sha256": "5a0aa8bcb7f14a8fd6bb0b2a3a75c4ce8585e5a1a7fb0a707791038cf5bb46c9"
+      "files": 99,
+      "bytes": 16501167,
+      "sha256": "b60cd5d8f9f194a6e7120e3e7c0ee80087e8923ca33fb8a2d3f548b31587ce35"
     }
   },
   "testInventory": {

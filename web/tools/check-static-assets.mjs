@@ -21,7 +21,7 @@ function sha256(bytes) {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
-export async function checkStaticAssets({liveOld = false} = {}) {
+export async function checkStaticAssets() {
   const manifest = JSON.parse(await readFile(join(repo, 'web/static-manifest.json'), 'utf8'));
   assert.equal(manifest.format, 'web-static-manifest/1');
   assert.equal(manifest.sourceCommit, '8dc7b81');
@@ -62,18 +62,11 @@ export async function checkStaticAssets({liveOld = false} = {}) {
   }
   assert.ok(index.includes('src="/static/js/module-registry.js"'));
 
-  if (liveOld) {
-    const oldRoot = join(repo, manifest.sourceRoot);
-    assert.deepEqual(await filesUnder(oldRoot), expected, 'live old Web tree differs from the frozen list');
-    for (const item of manifest.files) {
-      assert.equal(sha256(await readFile(join(oldRoot, item.path))), item.legacySha256,
-        `old Web source changed: ${item.path}`);
-    }
-  }
   return {files: expected.length, adapted: manifest.files.filter(item => item.migration === 'adapted').length};
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const result = await checkStaticAssets({liveOld: process.argv.includes('--live-old')});
+  if (process.argv.includes('--live-old')) throw new Error('Old Web tree retired; compare against the frozen manifest');
+  const result = await checkStaticAssets();
   console.log(`Static assets verified: ${result.files} files, ${result.adapted} Web adapter changes.`);
 }

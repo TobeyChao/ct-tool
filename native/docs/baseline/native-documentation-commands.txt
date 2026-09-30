@@ -34,24 +34,24 @@ Options:
 Usage: ct validate [OPTIONS]
 
 Options:
-      --table <TABLE>  
-      --root <ROOT>    
+      --table <TABLE>
+      --root <ROOT>
   -h, --help           Print help
 工作区状态概览
 
 Usage: ct status [OPTIONS]
 
 Options:
-      --root <ROOT>  
+      --root <ROOT>
   -h, --help         Print help
 生成/迁移 Excel 模板
 
 Usage: ct gen-template [OPTIONS]
 
 Options:
-      --table <TABLE>  
+      --table <TABLE>
       --all            生成所有表模板
-      --root <ROOT>    
+      --root <ROOT>
   -h, --help           Print help
 独立部署
 
@@ -59,17 +59,17 @@ Usage: ct deploy [OPTIONS]
 
 Options:
       --for-build    追加构建目标（StreamingAssets）
-      --root <ROOT>  
+      --root <ROOT>
   -h, --help         Print help
 原生 Web 面板
 
 Usage: ct panel [OPTIONS]
 
 Options:
-      --root <ROOT>              
+      --root <ROOT>
       --host <HOST>              [default: 127.0.0.1]
       --port <PORT>              [default: 8000]
-      --no-browser               
+      --no-browser
       --static-dir <STATIC_DIR>  开发时从此目录加载 Web 静态资源
   -h, --help                     Print help
 从 Excel 同步译文骨架
@@ -80,7 +80,7 @@ Options:
       --lang <LANG>    只更新该语言的 lang 文件（source 仍全量刷新）
       --table <TABLE>  只处理指定表
       --verbose        输出每个写入文件的路径与变更条目数
-      --root <ROOT>    
+      --root <ROOT>
   -h, --help           Print help
 翻译进度概览
 
@@ -90,7 +90,7 @@ Options:
       --lang <LANG>  只显示指定语言
       --by-table     按表细分
       --json         输出 JSON
-      --root <ROOT>  
+      --root <ROOT>
   -h, --help         Print help
 清理 orphan 条目
 
@@ -100,5 +100,5 @@ Options:
       --lang <LANG>    只处理指定语言
       --table <TABLE>  只处理指定表
       --dry-run        仅打印将被删除的条目，不修改文件
-      --root <ROOT>    
+      --root <ROOT>
   -h, --help           Print help

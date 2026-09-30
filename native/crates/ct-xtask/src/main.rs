@@ -51,7 +51,7 @@ enum Command {
         #[arg(long)]
         manifest: Option<PathBuf>,
     },
-    /// 运行配对性能基准（冷全量/热 CLI/热 worker/改单表/改译文）
+    /// 运行原生性能留档回归（冷全量/热 CLI/热 worker/改单表/改译文）
     Bench {
         #[arg(long, default_value = "s")]
         size: String,
@@ -60,18 +60,15 @@ enum Command {
         runs: usize,
         #[arg(long)]
         rust: Option<PathBuf>,
-        /// 显式启用历史 Python 同机参照；默认仅做原生留档回归
-        #[arg(long)]
-        python: Option<PathBuf>,
         #[arg(long)]
         fixture_root: Option<PathBuf>,
         #[arg(long)]
         out: Option<PathBuf>,
-        /// 无 Python 参照时的回归判定基准（默认取本机留档 bench-<尺寸>-<平台>.json）
+        /// 原生回归判定基准（默认取本机留档 bench-<尺寸>-<平台>.json）
         #[arg(long)]
         against: Option<PathBuf>,
         /// 显式采集新基线（仅留档，不算回归通过）
-        #[arg(long, conflicts_with_all = ["against", "python"])]
+        #[arg(long, conflicts_with = "against")]
         record_baseline: bool,
     },
     /// 用当前门槛常量重算既有基准报告的 verdict（不重跑测量、不改样本）
@@ -150,7 +147,6 @@ fn main() -> anyhow::Result<()> {
             size,
             runs,
             rust,
-            python,
             fixture_root,
             out,
             against,
@@ -166,7 +162,6 @@ fn main() -> anyhow::Result<()> {
                     "native/target/release/ct"
                 })
             }),
-            python,
             out,
             against,
             record_baseline,

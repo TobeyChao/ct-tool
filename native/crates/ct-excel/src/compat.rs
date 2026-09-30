@@ -147,7 +147,7 @@ pub fn check_reading_compatibility(
                     "缺少布局 manifest，无法确认 Excel 与当前 schema 的读取布局兼容。\
                      该表还没有工作簿时，运行 `ct gen-template --table {table}` 生成空模板；\
                      已有旧工作簿时，工具不会在缺少 manifest 的情况下搬移数据：\
-                     请先备份并删除旧工作簿，再生成空模板并重新录入（见 ct/docs/schema-save-migration.md）。"
+                     请先备份并删除旧工作簿，再生成空模板并重新录入（见 docs/schema-save-migration.md）。"
                 ),
             )],
             reason: "manifest-missing".into(),

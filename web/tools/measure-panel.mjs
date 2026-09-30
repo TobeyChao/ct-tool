@@ -7,11 +7,10 @@ import {join,resolve} from 'node:path';
 import {performance} from 'node:perf_hooks';
 
 const repo=resolve(import.meta.dirname,'../..');
-const livePython=process.argv.includes('--live-python');
+if(process.argv.includes('--live-python'))throw new Error('Live Python reference retired; use the frozen performance reports');
 const outIndex=process.argv.indexOf('--out');
 const out=outIndex<0?null:process.argv[outIndex+1];
 if(outIndex>=0&&!out)throw new Error('--out needs a file path');
-const python=process.env.CT_PYTHON_BIN||join(repo,'ct/.venv/bin/python');
 const binary=process.env.CT_WEB_BIN||join(repo,'native/target/release',process.platform==='win32'?'ct.exe':'ct');
 
 function median(samples){const sorted=[...samples].sort((a,b)=>a-b);return sorted[Math.floor(sorted.length/2)];}
@@ -27,12 +26,9 @@ async function seed(root){
  await writeFile(join(root,'config/schemas/Item.yaml'),'table: Item\nprimary: Id\nfields:\n  - name: Id\n    type: int32\n  - name: Name\n    type: string\n    i18n: true\n');
 }
 async function launch(kind,root){
- const oldCode=`from ct.web.app import create_app\nfrom werkzeug.serving import make_server\nimport sys\nserver=make_server('127.0.0.1',0,create_app(sys.argv[1]),threaded=True)\nprint(f'http://127.0.0.1:{server.server_port}',flush=True)\nserver.serve_forever()`;
- const args=kind==='python'?['-u','-c',oldCode,root]:['panel','--root',root,'--port','0','--no-browser'];
- const command=kind==='python'?python:binary;
- const env=kind==='python'?{...process.env,PYTHONPATH:join(repo,'ct/src')}:process.env;
+ const args=['panel','--root',root,'--port','0','--no-browser'];
  const started=performance.now();
- const child=spawn(command,args,{env,stdio:['pipe','pipe','pipe']});
+ const child=spawn(binary,args,{env:process.env,stdio:['pipe','pipe','pipe']});
  let diagnostic='';
  child.stderr.on('data',chunk=>{diagnostic+=chunk;});
  const url=await new Promise((done,fail)=>{
@@ -115,9 +111,6 @@ async function measure(kind){
  }finally{if(service)await close(service.child);await rm(root,{recursive:true,force:true});}
 }
 
-const report={format:'panel-performance/1',at:new Date().toISOString(),platform:process.platform,arch:process.arch,node:process.version,nativeBinary:binary,pythonRuntime:livePython?python:null,fixture:'one Table, empty generated workbook; 1000 i18n source entries',native:await measure('native')};
-if(livePython)report.python=await measure('python');
-if(report.python&&report.native.largeDataSha256!==report.python.largeDataSha256)throw new Error('native and Python large responses differ');
-if(report.python)report.ratios=Object.fromEntries(['startupMedianMs','candidateMedianMs','exportMedianMs','largeMedianMs'].map(key=>[key,Math.round(report.native[key]/report.python[key]*100)/100]));
+const report={format:'panel-performance/1',at:new Date().toISOString(),platform:process.platform,arch:process.arch,node:process.version,nativeBinary:binary,fixture:'one Table, empty generated workbook; 1000 i18n source entries',native:await measure('native')};
 const json=JSON.stringify(report,null,2)+'\n';
 if(out)await writeFile(out,json);else process.stdout.write(json);

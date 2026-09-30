@@ -20,8 +20,8 @@ async function pythonPaths(relative) {
   return paths.sort();
 }
 const actual = await pythonPaths('test-proj');
-const declared = inventory.files.map(entry => entry.path).sort();
-if (JSON.stringify(actual) !== JSON.stringify(declared) || new Set(declared).size !== 19) {
+const declared = inventory.files.filter(entry => entry.status === 'historical').map(entry => entry.path).sort();
+if (JSON.stringify(actual) !== JSON.stringify(declared) || new Set(declared).size !== 17) {
   throw new Error('test-proj Python script set differs from explicit retirement inventory');
 }
 for (const entry of inventory.files) {
@@ -32,7 +32,15 @@ for (const entry of inventory.files) {
       !/^[\w./-]+$/.test(entry.successor) || entry.successor.split('/').includes('..') || entry.successor.endsWith('.py')) {
     throw new Error(`unsafe or executable Python successor: ${entry.path}`);
   }
-  const sha = createHash('sha256').update(await readFile(join(root, entry.path))).digest('hex');
+  // Removed formal sources remain available as immutable, non-executable oracles.
+  const source = entry.status === 'historical' ? entry.path :
+    `native/fixtures/accessor_verify/source/${entry.path.split('/').pop()}.txt`;
+  if (entry.status === 'replaced') {
+    let present = false;
+    try { await access(join(root, entry.path)); present = true; } catch {}
+    if (present) throw new Error(`retired formal source remains: ${entry.path}`);
+  }
+  const sha = createHash('sha256').update(await readFile(join(root, source))).digest('hex');
   if (sha !== entry.sha256) throw new Error(`legacy source changed since audit: ${entry.path}`);
   await access(join(root, entry.successor));
 }
@@ -45,4 +53,4 @@ for (const path of inventory.activeEntries) {
   if (!path.startsWith('test-proj/') || !path.endsWith('.mjs') || path.split('/').includes('..')) throw new Error('invalid active entry');
   await access(join(root, path));
 }
-console.log('test-proj: 19/19 scripts audited; 2 replaced preparation entries, 17 historical experiments');
+console.log('test-proj: 19/19 scripts audited; 2 retired preparation entries verified in static oracles, 17 historical experiments');
