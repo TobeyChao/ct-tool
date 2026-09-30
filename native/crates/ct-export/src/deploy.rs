@@ -38,6 +38,12 @@ pub fn sync_dir(src: &Path, dst: &Path) -> Result<(usize, Vec<String>), DeployEr
         .map(|e| e.file_name().to_string_lossy().to_string())
         .collect();
 
+    let folded_src: std::collections::BTreeSet<_> =
+        src_names.iter().map(|name| name.to_lowercase()).collect();
+    if folded_src.len() != src_names.len() {
+        return Err(DeployError("产物目录包含跨平台大小写冲突".into()));
+    }
+
     // 清理目标多余产物
     let mut dst_entries: Vec<PathBuf> = std::fs::read_dir(dst)
         .map_err(|e| DeployError(format!("读取部署目录失败 {}: {e}", dst.display())))?
@@ -45,13 +51,20 @@ pub fn sync_dir(src: &Path, dst: &Path) -> Result<(usize, Vec<String>), DeployEr
         .filter(|p| p.is_file())
         .collect();
     dst_entries.sort();
+    let mut existing = std::collections::BTreeMap::new();
+    for path in &dst_entries {
+        let key = path.file_name().unwrap().to_string_lossy().to_lowercase();
+        if existing.insert(key, path.clone()).is_some() {
+            return Err(DeployError("部署目录包含跨平台大小写冲突".into()));
+        }
+    }
     for path in dst_entries {
-        let name = path.file_name().unwrap().to_string_lossy().to_string();
-        if src_names.contains(&name) {
+        let name = path.file_name().unwrap().to_string_lossy().to_lowercase();
+        if folded_src.contains(&name) {
             continue;
         }
         if let Some(stem) = name.strip_suffix(".meta") {
-            if src_names.contains(stem) {
+            if folded_src.contains(stem) {
                 continue; // 产物仍在：保留 .meta
             }
         }
@@ -69,7 +82,12 @@ pub fn sync_dir(src: &Path, dst: &Path) -> Result<(usize, Vec<String>), DeployEr
         .collect();
     src_entries.sort();
     for path in src_entries {
-        let target = dst.join(path.file_name().unwrap());
+        // 保留目标的既有大小写，使 Unity .meta 与产物继续同名绑定。
+        let key = path.file_name().unwrap().to_string_lossy().to_lowercase();
+        let target = existing
+            .get(&key)
+            .cloned()
+            .unwrap_or_else(|| dst.join(path.file_name().unwrap()));
         let data = std::fs::read(&path)
             .map_err(|e| DeployError(format!("读取产物失败 {}: {e}", path.display())))?;
         let same = std::fs::read(&target).is_ok_and(|old| old == data);

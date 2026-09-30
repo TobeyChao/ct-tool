@@ -1,0 +1,265 @@
+{
+  "schema": "ct-bench/1",
+  "size": "s",
+  "seed": 20260918,
+  "fixture": {
+    "schema": "ct-bench-fixture/1",
+    "size": "s",
+    "seed": 20260918,
+    "tables": 10,
+    "rowsPerTable": 100,
+    "columnsPerTable": 20,
+    "dataCells": 18454,
+    "translatedEntries": 4000,
+    "languages": [
+      "zh",
+      "en",
+      "ja"
+    ],
+    "uniform": "偶数表填满、奇数表含 vector<Record>/vector<int32> 且约 12% 单元格留空",
+    "mutation": {
+      "table": "T001",
+      "tableSource": "excel/T001.xlsx",
+      "i18nLang": "en",
+      "i18nTarget": "i18n/en/T001.json"
+    },
+    "inputDigest": "sha256:182fec0442aa271bb3bed162c4dd9b7d98b0dba5d9a0aa22180fb8d6f4862b7b",
+    "root": "/tmp/ct-native-g3-Zj4oHA/bench-s"
+  },
+  "host": {
+    "os": "macos",
+    "arch": "aarch64",
+    "family": "macos",
+    "logicalCores": 10,
+    "measuredWithPowershell": false,
+    "rssMethod": "ps process-tree RSS polling"
+  },
+  "git": {
+    "commit": "5d3207226328e8123a00b4fd40732f2f33606da3",
+    "dirtyPaths": 18
+  },
+  "engines": {
+    "rust": {
+      "path": "/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-xtask/../../../native/target/release/ct",
+      "version": "ct 0.0.0",
+      "argv": "export"
+    },
+    "python": null
+  },
+  "warmupRuns": 1,
+  "measuredRuns": 1,
+  "realWorkspaceUntouched": {
+    "gdDirtyBefore": 0,
+    "gdDirtyAfter": 0,
+    "unchanged": true
+  },
+  "results": [
+    {
+      "engine": "rust",
+      "scenario": "cold",
+      "runs": 1,
+      "artifacts": 67,
+      "outputSha256": "6a6373b2e668d800baf836081cbba0fda69656d993de98e7aa7acc25208c0510",
+      "wallMs": {
+        "median": 220.0,
+        "min": 220.0,
+        "max": 220.0,
+        "samples": [
+          220.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 33328.0,
+        "min": 33328.0,
+        "max": 33328.0,
+        "samples": [
+          33328.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 33328.0,
+        "min": 33328.0,
+        "max": 33328.0,
+        "samples": [
+          33328.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "hot-cli",
+      "runs": 1,
+      "artifacts": 67,
+      "outputSha256": "6a6373b2e668d800baf836081cbba0fda69656d993de98e7aa7acc25208c0510",
+      "wallMs": {
+        "median": 139.0,
+        "min": 139.0,
+        "max": 139.0,
+        "samples": [
+          139.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 25760.0,
+        "min": 25760.0,
+        "max": 25760.0,
+        "samples": [
+          25760.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 25760.0,
+        "min": 25760.0,
+        "max": 25760.0,
+        "samples": [
+          25760.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "hot-worker",
+      "runs": 1,
+      "artifacts": 67,
+      "outputSha256": "6a6373b2e668d800baf836081cbba0fda69656d993de98e7aa7acc25208c0510",
+      "wallMs": {
+        "median": 139.0,
+        "min": 139.0,
+        "max": 139.0,
+        "samples": [
+          139.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 28240.0,
+        "min": 28240.0,
+        "max": 28240.0,
+        "samples": [
+          28240.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 28240.0,
+        "min": 28240.0,
+        "max": 28240.0,
+        "samples": [
+          28240.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "table",
+      "runs": 1,
+      "artifacts": 67,
+      "outputSha256": "d6ed4405f4e1a6c458bf997660f2da7a86a7bae3f62a1d5b5959975b0717147a",
+      "wallMs": {
+        "median": 137.0,
+        "min": 137.0,
+        "max": 137.0,
+        "samples": [
+          137.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 28256.0,
+        "min": 28256.0,
+        "max": 28256.0,
+        "samples": [
+          28256.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 28256.0,
+        "min": 28256.0,
+        "max": 28256.0,
+        "samples": [
+          28256.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "i18n",
+      "runs": 1,
+      "artifacts": 67,
+      "outputSha256": "8b78541e1afb8de1c650eb0f6cf49d32bb9743afcd5a2361210197615b05ef56",
+      "wallMs": {
+        "median": 141.0,
+        "min": 141.0,
+        "max": 141.0,
+        "samples": [
+          141.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 27456.0,
+        "min": 27456.0,
+        "max": 27456.0,
+        "samples": [
+          27456.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 27456.0,
+        "min": 27456.0,
+        "max": 27456.0,
+        "samples": [
+          27456.0
+        ]
+      }
+    }
+  ],
+  "thresholds": {
+    "cold": {
+      "medianRatio": null,
+      "limit": 1.1,
+      "peakRssRatio": null,
+      "peakRssLimit": 1.2,
+      "peakRssAbsLimitKb": null,
+      "verdict": "regression-pass",
+      "baselineMode": "archived-run",
+      "allowedSlowdown": 1.25
+    },
+    "hot-cli": {
+      "medianRatio": null,
+      "limit": 1.1,
+      "peakRssRatio": null,
+      "peakRssLimit": 1.2,
+      "peakRssAbsLimitKb": null,
+      "verdict": "regression-pass",
+      "baselineMode": "archived-run",
+      "allowedSlowdown": 1.25
+    },
+    "hot-worker": {
+      "medianRatio": null,
+      "limit": null,
+      "peakRssRatio": null,
+      "peakRssLimit": 1.2,
+      "peakRssAbsLimitKb": null,
+      "verdict": "regression-pass",
+      "baselineMode": "archived-run",
+      "allowedSlowdown": 1.25
+    },
+    "table": {
+      "medianRatio": null,
+      "limit": 1.1,
+      "peakRssRatio": null,
+      "peakRssLimit": 1.2,
+      "peakRssAbsLimitKb": null,
+      "verdict": "regression-pass",
+      "baselineMode": "archived-run",
+      "allowedSlowdown": 1.25
+    },
+    "i18n": {
+      "medianRatio": null,
+      "limit": 1.1,
+      "peakRssRatio": null,
+      "peakRssLimit": 1.2,
+      "peakRssAbsLimitKb": null,
+      "verdict": "regression-pass",
+      "baselineMode": "archived-run",
+      "allowedSlowdown": 1.25
+    }
+  }
+}

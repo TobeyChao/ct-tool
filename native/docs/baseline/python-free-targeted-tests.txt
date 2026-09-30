@@ -1,0 +1,426 @@
+   Compiling ct-export v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-export)
+   Compiling ct-cache v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-cache)
+   Compiling ct-app v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-app)
+   Compiling ct-test-support v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-test-support)
+   Compiling ct-tests-compat v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/tests/compat)
+   Compiling ct-xtask v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-xtask)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 31.32s
+     Running unittests src/lib.rs (native/target/debug/deps/ct_tests_compat-c274b69e6e9a142b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/accessor_golden.rs (native/target/debug/deps/accessor_golden-49e0c8d608c5873b)
+
+running 5 tests
+test enum_declarations ... ok
+test lua_item_and_buff ... ok
+test csharp_buff_i18n ... ok
+test csharp_item_offsets_mode ... ok
+test csharp_item_uniform_literal_mode ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/binary_golden.rs (native/target/debug/deps/binary_golden-3a2489f22287ee54)
+
+running 7 tests
+test empty_table_bytes_match ... ok
+test bundle_bytes_match ... ok
+test sparse_uniform_bytes_match ... ok
+test sparse_nonuniform_bytes_match ... ok
+test item_nonuniform_bytes_match ... ok
+test item_uniform_bytes_match ... ok
+test rough_timing_smoke ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/cache_artifacts.rs (native/target/debug/deps/cache_artifacts-3b48164749a8db79)
+
+running 11 tests
+test hit_after_first_compute ... ok
+test prune_drops_only_unused ... ok
+test bytes_roundtrip ... ok
+test corrupted_and_tampered_entries_rebuild ... ok
+test forced_bypasses_cache ... ok
+test same_mtime_content_change_recomputes ... ok
+test version_bump_invalidates ... ok
+test translation_metadata_change_does_not_rebuild ... ok
+test missing_or_rewritten_output_is_repaired ... ok
+test pipeline_second_run_uses_cache_and_stays_byte_identical ... ok
+test forced_all_rewrites_and_incremental_preserves_mtime ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests/canonical_read.rs (native/target/debug/deps/canonical_read-c23124ce087ad68c)
+
+running 3 tests
+test vector_cell_grammar ... ok
+test clean_rows_match_python ... ok
+test bad_rows_match_python_issues ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/coverage_matrix.rs (native/target/debug/deps/coverage_matrix-5400867a613dcf95)
+
+running 6 tests
+test matrix_rows_match_coverage_table_row_by_row ... ok
+test explicit_acceptance_checks_are_mapped ... ok
+test baseline_fingerprint_is_pinned_and_complete ... ok
+test native_anchors_exist_and_carry_tests ... ok
+test every_python_reference_test_is_pinned ... ok
+test frozen_reference_mapping_survives_absent_retired_tree_and_rejects_corruption ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/desktop_history.rs (native/target/debug/deps/desktop_history-0a03bd71af9670ca)
+
+running 10 tests
+test two_native_exports_in_one_second_remain_two_history_events ... ok
+test history_follows_configured_cache_dir ... ok
+test unknown_history_format_is_ignored_then_replaced ... ok
+test legacy_history_merges_once_with_stable_ids_and_source_digest ... ok
+test corrupt_legacy_history_and_atomic_write_failure_keep_source_for_retry ... ok
+test history_appends_newest_first_and_trims_to_five ... ok
+test cli_path_does_not_write_desktop_history ... ok
+test history_write_failure_is_reported_separately ... ok
+test desktop_export_records_success_entry ... ok
+test history_failure_does_not_change_second_export_outcome ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/excel_edge.rs (native/target/debug/deps/excel_edge-04576eddb0887d3a)
+
+running 8 tests
+test serial_conversion_boundaries ... ok
+test fixture_rich_text ... ok
+test fixture_errors ... ok
+test fixture_dates_1904 ... ok
+test fixture_dates_1900 ... ok
+test fixture_active_sheet ... ok
+test fixture_formula_cache ... ok
+test corrupted_frozen_source_blocks_regeneration ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/export_compat.rs (native/target/debug/deps/export_compat-cffd2716b57517c3)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/export_pipeline.rs (native/target/debug/deps/export_pipeline-3006b5fefe1a101a)
+
+running 11 tests
+test deploy_preserves_meta_when_generated_name_changes_case ... ok
+test capture_verify_unit ... ok
+test input_change_translation_blocks ... ok
+test input_change_directory_membership_blocks ... ok
+test cancellation_before_publish_keeps_output_unpublished ... ok
+test input_change_during_build_blocks_publish ... ok
+test deploy_failure_keeps_ledger_untouched ... ok
+test cancellation_after_publish_boundary_preserves_success ... ok
+test deploy_syncs_and_preserves_meta ... ok
+test pipeline_matches_python_byte_for_byte ... ok
+test partial_export_keeps_other_ledger_entries ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests/fbs_export.rs (native/target/debug/deps/fbs_export-3241d26a7efa40fa)
+
+running 3 tests
+test table_fbs_matches_python ... ok
+test types_fbs_matches_python ... ok
+test structural_validation ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/fingerprints.rs (native/target/debug/deps/fingerprints-e39e42cee8cf7b9f)
+
+running 4 tests
+test semantics_ignore_derived_metadata ... ok
+test reuse_decision_matrix ... ok
+test ref_target_primary_key_change_invalidates_schema ... ok
+test fingerprints_match_python ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/fixture_oracles.rs (native/target/debug/deps/fixture_oracles-b6b4c3b29713f7c7)
+
+running 1 test
+test frozen_inputs_and_oracles_match_their_provenance_checksums ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/i18n_flow.rs (native/target/debug/deps/i18n_flow-0ad3070823e42834)
+
+running 4 tests
+test status_machine ... ok
+test merge_entry_rules ... ok
+test serialize_format_matches_python ... ok
+test sync_status_compact_roundtrip ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/incremental_matrix.rs (native/target/debug/deps/incremental_matrix-6d6d0c7aa322efb4)
+
+running 8 tests
+test inert_translation_metadata_does_not_rebuild_anything ... ok
+test illegal_data_fails_both_modes_and_touches_nothing ... ok
+test python_ledger_survives_native_export_in_custom_paths ... ok
+test corrupt_cache_and_unknown_ledger_version_rebuild_without_changing_bytes ... ok
+test filtered_export_produces_the_same_selected_artifacts_as_full_export ... ok
+test effective_translation_change_updates_only_that_language ... ok
+test missing_or_rewritten_output_is_repaired_identically ... ok
+test unchanged_inputs_keep_bytes_and_mtime_but_all_rewrites ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+
+     Running tests/journal_recovery.rs (native/target/debug/deps/journal_recovery-b84a0e714e38c89a)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/json_export.rs (native/target/debug/deps/json_export-4851dbc066bad443)
+
+running 3 tests
+test json_empty_table ... ok
+test json_single_line_records ... ok
+test json_bytes_match_python ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/layout_manifest.rs (native/target/debug/deps/layout_manifest-9085f6a1ac561e47)
+
+running 4 tests
+test header_nodes_deterministic ... ok
+test layout_columns_match_python_golden ... ok
+test manifest_roundtrip_and_format_gate ... ok
+test manifest_payload_matches_golden ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/parallel_determinism.rs (native/target/debug/deps/parallel_determinism-9f5aa53dfc7155fa)
+
+running 3 tests
+test diagnostics_order_stable_under_concurrency ... ok
+test peak_memory_recorded_for_bounded_parallelism ... ok
+test same_bytes_under_different_concurrency ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running tests/path_case.rs (native/target/debug/deps/path_case-3ea332a802e38671)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/publication_recovery.rs (native/target/debug/deps/publication_recovery-3f54726a9b4e6fbc)
+
+running 11 tests
+test out_of_scope_journal_path_rejected ... ok
+test atomic_write_replaces_target_while_reader_has_it_open ... ok
+test missing_backup_keeps_materials_and_blocks ... ok
+test crash_after_prepared_cleans_private_only ... ok
+test dropping_staged_payloads_leaves_targets_untouched ... ok
+test crash_after_committed_keeps_new_version ... ok
+test crash_mid_publish_restores_content_and_mtime_and_removes_created ... ok
+test sweep_staging_respects_journal ... ok
+test publish_then_recover_is_noop ... ok
+test staged_payload_does_not_touch_targets ... ok
+test publish_failure_rolls_back_with_mtime ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/python_publication.rs (native/target/debug/deps/python_publication-33737fa065158226)
+
+running 1 test
+test frozen_python_journals_recover_all_stages_with_content_and_nanosecond_mtime ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/resource_graph.rs (native/target/debug/deps/resource_graph-f2e85af7a93d5317)
+
+running 5 tests
+test named_edges_sorted_and_deduped ... ok
+test reverse_references_cover_named_and_ref ... ok
+test cycle_detected_with_path ... ok
+test topological_order_named_before_tables ... ok
+test ref_target_must_be_primary ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/schema_draft.rs (native/target/debug/deps/schema_draft-8be0396c2e726fb9)
+
+running 14 tests
+test generated_name_conflict_detected ... ok
+test candidate_cross_kind_name_conflict ... ok
+test netdiff_field_property_details_sorted ... ok
+test candidate_missing_and_kind_mismatched_refs ... ok
+test add_rename_delete_replay ... ok
+test netdiff_roundtrip_rename_is_noop ... ok
+test netdiff_rename_chain_reports_single_rename ... ok
+test rename_rewrites_named_refs_and_cross_table_refs ... ok
+test set_enum_values_and_move_field_guards ... ok
+test netdiff_enum_ordinal_risk_details ... ok
+test rename_field_rejects_primary_and_cross_table_broadcast ... ok
+test undo_redo_cursor_semantics ... ok
+test candidate_hash_is_order_independent_and_change_sensitive ... ok
+test netdiff_delete_then_add_is_not_rename ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/schema_loading.rs (native/target/debug/deps/schema_loading-dfe54ab0a0b4222e)
+
+running 15 tests
+test captured_contents_mode_ignores_disk ... ok
+test duplicate_name_rejected ... ok
+test custom_dirs_load_and_resolve ... ok
+test primary_key_type_rule ... ok
+test ref_on_vector_rejected ... ok
+test case_conflict_rejected ... ok
+test named_type_resolution ... ok
+test by_id_lookup ... ok
+test expected_kind_mismatch_rejected ... ok
+test old_shape_rejected ... ok
+test types_dir_kind_mismatch_rejected ... ok
+test unknown_field_key_rejected ... ok
+test unknown_named_type_rejected ... ok
+test table_reference_rejected ... ok
+test vector_record_requires_excel_columns ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/schema_parity.rs (native/target/debug/deps/schema_parity-37e8540b13f95f99)
+
+running 5 tests
+test schema_revision_matches_python ... ok
+test resource_and_schema_hashes_match_python ... ok
+test hash_ignores_serialization_jitter ... ok
+test candidate_hash_and_netdiff_match_python ... ok
+test dump_yaml_matches_python_bytes ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/schema_save.rs (native/target/debug/deps/schema_save-a327965e033d9ad7)
+
+running 14 tests
+test resource_target_path_uses_kind_directories ... ok
+test save_stale_revision_rejected_and_untouched ... ok
+test candidate_counts_index_only_change ... ok
+test save_bad_candidate_hash_rejected ... ok
+test save_with_candidate_issues_rejected ... ok
+test save_noop_touches_nothing ... ok
+test excel_path_conflict_rejected ... ok
+test recovery_changes_baseline_and_rejects_pre_recovery_draft ... ok
+test revision_tracks_directory_membership ... ok
+test unchanged_content_not_rewritten_despite_formatting_drift ... ok
+test save_delete_and_rename_move_files ... ok
+test transaction_failure_preserves_original_files ... ok
+test save_writes_only_changed_yaml ... ok
+test save_workspace_busy_and_recovery ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/stage_profile.rs (native/target/debug/deps/stage_profile-57431c9519faa8d4)
+
+running 5 tests
+test failing_export_stops_progress_at_the_gate ... ok
+test validation_issues_are_carried_by_the_error_once ... ok
+test progress_visits_five_steps_then_the_publish_boundary ... ok
+test export_reports_every_stage_once ... ok
+test incremental_export_writes_nothing_and_forced_rewrites_all ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/template_edge.rs (native/target/debug/deps/template_edge-131998a8dc1bcc73)
+
+running 4 tests
+test long_enum_dropdown_skipped_with_warning ... ok
+test deleted_field_with_data_blocks_and_keeps_original ... ok
+test unconvertible_type_change_blocks ... ok
+test migration_preserves_data_but_not_arbitrary_sheets ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/template_flow.rs (native/target/debug/deps/template_flow-f4b5b476f39e0c2e)
+
+running 4 tests
+test requires_scope_flag ... ok
+test missing_manifest_refuses_overwrite ... ok
+test fresh_template_and_manifest ... ok
+test migration_with_manifest_preserves_data ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/template_semantics.rs (native/target/debug/deps/template_semantics-90df03418f46320d)
+
+running 9 tests
+test golden_input_layouts_parse ... ok
+test migration_blocked_without_manifest ... ok
+test migration_blocked_when_deleted_column_has_data ... ok
+test independent_reader_matches_frozen_openpyxl_semantics ... ok
+test migration_matches_python_golden ... ok
+test template_v1_structure ... ok
+test template_readback_via_calamine ... ok
+test template_v2a_structure ... ok
+test full_semantics_rejects_a_changed_header ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/validate_gates.rs (native/target/debug/deps/validate_gates-387f3a799ddfa8a0)
+
+running 7 tests
+test unknown_table_filter ... ok
+test unknown_enum_token_rejected ... ok
+test codename_empty_and_duplicate_rejected ... ok
+test duplicate_primary_key_rejected ... ok
+test bad_ref_rejected_even_with_table_filter ... ok
+test clean_workspace_no_issues ... ok
+test deterministic_issue_order ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/workspace_lock.rs (native/target/debug/deps/workspace_lock-20b3c23eba04b453)
+
+running 6 tests
+test child_holds_lock ... ok
+test transaction_reports_busy ... ok
+test in_process_mutual_exclusion ... ok
+test different_roots_are_independent ... ok
+test transaction_recovers_pending_publish_before_work ... ok
+
+running 1 test
+test cross_process_busy_and_death_release ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running unittests src/main.rs (native/target/debug/deps/xtask-7241d5c32ff17bce)
+
+running 17 tests
+test bench::tests::absolute_memory_limits_are_size_banded ... ok
+test bench::tests::regression_still_respects_the_absolute_peak_cap ... ok
+test bench::tests::measured_l_numbers_pass_revised_caps ... ok
+test bench::tests::regression_fails_on_slowdown_or_changed_artifacts ... ok
+test bench::tests::posix_rss_includes_nested_child_processes ... ok
+test bench::tests::over_band_peak_still_fails ... ok
+test bench::tests::time_limits_unchanged_by_the_memory_revision ... ok
+test dist::tests::isolated_environment_only_keeps_the_package_bin_dir ... ok
+test bench::tests::regression_verdict_needs_no_python ... ok
+test bench::tests::missing_python_baseline_is_recorded_not_passing ... ok
+test dist::tests::package_names_follow_target_family ... ok
+test bench::tests::archived_regression_requires_the_same_fixture_digest ... ok
+test fingerprint::tests::retired_tree_does_not_change_fingerprint_or_test_inventory ... ok
+test bench::tests::posix_measure_feeds_worker_input_and_records_memory ... ok
+test fingerprint::tests::fingerprint_pins_supported_trees_and_frozen_history ... ok
+test fingerprint::tests::native_entries_match_disk_hashes ... ok
+test fingerprint::tests::fingerprint_is_reproducible ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.59s
+
+   Doc-tests ct_tests_compat
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

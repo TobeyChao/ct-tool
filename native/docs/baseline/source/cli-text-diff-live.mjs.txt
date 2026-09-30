@@ -1,5 +1,13 @@
-// CLI text/exit/artifact parity against six immutable independent captures.
-// Only native ct runs in a temporary fixture; --golden and --out select explicit paths.
+// CLI 文本与产物差异对照（任务 6.4）：同一夹具跑原生内核，与 Python 参照的留档基线逐项比对；
+// 只有 --live-python 才同机再跑一次解释器（用于刷新留档），默认路径零 Python 依赖。
+// 逐字节比对正式产物，并比对归一化后的 stdout/stderr 文本。
+// 只写系统临时目录的副本，绝不触碰真实 gd/。
+//
+// 用法：node native/tools/parity/cli-text-diff.mjs [--rust <ct.exe>] [--keep]
+//       [--live-python] [--python <ct.exe>] [--python-golden <json>]
+//
+// 默认零外部语言依赖：Python 侧取自留档基线 JSON（不启动任何解释器）。
+// 只有显式 --live-python 才同机配对实测，并把实测结果写回留档基线供后续离线复比。
 import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -14,13 +22,16 @@ const flagValue = (name, fallback) => {
   const index = argv.indexOf(name);
   return index >= 0 && argv[index + 1] ? path.resolve(argv[index + 1]) : fallback;
 };
-if (argv.includes("--live-python") || argv.includes("--python")) {
-  throw new Error("正式 CLI 验收使用冻结基线，不再支持 live-Python；来源快照见 native/docs/baseline/source/");
-}
-const pythonGoldenPath = flagValue("--golden", path.join(repoRoot, "native/docs/baseline/cli-text-diff-python.json"));
+const pythonCt = flagValue("--python", path.join(repoRoot, "ct/.venv/Scripts/ct.exe"));
+const pythonGoldenPath = flagValue(
+  "--python-golden",
+  path.join(repoRoot, "native/docs/baseline/cli-text-diff-python.json")
+);
+// 默认不跑 Python：留档基线才是本工具的验收路径；--live-python 才要求解释器在位。
+const livePython = process.argv.includes("--live-python");
 const rustCt = flagValue(
   "--rust",
-  path.join(repoRoot, "native/target/release", process.platform === "win32" ? "ct.exe" : "ct")
+  path.join(repoRoot, "native/target/release/ct.exe")
 );
 const keep = argv.includes("--keep");
 
@@ -122,6 +133,17 @@ function run(exe, encoding, workspace, args, label) {
   };
 }
 
+const engines = [
+  { key: "rust", exe: rustCt, encoding: "utf8", root: null },
+];
+const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "ct-parity-"));
+for (const engine of engines) {
+  if (!fs.existsSync(engine.exe)) throw new Error(`缺少 ${engine.key} 入口：${engine.exe}`);
+  engine.root = path.join(scratch, engine.key);
+  copyTree(fixture, engine.root);
+}
+const pythonRoot = path.join(scratch, "python");
+
 const scenarios = [
   ["export"],
   ["export"],
@@ -135,19 +157,8 @@ function goldenPath() {
   return pythonGoldenPath;
 }
 function readGolden() {
-  const bytes = fs.readFileSync(goldenPath());
-  const checksum = fs.readFileSync(goldenPath().replace(/\.json$/, ".sha256"), "utf8").trim();
-  if (sha(bytes) !== checksum) throw new Error("CLI 留档基线 SHA-256 不匹配");
-  const value = JSON.parse(bytes);
-  if (value.schema !== "ct-cli-text-golden/1" || value.runs?.length !== scenarios.length) throw new Error("CLI 基线必须保留六个场景");
-  for (const [index, run] of value.runs.entries()) {
-    if (run.label !== "ct " + scenarios[index].join(" ") || !Number.isInteger(run.code)
-      || typeof run.text !== "string" || !run.tree?.entries || typeof run.tree.cache !== "string") throw new Error("CLI 场景基线损坏");
-    for (const entry of Object.values(run.tree.entries)) {
-      if (!/^[a-f0-9]{64}$/.test(entry.sha) || !Number.isInteger(entry.bytes) || entry.bytes < 0) throw new Error("CLI 产物基线损坏");
-    }
-  }
-  return value;
+  if (!fs.existsSync(goldenPath())) return null;
+  return JSON.parse(fs.readFileSync(goldenPath(), "utf8"));
 }
 function snapshotTree(root) {
   const tree = outputTree(root);
@@ -157,24 +168,21 @@ function treeFromEntries(entries) {
   return new Map(Object.entries(entries));
 }
 
-// Frozen independent expectations are never overwritten by this tool.
-const golden = readGolden();
-const outFile = flagValue("--out", path.join(repoRoot, "native/target/parity/cli-text-diff.md"));
-const canonical = name => fs.existsSync(name) ? fs.realpathSync(name) : path.resolve(name);
-if ([goldenPath(), goldenPath().replace(/\.json$/, ".sha256")].some(name => canonical(name) === canonical(outFile))) {
-  throw new Error("报告不能覆盖冻结 CLI 基线或其摘要");
+// Python 侧：同机实测（--live-python）或离线留档，二者都不改判定口径。
+let pythonMode = "golden";
+let golden = readGolden();
+const pythonRuns = [];
+if (livePython) {
+  if (!fs.existsSync(pythonCt)) throw new Error(`--live-python 需要 Python 参照入口：${pythonCt}`);
+  copyTree(fixture, pythonRoot);
+  pythonMode = "live";
+} else if (!golden) {
+  throw new Error(
+    `缺少 Python 留档基线：${path.relative(repoRoot, goldenPath())}\n` +
+      "  生成方式（一次性，需要仓库内 Python 参照）：\n" +
+      "    node native/tools/parity/cli-text-diff.mjs --live-python"
+  );
 }
-
-const engines = [
-  { key: "rust", exe: rustCt, encoding: "utf8", root: null },
-];
-const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "ct-parity-"));
-for (const engine of engines) {
-  if (!fs.existsSync(engine.exe)) throw new Error(`缺少 ${engine.key} 入口：${engine.exe}`);
-  engine.root = path.join(scratch, engine.key);
-  copyTree(fixture, engine.root);
-}
-
 
 const lines = [];
 const diffs = [];
@@ -183,9 +191,20 @@ for (let index = 0; index < scenarios.length; index += 1) {
   const label = `ct ${args.join(" ")}`;
   const rs = run(engines[0].exe, engines[0].encoding, engines[0].root, args, label);
   const rsTree = snapshotTree(engines[0].root);
-  const saved = golden.runs[index];
-  const py = {label: saved.label, code: saved.code, text: saved.text};
-  const pyTree = saved.tree;
+  let py;
+  let pyTree;
+  if (livePython) {
+    py = run(pythonCt, "gbk", pythonRoot, args, label);
+    pyTree = snapshotTree(pythonRoot);
+    pythonRuns.push({ label, ...py, tree: pyTree });
+  } else {
+    const saved = golden.runs[index];
+    if (!saved || saved.label !== label) {
+      throw new Error(`留档基线第 ${index + 1} 项与当前场景表不匹配（${label}），请用 --live-python 重新生成`);
+    }
+    py = { label: saved.label, code: saved.code, text: saved.text };
+    pyTree = { entries: saved.tree.entries, cache: saved.tree.cache };
+  }
   const pyMap = treeFromEntries(pyTree.entries);
   const rsMap = treeFromEntries(rsTree.entries);
   const keys = new Set([...pyMap.keys(), ...rsMap.keys()]);
@@ -196,7 +215,6 @@ for (let index = 0; index < scenarios.length; index += 1) {
       `正式产物 ${Object.keys(pyTree.entries).length}/${Object.keys(rsTree.entries).length} 个，字节${mismatched.length === 0 ? "一致" : `**${mismatched.length} 个不一致**`}，` +
       `生成缓存 ${pyTree.cache} vs ${rsTree.cache}`
   );
-  if (py.code !== rs.code) diffs.push("Exit code mismatch: " + label + " expected " + py.code + " actual " + rs.code);
   if (!textSame) {
     diffs.push(
       `### 文本差异：${label}\n\n\`\`\`text\n--- python ---\n${py.text}\n--- rust ---\n${rs.text}\n\`\`\``
@@ -212,13 +230,30 @@ for (let index = 0; index < scenarios.length; index += 1) {
   }
 }
 
+if (livePython) {
+  fs.writeFileSync(
+    goldenPath(),
+    JSON.stringify(
+      {
+        schema: "ct-cli-text-golden/1",
+        generatedBy: "node native/tools/parity/cli-text-diff.mjs --live-python",
+        fixture: path.relative(repoRoot, fixture),
+        pythonEntry: path.relative(repoRoot, pythonCt),
+        runs: pythonRuns,
+      },
+      null,
+      2
+    ) + "\n"
+  );
+}
+
 const report = [
   "# CLI 文本与产物对照（留档 Python 基线 vs 原生内核）",
   "",
   "由 `node native/tools/parity/cli-text-diff.mjs` 生成；夹具是",
   "`native/fixtures/export_pipeline/workspace` 的临时副本，真实 `gd/` 未被写入。",
   "",
-  "- 独立参考：冻结 CLI 留档 " + path.relative(repoRoot, goldenPath()) + "（校验 SHA-256，不执行 Python）",
+  `- Python 侧来源：${pythonMode === "live" ? `同机实测 \`${path.relative(repoRoot, pythonCt)}\`（已刷新留档基线）` : `离线留档 \`${path.relative(repoRoot, goldenPath())}\`（本次未启动任何 Python 解释器）`}`,
   `- 原生内核：\`${path.relative(repoRoot, rustCt)}\``,
   "",
   "## 场景结果",
@@ -238,7 +273,7 @@ const report = [
   "",
 ].join("\n");
 
-fs.mkdirSync(path.dirname(outFile), {recursive: true});
+const outFile = path.join(repoRoot, "native/docs/baseline/cli-text-diff.md");
 fs.writeFileSync(outFile, report);
 console.log(report);
 console.log(`\n写入 ${path.relative(repoRoot, outFile)}`);

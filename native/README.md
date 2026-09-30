@@ -72,4 +72,13 @@ S/M/L 与 `r/r-full` 基准夹具由 Rust `xtask bench-fixtures` 生成。
 模板完整语义比较由 `xtask template-compare` 执行。正式路径不调用历史 Python 生成器，
 也不使用原生内核覆写期望值。命令及来源见 [夹具说明](fixtures/README.md)。
 新旧 S/M/L 夹具分布不同，旧性能留档不能用于回归判定；`xtask bench` 会检查夹具摘要。
+正常基准回归必须有同档、同平台、同夹具的完整留档，缺失或损坏会明确失败。
+首次采集使用 `xtask bench --size s --record-baseline --out /tmp/bench-s.json`；
+采集仅留档，不算回归通过。CLI 对照使用
+`node native/tools/parity/cli-text-diff.mjs --rust native/target/debug/ct`（Windows 加 `.exe`），
+固定检查六个独立场景，不启动 Python 或覆写基线。
+fingerprint 和覆盖矩阵始终保留 main 的 85 个历史测试文件/690 个函数；
+不存在旧 `ct/` 时也不缩减验收。当前原生清单使用 `ct-source-tree/2`，原始来源快照另行保留。
+本机无 `ct/`、无 Python PATH 的离线回归记录见
+[无 Python 验收进展](docs/baseline/python-free-verification.md)。
 完整去 Python 需等 G1/G2/G3 全部通过，详见 OpenSpec `native-web-python-retirement`。

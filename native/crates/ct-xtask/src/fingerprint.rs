@@ -1,4 +1,4 @@
-//! 基线指纹（任务 1.1）：固定「可验收源码树 + 依赖 + Python 参照测试清单」。
+//! 基线指纹（任务 1.1）：固定「可验收原生/Web 源码树 + 依赖 + 冻结历史测试清单」。
 //!
 //! 输出 `native/docs/baseline/source-tree.json`。内容完全可重放（不含时间戳与绝对路径），
 //! 因此 `xtask fingerprint --check` 做逐字节比对：任何人重新计算都必须得到同一份文件。
@@ -15,14 +15,8 @@ const SCOPES: &[(&str, &[&str])] = &[
     // 基线指纹自身与打包输出不参与（前者自引用，后者每次构建都变）。
     ("native", &["target", "dist", "source-tree.json"]),
     (
-        "ct",
-        &[
-            ".venv",
-            "__pycache__",
-            ".pytest_cache",
-            ".ruff_cache",
-            ".mypy_cache",
-        ],
+        "web",
+        &["node_modules", "test-results", "playwright-report"],
     ),
     (
         "launcher",
@@ -141,33 +135,7 @@ fn walk_files(dir: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
-/// Python 参照测试清单：`ct/tests/**.py` 的 `def test_` 数量。
-fn python_test_inventory(root: &Path) -> Result<(Map<String, Value>, usize)> {
-    let mut map = Map::new();
-    let mut total = 0usize;
-    let mut files = Vec::new();
-    walk_files(&root.join("ct/tests"), &mut files);
-    files.sort();
-    for path in files {
-        let is_python = path.extension().is_some_and(|ext| ext == "py");
-        let is_test_name = path
-            .file_name()
-            .is_some_and(|name| name.to_string_lossy().starts_with("test_"));
-        if !is_python {
-            continue;
-        }
-        let count = if is_test_name {
-            count_lines_with(&path, "def test_")?
-        } else {
-            0
-        };
-        map.insert(relative_key(root, &path)?, json!(count));
-        total += count;
-    }
-    Ok((map, total))
-}
-
-/// 原生测试清单：`native/**/tests/*.rs` 的 `#[test]` 数量。
+/// 原生测试清单：集成测试和 crate 内的单元测试。
 fn native_test_inventory(root: &Path) -> Result<(Map<String, Value>, usize)> {
     let mut map = Map::new();
     let mut total = 0usize;
@@ -176,11 +144,7 @@ fn native_test_inventory(root: &Path) -> Result<(Map<String, Value>, usize)> {
     walk_files(&root.join("native/crates"), &mut files);
     files.sort();
     for path in files {
-        if path.extension().is_some_and(|ext| ext == "rs")
-            && path
-                .parent()
-                .is_some_and(|parent| parent.file_name().is_some_and(|name| name == "tests"))
-        {
+        if path.extension().is_some_and(|ext| ext == "rs") {
             let count = count_lines_with(&path, "#[test]")?;
             map.insert(relative_key(root, &path)?, json!(count));
             total += count;
@@ -206,43 +170,19 @@ fn command_line(program: &str, args: &[&str], cwd: Option<&Path>) -> Option<Stri
     Some(text)
 }
 
-fn reference_python(root: &Path) -> String {
-    [
-        "ct/.venv/Scripts/python.exe",
-        "ct/.venv/bin/python",
-        "ct/.venv/bin/python3",
-    ]
-    .iter()
-    .map(|candidate| root.join(candidate))
-    .find(|path| path.is_file())
-    .and_then(|path| {
-        let output = std::process::Command::new(path).arg("-V").output().ok()?;
-        let text = format!(
-            "{}{}",
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
-        Some(
-            text.lines()
-                .find(|line| line.contains("Python"))
-                .unwrap_or("unavailable")
-                .trim()
-                .to_string(),
-        )
-    })
-    .unwrap_or_else(|| "absent".to_string())
-}
-
 /// 计算基线指纹（无时间戳，可逐字节重放）。
 pub fn compute() -> Result<Value> {
-    let root = repo_root();
+    compute_at(&repo_root())
+}
+
+fn compute_at(root: &Path) -> Result<Value> {
     let mut tree = Sha256::new();
     let mut scopes = Map::new();
     let mut file_count = 0usize;
     for (scope, excludes) in SCOPES {
         let dir = root.join(scope);
         if !dir.is_dir() {
-            continue;
+            bail!("缺少必要原生源码范围：{}", dir.display());
         }
         let entries = collect(&dir, excludes)?;
         let digest = scope_digest(&entries, &mut tree);
@@ -268,12 +208,17 @@ pub fn compute() -> Result<Value> {
         scopes.insert((*scope).to_string(), value);
         file_count += entries.len();
     }
-    let (python_tests, python_total) = python_test_inventory(&root)?;
+    let historical = ct_test_support::reference_inventory::read(root)?;
+    let historical_tests: Map<String, Value> = historical
+        .files
+        .iter()
+        .map(|(name, file)| (name.clone(), json!(file.functions.len())))
+        .collect();
     let (native_tests, native_total) = native_test_inventory(&root)?;
     let cargo_lock =
         sha256_hex(&std::fs::read(root.join("native/Cargo.lock")).context("缺少 Cargo.lock")?);
     Ok(json!({
-        "schema": "ct-source-tree/1",
+        "schema": "ct-source-tree/2",
         "git": {
             "commit": command_line("git", &["rev-parse", "HEAD"], Some(&root)).unwrap_or_default(),
             "dirtyPaths": command_line("git", &["status", "--porcelain"], Some(&root))
@@ -282,7 +227,7 @@ pub fn compute() -> Result<Value> {
         "toolchain": {
             "rustc": command_line("rustc", &["-V"], None).unwrap_or_else(|| "unavailable".to_string()),
             "cargoLockSha256": cargo_lock,
-            "referencePython": reference_python(&root),
+            "pythonRuntimeRequired": false,
         },
         "tree": {
             "sha256": format!("{:x}", tree.finalize()),
@@ -290,18 +235,15 @@ pub fn compute() -> Result<Value> {
         },
         "scopes": scopes,
         "testInventory": {
-            "pythonFiles": python_tests,
+            "historicalPythonFiles": historical_tests,
+            "historicalSource": "native/docs/baseline/reference-tests.json",
             "nativeFiles": native_tests,
             "totals": {
-                "pythonTestFunctions": python_total,
+                "historicalPythonTestFunctions": historical.total_test_functions,
                 "nativeTestFunctions": native_total,
             },
         },
     }))
-}
-
-fn baseline_path() -> PathBuf {
-    repo_root().join("native/docs/baseline/source-tree.json")
 }
 
 fn render(value: &Value) -> Result<String> {
@@ -310,10 +252,11 @@ fn render(value: &Value) -> Result<String> {
     Ok(text)
 }
 
-pub fn run(check: bool) -> Result<()> {
-    let value = compute()?;
+pub fn run(check: bool, source_root: Option<PathBuf>) -> Result<()> {
+    let root = source_root.unwrap_or_else(repo_root);
+    let value = compute_at(&root)?;
     let rendered = render(&value)?;
-    let path = baseline_path();
+    let path = root.join("native/docs/baseline/source-tree.json");
     if check {
         let existing = std::fs::read_to_string(&path).with_context(|| {
             format!(
@@ -322,7 +265,7 @@ pub fn run(check: bool) -> Result<()> {
             )
         })?;
         let recorded: Value = serde_json::from_str(&existing).context("基线指纹不是合法 JSON")?;
-        // 只比对源码树内容：commit/脏路径数/工具链/参照 Python 版本随环境变化，不参与判定。
+        // 只比对源码树内容：commit/脏路径数/工具链随环境变化，不参与判定。
         let mut mismatched = Vec::new();
         for key in ["tree", "scopes", "testInventory"] {
             if recorded[key] != value[key] {
@@ -365,13 +308,9 @@ mod tests {
     }
 
     #[test]
-    fn fingerprint_pins_both_trees() {
+    fn fingerprint_pins_supported_trees_and_frozen_history() {
         let value = compute().expect("计算基线");
-        // `ct/` 只是历史参照实现：它随时可能不在工作树里，指纹仍须成立。
-        let mut scopes = vec!["native", "openspec"];
-        if repo_root().join("ct").is_dir() {
-            scopes.push("ct");
-        }
+        let scopes = ["native", "web", "launcher", "openspec", ".github"];
         for scope in scopes {
             assert!(
                 value["scopes"][scope]["files"].as_u64().unwrap_or(0) > 0,
@@ -391,20 +330,61 @@ mod tests {
         assert!(value["toolchain"]["cargoLockSha256"]
             .as_str()
             .is_some_and(|hash| hash.len() == 64));
-        // Python 参照实现删除后清单会是 0：只影响留档，不影响指纹成立。
-        let python_fns = value["testInventory"]["totals"]["pythonTestFunctions"]
-            .as_u64()
-            .unwrap_or(0);
-        assert!(
-            python_fns == 0 || python_fns > 500,
-            "Python 参照测试清单异常：{python_fns}"
+        assert_eq!(
+            value["testInventory"]["totals"]["historicalPythonTestFunctions"],
+            690
         );
+        assert_eq!(
+            value["testInventory"]["historicalPythonFiles"]
+                .as_object()
+                .unwrap()
+                .len(),
+            85
+        );
+        assert_eq!(value["toolchain"]["pythonRuntimeRequired"], false);
+        assert!(value["scopes"].get("ct").is_none());
         assert!(
             value["testInventory"]["totals"]["nativeTestFunctions"]
                 .as_u64()
                 .unwrap_or(0)
                 > 200,
             "原生测试清单应覆盖内核验收测试"
+        );
+    }
+
+    #[test]
+    fn retired_tree_does_not_change_fingerprint_or_test_inventory() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        for (scope, _) in SCOPES {
+            std::fs::create_dir_all(root.join(scope)).unwrap();
+        }
+        for relative in [
+            "native/Cargo.lock",
+            "native/docs/baseline/reference-tests.json",
+            "native/docs/baseline/reference-tests.sha256",
+            "native/docs/baseline/source/source-tree-native-origin.json",
+        ] {
+            let target = root.join(relative);
+            std::fs::create_dir_all(target.parent().unwrap()).unwrap();
+            std::fs::copy(repo_root().join(relative), target).unwrap();
+        }
+        let without = compute_at(root).unwrap();
+        std::fs::create_dir_all(root.join("ct/tests")).unwrap();
+        std::fs::write(
+            root.join("ct/tests/test_fake.py"),
+            "def test_unrelated(): pass",
+        )
+        .unwrap();
+        std::fs::create_dir_all(root.join("ct/.venv/bin")).unwrap();
+        std::fs::write(root.join("ct/.venv/bin/python"), "must never execute").unwrap();
+        let with = compute_at(root).unwrap();
+        for key in ["tree", "scopes", "testInventory"] {
+            assert_eq!(without[key], with[key], "旧 ct/ 的存在不能改变 {key}");
+        }
+        assert_eq!(
+            with["testInventory"]["totals"]["historicalPythonTestFunctions"],
+            690
         );
     }
 

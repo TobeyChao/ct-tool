@@ -23,6 +23,7 @@ pub struct Options {
     /// 无 Python 参照时用于回归判定的本机留档报告（默认取
     /// `native/docs/baseline/bench-<尺寸>-<平台>.json`）。
     pub against: Option<PathBuf>,
+    pub record_baseline: bool,
 }
 
 const SCENARIOS: &[&str] = &["cold", "hot-cli", "hot-worker", "table", "i18n"];
@@ -485,7 +486,7 @@ pub fn run(options: Options) -> Result<()> {
             let (exe, prefix) = python_engine(&python);
             engines.push(("python", exe, prefix));
         } else {
-            eprintln!("[bench] 跳过 Python 基线：{} 不存在", python.display());
+            bail!("显式 Python 参照入口不存在：{}", python.display());
         }
     }
     // 参照实现不在位时，不谎称「无法判定」：改用本机留档做回归判定。
@@ -501,25 +502,14 @@ pub fn run(options: Options) -> Result<()> {
             platform_tag()
         ))
     });
-    let reference = if engines.len() > 1 {
-        None // 有同机配对测量就不需要回归参照
+    let reference = if engines.len() > 1 || options.record_baseline {
+        None // 配对或显式记录新基线；记录本身不宣称回归通过
     } else {
-        match load_reference(&reference_path, meta["inputDigest"].as_str()) {
-            Ok(map) => {
-                eprintln!(
-                    "[bench] 无 Python 参照：改用本机留档回归判定（参照 {}）",
-                    reference_path.display()
-                );
-                Some(map)
-            }
-            Err(err) => {
-                eprintln!(
-                    "[bench] 无 Python 参照且留档不可用（{}）：相关场景记 no-baseline",
-                    err
-                );
-                None
-            }
-        }
+        Some(
+            load_reference(&reference_path, meta["inputDigest"].as_str(), &options.size).context(
+                "原生基准留档不可用；回归不能跳过，首次采集请显式使用 --record-baseline",
+            )?,
+        )
     };
 
     let mut results = Vec::new();
@@ -598,7 +588,7 @@ pub fn run(options: Options) -> Result<()> {
     });
     let out = options.out.unwrap_or_else(|| {
         repo_root().join(format!(
-            "native/docs/baseline/bench-{}-{}.json",
+            "native/target/bench-results/bench-{}-{}.json",
             options.size,
             report["host"]["family"].as_str().unwrap_or("unknown")
         ))
@@ -610,6 +600,14 @@ pub fn run(options: Options) -> Result<()> {
     let _ = std::fs::remove_dir_all(&scratch);
     println!("{}", serde_json::to_string_pretty(&report["thresholds"])?);
     println!("基准报告已写入 {}", out.display());
+    if report["thresholds"]
+        .as_object()
+        .unwrap()
+        .values()
+        .any(|row| matches!(row["verdict"].as_str(), Some("fail" | "regression-fail")))
+    {
+        bail!("基准未通过，原始报告已保留");
+    }
     Ok(())
 }
 
@@ -716,7 +714,7 @@ pub fn judge(
                         "archived-run",
                     )
                 }
-                None => ("no-baseline", "none"),
+                None => (if over_peak { "fail" } else { "no-baseline" }, "none"),
             },
             (Some(_), None) => ("recorded", "paired"),
         };
@@ -743,10 +741,21 @@ fn allowed_slowdown() -> f64 {
 }
 
 /// 读留档报告，得到每个场景的 Rust 中位耗时/产物摘要（不读 Python 数字：跨机器不可比）。
-fn load_reference(path: &Path, current_digest: Option<&str>) -> Result<Map<String, Value>> {
+fn load_reference(
+    path: &Path,
+    current_digest: Option<&str>,
+    size: &str,
+) -> Result<Map<String, Value>> {
     let text = std::fs::read_to_string(path)
         .with_context(|| format!("留档报告不可读：{}", path.display()))?;
     let value: Value = serde_json::from_str(&text).context("留档报告不是合法 JSON")?;
+    if value["schema"] != "ct-bench/1"
+        || value["size"] != size
+        || value["host"]["os"] != std::env::consts::OS
+        || value["host"]["arch"] != std::env::consts::ARCH
+    {
+        bail!("留档格式、档位或平台与当前回归环境不匹配");
+    }
     let saved_digest = value["fixture"]["inputDigest"].as_str();
     if saved_digest.is_none() || saved_digest != current_digest {
         bail!(
@@ -764,9 +773,18 @@ fn load_reference(path: &Path, current_digest: Option<&str>) -> Result<Map<Strin
         .iter()
         .filter(|row| row["engine"].as_str() == Some("rust"))
     {
-        let Some(scenario) = row["scenario"].as_str() else {
-            continue;
-        };
+        let scenario = row["scenario"].as_str().context("留档场景名称缺失")?;
+        if !SCENARIOS.contains(&scenario)
+            || map.contains_key(scenario)
+            || !row["wallMs"]["median"]
+                .as_f64()
+                .is_some_and(|n| n.is_finite() && n > 0.0)
+            || !row["outputSha256"]
+                .as_str()
+                .is_some_and(ct_test_support::reference_inventory::valid_sha256)
+        {
+            bail!("留档场景重复、未知或样本/产物摘要损坏：{scenario}");
+        }
         map.insert(
             scenario.to_string(),
             json!({
@@ -775,8 +793,8 @@ fn load_reference(path: &Path, current_digest: Option<&str>) -> Result<Map<Strin
             }),
         );
     }
-    if map.is_empty() {
-        bail!("留档报告里没有 rust 侧场景样本：{}", path.display());
+    if map.len() != SCENARIOS.len() {
+        bail!("留档必须包含全部五个原生场景：{}", path.display());
     }
     Ok(map)
 }
@@ -950,16 +968,32 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join("reference.json");
         let report = json!({
+            "schema": "ct-bench/1", "size": "s",
+            "host": {"os": std::env::consts::OS, "arch": std::env::consts::ARCH},
             "fixture": {"inputDigest": "sha256:new-fixture"},
-            "results": [{
-                "engine": "rust", "scenario": "table",
-                "wallMs": {"median": 100.0}, "outputSha256": "sha-output"
-            }]
+            "results": SCENARIOS.iter().map(|scenario| json!({
+                "engine": "rust", "scenario": scenario,
+                "wallMs": {"median": 100.0}, "outputSha256": "a".repeat(64)
+            })).collect::<Vec<_>>()
         });
         std::fs::write(&path, serde_json::to_vec(&report).unwrap()).unwrap();
-        assert!(load_reference(&path, Some("sha256:new-fixture")).is_ok());
-        assert!(load_reference(&path, Some("sha256:old-fixture")).is_err());
-        assert!(load_reference(&path, None).is_err());
+        assert!(load_reference(&path, Some("sha256:new-fixture"), "s").is_ok());
+        assert!(load_reference(&path, Some("sha256:old-fixture"), "s").is_err());
+        assert!(load_reference(&path, None, "s").is_err());
+        assert!(load_reference(&path, Some("sha256:new-fixture"), "m").is_err());
+        for field in ["scenario", "wallMs", "outputSha256"] {
+            let mut broken = report.clone();
+            broken["results"][0][field] = serde_json::Value::Null;
+            std::fs::write(&path, serde_json::to_vec(&broken).unwrap()).unwrap();
+            assert!(
+                load_reference(&path, Some("sha256:new-fixture"), "s").is_err(),
+                "{field}"
+            );
+        }
+        let mut missing = report.clone();
+        missing["results"].as_array_mut().unwrap().pop();
+        std::fs::write(&path, serde_json::to_vec(&missing).unwrap()).unwrap();
+        assert!(load_reference(&path, Some("sha256:new-fixture"), "s").is_err());
     }
 
     fn reference(wall: f64, sha: &str) -> serde_json::Map<String, serde_json::Value> {

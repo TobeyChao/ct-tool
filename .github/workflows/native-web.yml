@@ -21,6 +21,8 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: cargo test --manifest-path native/Cargo.toml --workspace --locked
       - run: cargo build --manifest-path native/Cargo.toml -p ct-cli --locked
+      - name: Compare six frozen CLI scenarios and artifact digests
+        run: node native/tools/parity/cli-text-diff.mjs --rust native/target/debug/ct${{ runner.os == 'Windows' && '.exe' || '' }}
       - name: Verify independent oracles and regenerate Excel boundary inputs
         run: cargo run --manifest-path native/Cargo.toml -p ct-xtask --locked -- compat-fixtures
       - name: Regenerate and validate native benchmark fixture

@@ -37,5 +37,15 @@ Baseline/rerun median times (ms) were cold 9539/9854, hot CLI 5428/5729,
 hot worker 5505/5802, one-table change 5719/6140, and one-translation change 6188/5564.
 All sampled process-tree RSS values stayed below the M absolute cap (1.25 GiB).
 
-L native-fixture performance archives and other-platform archives remain to be measured.
+The first five-sample L capture is now retained at
+[`bench-l-macos-native.json`](bench-l-macos-native.json). It contains 607 artifacts per
+scenario and preserves the recorded fixture digest. Median times (ms) were cold 98954,
+hot CLI 59415, hot worker 56569, one-table change 58583, and one-translation change 58649.
+All sampled process-tree peaks stayed below 7.5 GiB (largest 7,590,704 KiB).
+This initial capture has `no-baseline` verdicts; it is not a completed regression check.
+An independent five-sample L rerun is in progress. Some compatibility builds/checks ran
+during the first capture; the raw sample spread is retained and the independent run is
+required before accepting the entry.
+
+L regression and other-platform archives remain to be measured.
 Task 7.1 stays open until those regression entries and clean-environment checks are complete.

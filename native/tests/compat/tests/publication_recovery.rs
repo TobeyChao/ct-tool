@@ -320,3 +320,15 @@ fn sweep_staging_respects_journal() {
     );
     assert!(kept.staged.is_file());
 }
+
+#[test]
+fn atomic_write_replaces_target_while_reader_has_it_open() {
+    let temp = tempfile::tempdir().unwrap();
+    let target = temp.path().join("journal.json");
+    std::fs::write(&target, b"old").unwrap();
+    let reader = std::fs::File::open(&target).unwrap();
+    ct_storage::publication::atomic_write(&target, b"new").unwrap();
+    assert_eq!(std::fs::read(&target).unwrap(), b"new");
+    drop(reader);
+    assert_eq!(std::fs::read_dir(temp.path()).unwrap().count(), 1);
+}

@@ -9,3 +9,4 @@ pub mod schema_builder;
 pub mod temp_workspace;
 pub mod workspace_builder;
 pub mod xlsx_semantics;
+pub mod reference_inventory;

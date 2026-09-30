@@ -69,6 +69,9 @@ enum Command {
         /// 无 Python 参照时的回归判定基准（默认取本机留档 bench-<尺寸>-<平台>.json）
         #[arg(long)]
         against: Option<PathBuf>,
+        /// 显式采集新基线（仅留档，不算回归通过）
+        #[arg(long, conflicts_with_all = ["against", "python"])]
+        record_baseline: bool,
     },
     /// 用当前门槛常量重算既有基准报告的 verdict（不重跑测量、不改样本）
     BenchRecheck {
@@ -105,6 +108,9 @@ enum Command {
         /// 只校验现有基线文件是否仍然一致
         #[arg(long)]
         check: bool,
+        /// 显式源码 checkout（默认当前仓库，供无旧 ct/ 的独立验收）
+        #[arg(long)]
+        root: Option<PathBuf>,
     },
 }
 
@@ -132,6 +138,7 @@ fn main() -> anyhow::Result<()> {
             fixture_root,
             out,
             against,
+            record_baseline,
         } => bench::run(bench::Options {
             size,
             runs,
@@ -146,6 +153,7 @@ fn main() -> anyhow::Result<()> {
             python,
             out,
             against,
+            record_baseline,
         }),
         Command::BenchRecheck { report } => {
             if report.is_empty() {
@@ -181,7 +189,7 @@ fn main() -> anyhow::Result<()> {
             out,
             skip_check,
         } => dist::run(&target, out, skip_check),
-        Command::Fingerprint { check } => fingerprint::run(check),
+        Command::Fingerprint { check, root } => fingerprint::run(check, root),
     }
 }
 

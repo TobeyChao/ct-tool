@@ -1,0 +1,37 @@
+CLI checksum corruption: rejected before ct spawn
+Missing benchmark archive: rejected before measurement
+file:///Users/tobeychao/Documents/Projects/ct-tool/native/tools/parity/cli-text-diff.mjs:140
+  if (sha(bytes) !== checksum) throw new Error("CLI 留档基线 SHA-256 不匹配");
+                                     ^
+
+Error: CLI 留档基线 SHA-256 不匹配
+    at readGolden (file:///Users/tobeychao/Documents/Projects/ct-tool/native/tools/parity/cli-text-diff.mjs:140:38)
+    at file:///Users/tobeychao/Documents/Projects/ct-tool/native/tools/parity/cli-text-diff.mjs:161:16
+    at ModuleJob.run (node:internal/modules/esm/module_job:569:25)
+    at async node:internal/modules/esm/loader:650:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v26.8.2
+
+Error: 原生基准留档不可用；回归不能跳过，首次采集请显式使用 --record-baseline
+
+Caused by:
+    0: 留档报告不可读：/tmp/ct-native-7-4-negative/missing.json
+    1: No such file or directory (os error 2)
+
+Frozen CLI output overwrite: rejected before ct spawn
+file:///Users/tobeychao/Documents/Projects/ct-tool/native/tools/parity/cli-text-diff.mjs:165
+  throw new Error("报告不能覆盖冻结 CLI 基线或其摘要");
+        ^
+
+Error: 报告不能覆盖冻结 CLI 基线或其摘要
+    at file:///Users/tobeychao/Documents/Projects/ct-tool/native/tools/parity/cli-text-diff.mjs:165:9
+    at ModuleJob.run (node:internal/modules/esm/module_job:569:25)
+    at async node:internal/modules/esm/loader:650:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v26.8.2
+
+Failing performance thresholds: process returned nonzero, raw report retained
+Explicit first capture: all five verdicts no-baseline, no regression claim
+Error: 基准未通过，原始报告已保留

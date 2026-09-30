@@ -1,9 +1,9 @@
 //! 业务兼容矩阵的机器校验（任务 1.1 / 6.12）。
 //!
 //! `native/docs/baseline/compat-matrix.json` 是 `coverage.md` 表格的可执行形式：
-//! 每行都必须能在这里被自动检查——Python 参照测试文件真实存在且含测试函数、
+//! 每行都必须能在这里被自动检查——冻结 main 测试清单完整且被映射、
 //! 原生验收锚点文件存在且含 `#[test]`/`@test(`、点名的 `文件::函数` 锚点确实定义在该文件里，
-//! 并且现行 Python 测试（Web/架构目录除外）没有一行落在矩阵之外。
+//! 并且历史测试（Web/架构目录另有验收）不因旧工程缺席而跳过。
 
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
@@ -22,43 +22,6 @@ fn read_text(root: &Path, relative: &str) -> String {
 fn read_json(root: &Path, relative: &str) -> Value {
     let text = read_text(root, relative);
     serde_json::from_str(&text).unwrap_or_else(|e| panic!("解析 {relative} 失败: {e}"))
-}
-
-/// 收集含测试函数的 Python 测试文件（相对路径，正斜杠）。
-fn python_test_files(root: &Path) -> BTreeSet<String> {
-    let mut found = BTreeSet::new();
-    let mut stack = vec![root.join("ct/tests")];
-    while let Some(dir) = stack.pop() {
-        let Ok(entries) = std::fs::read_dir(&dir) else {
-            continue;
-        };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_dir() {
-                stack.push(path);
-                continue;
-            }
-            if !path.extension().is_some_and(|ext| ext == "py") {
-                continue;
-            }
-            let relative = path
-                .strip_prefix(root)
-                .expect("在仓库内")
-                .to_string_lossy()
-                .replace('\\', "/");
-            let Ok(text) = std::fs::read_to_string(&path) else {
-                continue;
-            };
-            let has_tests = text.lines().any(|line| {
-                let trimmed = line.trim_start();
-                trimmed.starts_with("def test_") || trimmed.starts_with("async def test_")
-            });
-            if has_tests {
-                found.insert(relative);
-            }
-        }
-    }
-    found
 }
 
 /// coverage.md 里业务兼容表格的数据行（去掉表头与分隔行）。
@@ -146,44 +109,64 @@ fn matrix_rows_match_coverage_table_row_by_row() {
     assert_eq!(ids, sorted, "行 id 必须唯一且有序");
 }
 
-#[test]
-fn every_python_reference_test_is_pinned() {
-    let root = repo_root();
-    let matrix = read_json(&root, "native/docs/baseline/compat-matrix.json");
+fn verify_reference_mapping(root: &Path) {
+    let matrix = read_json(root, "native/docs/baseline/compat-matrix.json");
+    let historical =
+        ct_test_support::reference_inventory::read(root).expect("冻结 main 测试清单完整");
     let excluded = matrix["excludedPythonDirs"]
         .as_array()
         .expect("excludedPythonDirs")
         .iter()
-        .map(|value| value.as_str().expect("字符串").to_string())
+        .map(|value| value.as_str().expect("目录"))
         .collect::<Vec<_>>();
-    let discovered = python_test_files(&root)
-        .into_iter()
-        .filter(|relative| !excluded.iter().any(|skip| relative.starts_with(skip)))
+    let discovered = historical
+        .files
+        .iter()
+        .filter(|(name, file)| {
+            !file.functions.is_empty() && !excluded.iter().any(|skip| name.starts_with(skip))
+        })
+        .map(|(name, _)| name.clone())
         .collect::<BTreeSet<_>>();
-    if discovered.is_empty() {
-        // 参照实现不在位（已退役或本机未检出）：矩阵里的 pythonTests 只是**历史出处**，
-        // 不再要求与磁盘清单对齐；现行验收由 nativeAnchors 那条用例负责。
-        eprintln!("跳过：未找到 ct/tests，pythonTests 仅作历史留档");
-        return;
-    }
-    assert!(
-        discovered.len() >= 55,
-        "现行 Python 测试清单异常：{}",
-        discovered.len()
-    );
     let pinned = test_targets(&matrix, "pythonTests")
         .into_iter()
         .collect::<BTreeSet<_>>();
-    let missing: Vec<&String> = discovered.iter().filter(|f| !pinned.contains(*f)).collect();
-    assert!(
-        missing.is_empty(),
-        "这些现行 Python 测试没有被矩阵任何一行承接: {missing:?}"
+    assert!(discovered.len() >= 55, "冻结 main 测试清单范围异常");
+    assert_eq!(
+        discovered, pinned,
+        "每个冻结 main 测试文件必须有承接，不能缺失或虚构引用"
     );
-    let phantom: Vec<&String> = pinned.iter().filter(|f| !discovered.contains(*f)).collect();
-    assert!(
-        phantom.is_empty(),
-        "矩阵引用了不存在或没有测试函数的 Python 文件: {phantom:?}"
-    );
+}
+
+#[test]
+fn every_python_reference_test_is_pinned() {
+    verify_reference_mapping(&repo_root());
+}
+
+#[test]
+fn frozen_reference_mapping_survives_absent_retired_tree_and_rejects_corruption() {
+    let temp = tempfile::tempdir().unwrap();
+    for relative in [
+        "native/docs/baseline/compat-matrix.json",
+        "native/docs/baseline/reference-tests.json",
+        "native/docs/baseline/reference-tests.sha256",
+        "native/docs/baseline/source/source-tree-native-origin.json",
+    ] {
+        let target = temp.path().join(relative);
+        std::fs::create_dir_all(target.parent().unwrap()).unwrap();
+        std::fs::copy(repo_root().join(relative), target).unwrap();
+    }
+    assert!(!temp.path().join("ct").exists());
+    verify_reference_mapping(temp.path());
+    let path = temp
+        .path()
+        .join("native/docs/baseline/reference-tests.json");
+    let mut data = std::fs::read(&path).unwrap();
+    data.push(b' ');
+    std::fs::write(path, data).unwrap();
+    let error = ct_test_support::reference_inventory::read(temp.path())
+        .err()
+        .expect("损坏基线必须失败");
+    assert!(error.to_string().contains("SHA-256"), "{error}");
 }
 
 #[test]
@@ -285,14 +268,14 @@ fn baseline_fingerprint_is_pinned_and_complete() {
     let fingerprint = read_json(&root, fingerprint_relative);
     assert_eq!(
         fingerprint["schema"].as_str().expect("schema"),
-        "ct-source-tree/1"
+        "ct-source-tree/2"
     );
-    for key in ["commit", "dirtyPaths"] {
-        assert!(
-            fingerprint["git"][key].is_string() || fingerprint["git"][key].is_number(),
-            "基线指纹缺少 git 字段 {key}"
-        );
-    }
+    assert!(fingerprint["git"]["commit"].is_string());
+    assert!(
+        fingerprint["git"]["dirtyPaths"].is_number()
+            || (fingerprint["git"]["commit"] == "" && fingerprint["git"]["dirtyPaths"].is_null()),
+        "源码包可以没有 Git 元数据；源码摘要和完整测试清单仍须成立"
+    );
     assert_eq!(
         fingerprint["tree"]["sha256"]
             .as_str()
@@ -301,17 +284,12 @@ fn baseline_fingerprint_is_pinned_and_complete() {
         64,
         "树摘要长度异常"
     );
-    // `ct/` 是可选的历史参照：它在不在都不影响指纹成立，只影响文件数下限。
-    let ct_present = root.join("ct").is_dir();
-    let min_files = if ct_present { 900 } else { 500 };
+    assert!(fingerprint["tree"]["files"].as_u64().expect("文件数") > 500);
     assert!(
-        fingerprint["tree"]["files"].as_u64().expect("文件数") > min_files,
-        "基线文件数应 > {min_files}"
+        fingerprint["scopes"].get("ct").is_none(),
+        "当前指纹不能依赖已退役源码树"
     );
-    let mut scopes = vec!["native", "launcher", "openspec"];
-    if ct_present {
-        scopes.push("ct");
-    }
+    let scopes = ["native", "web", "launcher", "openspec", ".github"];
     for scope in scopes {
         assert!(
             fingerprint["scopes"][scope]["sha256"]
@@ -327,10 +305,14 @@ fn baseline_fingerprint_is_pinned_and_complete() {
             .len(),
         64
     );
-    // 指纹清单与矩阵必须指向同一批 Python 测试，否则「固定基线」与「承接行为」会脱节。
-    let inventory = fingerprint["testInventory"]["pythonFiles"]
+    // 指纹始终保留全部冻结 main 历史测试；旧 ct/ 缺席不能使清单归零。
+    assert_eq!(
+        fingerprint["testInventory"]["totals"]["historicalPythonTestFunctions"],
+        690
+    );
+    let inventory = fingerprint["testInventory"]["historicalPythonFiles"]
         .as_object()
-        .expect("pythonFiles");
+        .expect("historicalPythonFiles");
     let excluded = matrix["excludedPythonDirs"]
         .as_array()
         .expect("excludedPythonDirs")
@@ -354,6 +336,25 @@ fn baseline_fingerprint_is_pinned_and_complete() {
 fn explicit_acceptance_checks_are_mapped() {
     let root = repo_root();
     let matrix = read_json(&root, "native/docs/baseline/compat-matrix.json");
+    let historical = ct_test_support::reference_inventory::read(&root).unwrap();
+    let deltas = matrix["mainReferenceDeltas"]
+        .as_array()
+        .expect("mainReferenceDeltas");
+    assert_eq!(
+        deltas.len(),
+        3,
+        "main 比旧 native 基线多出的三项检查不得遗漏"
+    );
+    for delta in deltas {
+        let (file, name) = delta["source"].as_str().unwrap().split_once("::").unwrap();
+        assert!(historical.files[file]
+            .functions
+            .iter()
+            .any(|item| item == name));
+        let (file, name) = delta["target"].as_str().unwrap().split_once("::").unwrap();
+        assert!(read_text(&root, file).contains(&format!("fn {name}")));
+        assert!(root.join(delta["evidence"].as_str().unwrap()).is_file());
+    }
     let checks = matrix["explicitChecks"]
         .as_array()
         .expect("explicitChecks 应为数组");

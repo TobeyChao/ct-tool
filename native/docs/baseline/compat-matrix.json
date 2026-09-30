@@ -2,7 +2,7 @@
   "schema": "ct-compat-matrix/1",
   "source": "openspec/changes/rust-native-core/coverage.md",
   "baselineFingerprint": "native/docs/baseline/source-tree.json",
-  "note": "本文件是 coverage.md 表格的机器可读形式：每行必须能被自动检查（Python 参照测试存在、原生验收锚点存在且含测试）。",
+  "note": "coverage.md 的机器可读形式；历史来源由 reference-tests.json 固定 85 文件 / 690 函数，无旧 ct/ 时仍执行全部映射及原生锚点校验。",
   "requiredFamilies": [
     "cli",
     "schema",
@@ -421,7 +421,8 @@
         "native/tests/compat/tests/publication_recovery.rs::crash_mid_publish_restores_content_and_mtime_and_removes_created",
         "native/tests/compat/tests/publication_recovery.rs::missing_backup_keeps_materials_and_blocks",
         "native/tests/compat/tests/workspace_lock.rs::cross_process_busy_and_death_release",
-        "native/tests/protocol/tests/cancel.rs::control_messages_are_served_while_a_write_task_runs"
+        "native/tests/protocol/tests/cancel.rs::control_messages_are_served_while_a_write_task_runs",
+        "native/tests/compat/tests/publication_recovery.rs::atomic_write_replaces_target_while_reader_has_it_open"
       ],
       "status": "verified",
       "note": "含 CLI 只读诊断（cli.rs::validate_and_status_report_recovery_needed）。"
@@ -446,7 +447,8 @@
         "native/tests/compat/tests/export_pipeline.rs::deploy_syncs_and_preserves_meta",
         "native/tests/compat/tests/export_pipeline.rs::deploy_failure_keeps_ledger_untouched",
         "native/crates/ct-cli/tests/cli.rs::deploy_without_config_reports_no_change",
-        "native/crates/ct-domain/tests/config.rs::deploy_targets_expand"
+        "native/crates/ct-domain/tests/config.rs::deploy_targets_expand",
+        "native/tests/compat/tests/export_pipeline.rs::deploy_preserves_meta_when_generated_name_changes_case"
       ],
       "status": "verified",
       "note": ".meta 保留/删除与缺源失败在临时夹具真实验证；界面独立部署入口属 native-flutter-workbench。"
@@ -658,6 +660,24 @@
     {
       "item": "Excel ZIP 容器时间戳等字节级一致",
       "reason": "容器按单元格/样式/迁移语义验证；只有导出产物要求逐字节一致。"
+    }
+  ],
+  "referenceInventory": "native/docs/baseline/reference-tests.json",
+  "mainReferenceDeltas": [
+    {
+      "source": "ct/tests/storage/test_files.py::test_atomic_write_replaces_target_while_reader_has_it_open",
+      "target": "native/tests/compat/tests/publication_recovery.rs::atomic_write_replaces_target_while_reader_has_it_open",
+      "evidence": "native/docs/baseline/python-free-verification.md"
+    },
+    {
+      "source": "ct/tests/storage/test_publication.py::test_backed_up_phase_rolls_back",
+      "target": "native/tests/compat/tests/python_publication.rs::frozen_python_journals_recover_all_stages_with_content_and_nanosecond_mtime",
+      "evidence": "native/docs/baseline/python-free-verification.md"
+    },
+    {
+      "source": "ct/tests/deploy/test_sync_dir.py::test_sync_preserves_meta_when_generated_name_changes_case",
+      "target": "native/tests/compat/tests/export_pipeline.rs::deploy_preserves_meta_when_generated_name_changes_case",
+      "evidence": "native/docs/baseline/python-free-verification.md"
     }
   ]
 }

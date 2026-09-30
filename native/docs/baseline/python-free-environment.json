@@ -1,0 +1,27 @@
+{
+  "checkout": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-no-python-7-4-RxgnWi/checkout",
+  "PATH": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-no-python-7-4-RxgnWi/bin",
+  "allowlist": [
+    "ar",
+    "cargo",
+    "cat",
+    "cc",
+    "clang",
+    "dsymutil",
+    "env",
+    "git",
+    "ld",
+    "node",
+    "ps",
+    "ranlib",
+    "rustc",
+    "rustdoc",
+    "sh",
+    "sleep",
+    "strip",
+    "uname",
+    "xcrun"
+  ],
+  "retiredCtPresent": false,
+  "pythonExecutablePresent": false
+}

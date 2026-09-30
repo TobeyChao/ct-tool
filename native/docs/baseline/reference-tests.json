@@ -1,0 +1,1122 @@
+{
+  "schema": "ct-reference-tests/1",
+  "origin": {
+    "nativeCheckpoint": "2d7dfc9",
+    "mainWebBaseline": "8dc7b81",
+    "capturedOn": "2026-09-30",
+    "fingerprintSnapshot": "native/docs/baseline/source/source-tree-native-origin.json",
+    "fingerprintSha256": "631decba1d6e332d1450906becfbda9b6c4561b024c76eb1dfc262e43d2348df",
+    "note": "main has 85 files / 690 functions; native historical source-tree had 84 / 687. Preserve the three extra main checks."
+  },
+  "files": {
+    "ct/tests/app/_helpers.py": {
+      "sha256": "bcb831081f098c7cb16ccb04eb523d56b94f963d4a8f2249146343f2592ba145",
+      "functions": []
+    },
+    "ct/tests/app/test_add_resource_atomicity.py": {
+      "sha256": "29df4ea583271c3df7a29f7408495c1746cab5af78387d84090f511f9bb03a98",
+      "functions": [
+        "test_failed_publish_after_first_new_file_rolls_everything_back",
+        "test_crash_after_first_new_file_recovers_and_is_idempotent",
+        "test_save_api_reports_publish_failure_without_leaving_new_files"
+      ]
+    },
+    "ct/tests/app/test_add_resource_candidate.py": {
+      "sha256": "cc54b6a70763148548e08f6e090330da71819009890b944517a074616d0b324e",
+      "functions": [
+        "test_enum_record_table_chain_is_a_valid_candidate",
+        "test_ref_to_a_newly_created_table_is_allowed",
+        "test_ref_to_a_non_primary_field_is_reported_with_location",
+        "test_missing_named_reference_is_reported_with_location",
+        "test_reference_to_a_new_table_as_field_type_is_rejected",
+        "test_dependency_cycle_between_new_records_is_reported",
+        "test_cross_category_duplicate_name_is_rejected",
+        "test_generated_name_collision_is_reported",
+        "test_two_new_enums_with_conflicting_generated_names"
+      ]
+    },
+    "ct/tests/app/test_add_resource_commands.py": {
+      "sha256": "c9e7fa2823265e8ddb5cb399cde5f85ae524fff11733537f0e9b161978ffea2e",
+      "functions": [
+        "test_decodes_all_three_kinds",
+        "test_table_indexes_are_initialized_with_the_resource",
+        "test_duplicate_creation_is_rejected",
+        "test_creation_replays_and_undoes",
+        "test_malformed_payloads_report_field_locations",
+        "test_missing_resource_key_is_rejected"
+      ]
+    },
+    "ct/tests/app/test_add_resource_netdiff.py": {
+      "sha256": "834728cab6c605e7ffa404359bd75518af74e71153a50bd9b770d9194dc6b266",
+      "functions": [
+        "test_create_edit_rename_is_one_addition_with_the_final_name",
+        "test_create_then_delete_is_a_noop_that_writes_nothing",
+        "test_rename_round_trip_of_a_creation_is_still_one_addition",
+        "test_existing_resource_referencing_a_new_type_counts_separately",
+        "test_new_table_with_index_is_planned_with_its_declaration"
+      ]
+    },
+    "ct/tests/app/test_add_resource_paths.py": {
+      "sha256": "c7c70b09849366d4e231bd9a2a4cdaea4d061fc20d73f92a54ec45b0853ba94b",
+      "functions": [
+        "test_creation_honors_configured_directories",
+        "test_case_folded_path_collision_is_a_conflict",
+        "test_new_table_cannot_share_an_existing_tables_workbook",
+        "test_existing_workbook_for_a_new_table_is_reported_as_a_note",
+        "test_external_target_created_before_publish_is_a_conflict",
+        "test_external_yaml_at_a_new_target_blocks_the_save",
+        "test_new_resource_cannot_take_over_a_kept_resources_source_file",
+        "test_deleted_resource_frees_its_source_path_for_a_new_one"
+      ]
+    },
+    "ct/tests/app/test_add_resource_workflow.py": {
+      "sha256": "6027e7c26ea8a12e5b5fc7c755dcc5fc3c1b9a8449a647abfa08587097726384",
+      "functions": [
+        "test_create_related_resources_then_template_data_and_export",
+        "test_unreferenced_types_reload_and_export_gate",
+        "test_new_table_regressions_ref_i18n_server_only_and_codename"
+      ]
+    },
+    "ct/tests/app/test_canonical_export_regression.py": {
+      "sha256": "6a6f01b75298d82bbe88e4c3863a4c08d171bc4ce43f3c0bc83249cd54712315",
+      "functions": [
+        "test_export_failure_preserves_previous_artifacts",
+        "test_export_empty_table",
+        "test_export_uniform_double_with_i18n_and_reuse"
+      ]
+    },
+    "ct/tests/app/test_canonical_i18n.py": {
+      "sha256": "95f22d4b461231b412d82e2f9a6ae956742bb4c61608ecda9c510f027785a4b3",
+      "functions": [
+        "test_i18n_tables_lists_has_i18n",
+        "test_i18n_sync_writes_source_and_skeleton",
+        "test_i18n_entries_computed",
+        "test_i18n_save_entry_marks_translated",
+        "test_i18n_status_has_tables_and_progress",
+        "test_i18n_compact_preview_then_remove"
+      ]
+    },
+    "ct/tests/app/test_canonical_status.py": {
+      "sha256": "1195add7bdaaaccbddfb81af21a504642682a42a73466e6a6441b9ac66388d0a",
+      "functions": [
+        "test_status_is_clean_after_export",
+        "test_status_detects_pure_data_edit",
+        "test_status_detects_schema_drift",
+        "test_status_detects_stale_excel_template_layout",
+        "test_status_reports_untouched_before_any_export"
+      ]
+    },
+    "ct/tests/app/test_canonical_validate.py": {
+      "sha256": "d170908201e8d78306ffeb0a095a4a0a341c65e3c22fd0b924ca1af9cf2ab7de",
+      "functions": [
+        "test_ref_issues_detect_dangling_and_pass_valid",
+        "test_canonical_validate_reports_dangling_ref",
+        "test_canonical_export_aborts_on_dangling_ref",
+        "test_codename_issues_reject_blank_and_duplicate",
+        "test_codename_issues_ignore_tables_without_the_index",
+        "test_canonical_export_aborts_on_duplicate_codename",
+        "test_canonical_export_aborts_on_blank_codename",
+        "test_canonical_validate_reports_duplicate_codename",
+        "test_unique_codename_exports_clean",
+        "test_both_entries_report_the_same_ref_issues",
+        "test_both_entries_report_the_same_codename_issues",
+        "test_validate_writes_nothing",
+        "test_validate_reports_unknown_table",
+        "test_missing_excel_is_reported_by_both_entries"
+      ]
+    },
+    "ct/tests/app/test_cli_and_web_service.py": {
+      "sha256": "773ec7b60bebc8d90d767a9653a43fd2f33ca5355e23fea7a383e157aac9e8b4",
+      "functions": [
+        "test_cli_export_prints_local_done_then_deploy_result",
+        "test_cli_export_for_build_reaches_the_deployer",
+        "test_cli_export_busy_exits_nonzero",
+        "test_cli_export_unknown_table_exits_nonzero",
+        "test_cli_export_unknown_language_exits_nonzero",
+        "test_cli_export_deploy_failure_exits_nonzero_and_keeps_old_ledger",
+        "test_cli_standalone_deploy_recovers_pending_publication",
+        "test_web_export_task_never_deploys_even_when_configured",
+        "test_web_export_task_reports_validation_failure"
+      ]
+    },
+    "ct/tests/app/test_cli_filter_and_i18n_output.py": {
+      "sha256": "3b8e18427da6792a5acecb5184b35c009f6b7e093e82a09da0d43e78a0efea4e",
+      "functions": [
+        "test_export_unknown_language_fails",
+        "test_export_unknown_table_fails",
+        "test_gen_template_unknown_table_fails",
+        "test_gen_template_case_mismatch_hints",
+        "test_i18n_sync_unknown_language_writes_nothing",
+        "test_i18n_sync_table_without_i18n_fields_fails",
+        "test_i18n_status_unknown_language_fails",
+        "test_i18n_compact_unknown_language_fails",
+        "test_i18n_sync_language_filter_only_writes_that_language",
+        "test_i18n_sync_reports_summary_and_verbose_files",
+        "test_i18n_status_renders_progress_line",
+        "test_i18n_status_progress_line_counts_translated",
+        "test_i18n_status_by_table_adds_rows",
+        "test_i18n_status_json_has_langs_wrapper_and_clean_stdout",
+        "test_i18n_status_json_language_filter",
+        "test_i18n_compact_dry_run_does_not_write",
+        "test_i18n_compact_language_filter_and_reporting",
+        "test_i18n_compact_reports_nothing_to_do",
+        "test_validate_reports_schema_error_without_traceback",
+        "test_status_reports_schema_error_without_traceback",
+        "test_validate_verbose_keeps_traceback_for_developers"
+      ]
+    },
+    "ct/tests/app/test_enum_token_gate.py": {
+      "sha256": "5ce49ca1d0a0c984f4903086ecf975baf0fa26ed1792475604eba202a071808b",
+      "functions": [
+        "test_unknown_scalar_token_is_reported_with_location",
+        "test_declared_tokens_pass",
+        "test_blank_enum_cell_keeps_the_default_behaviour",
+        "test_unknown_vector_element_is_reported",
+        "test_unknown_record_leaf_token_is_reported",
+        "test_export_fails_without_artifacts",
+        "test_removed_enum_item_is_caught_after_schema_save",
+        "test_binary_serializer_refuses_unknown_tokens"
+      ]
+    },
+    "ct/tests/app/test_export_service.py": {
+      "sha256": "b8616db9a51311725a560f71bc590f99d5f8b3b3d8a74db7c302a209bd156174",
+      "functions": [
+        "test_export_only_strategy_publishes_and_records_the_ledger",
+        "test_service_takes_the_lock_exactly_once",
+        "test_busy_workspace_is_reported",
+        "test_deploy_failure_keeps_new_local_artifacts_and_old_ledger",
+        "test_ledger_failure_is_not_reported_as_success",
+        "test_partial_scope_keeps_other_ledger_records",
+        "test_notify_fires_after_local_publication_and_before_deploy",
+        "test_web_style_export_only_never_deploys",
+        "test_export_recovers_pending_publication_before_running"
+      ]
+    },
+    "ct/tests/app/test_exporting_models.py": {
+      "sha256": "2772e7355564d65b21f1a1795133c5548c6a774c03b6cc26fb1d009d0fe4a526",
+      "functions": [
+        "test_export_result_exposes_exactly_the_legacy_fields",
+        "test_run_canonical_export_keeps_the_legacy_dict_shape",
+        "test_run_canonical_export_reports_forced",
+        "test_compat_entry_exports_only",
+        "test_export_request_carries_filters_and_forced",
+        "test_completion_policy_has_exactly_two_strategies",
+        "test_build_and_artifact_containers_default_to_empty"
+      ]
+    },
+    "ct/tests/app/test_incremental_export.py": {
+      "sha256": "74b1d82f68ca4789ac1c598fa34e5e6237c8ea7cdf7bef19beebd62a86206ee5",
+      "functions": [
+        "test_warm_export_skips_generators_and_preserves_mtimes",
+        "test_translation_only_rebuilds_affected_language",
+        "test_data_edit_keeps_other_table_and_schema_outputs",
+        "test_data_edit_does_not_change_layout",
+        "test_missing_and_modified_outputs_are_repaired",
+        "test_corrupt_cache_fails_safe",
+        "test_warm_cache_does_not_skip_validation",
+        "test_version_change_invalidates_generators",
+        "test_full_export_after_filtered_export_restores_complete_bundle",
+        "test_removed_table_and_language_cleanup",
+        "test_transitive_record_change_rebuilds_dependent_binary_and_accessor",
+        "test_unrelated_named_type_does_not_rebuild_table_generators",
+        "test_full_export_reclaims_obsolete_cache_entries",
+        "test_checksum_mismatch_rebuilds_cached_payload",
+        "test_unrelated_types_preserve_manifest_and_status",
+        "test_referenced_enum_drift_and_template_export_hash_agree"
+      ]
+    },
+    "ct/tests/app/test_input_snapshot.py": {
+      "sha256": "f5cd8590c92ba3517cfed521bc2406fa9f86af6b17efbcd20cf469441bcb9b7d",
+      "functions": [
+        "test_ledger_records_captured_bytes_not_a_later_reread",
+        "test_excel_change_during_generation_aborts",
+        "test_new_schema_during_generation_aborts",
+        "test_schema_removal_during_generation_aborts",
+        "test_global_config_path_change_during_generation_aborts",
+        "test_change_after_final_check_keeps_captured_hash",
+        "test_translation_change_during_generation_aborts",
+        "test_generators_do_not_mutate_parsed_rows",
+        "test_merge_i18n_keeps_input_rows_untouched",
+        "test_generation_consumes_captured_translation",
+        "test_generation_consumes_captured_schema",
+        "test_generation_consumes_captured_manifest"
+      ]
+    },
+    "ct/tests/app/test_publication_boundary.py": {
+      "sha256": "2f1c2e333a737b67514a715ff4071314b1045a13e10676ab014e64cc2413ad52",
+      "functions": [
+        "test_late_fbs_check_failure_leaves_everything_untouched",
+        "test_late_bundle_failure_leaves_everything_untouched",
+        "test_first_export_failure_creates_no_output",
+        "test_generation_failure_does_not_touch_manifests",
+        "test_filtered_export_does_not_expand_scope",
+        "test_language_filter_keeps_primary_json",
+        "test_stale_artifacts_are_deleted_on_full_export",
+        "test_filtered_export_never_deletes_out_of_scope_artifacts",
+        "test_stale_enumeration_excludes_private_staging",
+        "test_cancel_before_publication_keeps_old_version",
+        "test_cancel_during_publication_still_succeeds",
+        "test_validate_reports_pending_publication_without_recovering",
+        "test_validate_reports_corrupt_publication_record",
+        "test_status_reports_pending_publication",
+        "test_export_recovers_before_running",
+        "test_manifest_participates_in_the_recoverable_transaction"
+      ]
+    },
+    "ct/tests/app/test_reading_compat.py": {
+      "sha256": "5ea9ec3fb420efd05bbcc9506e6325b9df93c11044e7dfcd0b1380c4f7613ed0",
+      "functions": [
+        "test_generated_template_is_readable",
+        "test_expected_grid_matches_the_written_template",
+        "test_same_type_column_reorder_blocks",
+        "test_field_rename_blocks",
+        "test_vector_slot_change_blocks",
+        "test_missing_manifest_blocks",
+        "test_manifest_cannot_prove_workbook_structure",
+        "test_cosmetic_comment_change_still_reads",
+        "test_validate_reports_template_blocker_before_reading",
+        "test_export_failure_keeps_artifacts_and_manifest",
+        "test_filtered_export_reads_reference_dependency",
+        "test_dependency_template_incompatible_blocks_filtered_export",
+        "test_extra_trailing_columns_stay_a_warning",
+        "test_gen_template_refuses_unprovable_rename_mapping"
+      ]
+    },
+    "ct/tests/app/test_schema_net_diff.py": {
+      "sha256": "8d8a0fcf0c0a4fb502b818920d5cb32b5f78a93b50d07e79c321ce7834c75810",
+      "functions": [
+        "test_schema_revision_changes_on_yaml_edit",
+        "test_schema_revision_tracks_member_add_and_delete",
+        "test_schema_revision_changes_with_config_bytes",
+        "test_schema_revision_ignores_excel_and_i18n",
+        "test_capture_schema_sources_loads_the_same_bytes",
+        "test_net_diff_is_empty_for_untouched_draft",
+        "test_net_diff_codename_round_trip_is_empty",
+        "test_net_diff_repeated_property_edit_collapses",
+        "test_net_diff_rename_chain_reports_final_identity",
+        "test_net_diff_rename_round_trip_is_empty",
+        "test_net_diff_resource_rename_counts_once_and_updates_references",
+        "test_net_diff_delete_then_add_is_not_a_rename",
+        "test_net_diff_added_then_deleted_is_empty",
+        "test_net_diff_added_then_renamed_reports_final_name",
+        "test_net_diff_enum_reorder_is_a_modification",
+        "test_net_diff_ignores_undone_commands",
+        "test_net_diff_default_values_are_not_differences",
+        "test_candidate_hash_is_order_independent_and_structural",
+        "test_candidate_hash_reflects_declared_indexes",
+        "test_validate_candidate_reports_cycle_and_missing_reference",
+        "test_validate_candidate_surfaces_illegal_field_role",
+        "test_enum_reorder_and_rename_show_ordinals"
+      ]
+    },
+    "ct/tests/app/test_schema_save.py": {
+      "sha256": "984d3d9fc6497114a57b508b05846776d463408f7f72760af76345eaf327431b",
+      "functions": [
+        "test_plan_writes_only_the_changed_resource",
+        "test_plan_keeps_the_existing_source_filename",
+        "test_plan_honors_configured_directories",
+        "test_rename_writes_new_path_and_deletes_old",
+        "test_deleted_resource_removes_its_yaml",
+        "test_external_file_at_a_new_target_is_a_conflict",
+        "test_reformatted_yaml_is_not_rewritten",
+        "test_noop_plan_writes_no_private_state",
+        "test_new_resource_is_created_in_the_configured_directory"
+      ]
+    },
+    "ct/tests/app/test_schema_save_atomicity.py": {
+      "sha256": "3b8d199211c0f883d03fb9cda5d5189f7d0cf14ac462e49fb1babb6c3bc020dd",
+      "functions": [
+        "test_save_leaves_every_other_managed_file_untouched",
+        "test_failed_publish_rolls_back_every_file",
+        "test_interrupted_publish_is_recovered_to_a_complete_old_version",
+        "test_save_api_reports_publish_failure_and_keeps_old_files",
+        "test_old_apply_journal_is_detected_and_preserved",
+        "test_unresolvable_old_apply_material_blocks_save_and_keeps_materials",
+        "test_recoverable_old_apply_material_is_rolled_back_then_save_proceeds",
+        "test_legacy_replace_before_journal_update_restores_all_targets",
+        "test_legacy_unrecorded_new_target_preserves_materials"
+      ]
+    },
+    "ct/tests/app/test_schema_save_workflow.py": {
+      "sha256": "8b63838d3286199003c91e8d1bff1f0fb761849fbcad284cd6855a9119706b70",
+      "functions": [
+        "test_edit_save_template_gate_and_export",
+        "test_save_without_excel_or_manifest_still_succeeds"
+      ]
+    },
+    "ct/tests/app/test_schema_workspace.py": {
+      "sha256": "11efbad226dc52cba89c54cdd6c00d068670aaeea45fe996ce666a87c298d43b",
+      "functions": [
+        "test_snapshot_revision_changes_on_external_input",
+        "test_draft_undo_redo_cursor_semantics",
+        "test_primary_field_cannot_be_deleted_or_reordered",
+        "test_rename_command_updates_references",
+        "test_resource_index_changes_support_undo_redo",
+        "test_candidate_validation_reports_role_violation",
+        "test_candidate_validation_rechecks_mutated_field_and_table_invariants"
+      ]
+    },
+    "ct/tests/app/test_uniform_bloat_notice.py": {
+      "sha256": "ef722094e61e65fe339f4800dcbedd3ec6e3feffa2875d71d7daea1751d9c218",
+      "functions": [
+        "test_sparse_uniform_table_is_flagged",
+        "test_dense_uniform_table_is_not_flagged",
+        "test_layout_precedes_fill_rate_without_causal_arrow",
+        "test_non_uniform_table_reports_no_uniform_volume"
+      ]
+    },
+    "ct/tests/architecture/_helpers.py": {
+      "sha256": "2753eca6b5a6956f44671dd94929adc73db3a71b77ccfa122cfa8b86fd6a0a01",
+      "functions": []
+    },
+    "ct/tests/architecture/test_architecture.py": {
+      "sha256": "61696a00c3564a24a4d2f3eea5daf6da3e318e97613fef783d27784ed1d35c16",
+      "functions": [
+        "test_scan_actually_covers_the_real_sources",
+        "test_lower_layers_never_import_app_web_cli",
+        "test_config_diagnostics_and_contracts_have_no_ct_imports",
+        "test_schema_domain_does_not_import_validation",
+        "test_no_dependency_cycle_imports",
+        "test_gate_flags_lower_layer_importing_app",
+        "test_gate_flags_aliased_imports",
+        "test_gate_detects_relative_import_cycle",
+        "test_gate_accepts_a_legal_acyclic_graph",
+        "test_missing_scan_target_fails_loudly",
+        "test_gate_flags_config_importing_schema",
+        "test_own_subpackage_import_is_not_a_violation",
+        "test_validate_and_net_diff_are_side_effect_free",
+        "test_legacy_type_parsing_absent_from_canonical_domain",
+        "test_route_modules_contain_no_direct_writes_or_generator_work",
+        "test_adapters_do_not_orchestrate_generators_or_the_ledger",
+        "test_no_orphan_css_and_single_source_colors",
+        "test_no_live_writable_schema_route"
+      ]
+    },
+    "ct/tests/cache/test_canonical_state.py": {
+      "sha256": "88ea1dbdde74afb5c627aafa1798f9ff6da760997b65b9df16c1f259e5fc15a9",
+      "functions": [
+        "test_source_change_forces_stale_before_hashing",
+        "test_published_fingerprint_does_not_self_invalidate",
+        "test_canonical_state_round_trip",
+        "test_canonical_state_corruption_and_missing"
+      ]
+    },
+    "ct/tests/cache/test_fingerprints.py": {
+      "sha256": "78108d38929d11f64a546a3a9b451c332edb3f19fed4cf1fd0af33b721a77f88",
+      "functions": [
+        "test_translation_only_edit_changes_only_en_i18n",
+        "test_confirmed_toggle_changes_fingerprint",
+        "test_derived_metadata_does_not_change_fingerprint",
+        "test_orphan_and_unknown_keys_ignored",
+        "test_language_config_change_detected",
+        "test_missing_file_means_empty_semantics",
+        "test_data_change_changes_all_languages",
+        "test_excel_layout_change_does_not_touch_schema_wire",
+        "test_decide_artifact_reuse_split",
+        "test_bundle_fingerprint_is_language_scoped",
+        "test_transitive_shared_type_change_invalidates_dependent_schema"
+      ]
+    },
+    "ct/tests/cutover/test_canonical_export_smoke.py": {
+      "sha256": "740d5c8a4de39ba9ff1caeb1d43d8f0403f983ecab75397b8f360c4762cdad67",
+      "functions": [
+        "test_canonical_export_writes_fbs_binary_accessors",
+        "test_canonical_export_manifest_is_content_stable",
+        "test_canonical_export_task_reports_phases_and_history",
+        "test_manifest_fields_are_schema_derived",
+        "test_data_edit_does_not_touch_manifest",
+        "test_gen_template_writes_the_same_manifest_as_export",
+        "test_uniform_table_accessor_has_no_offset_table",
+        "test_uniform_tables_really_have_single_vtable",
+        "test_uniform_assertion_fires_when_slot_is_omitted",
+        "test_export_cleans_stale_generated_dirs",
+        "test_export_emits_enum_declarations",
+        "test_export_wires_declared_indexes_into_accessors",
+        "test_bundles_split_main_and_sparse_i18n",
+        "test_sparse_i18n_is_much_smaller_than_full_copy",
+        "test_i18n_fbs_declares_entry_and_table",
+        "test_main_accessor_reads_i18n_from_sparse_table",
+        "test_export_secondary_lang_only_uniform_table"
+      ]
+    },
+    "ct/tests/cutover/test_e2e_safety.py": {
+      "sha256": "a8474cd5bafaaf39325850a8c4f48b2bb00fd9b710516e708c3ad0a3f30d95e2",
+      "functions": [
+        "test_external_data_edit_does_not_invalidate_the_draft",
+        "test_external_schema_edit_blocks_save_without_overwriting",
+        "test_blocked_candidate_never_reaches_disk",
+        "test_interrupted_publish_is_recovered_before_the_next_save",
+        "test_persisted_index_survives_a_rename_and_untouched_tables"
+      ]
+    },
+    "ct/tests/deploy/test_deploy.py": {
+      "sha256": "5c2b2dd84eed0d0ad5aa803167016227ec98ebf3043597a2262b58addb3ae780",
+      "functions": [
+        "test_export_deploys_to_unity",
+        "test_export_without_deploy_config_skips",
+        "test_no_changes_still_deploys",
+        "test_deploy_command_only_deploys",
+        "test_deploy_for_build_adds_streaming",
+        "test_deploy_failure_fails_export"
+      ]
+    },
+    "ct/tests/deploy/test_sync_dir.py": {
+      "sha256": "39d19c8233be032368e33b19e988b8060c8616a646d430d1d6435ddb1a700fed",
+      "functions": [
+        "test_sync_adds_updates_and_deletes",
+        "test_sync_preserves_meta_of_existing_files",
+        "test_sync_preserves_meta_when_generated_name_changes_case",
+        "test_sync_idempotent",
+        "test_sync_missing_src_raises",
+        "test_sync_ignores_subdirectories"
+      ]
+    },
+    "ct/tests/excel/__init__.py": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": []
+    },
+    "ct/tests/excel/test_canonical_reader.py": {
+      "sha256": "15fce728586984b29a13d35bf9fd7cb49bafe0db130af4371fe358186ace7b88",
+      "functions": [
+        "test_record_and_expanded_vector_record_reassembled",
+        "test_expanded_scalar_vector_reassembled",
+        "test_empty_trailing_groups_are_dropped",
+        "test_vector_element_error_is_located",
+        "test_out_of_range_integer_is_a_type_issue",
+        "test_in_range_boundary_values_pass",
+        "test_out_of_range_vector_element_is_located"
+      ]
+    },
+    "ct/tests/excel/test_canonical_template.py": {
+      "sha256": "96c11e1ab87dd3859cf5a7830bbcd813c5e075dc78dc33f649b651ba203c9e04",
+      "functions": [
+        "test_template_headers_follow_layout",
+        "test_template_golden_stable_across_runs",
+        "test_template_has_no_data_validation_input_prompts",
+        "test_fixed_scalar_vector_comment_is_merged",
+        "test_nested_record_merges_preserve_node_spans"
+      ]
+    },
+    "ct/tests/excel/test_canonical_v2_regressions.py": {
+      "sha256": "5a00e25250195dd3f0f1caa43a8d65cce23d17a3bbf5942c4d9106547abe8234",
+      "functions": [
+        "test_bracket_vector_parser_is_typed_and_strict",
+        "test_fixed_record_vector_uses_last_filled_slot_and_defaults",
+        "test_template_uses_full_data_region_and_no_filter"
+      ]
+    },
+    "ct/tests/excel/test_layout.py": {
+      "sha256": "225c55e5fdf77e9f8bffd306d72fa539af802c41248070c98668048d2a4fcf08",
+      "functions": [
+        "test_flat_table_layout",
+        "test_record_field_expands_to_multiple_columns",
+        "test_expanded_vector_record_groups",
+        "test_expanded_scalar_vector_groups",
+        "test_single_cell_vector_record_has_no_groups",
+        "test_logical_path_strips_group_marker",
+        "test_manifest_create_read_round_trip",
+        "test_manifest_missing_and_corruption"
+      ]
+    },
+    "ct/tests/excel/test_planning.py": {
+      "sha256": "fcdb6ecf764af06f6f0e34c62447013361b583ddc093eb84cd4f919993bf51eb",
+      "functions": [
+        "test_migrate_rows_preserves_values_when_columns_move",
+        "test_migrate_rows_preserves_rich_text_headers",
+        "test_validate_and_publish_staged_workbook",
+        "test_validate_staged_workbook_rejects_invalid_zip",
+        "test_migrate_rows_uses_new_header_row_count",
+        "test_reorder_maps_by_stable_path_not_position",
+        "test_explicit_rename_map_wins",
+        "test_deleted_column_with_data_blocks",
+        "test_type_conversion_failure_blocks",
+        "test_enum_removal_with_data_blocks",
+        "test_excel_columns_shrink_with_data_blocks",
+        "test_untracked_workbook_requires_review"
+      ]
+    },
+    "ct/tests/export/__init__.py": {
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "functions": []
+    },
+    "ct/tests/export/test_canonical_accessor.py": {
+      "sha256": "4c00ec1f80fb7c5808d399e7628158faf8ac0157e741c94d4227b3b925697de2",
+      "functions": [
+        "test_accessor_model_shared_shape",
+        "test_csharp_pointer_row_and_query_api",
+        "test_csharp_exposes_bycodename",
+        "test_lua_index_api_emits_real_codename_call",
+        "test_generation_is_deterministic",
+        "test_no_indexes_still_emits_query_api",
+        "test_record_field_resolved_in_model",
+        "test_csharp_record_accessor",
+        "test_lua_record_accessor",
+        "test_lua_ref_keeps_bare_id_line",
+        "test_csharp_vector_of_record",
+        "test_lua_vector_of_record_errors_at_use_not_at_build",
+        "test_uniform_row_has_no_offset_table",
+        "test_uniform_emits_literal_offsets",
+        "test_uniform_keeps_per_field_string_cache",
+        "test_uniform_query_api_passes_row_index_without_offsets",
+        "test_non_uniform_still_uses_offset_table",
+        "test_uniform_missing_offset_raises",
+        "test_csharp_enum_declaration_matches_wire_ordinals",
+        "test_lua_enum_table_matches_wire_ordinals",
+        "test_enum_declarations_are_deterministic",
+        "test_lua_uses_vtable_byte_offsets_not_field_indices",
+        "test_lua_scalar_calls_use_two_args",
+        "test_lua_has_no_eager_vector_table",
+        "test_lua_array_metatable_has_pairs",
+        "test_lua_meta_is_attached_by_native_not_wrapper_table",
+        "test_lua_table_handles_are_module_level",
+        "test_lua_i18n_resolves_lazily_and_falls_back",
+        "test_lua_i18n_read_is_by_row_index_not_primary_key",
+        "test_lua_i18n_memo_is_generation_keyed_not_nil_retry",
+        "test_no_standalone_i18n_accessor_is_emitted",
+        "test_csharp_i18n_support_uses_i18n_epoch_and_null_tolerant_handle",
+        "test_csharp_i18n_field_falls_back_when_translation_missing",
+        "test_csharp_i18n_read_uses_i18n_table_literal_offsets",
+        "test_csharp_i18n_fallback_uses_per_field_row_index_cache",
+        "test_csharp_non_i18n_string_field_still_cached",
+        "test_lua_uniform_table_uses_literal_offsets",
+        "test_lua_non_uniform_table_keeps_slot_reads",
+        "test_lua_bool_scalar_returns_boolean_not_number",
+        "test_lua_record_slot_is_its_own_field_index"
+      ]
+    },
+    "ct/tests/export/test_canonical_binary.py": {
+      "sha256": "6f9e82b1807fd2a3a6db79801a517a3f67f32ea85b43ba275a544ec0ee7a9fe6",
+      "functions": [
+        "test_round_trip_full_groups",
+        "test_empty_and_partial_groups_round_trip",
+        "test_server_only_excluded",
+        "test_uniform_yields_single_vtable_with_default_enum",
+        "test_non_uniform_may_vary_but_uniform_must_not",
+        "test_uniform_probe_layout_matches_every_row",
+        "test_uniform_enum_slot_is_never_absent",
+        "test_uniform_default_enum_reads_as_first_value",
+        "test_uniform_absent_string_reads_as_empty_not_none",
+        "test_count_vtables_one_when_uniform",
+        "test_written_slot_ratio_is_one_when_every_slot_present",
+        "test_written_slot_ratio_counts_defaults_as_absent",
+        "test_uniform_raises_written_slot_ratio_to_full",
+        "test_probe_row_layout_returns_nonzero_offsets_for_all_uniform_slots",
+        "test_no_indexes_means_no_extra_container_slots",
+        "test_codename_index_adds_container_slot_three",
+        "test_codename_buckets_are_fnv1a_keyed_and_point_at_rows",
+        "test_all_scalar_types_round_trip",
+        "test_all_scalars_work_in_vectors",
+        "test_new_scalars_generate_fbs_standard_names",
+        "test_integer_scalars_rejected_as_primary_key",
+        "test_scalar_defaults_are_flatbuffers_defaults",
+        "test_default_scalar_values_omit_their_slot"
+      ]
+    },
+    "ct/tests/export/test_canonical_fbs.py": {
+      "sha256": "26c0c86620d1ed67728387c074352d0675ce033f67a4440a3bef63cad5750d27",
+      "functions": [
+        "test_types_fbs_emits_enum_and_table_in_dependency_order",
+        "test_table_fbs_includes_shared_types",
+        "test_validate_passes_for_well_formed_workspace",
+        "test_duplicate_symbol_rejected",
+        "test_record_must_not_be_native_struct",
+        "test_table_must_not_copy_shared_type"
+      ]
+    },
+    "ct/tests/export/test_canonical_json.py": {
+      "sha256": "2a7efa1053ddd92e3c98005ba9f0cbed0c18db9a9cb70f34f2cbaa255ce5eefd",
+      "functions": [
+        "test_json_serializes_canonical_shapes",
+        "test_json_root_key_uses_json_key_override"
+      ]
+    },
+    "ct/tests/export/test_query_indexes.py": {
+      "sha256": "e9b885c40bbe071fbddc42a160885754951f936a90a62f924f0fd12a949e446a",
+      "functions": [
+        "test_parse_indexes_max_one_per_kind",
+        "test_codename_requires_fixed_named_non_i18n_string_field",
+        "test_validate_index_rejects_i18n_vector_and_server_only_CodeName",
+        "test_hash_collision_returns_only_exact_match",
+        "test_hash_is_case_sensitive_and_exact",
+        "test_normal_bucket_query_is_bucket_local",
+        "test_indexes_round_trip_through_yaml",
+        "test_table_without_indexes_writes_no_indexes_key",
+        "test_merge_indexes_attaches_draft_indexes_to_resources",
+        "test_workspace_validates_indexes_on_load"
+      ]
+    },
+    "ct/tests/export/test_uniform_layout.py": {
+      "sha256": "b3749080ae2fb9a3814b6642f4b7b78ce56976dedaeec23de05c76a22b3cf3d0",
+      "functions": [
+        "test_wide_fields_match_literal_and_standard_reads",
+        "test_minimal_double_table_has_stable_layout",
+        "test_nested_records_and_wide_vectors_with_variable_payloads"
+      ]
+    },
+    "ct/tests/i18n/__init__.py": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": []
+    },
+    "ct/tests/i18n/test_state.py": {
+      "sha256": "0e95bdf852889f12dc7462ffb6e0bef611bdf5f55c24a8dd8c652371c7fe4884",
+      "functions": [
+        "test_orphan_when_not_in_source",
+        "test_missing_when_text_empty",
+        "test_translated_when_text_and_confirmed",
+        "test_stale_when_text_but_not_confirmed",
+        "test_new_key_creates_missing_entry",
+        "test_unchanged_source_preserves_translation",
+        "test_source_change_resets_confirmed_keeps_text",
+        "test_translator_confirms_after_stale",
+        "test_orphan_preserves_source_and_text",
+        "test_orphan_with_no_entry_raises",
+        "test_empty_text_in_existing_stays_missing",
+        "test_first_sync_creates_all_missing",
+        "test_idempotent_no_changes",
+        "test_deleted_row_becomes_orphan",
+        "test_source_change_invalidates",
+        "test_new_key_added_alongside_existing"
+      ]
+    },
+    "ct/tests/schema/_helpers.py": {
+      "sha256": "46d37355a4792deee9fe351c3e7a5209da1d96c80efb02b4b72a0f02572e228a",
+      "functions": []
+    },
+    "ct/tests/schema/conftest.py": {
+      "sha256": "f7d018de5b5bd2a082c2d1da29ef9ef9a1ca915a78defaeb04741bab45634d91",
+      "functions": []
+    },
+    "ct/tests/schema/test_canonical_hashing.py": {
+      "sha256": "9ac455ffe9e252cae88da8d02d3d4a88d295a850effcfa8fdf032aac3144e503",
+      "functions": [
+        "test_canonical_hash_is_deterministic_for_every_expression_node",
+        "test_canonical_hash_changes_for_type_and_excel_layout_inputs",
+        "test_referenced_named_resource_content_participates_in_table_hash",
+        "test_dependency_order_does_not_change_table_hash",
+        "test_unrelated_types_do_not_change_schema_hash",
+        "test_transitive_vector_enum_change_affects_schema_hash"
+      ]
+    },
+    "ct/tests/schema/test_canonical_workspace.py": {
+      "sha256": "48367a92c097034a7a3160829a73a4547e72e1f0500e78c5d587fd19a8e0a0b6",
+      "functions": [
+        "test_load_mixed_workspace_exposes_one_graph",
+        "test_table_order_respects_cross_table_refs",
+        "test_reverse_refs_exposed_on_workspace"
+      ]
+    },
+    "ct/tests/schema/test_commands.py": {
+      "sha256": "b7c8121a2daa2b4d32e7417254115b8a55c62f33fa11285f50812f4b1fc1b609",
+      "functions": [
+        "test_deletion_of_referenced_record_is_blocked_with_all_use_sites",
+        "test_deletion_of_referenced_field_is_blocked",
+        "test_deletion_of_unreferenced_resource_is_allowed",
+        "test_resource_rename_updates_all_named_references_atomically",
+        "test_table_rename_updates_cross_table_refs",
+        "test_primary_field_rename_is_rejected",
+        "test_non_primary_field_rename_keeps_cross_table_ref_targets",
+        "test_field_rename_does_not_broadcast_to_same_named_fields_in_other_tables",
+        "test_rename_then_undo_restores_original_workspace"
+      ]
+    },
+    "ct/tests/schema/test_enum_wire_type.py": {
+      "sha256": "4e54a6fb6eb9909097a02b3b08dd7578aaad51dce1ac1a4ada2760df6f98e6b3",
+      "functions": [
+        "test_wire_type_is_always_byte",
+        "test_wire_type_cannot_be_supplied",
+        "test_more_than_256_values_rejected_for_byte"
+      ]
+    },
+    "ct/tests/schema/test_identity.py": {
+      "sha256": "cf9be62eb4f5b7a2d7c271712a7473e792595687cec8bcd3f6fdaf7e3b34fb7b",
+      "functions": [
+        "test_resource_and_canonical_field_paths_are_explicit",
+        "test_persisted_field_id_survives_reorder",
+        "test_explicit_rename_and_move_keep_draft_session_identity",
+        "test_new_draft_field_uses_ephemeral_uuid_only_in_session"
+      ]
+    },
+    "ct/tests/schema/test_name_validation.py": {
+      "sha256": "86d41e662ac55a6972d58c008c6f5fa471d8980f871827dc331b833cb0e9159b",
+      "functions": [
+        "test_generated_container_collision_reports_both_resources",
+        "test_field_and_named_type_collision_reports_both_locations",
+        "test_fixed_bundle_symbol_collision_is_rejected",
+        "test_non_conflicting_workspace_passes"
+      ]
+    },
+    "ct/tests/schema/test_naming.py": {
+      "sha256": "8ffa5bbc460b9959fa7584fb0d134e5b09e9ac0c4dd416b436f4565b627fa454",
+      "functions": [
+        "test_compliant_names",
+        "test_leading_underscore_rejected",
+        "test_trailing_underscore_rejected",
+        "test_lowercase_initial_rejected",
+        "test_non_identifier_rejected",
+        "test_empty_rejected",
+        "test_error_messages_are_actionable"
+      ]
+    },
+    "ct/tests/schema/test_old_format_rejection.py": {
+      "sha256": "c50f27b0685f00919b58c1ee24f560e4c7774b84adb1d9d44a2ad95b32325af3",
+      "functions": [
+        "test_inline_struct_rejected_with_file_and_field",
+        "test_inline_array_rejected",
+        "test_inline_enum_values_rejected",
+        "test_rejection_does_not_mutate_files",
+        "test_no_runtime_migration_reader"
+      ]
+    },
+    "ct/tests/schema/test_primary_key_type.py": {
+      "sha256": "d788f8190a3002f6845bb3134ed5e730e1ff7a0f78a4bddf9ecfedaa9c5b397c",
+      "functions": [
+        "test_int32_primary_is_accepted",
+        "test_non_int32_integer_primary_is_rejected",
+        "test_non_integer_primary_is_rejected",
+        "test_error_names_the_current_type_and_the_32bit_reason"
+      ]
+    },
+    "ct/tests/schema/test_resource_graph.py": {
+      "sha256": "2f2dcfb9ce0be1846e7763bfa3d4d279b4011aefb72fb5b507140470dcc1c93e",
+      "functions": [
+        "test_named_dependency_edges_direct_and_indirect",
+        "test_cross_table_ref_edges_and_deterministic_table_order",
+        "test_missing_ref_target_reports_owner_path",
+        "test_ref_target_must_be_the_target_primary_key",
+        "test_ref_target_field_typo_is_rejected",
+        "test_ref_to_a_primary_key_not_named_id_is_accepted",
+        "test_record_cycle_is_rejected_with_path",
+        "test_reverse_references_list_every_use_site"
+      ]
+    },
+    "ct/tests/schema/test_resource_repository.py": {
+      "sha256": "7810f64b98bf708a41f3c0b381feb3857090393aa56d8753f6d07c10c1c7a7ff",
+      "functions": [
+        "test_load_mixed_workspace_deterministically_and_resolve_named_types",
+        "test_canonical_yaml_serialization_contains_one_type_expression",
+        "test_repository_write_and_reload_round_trip",
+        "test_unified_resource_name_collision_reports_both_sources",
+        "test_missing_named_target_has_precise_owner_path",
+        "test_old_inline_field_shape_fails_without_mutation",
+        "test_record_rejects_table_only_field_roles_with_resource_path"
+      ]
+    },
+    "ct/tests/schema/test_role_boundaries.py": {
+      "sha256": "3874cce023614346b16ae6a3c5f065430c326bc7fb993ed300680761c193fc8a",
+      "functions": [
+        "test_record_i18n_leaf_is_rejected_with_path",
+        "test_record_server_only_leaf_is_rejected_with_path",
+        "test_table_top_level_roles_are_accepted",
+        "test_table_field_cannot_combine_i18n_and_server_only",
+        "test_i18n_requires_string_type",
+        "test_i18n_rejects_vector_of_string",
+        "test_record_i18n_is_enforced_at_schema_layer_not_downstream",
+        "test_separator_on_scalar_field_rejected",
+        "test_separator_on_vector_record_rejected_with_owner_path",
+        "test_primary_key_cannot_be_server_only",
+        "test_non_vector_rejects_excel_columns",
+        "test_record_vector_without_excel_columns_is_rejected",
+        "test_scalar_vector_accepts_excel_columns",
+        "test_scalar_vector_excel_columns_loads_in_quest_shape"
+      ]
+    },
+    "ct/tests/schema/test_type_expression.py": {
+      "sha256": "df4bf9d7e2bc89611ba76eeb70e19832702449341229fb2d24b3f9812bff3802",
+      "functions": [
+        "test_parse_and_canonical_round_trip",
+        "test_resolved_named_reference_serializes_without_storage_noise",
+        "test_malformed_expression_is_rejected",
+        "test_nested_vector_is_rejected_with_guidance",
+        "test_reserved_or_invalid_named_resource_is_rejected",
+        "test_named_kind_mismatch_is_rejected"
+      ]
+    },
+    "ct/tests/schema/test_uniform_layout_flag.py": {
+      "sha256": "432d9236bbf9bcc3fe8f869d3bf2be64140e61982d4ae04d476c444b9511da54",
+      "functions": [
+        "test_default_is_uniform",
+        "test_default_value_is_not_persisted",
+        "test_explicit_false_is_persisted_and_changes_hash",
+        "test_explicit_true_is_also_dropped_as_default",
+        "test_non_boolean_is_rejected"
+      ]
+    },
+    "ct/tests/storage/test_files.py": {
+      "sha256": "0a9a2ddcc8a341cc0f892aeec1a83a173147176826c4a94c8678c9982a9759c1",
+      "functions": [
+        "test_atomic_write_replaces_target_while_reader_has_it_open"
+      ]
+    },
+    "ct/tests/storage/test_publication.py": {
+      "sha256": "6b169071ccd4c6be557284e110cec832f1f953d3137a415e17f0c415be28f38e",
+      "functions": [
+        "test_publish_applies_payloads_and_deletions",
+        "test_journal_path_does_not_depend_on_cache_dir",
+        "test_staging_happens_on_the_target_volume",
+        "test_backup_failure_never_touches_formal_files",
+        "test_windows_open_target_blocks_replace_then_recovers",
+        "test_crash_after_first_replace_restores_everything",
+        "test_crash_during_deletion_restores_deleted_files",
+        "test_committed_journal_is_only_cleaned_up",
+        "test_recovery_is_idempotent",
+        "test_recover_without_journal_is_a_noop",
+        "test_subprocess_crash_leaves_recoverable_journal",
+        "test_corrupt_journal_is_refused_and_materials_kept",
+        "test_unknown_journal_format_is_refused",
+        "test_journal_path_escape_is_refused",
+        "test_missing_backup_refuses_to_skip",
+        "test_prepared_phase_only_cleans_private_materials",
+        "test_backed_up_phase_rolls_back"
+      ]
+    },
+    "ct/tests/storage/test_workspace_lock.py": {
+      "sha256": "088e7b54852923436cbcfa20201a8c04b961fed0e77b9f1548d5b3a243301e6c",
+      "functions": [
+        "test_lock_file_lives_under_ct_and_not_cache_dir",
+        "test_second_acquire_in_same_process_is_busy",
+        "test_lock_is_released_after_context_exit",
+        "test_existing_lock_file_does_not_mean_locked",
+        "test_different_workspaces_are_independent",
+        "test_cross_process_conflict_is_busy",
+        "test_process_death_releases_the_lock"
+      ]
+    },
+    "ct/tests/storage/test_workspace_transaction.py": {
+      "sha256": "1b95661c07fbc99ddc575b88c9d82ff82b0e73e1bda690a672a9c61cdadca4f6",
+      "functions": [
+        "test_transaction_recovers_before_yielding",
+        "test_transaction_reports_nothing_when_clean",
+        "test_transaction_holds_the_shared_lock_and_never_nests",
+        "test_transaction_releases_lock_when_body_raises",
+        "test_busy_message_covers_save_export_and_deploy"
+      ]
+    },
+    "ct/tests/web/test_add_resource_api.py": {
+      "sha256": "eaa66726b086cf3e9e685be3a7a240c63ae86aa6e44b7ef0c8a8b906fb762182",
+      "functions": [
+        "test_create_three_kinds_in_one_draft_and_save",
+        "test_create_then_delete_is_a_noop",
+        "test_malformed_payloads_are_client_errors_with_locations",
+        "test_unknown_command_type_is_reported_not_silently_dropped"
+      ]
+    },
+    "ct/tests/web/test_assets.py": {
+      "sha256": "309b780be0333c8cf2c118f43277dee7831da12cfd16de01295d51aa16bb882c",
+      "functions": [
+        "test_assets_are_served",
+        "test_index_references_all_styles_and_module_entry",
+        "test_core_has_no_business_module_imports"
+      ]
+    },
+    "ct/tests/web/test_browser_baseline.py": {
+      "sha256": "c774de10f193120b04a3e09d0d69965350f8a04c04ca85cd71436fb921a1bae2",
+      "functions": [
+        "test_local_panel_screenshot_matrix"
+      ]
+    },
+    "ct/tests/web/test_fuzzy_browser.py": {
+      "sha256": "73b13b1289cce88dfe22176306a884e5cc5cac1b1789693087c66ba988a36617",
+      "functions": [
+        "test_subsequence_abbreviation_matches",
+        "test_rank_ties_are_deterministic",
+        "test_highlight_ranges",
+        "test_highlight_ranges_respect_unicode_boundaries"
+      ]
+    },
+    "ct/tests/web/test_history.py": {
+      "sha256": "a8143444e181bd69e1357d978952e5c3f19fde0a5fe514fde91f80d28e72666d",
+      "functions": [
+        "test_make_entry_writes_status_code",
+        "test_legacy_display_string_result_is_normalized"
+      ]
+    },
+    "ct/tests/web/test_logs.py": {
+      "sha256": "c5038543b9615f262719c3e79d2f2d70a42e7f64a8a9a7456222a9c8ef6c50fb",
+      "functions": [
+        "test_module_for_logger_maps_every_panel_module",
+        "test_level_names_are_normalized",
+        "test_buffer_normalizes_levels_on_write",
+        "test_frontend_module_pills_match_backend_modules",
+        "test_ct_logger_records_reach_the_panel_exactly_once",
+        "test_i18n_sync_entry_and_compact_write_panel_logs",
+        "test_i18n_failures_stay_out_of_the_panel",
+        "test_template_flow_writes_template_module"
+      ]
+    },
+    "ct/tests/web/test_matrix_browser.py": {
+      "sha256": "a0b1b38c65cce83c980580994231fe50ea220ff2f488917fbed35a3db5d8723a",
+      "functions": [
+        "test_shell_matrix"
+      ]
+    },
+    "ct/tests/web/test_module_pages_browser.py": {
+      "sha256": "d982c1f5ea785898b5c666749e4c180b5acf0d2ac41446fb4d5703ab1f543c3a",
+      "functions": [
+        "test_export_module_renders",
+        "test_export_summary_refreshes_after_run",
+        "test_export_offers_missing_template_regeneration",
+        "test_export_failure_message_wraps_inside_context_card",
+        "test_taskbar_dismiss_shows_toast_when_request_fails",
+        "test_i18n_module_renders_lang_rows",
+        "test_i18n_orphan_status_uses_localized_badge",
+        "test_logs_module_renders",
+        "test_history_module_renders_empty",
+        "test_history_success_uses_success_badge",
+        "test_logs_level_and_search_filters",
+        "test_logs_refresh_while_visible",
+        "test_logs_keep_reading_position_and_offer_jump_to_bottom",
+        "test_logs_polling_does_not_replace_scroll_viewport_when_unchanged",
+        "test_logs_compact_rows_keep_field_labels",
+        "test_i18n_progress_modal_closes",
+        "test_i18n_table_picker_filters_and_empty",
+        "test_i18n_table_picker_click_select",
+        "test_i18n_entry_table_alignment",
+        "test_i18n_entry_table_preserves_text_columns_on_narrow_view",
+        "test_i18n_narrow_header_keeps_title_and_actions_centered",
+        "test_i18n_fullscreen_editor_saves_and_cancels",
+        "test_i18n_column_visibility_persists_across_rerender",
+        "test_i18n_source_expand_tail",
+        "test_i18n_inline_blur_saves_only_changed_drafts",
+        "test_i18n_reactivation_recomputes_sticky_offset"
+      ]
+    },
+    "ct/tests/web/test_resource_benchmark.py": {
+      "sha256": "dd8e87bfc7e51e917a03f279181ee0f015a7cd85a9d0eb2d413fe4be654c6a19",
+      "functions": [
+        "test_resources_render_within_budget"
+      ]
+    },
+    "ct/tests/web/test_schema_create_browser.py": {
+      "sha256": "0b899d086ecd4dd0e3aabf6d792ba51741865a62d0b60bf05f28e57933e1211b",
+      "functions": [
+        "test_creation_entries_and_table_form",
+        "test_create_from_empty_workspace",
+        "test_forms_require_first_content_and_keep_input",
+        "test_invalid_and_duplicate_names_add_no_command",
+        "test_double_submit_adds_exactly_one_command",
+        "test_create_and_reference_without_saving",
+        "test_selection_follows_creation_and_falls_back_on_undo",
+        "test_created_draft_survives_refresh",
+        "test_unsaved_table_explains_template_requires_save",
+        "test_template_entry_survives_reload",
+        "test_record_and_enum_have_no_template_entry",
+        "test_create_flow_keyboard_and_narrow_viewport",
+        "test_record_ref_entry_removed_and_primary_rename_blocked"
+      ]
+    },
+    "ct/tests/web/test_schema_editor_browser.py": {
+      "sha256": "29c024c982ec6a13793aef8fae8e5f112fee67f618b08774b0c72bced575296a",
+      "functions": [
+        "test_resource_groups_and_filter",
+        "test_collapsed_group_is_temporarily_expanded_by_search_and_restored",
+        "test_add_field_dialog_emits_draft",
+        "test_add_field_i18n_role_locks_string_type",
+        "test_add_field_code_codename_locks_fields",
+        "test_save_changes_writes_yaml_without_review_dialog",
+        "test_discard_draft_from_draftbar",
+        "test_quick_open_filters_and_selects",
+        "test_quick_open_empty_query_prioritizes_recent_resources",
+        "test_quick_open_falls_back_when_recent_resources_are_from_another_workspace",
+        "test_quick_open_escape_clears_query_first",
+        "test_draft_persists_across_reload",
+        "test_field_rename_delete_move_set_type_emit_commands",
+        "test_inspector_field_properties_are_read_only",
+        "test_undo_redo_via_draftbar",
+        "test_compact_field_rows_at_390",
+        "test_primary_field_actions_are_locked",
+        "test_query_index_cards_emit_set_indexes",
+        "test_query_index_cards_restore_persisted_and_draft_state",
+        "test_codename_badge_shows_only_when_index_declared",
+        "test_delete_codename_field_offers_explicit_index_cascade",
+        "test_rename_codename_field_offers_explicit_index_cascade",
+        "test_enum_editor_value_operations",
+        "test_blocked_delete_with_references",
+        "test_record_editor_hides_table_only_field_options",
+        "test_quick_open_keyboard_navigation",
+        "test_keyboard_a11y_walkthrough",
+        "test_type_picker_selects_named_type",
+        "test_filter_counts_keyboard_and_pref_persistence",
+        "test_resizable_panes_persist_width",
+        "test_ref_link_jumps_to_referenced_table",
+        "test_net_difference_toggle_round_trip_keeps_history",
+        "test_persistence_failure_warning_stays_visible",
+        "test_persistence_retries_after_transient_database_open_failure",
+        "test_save_conflict_keeps_draft_and_blocks_overwrite",
+        "test_save_busy_keeps_draft",
+        "test_status_refresh_failure_does_not_misreport_save",
+        "test_save_refreshes_template_status_without_rebuilding",
+        "test_no_false_template_drift_notice",
+        "test_deleting_resource_yaml_keeps_excel_and_outputs",
+        "test_candidate_refresh_freezes_save_and_preserves_original_baseline",
+        "test_broken_schema_yaml_reports_the_reason"
+      ]
+    },
+    "ct/tests/web/test_schema_save_api.py": {
+      "sha256": "bf7f8154c8e1129b48d60b011f803b52205d38ce3408538011899aae83d324f9",
+      "functions": [
+        "test_save_publishes_yaml_and_returns_new_baseline",
+        "test_save_noop_writes_nothing",
+        "test_save_rejects_forged_candidate_hash",
+        "test_save_rejects_stale_schema_revision",
+        "test_save_rejects_structural_issues",
+        "test_save_succeeds_without_excel_data",
+        "test_save_reports_busy_when_workspace_is_locked",
+        "test_save_recovers_an_interrupted_publication",
+        "test_save_retry_after_conflict_succeeds",
+        "test_save_requires_both_guards",
+        "test_save_malformed_commands_return_located_client_errors",
+        "test_save_response_never_reads_excel",
+        "test_candidate_rejects_old_baseline"
+      ]
+    },
+    "ct/tests/web/test_schema_workspace_api.py": {
+      "sha256": "1694c7807d903273058b1396bbe37a6d20838d43e97364348b9959de70d441b7",
+      "functions": [
+        "test_workspace_snapshot_endpoint",
+        "test_validate_accepts_valid_draft",
+        "test_validate_reports_role_violation",
+        "test_generate_template_endpoint_for_table",
+        "test_generate_template_endpoint_rejects_unknown_table",
+        "test_tasks_endpoint",
+        "test_tasks_endpoint_includes_export_projection",
+        "test_deleted_table_index_is_not_inherited_by_reused_name",
+        "test_codename_field_commands_violate_invariant_without_index_removal",
+        "test_codename_field_commands_with_explicit_index_removal_are_valid"
+      ]
+    },
+    "ct/tests/web/test_shell_browser.py": {
+      "sha256": "90d60fa60e18215b24d083ce2458b90353255d3be08bf185517914542c05db72",
+      "functions": [
+        "test_projection_state_machine",
+        "test_selection_survives_projection_and_module_switch",
+        "test_panes_default_collapsed_and_two_state_toggle",
+        "test_panes_become_drawers_below_900",
+        "test_open_drawer_closes_cleanly_when_widening",
+        "test_hidden_pages_are_inert",
+        "test_about_and_help_dialogs",
+        "test_reduced_motion_disables_pane_transition"
+      ]
+    },
+    "ct/tests/web/test_tasks_projection.py": {
+      "sha256": "cbaa7f4639e9a9e2680c88eff588af48bd5b70e1b9027f2e2714e940d75c9b46",
+      "functions": [
+        "test_running_task_stays_projected",
+        "test_fresh_error_is_projected_with_started_at",
+        "test_expired_error_leaves_taskbar",
+        "test_fail_marks_settle_time_for_new_run",
+        "test_dismissed_error_leaves_taskbar_until_next_run",
+        "test_dismiss_is_rejected_while_running",
+        "test_tasks_dismiss_endpoint_hides_error",
+        "test_tasks_dismiss_endpoint_rejects_unknown_id",
+        "test_tasks_endpoint_drops_expired_error",
+        "test_tasks_endpoint_keeps_fresh_error"
+      ]
+    },
+    "ct/tests/web/web_helpers.py": {
+      "sha256": "b9844ab9bf946c8c6b387b4062ca8398f5626fcb14d677289bf59ca59041725b",
+      "functions": []
+    }
+  },
+  "totalFiles": 85,
+  "totalTestFunctions": 690
+}

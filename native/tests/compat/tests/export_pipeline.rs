@@ -468,3 +468,24 @@ fn partial_export_keeps_other_ledger_entries() {
     // 部分导出不清理陈旧产物
     assert!(root.join("output/json/Buff_zh.json").exists());
 }
+
+#[test]
+fn deploy_preserves_meta_when_generated_name_changes_case() {
+    let temp = tempfile::tempdir().unwrap();
+    let src = temp.path().join("src");
+    let dst = temp.path().join("dst");
+    std::fs::create_dir_all(&src).unwrap();
+    std::fs::create_dir_all(&dst).unwrap();
+    std::fs::write(src.join("itemaccessor.cs"), b"new").unwrap();
+    std::fs::write(dst.join("ItemAccessor.cs"), b"old").unwrap();
+    std::fs::write(dst.join("ItemAccessor.cs.meta"), b"GUID-KEEP").unwrap();
+    let (count, _) = ct_export::deploy::sync_dir(&src, &dst).unwrap();
+    assert_eq!(count, 1);
+    assert_eq!(std::fs::read(dst.join("ItemAccessor.cs")).unwrap(), b"new");
+    assert_eq!(
+        std::fs::read(dst.join("ItemAccessor.cs.meta")).unwrap(),
+        b"GUID-KEEP"
+    );
+    assert_eq!(std::fs::read_dir(&dst).unwrap().count(), 2);
+    assert_eq!(ct_export::deploy::sync_dir(&src, &dst).unwrap().0, 0);
+}
