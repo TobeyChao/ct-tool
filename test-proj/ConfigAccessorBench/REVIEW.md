@@ -1,5 +1,7 @@
 # ConfigAccessorBench — bytes 读取/加载中间件安全审查报告
 
+> 2026-09-30 原生迁移登记：本文正文、Python 命令与性能数字是历史实验记录，均非现役验收入口。当前正式命令与逐脚本分类见 [test-proj 总览](../README.md)。ConfigAccessorBench 的三个 reader C# 源文件仍用于独立验收。
+
 > 审查对象：`test-proj/ConfigAccessorBench/` 的 reader 运行时（`WireReader.cs` / `Runtime.cs` / `ConfigReader.cs` / `Program.cs`）及生成的 `*.g.cs` accessor。
 > 方法：静态分析 + `CONFIG_DEBUG` 实证运行。审查时间基于 commit `40ae09e`。
 

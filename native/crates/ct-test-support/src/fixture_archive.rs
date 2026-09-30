@@ -118,6 +118,14 @@ fn collect(root: &Path, base: &Path, files: &mut BTreeMap<String, Vec<u8>>) -> R
         if kind.is_symlink() {
             bail!("夹具源不可包含符号链接");
         }
+        if entry.file_name() == "__pycache__"
+            || matches!(
+                entry.path().extension().and_then(|s| s.to_str()),
+                Some("pyc" | "pyo")
+            )
+        {
+            continue;
+        }
         if kind.is_dir() {
             collect(&entry.path(), base, files)?;
         } else if kind.is_file() {

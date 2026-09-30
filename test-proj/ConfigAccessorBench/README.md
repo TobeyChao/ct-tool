@@ -1,5 +1,7 @@
 # ConfigAccessorBench — 独立 reader runtime + accessor 接口/性能基准
 
+> 2026-09-30 原生迁移登记：本文正文、Python 命令与性能数字是历史实验记录，均非现役验收入口。当前正式命令与逐脚本分类见 [test-proj 总览](../README.md)。ConfigAccessorBench 的三个 reader C# 源文件仍用于独立验收。
+
 仓库内**独立于游戏/Unity** 运行的 .NET 10 工程：实现并验证“为 ct 导出物设计的指针式 reader runtime”（对齐 参考实现 读取模型），并基准对比 accessor 读取方式。它只依赖 `gd/output/binary/data_zh.bin`，可在本工程直接 `dotnet run`。
 
 > 本工程是 reader 运行时的**首版落点**（按 change `align-config-accessor-api`），后续 ct 生成器按此契约输出、游戏工程再集成。

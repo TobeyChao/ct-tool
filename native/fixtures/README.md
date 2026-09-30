@@ -6,7 +6,7 @@
 ## 独立参考数据与再生
 
 `compat-manifest.json` 固定 binary、excel、export_pipeline、fingerprints、schema_state、template
-六类共 130 个输入/参考文件的 SHA-256、验收目标和历史来源。
+六类共 129 个输入/参考文件的 SHA-256、验收目标和历史来源。
 历史生成器的七份文本快照保存在 `native/docs/baseline/source/`；它们仅供追溯，不执行。
 原 `.py` 文件待 G1/G2/G3 全部通过后才退役。
 

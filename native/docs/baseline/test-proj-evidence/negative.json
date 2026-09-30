@@ -1,0 +1,22 @@
+[
+  {
+    "name": "pristine inventory",
+    "status": 0,
+    "text": "test-proj: 19/19 scripts audited; 2 replaced preparation entries, 17 historical experiments"
+  },
+  {
+    "name": "new Python script rejected",
+    "status": 1,
+    "text": "file:///private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-reader-negative-TtFGNE/test-proj/check-retirement.mjs:25\n  throw new Error('test-proj Python script set differs from explicit retirement inventory');\n        ^\n\nError: test-proj Python script set differs from explicit retirement inventory\n    at file:///private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-reader-negative-TtFGNE/test-proj/check-retirement.mjs:25:9\n\nNode.js v26.8.2"
+  },
+  {
+    "name": "historical source mutation rejected",
+    "status": 1,
+    "text": "file:///private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-reader-negative-TtFGNE/test-proj/check-retirement.mjs:36\n  if (sha !== entry.sha256) throw new Error(`legacy source changed since audit: ${entry.path}`);\n                                  ^\n\nError: legacy source changed since audit: test-proj/ExportAccessorVerify/gen_scalars_bench.py\n    at file:///private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-reader-negative-TtFGNE/test-proj/check-retirement.mjs:36:35\n\nNode.js v26.8.2"
+  },
+  {
+    "name": "C# reader missing FNV rejects instead of skipping",
+    "status": 134,
+    "text": "Unhandled exception. System.IO.FileNotFoundException: Could not find file '/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-accessor-verify-oyYVzw/ExportAccessorVerify/bin/Release/net10.0/fixtures/fnv_vectors.tsv'.\nFile name: '/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-accessor-verify-oyYVzw/ExportAccessorVerify/bin/Release/net10.0/fixtures/fnv_vectors.tsv'\n   at Interop.ThrowExceptionForIoErrno(ErrorInfo errorInfo, String path, Boolean isDirError)\n   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String path, OpenFlags flags, Int32 mode, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)\n   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, UnixFileMode openPermissions, Int64& fileLength, UnixFileMode& filePermissions, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)\n   at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)\n   at System.IO.StreamReader.ValidateArgsAndOpenPath(String path, Int32 bufferSize)\n   at System.IO.File.ReadAllLines(String path, Encoding encoding)\n   at Program.VerifyFnvMatchesReference() in /private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-accessor-verify-oyYVzw/ExportAccessorVerify/Program.cs:line 137\n   at Program.Main() in /private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-accessor-verify-oyYVzw/ExportAccessorVerify/Program.cs:line 29"
+  }
+]

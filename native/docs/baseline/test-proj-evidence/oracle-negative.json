@@ -1,0 +1,6 @@
+{
+  "name": "Rust preparation rejects changed FNV before native outputs or C# execution",
+  "status": 1,
+  "outputCreated": false,
+  "stderr": "Error: independent reader oracle checksum mismatch: test-proj/ExportAccessorVerify/fixtures/fnv_vectors.tsv\n"
+}

@@ -26,9 +26,11 @@ public static class Program
         VerifyQuest(root, manifests);
         VerifyUIConfig(root, manifests);
         VerifyCodeIndex(root);
-        VerifyFnvMatchesPython();
+        VerifyFnvMatchesReference();
         VerifySparseI18n(root);
         VerifyAllScalars(root);
+
+        if (_checked != 127) throw new InvalidDataException($"Incomplete verification: {_checked}/127 checks");
 
         Console.WriteLine();
         Console.WriteLine($"共校验 {_checked} 个字段值，不一致 {_failed}");
@@ -128,12 +130,11 @@ public static class Program
         { _failed++; Console.WriteLine("  ✗ 不存在的 codeName 应返回 null"); }
     }
 
-    /// <summary>运行期 FNV-1a 必须与导出器 Python 实现逐位一致（CodeName 索引桶下标依赖它）。</summary>
-    private static void VerifyFnvMatchesPython()
+    /// <summary>运行期 FNV-1a 与冻结 main 参照逐位一致。</summary>
+    private static void VerifyFnvMatchesReference()
     {
-        // 由 prepare.py 写入的对照表（Python ct.export.index_query.fnv1a_64 的结果）
+        // main 8dc7b81 留档，准备入口校验 SHA-256；不执行历史 prepare.py。
         string path = Path.Combine(AppContext.BaseDirectory, "fixtures", "fnv_vectors.tsv");
-        if (!File.Exists(path)) { Console.WriteLine("[FNV] 无对照表，跳过"); return; }
         int n = 0;
         foreach (var line in File.ReadAllLines(path))
         {
@@ -148,7 +149,8 @@ public static class Program
                 Console.WriteLine($"  ✗ FNV('{parts[0]}'): got={got} want={want}");
             }
         }
-        Console.WriteLine($"[FNV] 与 Python 对照 {n} 条");
+        if (n != 9) throw new InvalidDataException($"Incomplete FNV reference: {n}/9 vectors");
+        Console.WriteLine($"[FNV] 与冻结 main 参照对照 {n} 条");
     }
 
     /// <summary>

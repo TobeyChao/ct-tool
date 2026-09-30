@@ -81,4 +81,7 @@ fingerprint 和覆盖矩阵始终保留 main 的 85 个历史测试文件/690 �
 不存在旧 `ct/` 时也不缩减验收。当前原生清单使用 `ct-source-tree/2`，原始来源快照另行保留。
 本机无 `ct/`、无 Python PATH 的离线回归记录见
 [无 Python 验收进展](docs/baseline/python-free-verification.md)。
+独立 C# 读取验收与历史实验分类见 [test-proj](../test-proj/README.md)。
+`xtask accessor-fixtures --out <临时目录>` 从冻结输入再生标量 Binary/C#，逐字节对照
+旧 main 参照；`node test-proj/ExportAccessorVerify/prepare-native.mjs` 再读取这些原生新产物。
 完整去 Python 需等 G1/G2/G3 全部通过，详见 OpenSpec `native-web-python-retirement`。

@@ -24,6 +24,10 @@ const SCOPES: &[(&str, &[&str])] = &[
     ),
     ("openspec", &[]),
     (".github", &[]),
+    (
+        "test-proj",
+        &["bin", "obj", "node_modules", ".venv", "__pycache__", "_ws"],
+    ),
 ];
 
 /// 逐文件清单只保留内核树，其余范围只留聚合摘要（避免基线文件过大）。
@@ -310,7 +314,14 @@ mod tests {
     #[test]
     fn fingerprint_pins_supported_trees_and_frozen_history() {
         let value = compute().expect("计算基线");
-        let scopes = ["native", "web", "launcher", "openspec", ".github"];
+        let scopes = [
+            "native",
+            "web",
+            "launcher",
+            "openspec",
+            ".github",
+            "test-proj",
+        ];
         for scope in scopes {
             assert!(
                 value["scopes"][scope]["files"].as_u64().unwrap_or(0) > 0,

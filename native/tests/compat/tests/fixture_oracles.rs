@@ -4,5 +4,54 @@
 fn frozen_inputs_and_oracles_match_their_provenance_checksums() {
     let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures");
     let count = ct_test_support::fixture_archive::verify_compat(&root).unwrap();
-    assert_eq!(count, 130, "冻结输入/期望值的范围不可静默缩减");
+    assert_eq!(
+        count, 129,
+        "129 个版本化输入/期望值全部必需，不含本机 pycache"
+    );
+}
+
+#[test]
+fn optional_python_cache_cannot_become_an_oracle_but_unknown_golden_fails() {
+    let native = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let temp = tempfile::tempdir().unwrap();
+    let fixtures = temp.path().join("fixtures");
+    std::fs::create_dir_all(&fixtures).unwrap();
+    let manifest_bytes = std::fs::read(native.join("fixtures/compat-manifest.json")).unwrap();
+    let manifest: serde_json::Value = serde_json::from_slice(&manifest_bytes).unwrap();
+    std::fs::write(fixtures.join("compat-manifest.json"), manifest_bytes).unwrap();
+    for (group, spec) in manifest["groups"].as_object().unwrap() {
+        for relative in spec["files"].as_object().unwrap().keys() {
+            let path = format!("fixtures/{group}/{relative}");
+            let dest = temp.path().join(&path);
+            std::fs::create_dir_all(dest.parent().unwrap()).unwrap();
+            std::fs::copy(native.join(path), dest).unwrap();
+        }
+    }
+    for source in manifest["sourceReferences"].as_array().unwrap() {
+        let path = source["snapshot"].as_str().unwrap();
+        let dest = temp.path().join(path);
+        std::fs::create_dir_all(dest.parent().unwrap()).unwrap();
+        std::fs::copy(native.join(path), dest).unwrap();
+    }
+    assert_eq!(
+        ct_test_support::fixture_archive::verify_compat(&fixtures).unwrap(),
+        129
+    );
+    let cache = fixtures.join("template/__pycache__");
+    std::fs::create_dir_all(&cache).unwrap();
+    std::fs::write(
+        cache.join("generate.cpython-999.pyc"),
+        b"optional local cache",
+    )
+    .unwrap();
+    assert_eq!(
+        ct_test_support::fixture_archive::verify_compat(&fixtures).unwrap(),
+        129
+    );
+    std::fs::write(
+        fixtures.join("binary/golden/unregistered.bin"),
+        b"must reject",
+    )
+    .unwrap();
+    assert!(ct_test_support::fixture_archive::verify_compat(&fixtures).is_err());
 }

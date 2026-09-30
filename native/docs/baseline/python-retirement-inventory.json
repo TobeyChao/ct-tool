@@ -1127,146 +1127,158 @@
     {
       "path": "test-proj/RefConfigBench/OPTIMIZATION-STRATEGY.md",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "test-proj/README.md; 历史实验报告/命令说明，已加非活跃声明，保留正文来源。",
+      "status": "historical-document"
     },
     {
       "path": "test-proj/RefConfigBench/check_bundle_duplication.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "native/tests/compat/tests/export_compat.rs; 旧每语言整包重复率诊断，读取 gd 旧 bundle；不参与迁移后的正式门槛。",
+      "status": "historical"
     },
     {
       "path": "test-proj/RefConfigBench/gen_literal_accessor.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "native/tests/compat/tests/accessor_golden.rs; 旧手写字面量偏移 A/B 变体，依赖旧 ItemBench/ArrayBench；当前访问器由 canonical Rust 生成并做 golden 对照。",
+      "status": "historical"
     },
     {
       "path": "test-proj/RefConfigBench/check_uniform_risks.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "native/tests/compat/tests/binary_golden.rs; 旧 Python uniform 探针与稀疏体积实验，包含真实 gd；当前独立稀疏/稠密字节对照在 Rust 验收。",
+      "status": "historical"
     },
     {
       "path": "test-proj/RefConfigBench/gen_scale_corpus.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "native/crates/ct-xtask/src/fixtures.rs; 旧 2000 表/约69万行合成 C++ 对标，外部语料和不同规模；不是当前 S/M/L 基准来源。",
+      "status": "historical"
     },
     {
       "path": "test-proj/RefConfigBench/RUNTIME-SCHEME-REVIEW.md",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "test-proj/README.md; 历史实验报告/命令说明，已加非活跃声明，保留正文来源。",
+      "status": "historical-document"
     },
     {
       "path": "test-proj/RefConfigBench/gen_ct_bench_tables.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "native/crates/ct-xtask/src/real_fixture.rs; 旧 ItemBench/ArrayBench C++ 对标形状与语料，生成本目录实验副本；正式 native 基准采用 S/M/L 和冻结 r/r-full 形状。",
+      "status": "historical"
     },
     {
       "path": "test-proj/RefConfigBench/pick_tables.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "native/fixtures/bench/shape-r.json; 扫描 D 盘外部参考游戏生成代码的选表工具，非独立可再生的正式输入。",
+      "status": "historical"
     },
     {
       "path": "test-proj/RefConfigBench/eval_uniform_layout.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "native/tests/compat/tests/binary_golden.rs; 旧 ItemBench/ArrayBench 定宽体积与探针布局评估，指标只属于历史报告。",
+      "status": "historical"
     },
     {
       "path": "test-proj/RefConfigBench/check_export_preconditions.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "native/tests/compat/tests/binary_golden.rs; 旧外部读取方案前提诊断及 monkeypatch 实验，不是 canonical 原生链路。",
+      "status": "historical"
     },
     {
       "path": "test-proj/UniformE2EBench/gen_our_item_bench.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "test-proj/ExportAccessorVerify/prepare-native.mjs; 旧 6685 行 OurItem 对标及定宽/非定宽实验，不参与现在的正式 C# 逐字段验收。",
+      "status": "historical"
     },
     {
       "path": "test-proj/ExportAccessorVerify/prepare.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "test-proj/ExportAccessorVerify/prepare-native.mjs; 旧正式导出准备和 FNV 生成已改为原生临时工作区导出与冻结 FNV 参照。",
+      "status": "replaced"
     },
     {
       "path": "test-proj/fabulous-game/README.md",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "test-proj/README.md; 历史实验报告/命令说明，已加非活跃声明，保留正文来源。",
+      "status": "historical-document"
     },
     {
       "path": "test-proj/fabulous-game/gen-big-table-fixture.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "native/tests/compat/tests/accessor_golden.rs; 旧 Lua userdata 驻留量实验，写 /tmp/weak，属于外部游戏历史对标。",
+      "status": "historical"
     },
     {
       "path": "test-proj/fabulous-game/gen_fixtures.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "test-proj/ExportAccessorVerify/prepare-native.mjs; 旧外部游戏 OurItem/OurItemOT 性能材料，显式 GAME_BENCH_DIR 输出，不是工具发行验收。",
+      "status": "historical"
     },
     {
       "path": "test-proj/fabulous-game/gen_bench_fixtures.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "native/crates/ct-xtask/src/fixtures.rs; 旧外部 ItemBench/ArrayBench 同语料实验，不参与现在的 S/M/L/r 正式性能门槛。",
+      "status": "historical"
     },
     {
       "path": "test-proj/fabulous-game/migrate_excel.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "native/tests/compat/tests/template_flow.rs; 已用完的一次性旧游戏 Excel 表头搬迁资料；当前模板迁移走原生显式用例。",
+      "status": "historical"
     },
     {
       "path": "test-proj/fabulous-game/gen-two-accessor-variants.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "native/tests/compat/tests/accessor_golden.rs; 旧 Lua 槽位/字面量偏移 A/B，对外部实验副本生成，不能替代原生 golden。",
+      "status": "historical"
     },
     {
       "path": "test-proj/ExportAccessorVerify/gen_scalars_bench.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "native/crates/ct-xtask/src/accessor_fixtures.rs; 旧正式标量生成已由 Rust 再生 Binary/C#，逐字节匹配 main 冻结参照后交给 C# 独立读取。",
+      "status": "replaced"
     },
     {
       "path": "test-proj/fabulous-game/uniform-check/uniform_fixed_check.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "native/tests/compat/tests/binary_golden.rs; 旧 Python patch 修复枚举槽位的证明材料，原生枚举/零值定宽已独立对照。",
+      "status": "historical"
     },
     {
       "path": "test-proj/fabulous-game/uniform-check/uniform_enum_check.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "native/tests/compat/tests/binary_golden.rs; 刻意复现旧 Python patch 枚举布局 bug 的注入脚本，不是现役生成器。",
+      "status": "historical"
     },
     {
       "path": "test-proj/fabulous-game/uniform-check/README.md",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "test-proj/README.md; 历史实验报告/命令说明，已加非活跃声明，保留正文来源。",
+      "status": "historical-document"
     },
     {
       "path": "test-proj/fabulous-game/uniform-check/real_uniform_check.py",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "test-proj/ExportAccessorVerify/prepare-native.mjs; 旧 Python 真实导出后枚举/布局诊断，其必要当前能力由 Rust golden 和独立 C# 读取承接。",
+      "status": "historical"
     },
     {
       "path": "test-proj/ConfigAccessorBench/README.md",
       "owner": "independent-readers",
-      "replacement": "Pending: audit active reader/fixture entry; keep historical experiments",
-      "status": "pending-audit"
+      "replacement": "test-proj/README.md; 历史实验报告/命令说明，已加非活跃声明，保留正文来源。",
+      "status": "historical-document"
+    },
+    {
+      "path": "test-proj/RefConfigBench/PERF-REPORT.md",
+      "owner": "independent-readers",
+      "replacement": "test-proj/README.md; 历史实验报告，非当前正式入口，保留来源正文。",
+      "status": "historical-document"
+    },
+    {
+      "path": "test-proj/ConfigAccessorBench/REVIEW.md",
+      "owner": "independent-readers",
+      "replacement": "test-proj/README.md; 历史实验报告，非当前正式入口，保留来源正文。",
+      "status": "historical-document"
     }
   ]
 }

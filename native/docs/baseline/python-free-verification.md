@@ -10,7 +10,7 @@ Windows/Linux release execution. Verification evidence below is macOS arm64 only
   including their source hashes/names. A SHA-256 sidecar and the original native source-tree
   snapshot preserve provenance. The native-origin inventory had 84 files/687 functions;
   main's three additional checks are explicitly mapped by `compat-matrix.json`.
-- Current `ct-source-tree/2` fingerprints cover native, Web, launcher, OpenSpec and CI,
+- Current `ct-source-tree/2` fingerprints cover native, Web, launcher, OpenSpec, CI and independent reader sources (test-proj added in 7.3),
   always retain the frozen historical test inventory, and never scan or execute `ct/`.
   Native inventory includes crate unit tests as well as integration tests. `--root` selects
   an explicit checkout; `--check` requires matching source hashes and test inventory.

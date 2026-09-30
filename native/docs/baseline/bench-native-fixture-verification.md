@@ -43,9 +43,16 @@ scenario and preserves the recorded fixture digest. Median times (ms) were cold 
 hot CLI 59415, hot worker 56569, one-table change 58583, and one-translation change 58649.
 All sampled process-tree peaks stayed below 7.5 GiB (largest 7,590,704 KiB).
 This initial capture has `no-baseline` verdicts; it is not a completed regression check.
-An independent five-sample L rerun is in progress. Some compatibility builds/checks ran
-during the first capture; the raw sample spread is retained and the independent run is
-required before accepting the entry.
+An independent five-sample L rerun completed with `regression-pass` for all five scenarios;
+[`bench-l-macos-native-verification.json`](bench-l-macos-native-verification.json) retains
+every sample, artifact hash, and input digest. Baseline/rerun medians (ms) were cold
+98954/96284, hot CLI 59415/54848, hot worker 56569/55193, one-table change 58583/57228,
+and one-translation change 58649/57131. Every rerun has 607 artifacts and the same
+scenario output hash as its baseline. The largest sampled process-tree peak was
+7,704,160 KiB, below the 7.5 GiB limit (7,864,320 KiB).
+Some compatibility builds/checks ran during the first capture, and light debug
+preparation/reader checks ran near the end of the rerun; sample spreads remain in the
+raw archives. The measured release ct executable was not rebuilt during either run.
 
-L regression and other-platform archives remain to be measured.
-Task 7.1 stays open until those regression entries and clean-environment checks are complete.
+S/M/L macOS regression entries are complete. Other-platform archives remain to be
+measured; task 7.1 stays open until those entries and clean-environment checks are complete.

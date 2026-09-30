@@ -52,7 +52,7 @@
 
 - [ ] 7.1 将 S/M/L 基准生成迁至 Rust 并保留 r/r-full 入口；删除生成输出后验证各档可再生、规模/种子/语义契约和基准留档回归入口成立。
 - [x] 7.2 替代 native/fixtures 中 Excel、Schema、fingerprints、binary、export、template 的必要 Python 生成/语义比较脚本；验证 golden 来源可追溯、独立断言保留，不由被测代码生成期望值来掩盖差异。
-- [ ] 7.3 将正式验收仍调用的 test-proj Python 准备/检查入口迁至 Rust/JS 或既有目标语言；用对应入口真跑验证，纯历史实验登记为非活跃且不批量删除资料。
+- [x] 7.3 将正式验收仍调用的 test-proj Python 准备/检查入口迁至 Rust/JS 或既有目标语言；用对应入口真跑验证，纯历史实验登记为非活跃且不批量删除资料。
 - [x] 7.4 将 fingerprint、coverage matrix、bench 与 CLI 对照脚本收敛为原生清单及静态基线，退役 live-Python 必需路径；验证 ct/ 缺失时测试数量/必要场景不缩水、基线损坏明确失败。
 - [ ] 7.5 更新发行自检与 Windows/macOS/Linux CI，加入 panel 静态资源/HTTP/退出 smoke 及 Node 浏览器验收；验证流程不安装或调用 Python，发行包不含解释器或 Flask 负载。
 - [ ] 7.6 迁移有效 ct/docs 文档并更新安装、开发、升级、基准说明及活跃路径引用；验证新命令可执行、链接有效，明确同源草稿限制、未知事务处理和旧同名 ct 冲突。
@@ -131,3 +131,7 @@
 2026-09-30 兼容夹具迁移：六类独立输入/期望值共 130 文件及七份历史来源文本已固定 SHA-256；Rust `xtask compat-fixtures` 先校验冻结材料，再从独立 OOXML 源重建六个 Excel 边界工作簿，两次空目录输出字节一致。Schema/hash/Binary/export/template 保留独立静态输入与期望，不以原生生成器覆写 golden。模板完整语义比较改由独立 XML/ZIP 读取器执行，旧 openpyxl 工作簿对照、故意改坏表头和源摘要损坏的负例均通过；无可执行 Python 的 PATH 下准备与比较入口通过。兼容包 188/188，全工作区 324/324，0 failed/ignored，OpenSpec strict 通过，三平台 CI 已加入再生检查但尚无三平台执行证据。7.2 完成，详见 `native/docs/baseline/compat-fixtures-verification.md`。M 档五样本原生基线及再次五样本运行的五场景全部 regression-pass；L/其他平台尚待完成，7.1/G3 维持未勾选。7.4 的 fingerprint 仍有 Python 版本探测，整体无 Python 门槛尚未通过。
 
 2026-09-30 验收清单与对照收敛：main 85 文件/690 函数已独立冻结，补齐旧 native 84/687 清单之外的三项主分支检查；修复部署改大小写时保留 Unity GUID 的缺口。fingerprint 改为原生/Web 源码 + 完整历史清单，不再执行解释器或扫描 ct/；覆盖矩阵始终校验完整映射与原生锚点，无 ct 缺席提前返回。CLI 六场景改为只读冻结基线与摘要守卫，bench 缺失/损坏留档明确失败，首次采集必须显式 --record-baseline，恢复演练改为原生 + 独立 CLI 留档。无 ct/、无 Python PATH 的临时源码包离线全工作区 328/328、0 failed/ignored，六个 CLI 场景退出码/文本/11 产物摘要均一致；S 回归五场景通过，M 发布 prepared 阶段中断后 307 产物摘要/mtime 恢复且暂存清零。首次环境缺 cat/sleep 与源码包无 Git 元数据的断言问题均已修复、复验，失败记录保留。7.4 完成，证据见 native/docs/baseline/python-free-verification.md。L 首轮五样本已留档、所有峰值低于 7.5 GiB，独立复验进行中；7.1/G3/三平台门槛仍未完成，Python 不删除。
+
+2026-09-30 独立读取准备与历史实验登记：test-proj 19 个 Python 脚本逐项审计，两条正式准备入口已由 Node + Rust 替代，17 条历史实验保留非活跃说明及来源摘要。旧标量只读历史产物的验收缺口已补齐：Rust 从冻结输入再生 Binary/C#，逐字节匹配 main 8dc7b81 参照，再由独立 C# 读取；32 文件摘要守卫、31 份 main 来源字节验证、九条 FNV 必需和固定 127 项检查防止静默缩水。临时源码包排除 ct/、无 Python PATH 下独立读取 127/127、0 不一致，离线 Cargo 全工作区 331/331、0 failed/ignored；缺 FNV、源摘要损坏、新未登记脚本和未知 golden 均拒绝。首轮暴露旧兼容清单误收未跟踪 pycache（130 实为 129 份版本化输入 + 本机缓存），已排除缓存、保留全部必要输入与场景并加回归；六个 Excel 再生入口及六范围指纹通过。原始记录见 native/docs/baseline/test-proj-verification.md。三平台 CI 加入该独立读取入口，尚无远端实测，7.3 完成，当前 35/45。
+
+L 独立五样本复验已完成：冷/热 CLI/热 worker/改单表/改译文均 regression-pass，每场景 607 产物摘要与基线一致，最大采样进程树 RSS 7,704,160 KiB < 7.5 GiB；原始结果见 bench-l-macos-native-verification.json。S/M/L macOS 留档回归已完整，其他平台留档、发行及 G3 仍未完成，7.1/7.5/7.7 保持未勾选，不删除 Python。

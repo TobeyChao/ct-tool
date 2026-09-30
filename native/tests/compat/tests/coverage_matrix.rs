@@ -289,7 +289,14 @@ fn baseline_fingerprint_is_pinned_and_complete() {
         fingerprint["scopes"].get("ct").is_none(),
         "当前指纹不能依赖已退役源码树"
     );
-    let scopes = ["native", "web", "launcher", "openspec", ".github"];
+    let scopes = [
+        "native",
+        "web",
+        "launcher",
+        "openspec",
+        ".github",
+        "test-proj",
+    ];
     for scope in scopes {
         assert!(
             fingerprint["scopes"][scope]["sha256"]

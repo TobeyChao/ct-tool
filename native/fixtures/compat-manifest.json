@@ -154,7 +154,6 @@
         "accessor_golden"
       ],
       "files": {
-        "__pycache__/generate.cpython-312.pyc": "b92e3679b3cad4bf85e14ede9fa87d4817cbaee60ed1e19735b86dd2ea31c506",
         "enums.json": "d1dc3084e9fb4ea6cb285fe8754a452e07f8f1f2458a85440a74e6f2a05de150",
         "expected/Buff.fbs.txt": "7b816ed3413cdac09a7b0fd497f3151cac813b98092230e2fcf5681661a0559b",
         "expected/Buff_accessor.cs.txt": "98fb7f7f949999aa76c00de61d5c629bb6f2893eb455a84679d466c03418b85e",

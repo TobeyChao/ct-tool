@@ -1,8 +1,8 @@
 {
   "schema": "ct-source-tree/2",
   "git": {
-    "commit": "5d3207226328e8123a00b4fd40732f2f33606da3",
-    "dirtyPaths": 34
+    "commit": "78bec70eabf0b390f59dc1a968e367b015fb75c0",
+    "dirtyPaths": 48
   },
   "toolchain": {
     "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
@@ -10,19 +10,19 @@
     "pythonRuntimeRequired": false
   },
   "tree": {
-    "sha256": "9ef0ea11cc32a09f2b2cfa06a14fe43387e71703ad9a28e02de99e2335fbe93b",
-    "files": 962
+    "sha256": "efd54303d0de6c0d30c27e8c6323ead64d96c6b9628ff47247babb8c97a4321c",
+    "files": 1080
   },
   "scopes": {
     "native": {
-      "files": 563,
-      "bytes": 7849475,
-      "sha256": "de4a663d2381a66474dd2feb9b70d17c8af6c59a7ce9277cdaee2ffe2c2a97fb",
+      "files": 582,
+      "bytes": 7962151,
+      "sha256": "37343a3b0918f2469f36248c92f2aa5ab58c93ad36660bb2250b15ed25cd0bd2",
       "entries": {
         ".gitignore": "e899756b962f25261eca57ba87fa2e878892daa40bca86f0871d7935d038a520",
         "Cargo.lock": "c20c6e340a325f179b95c85fae87c4c5c9092cdc0d33d08f89d4c7144b86c464",
         "Cargo.toml": "7e94522a8f6dc7e44172c04a26309abfe111404afc264328d8e581c691a7ff9d",
-        "README.md": "5cdab04e7401e51b5ff4bddbeddeacc9dde2cdc963f2bb06e9fd74eae36b7151",
+        "README.md": "d8d75a75856a994693614d50a8607be377c3bc55fd08140a66d90c6b31cef861",
         "benches/README.md": "17dc55a29361c712551463c10c6039aac8802aaaf362cc13e12c0939f79baa65",
         "clippy.toml": "9ddbc4742f3769968c9e07ff2e9a8b9d701205b8b0714a6d77e85a171fe2d966",
         "crates/ct-app/Cargo.toml": "959a7cef8d2afcf5342f913aef4668170af7ae2f6cc7f87047c74f19cf311128",
@@ -134,7 +134,7 @@
         "crates/ct-storage/src/workspace.rs": "aa9ecb45d848f4b9b3132025fc804897b142463202c8cd93ecb1a43dca1bdb96",
         "crates/ct-test-support/Cargo.toml": "26cf9ecc673159a104150dd3f094c5522a931c58dc4880933d05cb3b1e3b1b36",
         "crates/ct-test-support/src/excel_builder.rs": "c70b5e2a78b14019cc58784783d5fe9a1b0ca950dcac9e56b510fcf08eb31d89",
-        "crates/ct-test-support/src/fixture_archive.rs": "5b44bbab8024ffe7d45566c89c6ab23fd038d179b4bf8f08812af32ce6a5fb58",
+        "crates/ct-test-support/src/fixture_archive.rs": "d1b29446d7f61158ad7653db158132215340c96f224c56bf4a0e0076a04da032",
         "crates/ct-test-support/src/i18n_builder.rs": "7efcc817f6210de1b332175378d5c05b5478ab1bde796d41193e3128bb7d9581",
         "crates/ct-test-support/src/journal_builder.rs": "a1631fcbe2a122773920ab2edcacd3d0b2ca943589ac75b13d24436c0444a6e5",
         "crates/ct-test-support/src/lib.rs": "5244a52b4466cb397b6d82497685ff090c36294945470f69be1fcc0898073f99",
@@ -170,16 +170,18 @@
         "crates/ct-worker/src/shutdown.rs": "a934bf272d26e1943db0efb2317ee2622c04c2261930ea84a8b09cd863f1d05e",
         "crates/ct-worker/src/task.rs": "1d378a718b695b5aa6c058f3d5bd463a6bd5bb8bfde8ff8a064bc30e8f2d4147",
         "crates/ct-xtask/Cargo.toml": "7df907e1bf49c063d51045e6c8c21319b0185da94802b22b7a8945de01d153d5",
+        "crates/ct-xtask/src/accessor_fixtures.rs": "2c04f2de8f9c80fcdd1c36ac08da0b54a2b8ad198656debb65300b151c09d467",
         "crates/ct-xtask/src/bench.rs": "03d98a84f3d25b1ed110a6097da230e4c99240362d8bdd9597b2fd0affb31171",
         "crates/ct-xtask/src/dist.rs": "915419864871d616ca74af6be8c9873acc8b0d2eb2bc8a4326dd2d66be7e569a",
-        "crates/ct-xtask/src/fingerprint.rs": "bdb6d876395e2251a20b4de0f6754fb8b5d64eb7da1243b9a2ebd5c276c1b66c",
+        "crates/ct-xtask/src/fingerprint.rs": "e8f526d57dc7e93776ff4bd597cd5ad26ea948e14c223e3d0b62558d00dbda51",
         "crates/ct-xtask/src/fixtures.rs": "789db1d22bf5b68a494c6e7edf3f197a16b11ef1501d133818878290680ac8d6",
-        "crates/ct-xtask/src/main.rs": "518728e7a6ef7d9d39661f3dd3b6375a004c7fd481c513f0d90fbe1d8b230c6f",
+        "crates/ct-xtask/src/main.rs": "89c6ea9531fcad77de53dd25840cff1277b1987b2ec265385861407174d8cf01",
         "crates/ct-xtask/src/real_fixture.rs": "fc8c3bbd483565e3baef6a6189bd52ed62930381fda1f4e619493b2893f79172",
         "crates/ct-xtask/src/samples.rs": "a7d6023683c5abcb158e1a396a20a6a4434b4ff9560e2b9c844b6f336bb77de2",
         "crates/ct-xtask/src/shape.rs": "126e9313066b026e15625f557d4ba4746125fb0a119ef8a67e354a5c10ea95a3",
         "deny.toml": "74811e51a86195d8a131deb6efd99a68bbfa03fb3c5d5e64a649ae2268ea2392",
         "docs/architecture.md": "5ed9d120edb99a4ad565c6b4b70c7c3ce945a9f184d98982591c14e6cfde1b20",
+        "docs/baseline/bench-l-macos-native-verification.json": "9e3cc57040e6de0535987e2ecf3c32f031a020537146b20e7883698c4dd62b55",
         "docs/baseline/bench-l-macos-native.json": "f2685c3f7f9b91a6c97a855543c602d4875c293372204a6e6fc0b7b950d29561",
         "docs/baseline/bench-l-windows.json": "fa8b953dd259f2e51cbadd0ac493eaf47749d80c6110f117e4449ba7322a11d4",
         "docs/baseline/bench-m-macos-8workers.json": "9010a273ed8b549824fc69637d865cb83ffaef0b78321d50a84cb36f3f948087",
@@ -188,7 +190,7 @@
         "docs/baseline/bench-m-macos.json": "a53516cb80ae81fa84b81480cbe847680f9c760d4e966ff59d3969ab6f981781",
         "docs/baseline/bench-m-windows-2026-09-18.json": "4facb61a5e533a193be739388206a92eceeeaaff1ddcf0f13f45ae0cf9e7cac4",
         "docs/baseline/bench-m-windows.json": "c1859c4234d3e577026c935da266c79ddc38940b447214e558f3b4de1d1dd675",
-        "docs/baseline/bench-native-fixture-verification.md": "172946fc0f6a3269384709a3797d4a74fd0ef2637e0a99736ad1e34a1a52ad3b",
+        "docs/baseline/bench-native-fixture-verification.md": "cde61ad203000038fda2b2e1d80014ab1b65dc42c71d48d0c45ed36309ec4212",
         "docs/baseline/bench-r-regression-check.json": "c9f1131b0ee4661e6baa128afd859b71b9e042b315285a5bdd8d35e84fc45caf",
         "docs/baseline/bench-r-windows.json": "5002f98cbdc4c79600af57fa63ed38829d1d70688546696fbdbcce85a546d7be",
         "docs/baseline/bench-s-macos-native-verification.json": "46c98e5e634ac853cd659e7e5dcb96361ce82f08bd8d73215f3f2e6aab837ce9",
@@ -201,7 +203,7 @@
         "docs/baseline/cli-text-diff-python.sha256": "a2aff91a507598fd8188662b255f2ae0b5b1ad111ee1e929b362d51178791555",
         "docs/baseline/cli-text-diff.md": "d04c65123809e93c63105aace603e70753b5e8af0d8a628ba317996a810632d6",
         "docs/baseline/compat-fixtures-tests.txt": "552e27e7ba9524e5c1de112672efcb89cb600e138a2aba52dc5bfa9dc5b57acc",
-        "docs/baseline/compat-fixtures-verification.md": "8a55a545e0d73f564d08a290f87552a9f7bce2b1a2894165e86f61e1752731c3",
+        "docs/baseline/compat-fixtures-verification.md": "aa0d680442f8a14dde1595e3384e6643baa09e96a850309f1c3e846a8522ddc0",
         "docs/baseline/compat-fixtures-workspace-tests.txt": "1c11fbe721e1cbdf84d32f92f3be7f04309792ca0627b567a3eaed0b89f13383",
         "docs/baseline/compat-matrix.json": "63d2749ef96f143593af78f99a45369775c703d18efa50615654e6f30c3bfa40",
         "docs/baseline/handoff-macos-linux.md": "5742f3e7dc0cad1d9f6442662327d55a1a026599b7f1eaa86f79784f9b207dd6",
@@ -215,9 +217,9 @@
         "docs/baseline/python-free-negative-checks.txt": "ee2175093d8a412e36ede17c90f0469b6d3522ba1ce4b3ff4388010ea8ca9ad0",
         "docs/baseline/python-free-recovery-drill.md": "d0e6288d3ae6e25b01e71aecf26d4e552ef1682b18432b63d5bbfea705d4690a",
         "docs/baseline/python-free-targeted-tests.txt": "c191e9ffb299c1755c61d3f6502f70a6ce1100f219ad5160a53856abf3086ff3",
-        "docs/baseline/python-free-verification.md": "fe562994384e055dd18de6c17c52aab8987f009dac624da95831842f796095d9",
+        "docs/baseline/python-free-verification.md": "78845e367922b1d6abba4c98ed1334fe53edf87030f3b636a36348847408607c",
         "docs/baseline/python-free-workspace-tests.txt": "41869e15b8e47f1a43ddd62fa263d0e0f836d1f8cba9255051161175251b679e",
-        "docs/baseline/python-retirement-inventory.json": "1651e1c617bbacebbb2c52b1f564313b2bb9694af8d7db1bf1d89a7b3fe2a63b",
+        "docs/baseline/python-retirement-inventory.json": "57943a790e43a01d650bf5663884867437e9f1fde3d52105f9dc9a0a52bffda2",
         "docs/baseline/recovery-drill.md": "f20d2b3f265a975798faafc1a521e6dac504422f2cdb3ad4411ac6611bc9d9ff",
         "docs/baseline/reference-tests.json": "798ca9b70b14dce556d24246024ae368644bb79ee507f36e63dcf463bee32f65",
         "docs/baseline/reference-tests.sha256": "a93bc8596f08369717db9d43e093af3651b5fda47a674dd671bc0f0bc287424c",
@@ -233,6 +235,18 @@
         "docs/baseline/source/fixture-template-compare_semantics.py.txt": "5b658e642f877ef13433f078d8f280761ee145f07a6171380ce38e9dda958a73",
         "docs/baseline/source/fixture-template-generate.py.txt": "4ed807506540c5d451a357394d9852f24b6e6f22f9eacac8cefcbfe56e94f6d7",
         "docs/baseline/source/source-tree-native-origin.json": "631decba1d6e332d1450906becfbda9b6c4561b024c76eb1dfc262e43d2348df",
+        "docs/baseline/test-proj-evidence/audit.txt": "bff19c89f2b22edf02054ffc5fe7988510fd9b556f6cd681e4af09aae0ee7d42",
+        "docs/baseline/test-proj-evidence/build.txt": "3725c803309c3ebc0d25c7e470a69235c23f88194e5868c0201b6ae31bf13ce8",
+        "docs/baseline/test-proj-evidence/compat.txt": "cb654a55f2a51a34459bd6f776114db4aaff30f13b00c8d2f182614db9b86dcc",
+        "docs/baseline/test-proj-evidence/environment.json": "11be0c3c9c1581f307cac187fd11ce18e8d792125456ba82215d3a500bcb1f29",
+        "docs/baseline/test-proj-evidence/fingerprint.txt": "895040ce3fe51d02a7a2334a96c90550398ce46366c814ebb97fea7421a0386d",
+        "docs/baseline/test-proj-evidence/first-workspace-tests.txt": "266d4429ed62cead639fb3644ab1eb74ec9a57d78bce5e43b337b68020806fba",
+        "docs/baseline/test-proj-evidence/negative.json": "9e11fbb5ee8c6113cf1064f930b8186855eb44a8526e11ed6c3216cec4ba89ff",
+        "docs/baseline/test-proj-evidence/oracle-negative.json": "686138ad82cdf0d4e7ef729b47297610450828d4647723484373a260ebc08a42",
+        "docs/baseline/test-proj-evidence/provenance.json": "4fa080594849e32aac5fbb4146dfa84d2185cc23759c97175cf467107979dea5",
+        "docs/baseline/test-proj-evidence/reader.txt": "8e1da7754e82ab54219f2ff64545ef1dc40066b145ea8741126abbce2ee03e0b",
+        "docs/baseline/test-proj-evidence/workspace-tests.txt": "c18e5f7be3af39e5f062d4c489b7acca423eeeb15af00ae9fa9c0e918370ece8",
+        "docs/baseline/test-proj-verification.md": "4faa76fe8938d11566886236769d78acbe3b3f159cd04e7642bb20df27867cc7",
         "docs/baseline/web-http-contract.md": "9475b036e6d9178e8382f91802d40422893a2bbcf8843998244c8023c9f6854e",
         "docs/baseline/web-http-python.json": "b6698580fb0f0a10f77ceefc45207ffda79fd02bd34c16290ea43414f80afc71",
         "docs/baseline/web-parity.json": "5cac3a216da8a24ddbce86e066a4603b75ba117298a02876d677f7159e9831f0",
@@ -335,8 +349,13 @@
         "docs/protocol/examples/workspace_open.ndjson": "c7b911f780b8d09f5ce98c7e9b684417cd57de6c1e2059c99d29fc06af6f0752",
         "docs/protocol/schema/protocol.v1.json": "7173992611151a25e5a3257a418674acef6ef49228f782a93f1903c96efc11b5",
         "docs/protocol/v1.md": "4e9f6ca5defef613467d003b6d515b106ec50709902aee347bcb0a2ee3548170",
-        "fixtures/README.md": "341810bd37bb4f5413a87feab584562496b69908a02735def5e751ef1da4ee3d",
-        "fixtures/accessor_verify/README.md": "5234c966fda282337b608cb032d3cfb939931456f36ca685014acfd20d649190",
+        "fixtures/README.md": "678e5e58291406691ea496f77ab28ab6f5f4ed60f4f3eeef854dd8a4394804ab",
+        "fixtures/accessor_verify/README.md": "c9fd2d735d27c9f4a777664c26b6cb7c82dda0f2ea8e890584975587607cc9ae",
+        "fixtures/accessor_verify/independent-oracles.json": "6c1256367f9eac30363bf0f78912f50eaecf24885a0581e16de9cb97eb41acff",
+        "fixtures/accessor_verify/independent-oracles.json.sha256": "e668b71a2454bf491dfb65735a0309bc679877e93a296959cd6606302434fc54",
+        "fixtures/accessor_verify/scalars-schema.json": "adaa4aa7d93e5a02addca7a4f5108d3763e67684eed74dc396321024742d5f49",
+        "fixtures/accessor_verify/source/gen_scalars_bench.py.txt": "e745d5ac661aa2cb294889d324df2793fbed0f6d627c38b08797116923195600",
+        "fixtures/accessor_verify/source/prepare.py.txt": "5793aede49328ad3817e1371f0662aa4f1d17870b0fe0d91600ffe2b93f47c39",
         "fixtures/accessor_verify/workspace/config/global.yaml": "a3b66667afe5920c734d364aef5cfbff753618c859860ecb3561fe73b551998d",
         "fixtures/accessor_verify/workspace/config/schemas/Item.yaml": "1496b2164b6380e4a550cec2140d0d15f85b1ec20f15f5a339852e053f1fa178",
         "fixtures/accessor_verify/workspace/config/schemas/ItemType.yaml": "670243fb056e4967942266a50b4c6871657393d6f9ac194fb81f753f1ffa5312",
@@ -381,7 +400,7 @@
         "fixtures/binary/input/sparse_uniform.json": "c8aece10179e7606d84e2e3acb3d4d665c5af581cf230fa517242d0ad05c3a7d",
         "fixtures/cache/README.md": "180e1f10842f83b763e86f49119ba78fbcff35a1d7613c698d2722564603cf3c",
         "fixtures/cache/python-state.json": "b2a0249bb6a9dad0558e6f12d11bfa5da3780250d500a552661ad0606810ff66",
-        "fixtures/compat-manifest.json": "9a2f04be5b43e8881a1269c49629e9b7172bb2243fc0dc9295d7e195e52482d5",
+        "fixtures/compat-manifest.json": "c03d7b7555eb177d47d51ce9875df35b24e9c2446de84219c41eba5247521253",
         "fixtures/excel/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "fixtures/excel/active_sheet.xlsx": "1315fbc526b01eeab1dab2c6804e6eefe30463e9a29f5023843a29ce9902cd64",
         "fixtures/excel/dates_1900.xlsx": "77896c9b6b854275e164cac5fdbcd1f8dc1a5a0a4d7c2a83ebc28329c8433167",
@@ -533,14 +552,14 @@
         "tests/compat/tests/binary_golden.rs": "041a73f77b00b7a2f445868674b0d778e6052b6e79cc708cd94b22fb9b6733d8",
         "tests/compat/tests/cache_artifacts.rs": "c04e4e40a963d504606ac43687b4555aad8531545c28813514754d29c7115f69",
         "tests/compat/tests/canonical_read.rs": "d2384f35f09fb4d4f66db09d0b1840cebda8ea7358bf0b8cef57f0082e22ea48",
-        "tests/compat/tests/coverage_matrix.rs": "cb0c218c85a640be8d966af24bdddd19cb6aaa5f578876a78a5bc8fdecfd0820",
+        "tests/compat/tests/coverage_matrix.rs": "9bd596a832562a23672bde6a28d1e88d5075bc659ba1e238c43de77d9262dac3",
         "tests/compat/tests/desktop_history.rs": "52de2cf31699068fa90e2e984b2f3a64a5534dfe3f2cf69ff506c26afb920ed3",
         "tests/compat/tests/excel_edge.rs": "099f87ac2109973d1f19e71d758d89d605dd2e2571fb186859afe0f750dc2028",
         "tests/compat/tests/export_compat.rs": "c80ce57f64f41b4f63e3d6febcb0eef314e374c3b9c85ed9fe026fe7c8921777",
         "tests/compat/tests/export_pipeline.rs": "a1fd2c44a1f01a1448715745695b297fab0a5f3804403c874b75a0552d90f2e6",
         "tests/compat/tests/fbs_export.rs": "7d9b3257d550e089b4fb41686ccc272a8ebea0f691b2ff7e00a94b6fd62023a6",
         "tests/compat/tests/fingerprints.rs": "bf486db976422501ffddce6b0760cecf935a3c3cc201786131c055a4907e1d1a",
-        "tests/compat/tests/fixture_oracles.rs": "c3526ceac152273a2bc0488c85b361e8b091dd54dc0054e5abf43bac673398fd",
+        "tests/compat/tests/fixture_oracles.rs": "f755efca9f1f2c17450f345a0390d0c327ee3847bfd1b7a58c813afa2f2f29f7",
         "tests/compat/tests/i18n_flow.rs": "9ebea95c1c0a7c6fb3b7f05071d9bb9530578acb6aa381ec4ce62b3bac7490f3",
         "tests/compat/tests/incremental_matrix.rs": "ffcc9927dafa00eb8bb9d526d470098c5bc42502745ffed36f76d01de7de51b3",
         "tests/compat/tests/journal_recovery.rs": "d2a74b306a77c8ce57d62868b6caea5b6bf7a4c7091b08ac84461564174a35d5",
@@ -596,13 +615,18 @@
     },
     "openspec": {
       "files": 249,
-      "bytes": 2099162,
-      "sha256": "7c2f8343600b3ed29033e37b3220d83ed7cdc02c300c2e2b9ef46038e8100dfe"
+      "bytes": 2100629,
+      "sha256": "4581ca177da0d3aa6039e46ebf763739eda2a9e5f51a67e748bfd76da9aaf260"
     },
     ".github": {
       "files": 2,
-      "bytes": 3080,
-      "sha256": "d903434aac8fa9c6b7e72afe40c34b96892f879eb48879660c53a11217f546a5"
+      "bytes": 3646,
+      "sha256": "0aa8501716572463ff5f6dfaf715b801fee52774c9c55c85bdd52b90a5b777dc"
+    },
+    "test-proj": {
+      "files": 99,
+      "bytes": 16495054,
+      "sha256": "56f0a0b850dc019b3d927dd84f93a6cc616af87a9ac3cb5056191553a744b67e"
     }
   },
   "testInventory": {
@@ -828,6 +852,7 @@
       "native/crates/ct-worker/src/session.rs": 0,
       "native/crates/ct-worker/src/shutdown.rs": 0,
       "native/crates/ct-worker/src/task.rs": 0,
+      "native/crates/ct-xtask/src/accessor_fixtures.rs": 2,
       "native/crates/ct-xtask/src/bench.rs": 11,
       "native/crates/ct-xtask/src/dist.rs": 2,
       "native/crates/ct-xtask/src/fingerprint.rs": 4,
@@ -854,7 +879,7 @@
       "native/tests/compat/tests/export_pipeline.rs": 11,
       "native/tests/compat/tests/fbs_export.rs": 3,
       "native/tests/compat/tests/fingerprints.rs": 4,
-      "native/tests/compat/tests/fixture_oracles.rs": 1,
+      "native/tests/compat/tests/fixture_oracles.rs": 2,
       "native/tests/compat/tests/i18n_flow.rs": 4,
       "native/tests/compat/tests/incremental_matrix.rs": 8,
       "native/tests/compat/tests/journal_recovery.rs": 0,
@@ -892,7 +917,7 @@
     },
     "totals": {
       "historicalPythonTestFunctions": 690,
-      "nativeTestFunctions": 327
+      "nativeTestFunctions": 330
     }
   }
 }

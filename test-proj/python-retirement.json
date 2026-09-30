@@ -1,0 +1,143 @@
+{
+  "schema": "ct-test-proj-retirement/1",
+  "note": "历史脚本保留资料，非活跃命令。successor 标明现役相关能力，不宣称不同语料/指标可以互相比较。replaced 仅两条正式准备入口；读取器三个 C# 源文件仍为现役独立验收依赖。",
+  "activeEntries": [
+    "test-proj/check-retirement.mjs",
+    "test-proj/ExportAccessorVerify/prepare-native.mjs"
+  ],
+  "files": [
+    {
+      "path": "test-proj/ExportAccessorVerify/gen_scalars_bench.py",
+      "status": "replaced",
+      "reason": "旧正式标量生成已由 Rust 再生 Binary/C#，逐字节匹配 main 冻结参照后交给 C# 独立读取。",
+      "successor": "native/crates/ct-xtask/src/accessor_fixtures.rs",
+      "sha256": "e745d5ac661aa2cb294889d324df2793fbed0f6d627c38b08797116923195600"
+    },
+    {
+      "path": "test-proj/ExportAccessorVerify/prepare.py",
+      "status": "replaced",
+      "reason": "旧正式导出准备和 FNV 生成已改为原生临时工作区导出与冻结 FNV 参照。",
+      "successor": "test-proj/ExportAccessorVerify/prepare-native.mjs",
+      "sha256": "5793aede49328ad3817e1371f0662aa4f1d17870b0fe0d91600ffe2b93f47c39"
+    },
+    {
+      "path": "test-proj/fabulous-game/gen_bench_fixtures.py",
+      "status": "historical",
+      "reason": "旧外部 ItemBench/ArrayBench 同语料实验，不参与现在的 S/M/L/r 正式性能门槛。",
+      "successor": "native/crates/ct-xtask/src/fixtures.rs",
+      "sha256": "bb1e74c18b8c4aa41ffc21459b8790fac14aec3d3dd7ed347dc6e01304906ca4"
+    },
+    {
+      "path": "test-proj/fabulous-game/gen_fixtures.py",
+      "status": "historical",
+      "reason": "旧外部游戏 OurItem/OurItemOT 性能材料，显式 GAME_BENCH_DIR 输出，不是工具发行验收。",
+      "successor": "test-proj/ExportAccessorVerify/prepare-native.mjs",
+      "sha256": "fba1679340dcf9de36db2aa4362daef94401109250bf68a3ed182b4444916aba"
+    },
+    {
+      "path": "test-proj/fabulous-game/gen-big-table-fixture.py",
+      "status": "historical",
+      "reason": "旧 Lua userdata 驻留量实验，写 /tmp/weak，属于外部游戏历史对标。",
+      "successor": "native/tests/compat/tests/accessor_golden.rs",
+      "sha256": "15df4ef0c73b4618552c60c7dca6c86d6e2a8ba86cbe6833c58d4aeb1559df33"
+    },
+    {
+      "path": "test-proj/fabulous-game/gen-two-accessor-variants.py",
+      "status": "historical",
+      "reason": "旧 Lua 槽位/字面量偏移 A/B，对外部实验副本生成，不能替代原生 golden。",
+      "successor": "native/tests/compat/tests/accessor_golden.rs",
+      "sha256": "11d235cef363f20716e3298b4279d9d246b4f61c72d8ea076578500fc3cb3a3f"
+    },
+    {
+      "path": "test-proj/fabulous-game/migrate_excel.py",
+      "status": "historical",
+      "reason": "已用完的一次性旧游戏 Excel 表头搬迁资料；当前模板迁移走原生显式用例。",
+      "successor": "native/tests/compat/tests/template_flow.rs",
+      "sha256": "c8dbfc3a72eec39e51f494bb3b8d19b8e3af7bd78f30823a9542cbd4d2b10492"
+    },
+    {
+      "path": "test-proj/fabulous-game/uniform-check/real_uniform_check.py",
+      "status": "historical",
+      "reason": "旧 Python 真实导出后枚举/布局诊断，其必要当前能力由 Rust golden 和独立 C# 读取承接。",
+      "successor": "test-proj/ExportAccessorVerify/prepare-native.mjs",
+      "sha256": "3e192601a1ec20adc96e5c449bfea8015dc16f98ce9beb125f782546308f9c1a"
+    },
+    {
+      "path": "test-proj/fabulous-game/uniform-check/uniform_enum_check.py",
+      "status": "historical",
+      "reason": "刻意复现旧 Python patch 枚举布局 bug 的注入脚本，不是现役生成器。",
+      "successor": "native/tests/compat/tests/binary_golden.rs",
+      "sha256": "1b0e5b4b4423133b489f838774453262fd82190263fe3bd26f028eadbf485c12"
+    },
+    {
+      "path": "test-proj/fabulous-game/uniform-check/uniform_fixed_check.py",
+      "status": "historical",
+      "reason": "旧 Python patch 修复枚举槽位的证明材料，原生枚举/零值定宽已独立对照。",
+      "successor": "native/tests/compat/tests/binary_golden.rs",
+      "sha256": "83e2e0ff0c86d4c779a6723e3a23ff0074da7e414ce328e93a48d3ce29340540"
+    },
+    {
+      "path": "test-proj/RefConfigBench/check_bundle_duplication.py",
+      "status": "historical",
+      "reason": "旧每语言整包重复率诊断，读取 gd 旧 bundle；不参与迁移后的正式门槛。",
+      "successor": "native/tests/compat/tests/export_compat.rs",
+      "sha256": "6503bbeedae64c3c9ff35f8b610042edad9d67f3ec9027c7816d91357d5d7f2e"
+    },
+    {
+      "path": "test-proj/RefConfigBench/check_export_preconditions.py",
+      "status": "historical",
+      "reason": "旧外部读取方案前提诊断及 monkeypatch 实验，不是 canonical 原生链路。",
+      "successor": "native/tests/compat/tests/binary_golden.rs",
+      "sha256": "34a088d53564bff4478f2f85f9deb642f15b5e5d49c3e98d681007adbcef94ad"
+    },
+    {
+      "path": "test-proj/RefConfigBench/check_uniform_risks.py",
+      "status": "historical",
+      "reason": "旧 Python uniform 探针与稀疏体积实验，包含真实 gd；当前独立稀疏/稠密字节对照在 Rust 验收。",
+      "successor": "native/tests/compat/tests/binary_golden.rs",
+      "sha256": "a3563ec52ea6adb52c21644d4f873c03b633107ba40c354f851c52eaf5fb560b"
+    },
+    {
+      "path": "test-proj/RefConfigBench/eval_uniform_layout.py",
+      "status": "historical",
+      "reason": "旧 ItemBench/ArrayBench 定宽体积与探针布局评估，指标只属于历史报告。",
+      "successor": "native/tests/compat/tests/binary_golden.rs",
+      "sha256": "bde833494f342a0918201f489f2a0afb83e47c76f309c332bc8d7bd71a80ad02"
+    },
+    {
+      "path": "test-proj/RefConfigBench/gen_ct_bench_tables.py",
+      "status": "historical",
+      "reason": "旧 ItemBench/ArrayBench C++ 对标形状与语料，生成本目录实验副本；正式 native 基准采用 S/M/L 和冻结 r/r-full 形状。",
+      "successor": "native/crates/ct-xtask/src/real_fixture.rs",
+      "sha256": "5c3a8c813883235cfaa1beced2163730ac1f91aeba407b6cfa1b5ef302932cb1"
+    },
+    {
+      "path": "test-proj/RefConfigBench/gen_literal_accessor.py",
+      "status": "historical",
+      "reason": "旧手写字面量偏移 A/B 变体，依赖旧 ItemBench/ArrayBench；当前访问器由 canonical Rust 生成并做 golden 对照。",
+      "successor": "native/tests/compat/tests/accessor_golden.rs",
+      "sha256": "cca49c952970361c6fdb5d1e7be448b58c9c53a816cafcbedcda62d077f8cf0c"
+    },
+    {
+      "path": "test-proj/RefConfigBench/gen_scale_corpus.py",
+      "status": "historical",
+      "reason": "旧 2000 表/约69万行合成 C++ 对标，外部语料和不同规模；不是当前 S/M/L 基准来源。",
+      "successor": "native/crates/ct-xtask/src/fixtures.rs",
+      "sha256": "4d9c3788e107244722f351c6c3489964f592e69a9dbd3a860908407f9b02ed90"
+    },
+    {
+      "path": "test-proj/RefConfigBench/pick_tables.py",
+      "status": "historical",
+      "reason": "扫描 D 盘外部参考游戏生成代码的选表工具，非独立可再生的正式输入。",
+      "successor": "native/fixtures/bench/shape-r.json",
+      "sha256": "35a34c27e89923b68005b5ed24fcf8553535542cb4c6673198b54513c327b695"
+    },
+    {
+      "path": "test-proj/UniformE2EBench/gen_our_item_bench.py",
+      "status": "historical",
+      "reason": "旧 6685 行 OurItem 对标及定宽/非定宽实验，不参与现在的正式 C# 逐字段验收。",
+      "successor": "test-proj/ExportAccessorVerify/prepare-native.mjs",
+      "sha256": "0df757fde5fc5c505afe66665d4b227a7aa41a552bc610b2c7209ecfd8adf8d6"
+    }
+  ]
+}

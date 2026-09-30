@@ -6,7 +6,7 @@ not delete the historical scripts or pass the overall G3 gate.
 
 ## Independent inputs and expectations
 
-`native/fixtures/compat-manifest.json` pins 130 files across binary, excel, export_pipeline,
+`native/fixtures/compat-manifest.json` now pins 129 versioned files across binary, excel, export_pipeline,
 fingerprints, schema_state and template, plus seven historical generator/comparator text
 snapshots. Inputs and expectations originate from the native branch checkpoint `2d7dfc9`,
 imported into main by `084be27`. Existing expected values were not rewritten.
@@ -57,3 +57,5 @@ The full workspace run still includes the existing fingerprint code's Python-ver
 probe. Removing that probe and replacing optional live-tree coverage checks belong to
 7.4; the entire test chain is not yet claimed to be Python-free. G3, L benchmark regression,
 three-platform release evidence, and the deletion gate remain open.
+
+2026-09-30 clean-checkout correction (task 7.3): the original 130-file listing accidentally included an ignored local template/__pycache__/generate.cpython-312.pyc. The 129 versioned inputs/goldens are unchanged. Cache bytecode is excluded from collection, not required or executed; an added regression verifies both absence/presence of local cache and rejects an unregistered golden. Historical 130-file counts above describe the initial local runs, not the current reproducible input count.

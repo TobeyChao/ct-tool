@@ -1,9 +1,9 @@
 name: Native Web
 on:
   push:
-    paths: ['native/**', 'web/**', 'launcher/**', '.github/workflows/native-web.yml']
+    paths: ['native/**', 'web/**', 'launcher/**', 'test-proj/**', '.github/workflows/native-web.yml']
   pull_request:
-    paths: ['native/**', 'web/**', 'launcher/**', '.github/workflows/native-web.yml']
+    paths: ['native/**', 'web/**', 'launcher/**', 'test-proj/**', '.github/workflows/native-web.yml']
 jobs:
   native:
     strategy:
@@ -12,6 +12,8 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Preserve byte-exact frozen references on every platform
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-node@v4
@@ -29,6 +31,15 @@ jobs:
         run: |
           cargo run --manifest-path native/Cargo.toml -p ct-xtask --locked -- bench-fixtures --sizes s
           cargo run --manifest-path native/Cargo.toml -p ct-cli --locked -- validate --root native/target/bench/bench-s
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Audit test-proj entries and run independent C# reader
+        env:
+          CT_NATIVE_BIN: ${{ github.workspace }}/native/target/debug/ct${{ runner.os == 'Windows' && '.exe' || '' }}
+        run: |
+          node test-proj/check-retirement.mjs
+          node test-proj/ExportAccessorVerify/prepare-native.mjs
       - run: node web/tools/check-parity.mjs
       - run: npm ci --prefix web
       - run: npm run test:http --prefix web

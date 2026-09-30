@@ -2,6 +2,7 @@
 //!
 //! 统一收口夹具生成、基准与打包，避免脚本散落（xtask 模式）。
 
+mod accessor_fixtures;
 mod bench;
 mod dist;
 mod fingerprint;
@@ -90,6 +91,14 @@ enum Command {
     CompatFixtures {
         #[arg(long)]
         out: Option<PathBuf>,
+    },
+    /// 用冻结标量输入生成 Binary/C#，先对照独立旧产物，不覆写参照
+    AccessorFixtures {
+        #[arg(long)]
+        out: PathBuf,
+        /// 显式源码包，避免重用构建缓存时误读另一 checkout 的参照
+        #[arg(long)]
+        root: Option<PathBuf>,
     },
     /// 构建平台独立运行时包并做无 Python 自检（任务 6.6）
     Dist {
@@ -183,6 +192,9 @@ fn main() -> anyhow::Result<()> {
                 out.display()
             );
             Ok(())
+        }
+        Command::AccessorFixtures { out, root } => {
+            accessor_fixtures::generate(&root.unwrap_or_else(repo_root), &out)
         }
         Command::Dist {
             target,

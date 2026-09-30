@@ -8,6 +8,7 @@ const repo=resolve(import.meta.dirname,'../..');
 const source=join(repo,'test-proj/ExportAccessorVerify');
 const binary=process.env.CT_NATIVE_BIN||join(repo,'native/target/release',process.platform==='win32'?'ct.exe':'ct');
 const dotnet=process.env.DOTNET_BIN||'dotnet';
+const xtask=process.env.CT_XTASK_BIN||join(repo,'native/target/debug',process.platform==='win32'?'xtask.exe':'xtask');
 const scratch=await mkdtemp(join(tmpdir(),'ct-accessor-verify-'));
 const project=join(scratch,'ExportAccessorVerify');
 const generated=join(project,'generated');
@@ -25,8 +26,11 @@ try{
  await cp(join(repo,'native/fixtures/accessor_verify/workspace'),workspace,{recursive:true});
  for(const name of ['Program.cs','ExportAccessorVerify.csproj'])await cp(join(source,name),join(project,name));
  for(const name of ['WireReader.cs','Runtime.cs','ConfigReader.cs'])await cp(join(repo,'test-proj/ConfigAccessorBench',name),join(reader,name));
- for(const name of ['ScalarsAccessor.cs'])await cp(join(source,'generated',name),join(generated,name));
- for(const name of ['scalars.bin','scalars.json','fnv_vectors.tsv'])await cp(join(source,'fixtures',name),join(fixtures,name));
+ const scalarOutput=join(scratch,'native-scalars');
+ console.log(run(xtask,['accessor-fixtures','--root',repo,'--out',scalarOutput]).trim());
+ await cp(join(scalarOutput,'ScalarsAccessor.cs'),join(generated,'ScalarsAccessor.cs'));
+ for(const name of ['scalars.bin','scalars.json'])await cp(join(scalarOutput,name),join(fixtures,name));
+ await cp(join(source,'fixtures/fnv_vectors.tsv'),join(fixtures,'fnv_vectors.tsv'));
 
  const exportOutput=run(binary,['export','--all','--root',workspace]);
  const output=join(workspace,'output');
@@ -34,6 +38,7 @@ try{
  for(const name of accessors)await cp(join(output,'generated/csharp',name),join(generated,name));
  for(const name of ['data_zh.bin','data_en.bin','data_ja.bin'])await cp(join(output,'binary',name),join(fixtures,name));
  const jsons=(await readdir(join(output,'json'))).filter(name=>name.endsWith('.json'));
+ if(accessors.length!==5||jsons.length!==12)throw new Error(`incomplete export: ${accessors.length} accessors, ${jsons.length} JSON files`);
  for(const name of jsons)await cp(join(output,'json',name),join(fixtures,name));
  const manifests={};
  const tables=(await readdir(join(workspace,'config/schemas'))).filter(name=>name.endsWith('.yaml')).map(name=>basename(name,'.yaml'));

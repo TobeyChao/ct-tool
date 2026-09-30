@@ -1,0 +1,19 @@
+   Compiling ct-domain v0.0.0 (/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-no-python-7-3-gxYDJw/checkout/native/crates/ct-domain)
+   Compiling ct-storage v0.0.0 (/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-no-python-7-3-gxYDJw/checkout/native/crates/ct-storage)
+   Compiling ct-export v0.0.0 (/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-no-python-7-3-gxYDJw/checkout/native/crates/ct-export)
+   Compiling ct-cache v0.0.0 (/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-no-python-7-3-gxYDJw/checkout/native/crates/ct-cache)
+   Compiling ct-excel v0.0.0 (/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-no-python-7-3-gxYDJw/checkout/native/crates/ct-excel)
+   Compiling ct-app v0.0.0 (/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-no-python-7-3-gxYDJw/checkout/native/crates/ct-app)
+   Compiling ct-protocol v0.0.0 (/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-no-python-7-3-gxYDJw/checkout/native/crates/ct-protocol)
+   Compiling ct-test-support v0.0.0 (/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-no-python-7-3-gxYDJw/checkout/native/crates/ct-test-support)
+   Compiling ct-xtask v0.0.0 (/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-no-python-7-3-gxYDJw/checkout/native/crates/ct-xtask)
+warning: function `compute` is never used
+   --> crates/ct-xtask/src/fingerprint.rs:178:8
+    |
+178 | pub fn compute() -> Result<Value> {
+    |        ^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ct-xtask` (bin "xtask") generated 1 warning
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 19.54s

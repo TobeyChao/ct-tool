@@ -1,5 +1,7 @@
 # uniform（定宽布局）校验脚本
 
+> 2026-09-30 原生迁移登记：本文正文、Python 命令与性能数字是历史实验记录，均非现役验收入口。当前正式命令与逐脚本分类见 [test-proj 总览](../../README.md)。ConfigAccessorBench 的三个 reader C# 源文件仍用于独立验收。
+
 复现《定宽布局落地方案.md》§1 的实测结论：**patch 的 `uniform=True` 对枚举字段有 bug，修法已验证**。
 
 用 **ct-tool 自己的 fixture 与 venv** 运行（fixture 的表结构与本项目 5 张表相同）：
