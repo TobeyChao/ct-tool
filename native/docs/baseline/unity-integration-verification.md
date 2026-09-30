@@ -13,7 +13,7 @@ artifacts byte for byte. This establishes that existing suites read the same byt
 and generated Accessors as the new native export. The explicit memory probe also
 loaded the newly generated temporary binaries directly, without deploying them.
 
-The [probe](../../../../test-proj/UnityIntegration/VerifyNative.cs) executed through
+The [probe](../../../test-proj/UnityIntegration/VerifyNative.cs) executed through
 the actual gd/xlua plugin: 14 tables, 7,956 checks, 4,608 scalar field comparisons
 across zh/en/ja/zh, vectors/records, ByID/ByIndex/CodeName, stable main pointer and
 generation during language switches, held rows observing the new language, missing
@@ -44,4 +44,4 @@ accessor-compare.json, game-artifact-compare.json, native-reader.json,
 config-tests.json, lua-playmode-tests.json, source-before.json,
 source-preservation.json, state-before.json, state-after.json and console-after.json.
 Reproduction instructions are in
-[UnityIntegration](../../../../test-proj/UnityIntegration/README.md).
+[UnityIntegration](../../../test-proj/UnityIntegration/README.md).

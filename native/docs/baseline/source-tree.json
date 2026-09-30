@@ -1,8 +1,8 @@
 {
   "schema": "ct-source-tree/2",
   "git": {
-    "commit": "49ef3f1c22ec5af8fcec146e3a0856d46df4f960",
-    "dirtyPaths": 63
+    "commit": "3acde48afeae27e22bf8296b849e2d6a68a700c4",
+    "dirtyPaths": 6
   },
   "toolchain": {
     "rustc": "unavailable",
@@ -10,14 +10,14 @@
     "pythonRuntimeRequired": false
   },
   "tree": {
-    "sha256": "2c02bb17ed03c03e49c2a5c126283294494ecbed0e54389080b1fc65ba9051aa",
+    "sha256": "0778cb7b7ecc5a696387a856bbf3dd6307a8133348d9d6bfc5d2830bdd766eb0",
     "files": 1196
   },
   "scopes": {
     "native": {
       "files": 699,
-      "bytes": 9243108,
-      "sha256": "6eb86adcbed943ea082e0eac2e3222b0aed203b51d3988143699f4d29762a901",
+      "bytes": 9243261,
+      "sha256": "13a554845bdf2c76cc0f67da55ec2c3b46c979997e86d7cac2323934724af56b",
       "entries": {
         ".gitignore": "e899756b962f25261eca57ba87fa2e878892daa40bca86f0871d7935d038a520",
         "Cargo.lock": "c20c6e340a325f179b95c85fae87c4c5c9092cdc0d33d08f89d4c7144b86c464",
@@ -356,7 +356,7 @@
         "docs/baseline/test-proj-evidence/reader.txt": "8e1da7754e82ab54219f2ff64545ef1dc40066b145ea8741126abbce2ee03e0b",
         "docs/baseline/test-proj-evidence/workspace-tests.txt": "c18e5f7be3af39e5f062d4c489b7acca423eeeb15af00ae9fa9c0e918370ece8",
         "docs/baseline/test-proj-verification.md": "4faa76fe8938d11566886236769d78acbe3b3f159cd04e7642bb20df27867cc7",
-        "docs/baseline/unity-integration-verification.md": "73a5011172bd752b9111bbe4430cabacce3582a19fdaa5ab5699b87cc26f7a9f",
+        "docs/baseline/unity-integration-verification.md": "56e3a8e893e1bb528974d1946add13f6a9cb032c27ce59e20213c9b06e2696e1",
         "docs/baseline/unity-integration/accessor-compare.json": "60168817b976e1e345a2b70ca837aed5f8f68a2d882d048625a058e5ded4268c",
         "docs/baseline/unity-integration/config-tests.json": "0596db8a95474e0b2eecd22f2e1dc92f7bfaf5a59ac7e6f95c2f261c3f176dd5",
         "docs/baseline/unity-integration/console-after.json": "a4591bab10853dd693533c13a1f10c9f73916758011e95273308fee9c2b81305",
@@ -713,7 +713,7 @@
         "tools/bench/measure.ps1": "d7fc5269d45c4dd4da023f09e990fad21b7b7b6d0fcd255c00f9c3389f1b8223",
         "tools/bench/migration-drill.mjs": "a19b19bf142a8298063e703fa2594ada30c0cbb64141a210b60fd76d555eced2",
         "tools/bench/recovery-drill.mjs": "78c2d434568ac1df9742981c9f11af6ff1f07af647b9e65c5865b3faf91943d5",
-        "tools/check-docs.mjs": "33b1738ad8735292f76d6026e89f3ef924326611ffbeacd05994cdc468aa2253",
+        "tools/check-docs.mjs": "904e14eb03ac4c2176493df139d40c4463c08d88345a228a3147623ae2b71b09",
         "tools/check-package.mjs": "461de9c34de00389fbf57ce86c7370653e0bf48139fdb7102801635feb2d8277",
         "tools/check-retirement.mjs": "af90ce26dc8233acf81ed8a80de233cefe3aec18216967c0d9853aea467c43f8",
         "tools/gd-guard.mjs": "d55663be9674ab59b2f24c3287b07354e522001752a634cf7998e843418053ed",

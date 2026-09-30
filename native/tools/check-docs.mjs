@@ -3,7 +3,9 @@ import {resolve, dirname, join} from 'node:path';
 
 const root=resolve(import.meta.dirname,'../..');
 const paths=['README.md','AGENTS.md','docs/README.md','docs/agent-project-reference.md',
-  'docs/schema-save-migration.md','docs/native-migration.md','native/README.md','web/README.md','launcher/README.md'];
+  'docs/schema-save-migration.md','docs/native-migration.md','native/README.md','web/README.md','launcher/README.md',
+  'test-proj/UnityIntegration/README.md','native/docs/baseline/unity-integration-verification.md',
+  'native/docs/baseline/python-retirement-verification.md'];
 let links=0;
 for(const path of paths){
   const text=await readFile(join(root,path),'utf8');
