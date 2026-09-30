@@ -78,6 +78,16 @@ enum Command {
     },
     /// 生成协议 golden samples
     ProtocolSamples,
+    /// 独立读取 OOXML，与冻结 openpyxl 模板语义逐项比较
+    TemplateCompare {
+        workbook: PathBuf,
+        expected: PathBuf,
+    },
+    /// 从冻结 OOXML 输入重建六个 Excel 读取夹具，不修改任何期望值
+    CompatFixtures {
+        #[arg(long)]
+        out: Option<PathBuf>,
+    },
     /// 构建平台独立运行时包并做无 Python 自检（任务 6.6）
     Dist {
         /// 额外目标三元组（可重复）；默认只构建本机目标
@@ -147,6 +157,25 @@ fn main() -> anyhow::Result<()> {
             Ok(())
         }
         Command::ProtocolSamples => samples::generate(),
+        Command::TemplateCompare { workbook, expected } => {
+            ct_test_support::xlsx_semantics::compare(&workbook, &expected)?;
+            println!("{}: 模板语义一致", workbook.display());
+            Ok(())
+        }
+        Command::CompatFixtures { out } => {
+            let root = repo_root().join("native/fixtures");
+            let verified = ct_test_support::fixture_archive::verify_compat(&root)?;
+            let out =
+                out.unwrap_or_else(|| repo_root().join("native/target/compat-fixtures/excel"));
+            let files =
+                ct_test_support::fixture_archive::regenerate_excel(&root.join("excel"), &out)?;
+            println!(
+                "已校验 {verified} 份冻结输入/期望值，重建 {} 个 Excel 夹具：{}",
+                files.len(),
+                out.display()
+            );
+            Ok(())
+        }
         Command::Dist {
             target,
             out,

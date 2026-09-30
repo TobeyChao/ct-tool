@@ -51,7 +51,7 @@
 ## 7. 无 Python 开发与发行链
 
 - [ ] 7.1 将 S/M/L 基准生成迁至 Rust 并保留 r/r-full 入口；删除生成输出后验证各档可再生、规模/种子/语义契约和基准留档回归入口成立。
-- [ ] 7.2 替代 native/fixtures 中 Excel、Schema、fingerprints、binary、export、template 的必要 Python 生成/语义比较脚本；验证 golden 来源可追溯、独立断言保留，不由被测代码生成期望值来掩盖差异。
+- [x] 7.2 替代 native/fixtures 中 Excel、Schema、fingerprints、binary、export、template 的必要 Python 生成/语义比较脚本；验证 golden 来源可追溯、独立断言保留，不由被测代码生成期望值来掩盖差异。
 - [ ] 7.3 将正式验收仍调用的 test-proj Python 准备/检查入口迁至 Rust/JS 或既有目标语言；用对应入口真跑验证，纯历史实验登记为非活跃且不批量删除资料。
 - [ ] 7.4 将 fingerprint、coverage matrix、bench 与 CLI 对照脚本收敛为原生清单及静态基线，退役 live-Python 必需路径；验证 ct/ 缺失时测试数量/必要场景不缩水、基线损坏明确失败。
 - [ ] 7.5 更新发行自检与 Windows/macOS/Linux CI，加入 panel 静态资源/HTTP/退出 smoke 及 Node 浏览器验收；验证流程不安装或调用 Python，发行包不含解释器或 Flask 负载。
@@ -127,3 +127,5 @@
 2026-09-29 G2 原生回归：`cargo test --manifest-path native/Cargo.toml --workspace --no-fail-fast` 76 个目标合计 319 passed、0 failed/ignored；包含 worker 协议、JSON/FBS/Binary/C#/Lua golden、Excel 语义及发布恢复。首次把实时日志写进受测源码树，指纹可重复测试因文件增长失败；改写 `/tmp` 后同命令全通过，成功运行的原始日志已留档。`flutter test` 13/13 与 `flutter analyze` 无问题。复制旧小工作区到 `native/fixtures/accessor_verify/`，新增无 Python 的 `test-proj/ExportAccessorVerify/prepare-native.mjs`，用发布版原生 `ct export --all` 在临时副本生成 5 个 C# Accessor、12 份 JSON 和三语言 Binary，由独立 .NET 10 读取端复核 127 个字段值、CodeName、稀疏 i18n 切换和 12 标量，0 不一致。环境 macOS arm64、rustc/cargo 1.98.1、Flutter 3.47.0、.NET 10.0.201、Node 26.8.2。原始记录见 `native/docs/baseline/web-smoke/`；6.7/G2 通过。G3 尚未通过，Python 工程仍不得删除。
 
 2026-09-30 G3 夹具迁移进展：S/M/L 改由 Rust xtask 直接生成，三档从空临时目录再生并由原生 ct validate 通过；S 重复生成摘要一致，5 样本本机新夹具基线及再次运行的五场景回归均通过。基准默认不自动拾取 Python，并校验夹具/留档输入摘要；旧 Python S/M/L 留档因分布不同不能冒充新基线。M/L 新性能留档与其他平台尚未完成，7.1/G3 保持未勾选。规模、摘要和命令见 `native/docs/baseline/bench-native-fixture-verification.md`。
+
+2026-09-30 兼容夹具迁移：六类独立输入/期望值共 130 文件及七份历史来源文本已固定 SHA-256；Rust `xtask compat-fixtures` 先校验冻结材料，再从独立 OOXML 源重建六个 Excel 边界工作簿，两次空目录输出字节一致。Schema/hash/Binary/export/template 保留独立静态输入与期望，不以原生生成器覆写 golden。模板完整语义比较改由独立 XML/ZIP 读取器执行，旧 openpyxl 工作簿对照、故意改坏表头和源摘要损坏的负例均通过；无可执行 Python 的 PATH 下准备与比较入口通过。兼容包 188/188，全工作区 324/324，0 failed/ignored，OpenSpec strict 通过，三平台 CI 已加入再生检查但尚无三平台执行证据。7.2 完成，详见 `native/docs/baseline/compat-fixtures-verification.md`。M 档五样本原生基线及再次五样本运行的五场景全部 regression-pass；L/其他平台尚待完成，7.1/G3 维持未勾选。7.4 的 fingerprint 仍有 Python 版本探测，整体无 Python 门槛尚未通过。

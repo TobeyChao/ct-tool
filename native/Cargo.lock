@@ -576,7 +576,11 @@ dependencies = [
  "ct-domain",
  "ct-excel",
  "ct-protocol",
+ "quick-xml",
+ "serde",
  "serde_json",
+ "sha2",
+ "zip 2.4.2",
 ]
 
 [[package]]
@@ -658,6 +662,7 @@ dependencies = [
  "ct-domain",
  "ct-excel",
  "ct-export",
+ "ct-test-support",
  "serde",
  "serde_json",
  "sha2",

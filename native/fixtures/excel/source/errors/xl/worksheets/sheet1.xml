@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<dimension ref="A1:Z50"/>
+<sheetData>
+<row r="1">
+<c r="A1" t="e"><v>#DIV/0!</v></c>
+<c r="B1" t="e"><v>#N/A</v></c>
+<c r="C1" t="e"><v>#VALUE!</v></c>
+<c r="D1" t="e"><v>#REF!</v></c>
+</row>
+<row r="2"><c r="A2"><v>7</v></c></row></sheetData>
+</worksheet>

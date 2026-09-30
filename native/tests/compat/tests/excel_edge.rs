@@ -3,6 +3,7 @@
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 
 use ct_excel::reader::{probe_xlsx, serial_to_iso, ProbeValue};
 use serde::Deserialize;
@@ -28,6 +29,17 @@ fn fixtures_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/excel")
 }
 
+fn regenerated_dir() -> &'static PathBuf {
+    static OUT: OnceLock<PathBuf> = OnceLock::new();
+    OUT.get_or_init(|| {
+        let out = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("excel-reader");
+        let files =
+            ct_test_support::fixture_archive::regenerate_excel(&fixtures_dir(), &out).unwrap();
+        assert_eq!(files.len(), 6, "六个冻结读取场景必须全部再生");
+        out
+    })
+}
+
 fn load_expected(stem: &str) -> Expected {
     let path = fixtures_dir().join("expected").join(format!("{stem}.json"));
     let text = std::fs::read_to_string(&path)
@@ -48,7 +60,7 @@ fn value_matches(kind: &str, expected: &serde_json::Value, actual: &ProbeValue) 
 
 fn check_fixture(stem: &str) {
     let expected = load_expected(stem);
-    let path = fixtures_dir().join(&expected.file);
+    let path = regenerated_dir().join(&expected.file);
     let report = probe_xlsx(&path).unwrap_or_else(|e| panic!("探针失败 {stem}: {e}"));
 
     assert_eq!(report.sheets, expected.sheets, "{stem}: sheet 列表不一致");
@@ -127,4 +139,31 @@ fn serial_conversion_boundaries() {
     assert_eq!(serial_to_iso(0.0, true), "1904-01-01T00:00:00");
     // 闰日：2000-02-29。
     assert_eq!(serial_to_iso(36585.0, false), "2000-02-29T00:00:00");
+}
+
+#[test]
+fn corrupted_frozen_source_blocks_regeneration() {
+    fn copy_tree(from: &std::path::Path, to: &std::path::Path) {
+        std::fs::create_dir_all(to).unwrap();
+        for entry in std::fs::read_dir(from).unwrap() {
+            let entry = entry.unwrap();
+            if entry.path().is_dir() {
+                copy_tree(&entry.path(), &to.join(entry.file_name()));
+            } else {
+                std::fs::copy(entry.path(), to.join(entry.file_name())).unwrap();
+            }
+        }
+    }
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("fixtures");
+    copy_tree(&fixtures_dir().join("source"), &root.join("source"));
+    copy_tree(&fixtures_dir().join("expected"), &root.join("expected"));
+    let source = root.join("source/active_sheet/xl/workbook.xml");
+    let mut content = std::fs::read(&source).unwrap();
+    content.extend_from_slice(b"<!-- changed -->");
+    std::fs::write(source, content).unwrap();
+    let out = temp.path().join("actual");
+    let error = ct_test_support::fixture_archive::regenerate_excel(&root, &out).unwrap_err();
+    assert!(error.to_string().contains("SHA-256"), "{error}");
+    assert!(!out.exists(), "输入校验失败之前不得写任何再生产物");
 }

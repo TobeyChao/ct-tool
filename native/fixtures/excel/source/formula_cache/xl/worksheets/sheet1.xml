@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<dimension ref="A1:Z50"/>
+<sheetData>
+<row r="1">
+<c r="A1"><v>5</v></c>
+<c r="B1"><f>A1*2</f><v>10</v></c>
+<c r="C1" t="str"><f>CONCATENATE("he","llo")</f><v>hello</v></c>
+<c r="D1"><f>A1*3</f></c>
+</row></sheetData>
+</worksheet>

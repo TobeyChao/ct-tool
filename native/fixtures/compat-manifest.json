@@ -1,0 +1,226 @@
+{
+  "schema": "ct-compat-oracles/1",
+  "origin": {
+    "nativeCheckpoint": "2d7dfc9",
+    "mainImport": "084be27",
+    "description": "Immutable legacy inputs and independently generated expected values; native verification never overwrites the oracle"
+  },
+  "groups": {
+    "binary": {
+      "nativeTargets": [
+        "binary_golden"
+      ],
+      "files": {
+        "golden/bundle.bin": "8553d439f3c4717fce81217d88966af5137a78bae9598c928d075c3e1387bb09",
+        "golden/bundle_bundle.bin": "039becbf18b821b34169e459f2ca7b923d6b8f6ea387336619e2d10052660ba2",
+        "golden/empty.bin": "05553d2c840bb79fc7aaa8c745c9366e2c5fa1fac50ddb59478853898c81238f",
+        "golden/item_nonuniform.bin": "2985ef20b8727e9be499ed5da320783cbb2f794d6ddd641ff1ebcd51d3600ed9",
+        "golden/item_uniform.bin": "48b14efa837c30fbf2556d8630621b461b7ce9256d2ee03970fe0f7cabff8abf",
+        "golden/sparse_nonuniform.bin": "541de8b380ed3bda3cf360010798935871c8c590920b00cb6a73cea3988793d6",
+        "golden/sparse_uniform.bin": "e5d19fec896035d50c875dabc27b6b90bc5e23c3e4d23c2938c1e858fd968e63",
+        "input/bundle.json": "93560a711c43cb24133d7a328eee92dc39ce9aa9681017ff4e6f8a8e4a773bf2",
+        "input/empty.json": "3370ebff9ef2e9ac02f38435a75446b6a775a9da30c807543f8345eac27a560b",
+        "input/item_nonuniform.json": "0939a2c90b67a4f719c092054eeeca092d577761f86d38939c329b7e91016014",
+        "input/item_uniform.json": "6ea77593a19af12aa2afa8217317f6622e51428018e8dcb1d6be42a7c7b3ba4b",
+        "input/sparse_nonuniform.json": "ebf62964e9f52a47a2a368975570bbee0cbcf0ba30c5ffc25e7494b2a814fa46",
+        "input/sparse_uniform.json": "c8aece10179e7606d84e2e3acb3d4d665c5af581cf230fa517242d0ad05c3a7d"
+      }
+    },
+    "excel": {
+      "nativeTargets": [
+        "excel_edge"
+      ],
+      "files": {
+        ".gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "active_sheet.xlsx": "1315fbc526b01eeab1dab2c6804e6eefe30463e9a29f5023843a29ce9902cd64",
+        "dates_1900.xlsx": "77896c9b6b854275e164cac5fdbcd1f8dc1a5a0a4d7c2a83ebc28329c8433167",
+        "dates_1904.xlsx": "44b7eb99952e5e1e0d040ceca1c0a61a2b7fceea102496dc2a91f601924f9181",
+        "errors.xlsx": "be85b65f205be40e343ade0499432a6b0808bc1ce181d48adfe527e2e84868ab",
+        "expected/active_sheet.json": "d98ea689b5659484fe4d0719e8207786dfbf760496e6bf8172bd39396bb91368",
+        "expected/dates_1900.json": "35bd8024dedd9180f93fcf594c7ba5394a53a16852d6a10144430e7b1814dc22",
+        "expected/dates_1904.json": "73ec6679ddbf3ff85b2a0161ca73503eb137ab4f64268ca876de1ca1e07b6891",
+        "expected/errors.json": "497cd029a9f8237e782f0341872b9b7d1185218f8132e166ef64d4ebd3eedc10",
+        "expected/formula_cache.json": "c87ef455984337a24d56c95e9901ebc857c4433c9decf372d6738ca03939d436",
+        "expected/rich_text.json": "613459257fad81943a8480faf94b424af482b806bd0f5618117ca9e62147e42e",
+        "formula_cache.xlsx": "aee71eb8df1fe99ce3488149434214be08f34b3602cf9d36df599c5d9728a252",
+        "rich_text.xlsx": "a031645388e3d53f016f7d26dc6817bdffc898ef05d2596db6a4f802eb53dfb1",
+        "source/active_sheet/[Content_Types].xml": "8b17c67fc07ed1bc8cddabf0c66e4fb2195cfdb89689998adc2dccbaca1fb71b",
+        "source/active_sheet/_rels/.rels": "ec869ae44fc833c25e58afa6ae766147aa72a99147522f6070e511475222827d",
+        "source/active_sheet/docProps/app.xml": "209fca6b00afe72a5029754b94be5953d8f16d96f67130325566b9366ad4ccc5",
+        "source/active_sheet/docProps/core.xml": "09ade2d138c5fdfd5f1dcb898b1ba0bd72b6262646780973a2fb11f55aef59a4",
+        "source/active_sheet/xl/_rels/workbook.xml.rels": "15586b8b5fa62b6cbe80c791dc12827c15c2c511f84901daf48e025d77259225",
+        "source/active_sheet/xl/styles.xml": "c7b12b9e3bb2ee4e41fde2c6b76e18c100aa411d8d8cdcba5ca7b75735cb3717",
+        "source/active_sheet/xl/theme/theme1.xml": "d15e8ebf78ef7b9720839d7ae8fdc81a7df5bc24706d8e137df61a5683c358d9",
+        "source/active_sheet/xl/workbook.xml": "17807679057cc7bc3f46b777fc2dc334a3a5ec7d02c8d2ff7ad9484187f1bf42",
+        "source/active_sheet/xl/worksheets/sheet1.xml": "ee68637a476a1433be2c5d360b047e81e29cc09f2d33abf23da91da25322839a",
+        "source/active_sheet/xl/worksheets/sheet2.xml": "da2941cd0d82d69b7a9d44b9ae3aaeab07307fc03836d5f52c9d9c369fc268cf",
+        "source/dates_1900/[Content_Types].xml": "2fd871365a885c9d2ef12c9df3bcb523737614c8ba8581c36cd462abb5e74635",
+        "source/dates_1900/_rels/.rels": "ec869ae44fc833c25e58afa6ae766147aa72a99147522f6070e511475222827d",
+        "source/dates_1900/docProps/app.xml": "209fca6b00afe72a5029754b94be5953d8f16d96f67130325566b9366ad4ccc5",
+        "source/dates_1900/docProps/core.xml": "09ade2d138c5fdfd5f1dcb898b1ba0bd72b6262646780973a2fb11f55aef59a4",
+        "source/dates_1900/xl/_rels/workbook.xml.rels": "8b55e81b6390446109e3c54f68f9ed0922fea7fc7c805eb84eb23523bb638a0e",
+        "source/dates_1900/xl/styles.xml": "545512054139819c08bcf89f373f281d11bc6cce1ff8e7620069a23554dca1c6",
+        "source/dates_1900/xl/theme/theme1.xml": "d15e8ebf78ef7b9720839d7ae8fdc81a7df5bc24706d8e137df61a5683c358d9",
+        "source/dates_1900/xl/workbook.xml": "a57d3782124638d02775cfb3bb019f2f7abb2d5f63ec9fda12fae1bbc2374a98",
+        "source/dates_1900/xl/worksheets/sheet1.xml": "e366099b5ffcb50ea78ecc500dcef5204d740e386e50d4a113d6462251196b22",
+        "source/dates_1904/[Content_Types].xml": "2fd871365a885c9d2ef12c9df3bcb523737614c8ba8581c36cd462abb5e74635",
+        "source/dates_1904/_rels/.rels": "ec869ae44fc833c25e58afa6ae766147aa72a99147522f6070e511475222827d",
+        "source/dates_1904/docProps/app.xml": "209fca6b00afe72a5029754b94be5953d8f16d96f67130325566b9366ad4ccc5",
+        "source/dates_1904/docProps/core.xml": "09ade2d138c5fdfd5f1dcb898b1ba0bd72b6262646780973a2fb11f55aef59a4",
+        "source/dates_1904/xl/_rels/workbook.xml.rels": "8b55e81b6390446109e3c54f68f9ed0922fea7fc7c805eb84eb23523bb638a0e",
+        "source/dates_1904/xl/styles.xml": "545512054139819c08bcf89f373f281d11bc6cce1ff8e7620069a23554dca1c6",
+        "source/dates_1904/xl/theme/theme1.xml": "d15e8ebf78ef7b9720839d7ae8fdc81a7df5bc24706d8e137df61a5683c358d9",
+        "source/dates_1904/xl/workbook.xml": "5b6a2d415235577efb5bce95755468a9b1affffd44fdd4e150eec5d7e8e7e8f5",
+        "source/dates_1904/xl/worksheets/sheet1.xml": "3adc41209248a9fdcbb96f183bd42a6870597ba563f5ce5520312ac6d77051ef",
+        "source/errors/[Content_Types].xml": "2a8e8867a818c3bb2257b080185ca34a511ba9122407243ae79d7f91d17d0233",
+        "source/errors/_rels/.rels": "8000e940976640c5ae48764d860de56bd5a73cf27e54a4e82fe32cf2a2c6ba05",
+        "source/errors/xl/_rels/workbook.xml.rels": "d82d3c173793e0f8f93ffec087558bae6d027eac0d1ca947fe18a8d6a3bc7c02",
+        "source/errors/xl/sharedStrings.xml": "9694cb0c231c8725bcce149d6942c03ef2d6cdad6ee0685088bb1bd69afa0ed1",
+        "source/errors/xl/workbook.xml": "e72db24ea31d2cbf1de3760214e3f4f4a2c837e5a09d095ee3b9a44b3f136448",
+        "source/errors/xl/worksheets/sheet1.xml": "ad5c7baff79558c66bef07b7f1ad369fbd6107ca2bf11ec85c4e9197e1a2ff4a",
+        "source/formula_cache/[Content_Types].xml": "2a8e8867a818c3bb2257b080185ca34a511ba9122407243ae79d7f91d17d0233",
+        "source/formula_cache/_rels/.rels": "8000e940976640c5ae48764d860de56bd5a73cf27e54a4e82fe32cf2a2c6ba05",
+        "source/formula_cache/xl/_rels/workbook.xml.rels": "d82d3c173793e0f8f93ffec087558bae6d027eac0d1ca947fe18a8d6a3bc7c02",
+        "source/formula_cache/xl/sharedStrings.xml": "9694cb0c231c8725bcce149d6942c03ef2d6cdad6ee0685088bb1bd69afa0ed1",
+        "source/formula_cache/xl/workbook.xml": "e72db24ea31d2cbf1de3760214e3f4f4a2c837e5a09d095ee3b9a44b3f136448",
+        "source/formula_cache/xl/worksheets/sheet1.xml": "02e333102baac458eafad4a3a7908bc941bc9658b1c617492684938a21e8443b",
+        "source/manifest.json": "269d863c9aabba3b3114e0263b4c54811d79db0fb42914f04aad3fdf0afcbc17",
+        "source/rich_text/[Content_Types].xml": "2a8e8867a818c3bb2257b080185ca34a511ba9122407243ae79d7f91d17d0233",
+        "source/rich_text/_rels/.rels": "8000e940976640c5ae48764d860de56bd5a73cf27e54a4e82fe32cf2a2c6ba05",
+        "source/rich_text/xl/_rels/workbook.xml.rels": "d82d3c173793e0f8f93ffec087558bae6d027eac0d1ca947fe18a8d6a3bc7c02",
+        "source/rich_text/xl/sharedStrings.xml": "bc7b57967f687f8f09a8d632c29f76b271239ba77404a221f43a9b236bd0a619",
+        "source/rich_text/xl/workbook.xml": "e72db24ea31d2cbf1de3760214e3f4f4a2c837e5a09d095ee3b9a44b3f136448",
+        "source/rich_text/xl/worksheets/sheet1.xml": "1341188e3c60df3c0ba1cf7bf3c155b6fd9dae1e12a63a75107bc0f54550b7cf"
+      }
+    },
+    "export_pipeline": {
+      "nativeTargets": [
+        "export_pipeline"
+      ],
+      "files": {
+        "golden/excel/layout_manifests/item.json": "33895bcad2a8b68b30119d477c8faf177f8a15df23fb682d8bea13f1abd44751",
+        "golden/output/binary/data_en.bin": "c96e2007742563ae90fb872c6726a8f8da53e0dbc64ae8422d7d10939279789a",
+        "golden/output/binary/data_zh.bin": "f9ec026cfb6af5d7b6dbc2fcb742fd30fef0a7f17f4c48e0d6d3cfa604523479",
+        "golden/output/fbs/container.fbs": "845e753f158cf4eae30066759503eb8fed84ef2f40290f60e55671f7fd4e7084",
+        "golden/output/fbs/item.fbs": "af494fd0d39ff3f803ed8fe489fdb0fe1753ec34a3c97f25f3a04134aaac4e91",
+        "golden/output/fbs/types.fbs": "0a11352285975bdbb980edfc6a9bef9fb78fa8744c90956e4fee5efaea7ecd28",
+        "golden/output/generated/csharp/enums.cs": "9158ca9a17143cfb2ff057aaae8d0e2e546071b453d30d83c67c3309344344c8",
+        "golden/output/generated/csharp/itemaccessor.cs": "883e8e96943fc16d55d2945b2964f1d0bbfd64912afea20249d1433b826087fb",
+        "golden/output/generated/lua/enums.lua": "56f11653fdf606d905bf19c5fad5e44ae57ce59df744516066256433b7342d5f",
+        "golden/output/generated/lua/itemaccessor.lua": "7260a20a2a01880a2c4d7dcbd5808eb7e541ec072997c422fbecf1aaaa00382a",
+        "golden/output/json/item_en.json": "ad0707c24ae48ffebc72732f0651edca09dcb4ac5d5b53cbdf1f3083b224b01a",
+        "golden/output/json/item_zh.json": "b194197271680014aff263133fe2cd09e3aad93180cbd86aff716be6528683c7",
+        "workspace/config/global.yaml": "4d873196ffdcb311e4ab32d29613d1cc87a4f26e83e434c5e73642a51f43faca",
+        "workspace/config/schemas/item.yaml": "77f81adf147fde0c9dde00421fe403b28952412a5d3e481869aec6043845be87",
+        "workspace/config/types/rarity.yaml": "0d89d5513225578f0a13a921af6c00ebac26765a8078ef7fe8ac0af437b82399",
+        "workspace/excel/Item.xlsx": "b65b7a99598846d685c2c5182a7da179b206c62ccc4c188eb3579b8a332898a9",
+        "workspace/excel/layout_manifests/item.json": "33895bcad2a8b68b30119d477c8faf177f8a15df23fb682d8bea13f1abd44751",
+        "workspace/i18n/en/Item.json": "045d9879162e08408b28e08d3a8af19409830b8ad369f0e13f3347b5239506f2"
+      }
+    },
+    "fingerprints": {
+      "nativeTargets": [
+        "fingerprints"
+      ],
+      "files": {
+        ".gitattributes": "a79691a93b46e49ce460c26ef22afcc03d6eca1e63bf2edbc20e96159510f6c9",
+        "golden.json": "9786e8b6d83770098ce304bb5ec60a48642c1d29ea647df4a3a7c3c5500b6487"
+      }
+    },
+    "schema_state": {
+      "nativeTargets": [
+        "schema_parity",
+        "schema_draft",
+        "schema_save"
+      ],
+      "files": {
+        ".gitattributes": "a79691a93b46e49ce460c26ef22afcc03d6eca1e63bf2edbc20e96159510f6c9",
+        "commands.json": "0b9d205aade9c8b7157a872c2c7bfda96c7625d21aef04149fedda796a47d9f1",
+        "golden.json": "d34118f1fb44616a2df3e03d3588090bac88521ea72c74f3e6291f81dbc21bc5",
+        "workspace/config/global.yaml": "4d873196ffdcb311e4ab32d29613d1cc87a4f26e83e434c5e73642a51f43faca",
+        "workspace/config/schemas/item.yaml": "220c4b3d60e5b8631ceb14fcf3c0fc9d69996de09c008325ca78e96e06c6d689",
+        "workspace/config/schemas/monster.yaml": "8581fa519769e5584154f7c98ae48f1edb52ad91d3fd2578490c7e2a59b50ddd",
+        "workspace/config/types/drop_rule.yaml": "abea6619482719b7397ba1012bf5291fc94b6e244d91dd383f22e51caa627f25",
+        "workspace/config/types/rarity.yaml": "0d89d5513225578f0a13a921af6c00ebac26765a8078ef7fe8ac0af437b82399"
+      }
+    },
+    "template": {
+      "nativeTargets": [
+        "template_semantics",
+        "layout_manifest",
+        "canonical_read",
+        "json_export",
+        "fbs_export",
+        "accessor_golden"
+      ],
+      "files": {
+        "__pycache__/generate.cpython-312.pyc": "b92e3679b3cad4bf85e14ede9fa87d4817cbaee60ed1e19735b86dd2ea31c506",
+        "enums.json": "d1dc3084e9fb4ea6cb285fe8754a452e07f8f1f2458a85440a74e6f2a05de150",
+        "expected/Buff.fbs.txt": "7b816ed3413cdac09a7b0fd497f3151cac813b98092230e2fcf5681661a0559b",
+        "expected/Buff_accessor.cs.txt": "98fb7f7f949999aa76c00de61d5c629bb6f2893eb455a84679d466c03418b85e",
+        "expected/Buff_accessor.lua.txt": "379aa1000791d358f0a56699830ed6ffc3ac77aad00e5b9709d536f3d207fd97",
+        "expected/Item.fbs.txt": "01a7ad36ca6fe8af1e516506995b9e3bf4d90d65517d0fc76564094f3fddf425",
+        "expected/Item_accessor.cs.txt": "3bafefd46a00cb943bdf6edb16fcec6e1f348434898ad9f8d57d4df7981bb785",
+        "expected/Item_accessor.lua.txt": "a1cb480659147f8f1a54aee60e6d03d94c728816f3e053ffbb00db7ffe2cc7de",
+        "expected/Item_accessor_uniform.cs.txt": "1445382573bcb5ac9f2cc3590c41165be189f41a6faefe5b2b462c9503472bf6",
+        "expected/data_v1.data.json": "d6a42efa6140db9024ce2d409a9263b5fbde92068ff5ac32887475770dfd60fd",
+        "expected/json_empty.txt": "a933269342112736457bdf523ad815194adc08f7de75b8dbdd77d131c3923e67",
+        "expected/json_v1.txt": "090b734aa471168df8623ac51d88a3e4b93c95c3f26b06688ebf53f7879a9d67",
+        "expected/migrated_v2a.data.json": "7141ec828fea4f1649ad89c329e97fe1e42dcce835df51915e64629c2770a359",
+        "expected/parsed_bad_v1.json": "0cb2c5d4a436d9e2492ec12e78509ef25573d28d6f9d319754cf9488460fb5be",
+        "expected/parsed_v1.json": "9fe9bb823ad0ab851c9778f300981d78882f378374995f94c2b8a52817bfb8c3",
+        "expected/template_v1.semantics.json": "4803a8966720b4fbd7190c5de8f1faa1c0d75c6b2ab27b91a47255fd71a286f3",
+        "expected/template_v2a.semantics.json": "0c99dc46ac26640b0c074d75b9178a781041d208bb8d21f29904ea1371546f1a",
+        "expected/types.fbs.txt": "e9c70db5c0e016c51421c97f149e66efbf86beb7ff3b00af1521f7bbfe7a46ed",
+        "golden/bad_data_v1.xlsx": "20533964b660d61678fb85e323528c3c57ead843f5cceb95a95a77276327f2f2",
+        "golden/data_v1.xlsx": "1310fc1e94e16128acac1e926327fa141d2eecbef54bb1bd3a27da1c2d1bf436",
+        "golden/manifest_v1.json": "e33ab22e4a14fc28da6ee87d93944ecae3ff882cb1436c0138b751e53ef1de54",
+        "golden/migrated_v2a.xlsx": "0329d65cb9813906725eafd1c17287499952c578e7ac558e3f9e31b081a9285f",
+        "golden/template_v1.xlsx": "fed461c2521b5ce6c80a434ce27319706b81a50ddddce4f2116ac7806510c70d",
+        "golden/template_v2a.xlsx": "d63de9553c0839e74913ac95d636b628df41878bef5eb2fbcdf05129ff0300a9",
+        "layout_v1.json": "b371a5913c44974c7e18f3f2b52c5ea5b7312c384678fe8d884f3f18fc4bcb3a",
+        "layout_v2a.json": "efee96331f30145176317b85488f15506eb5828947a044277f341734c0eab52c",
+        "layout_v2b.json": "b5fb597da3aa88660ba58044b5a9f5aab6d14e259e383b7baf384e92b100895e",
+        "schema_buff.json": "478ee77fa7b2d50d5194547b743f74e0bd5d78a0518f4b7d6d3e8252b615932b",
+        "schema_v1.json": "03ea02c6de9361104e6a1256f1c75344a4c3c806f5f5c8716a4ebf1bab274734"
+      }
+    }
+  },
+  "sourceReferences": [
+    {
+      "historicalGenerator": "native/fixtures/binary/generate.py",
+      "snapshot": "docs/baseline/source/fixture-binary-generate.py.txt",
+      "sha256": "2ef8bc32b5cca249983422a399ebf3940af16f4b8ea9dada34c005b21929dcde"
+    },
+    {
+      "historicalGenerator": "native/fixtures/excel/generate.py",
+      "snapshot": "docs/baseline/source/fixture-excel-generate.py.txt",
+      "sha256": "e998f14188d1162dde0d8d4c6d4b18bbf044f3851cf56b19457c4ba03b4a7220"
+    },
+    {
+      "historicalGenerator": "native/fixtures/export_pipeline/generate.py",
+      "snapshot": "docs/baseline/source/fixture-export_pipeline-generate.py.txt",
+      "sha256": "4eeb23a35a68a6c5ed6fc791488b260762829cc769d8afdcf1864e8870df4042"
+    },
+    {
+      "historicalGenerator": "native/fixtures/fingerprints/generate.py",
+      "snapshot": "docs/baseline/source/fixture-fingerprints-generate.py.txt",
+      "sha256": "b6971c6c4f685bb74cf6e3766544c79b47d9dae3c1a30b5c3428b0a524be9eac"
+    },
+    {
+      "historicalGenerator": "native/fixtures/schema_state/generate.py",
+      "snapshot": "docs/baseline/source/fixture-schema_state-generate.py.txt",
+      "sha256": "c77a1db93c9804547eb1878a8e38d1f71860ccb10a080198db9ddcd4bb00753f"
+    },
+    {
+      "historicalGenerator": "native/fixtures/template/compare_semantics.py",
+      "snapshot": "docs/baseline/source/fixture-template-compare_semantics.py.txt",
+      "sha256": "5b658e642f877ef13433f078d8f280761ee145f07a6171380ce38e9dda958a73"
+    },
+    {
+      "historicalGenerator": "native/fixtures/template/generate.py",
+      "snapshot": "docs/baseline/source/fixture-template-generate.py.txt",
+      "sha256": "4ed807506540c5d451a357394d9852f24b6e6f22f9eacac8cefcbfe56e94f6d7"
+    }
+  ]
+}

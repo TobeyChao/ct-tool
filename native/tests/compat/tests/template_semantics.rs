@@ -1,11 +1,10 @@
 //! Excel 模板写入与数据迁移对照（rust-native-core 任务 1.6）。
 //!
-//! - Rust 产出的模板写入 target/，供 fixtures/template/compare_semantics.py
-//!   与 expected/*.semantics.json 做 openpyxl 语义级 diff（深度对照）；
-//! - 本文件做 zip 结构断言与迁移数据区 calamine 对照（CI 可重复）。
+//! Rust 模板通过独立 OOXML 读取器与冻结的 openpyxl 全语义逐项比较，
+//! 并保留 zip 结构断言与迁移数据区 calamine 对照。
 
 use std::collections::HashMap;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::PathBuf;
 
 use ct_excel::migrate::{migrate_workbook, read_data_rows};
@@ -55,7 +54,7 @@ fn zip_has(bytes: &[u8], name: &str) -> bool {
 }
 
 /// `variant` 是布局变体（v1/v2a）；读取 layout_<variant>.json，
-/// 产出写入 target/ 下的 template_<variant>.rust.xlsx 供 Python 深度对照。
+/// 产出写入 target/，以独立 OOXML 读取器执行完整语义对照。
 /// `tag` 区分调用者，避免并行测试互相覆盖同一输出文件。
 fn build_and_dump(variant: &str, tag: &str) -> Vec<u8> {
     let layout = load_layout(&format!("layout_{variant}"));
@@ -68,12 +67,57 @@ fn build_and_dump(variant: &str, tag: &str) -> Vec<u8> {
         "{variant}: 应有且仅有一条 255 限制 warning"
     );
     assert!(warnings[0].contains("LongEnum"));
-    std::fs::write(
-        out_dir().join(format!("template_{variant}.{tag}.rust.xlsx")),
-        &bytes,
+    let path = out_dir().join(format!("template_{variant}.{tag}.rust.xlsx"));
+    std::fs::write(&path, &bytes).unwrap();
+    ct_test_support::xlsx_semantics::compare(
+        &path,
+        &fixtures_dir().join(format!("expected/template_{variant}.semantics.json")),
     )
     .unwrap();
     bytes
+}
+
+#[test]
+fn independent_reader_matches_frozen_openpyxl_semantics() {
+    for variant in ["v1", "v2a"] {
+        ct_test_support::xlsx_semantics::compare(
+            &fixtures_dir().join(format!("golden/template_{variant}.xlsx")),
+            &fixtures_dir().join(format!("expected/template_{variant}.semantics.json")),
+        )
+        .unwrap();
+    }
+}
+
+#[test]
+fn full_semantics_rejects_a_changed_header() {
+    let (bytes, _) = build_template(&load_layout("layout_v1"), &load_enums(), "Id").unwrap();
+    let mut source = open_archive(&bytes);
+    let mut writer = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+    for index in 0..source.len() {
+        let mut file = source.by_index(index).unwrap();
+        let mut content = Vec::new();
+        file.read_to_end(&mut content).unwrap();
+        if file.name() == "xl/sharedStrings.xml" {
+            let text = String::from_utf8(content).unwrap();
+            let changed = text.replace(">Id", ">BrokenId");
+            assert_ne!(text, changed);
+            content = changed.into_bytes();
+        }
+        writer.start_file(file.name(), options).unwrap();
+        writer.write_all(&content).unwrap();
+    }
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("changed.xlsx");
+    std::fs::write(&path, writer.finish().unwrap().into_inner()).unwrap();
+    let error = ct_test_support::xlsx_semantics::compare(
+        &path,
+        &fixtures_dir().join("expected/template_v1.semantics.json"),
+    )
+    .unwrap_err();
+    assert!(error.to_string().contains("$.cells.2,1"), "{error}");
+    assert!(error.to_string().contains("$.rich_runs.2,1"), "{error}");
 }
 
 #[test]

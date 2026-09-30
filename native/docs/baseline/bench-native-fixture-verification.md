@@ -29,5 +29,13 @@ that archive returned `regression-pass` for cold, hot CLI, hot worker, one-table
 and one-translation change. Its raw result is
 [`bench-s-macos-native-verification.json`](bench-s-macos-native-verification.json).
 
-M/L native-fixture performance archives and other-platform archives remain to be measured.
+The M tier now also has a five-sample native-fixture archive at
+[`bench-m-macos-native.json`](bench-m-macos-native.json) and an independent five-sample
+rerun at [`bench-m-macos-native-verification.json`](bench-m-macos-native-verification.json).
+All five scenarios returned `regression-pass` with the same fixture and artifact digests.
+Baseline/rerun median times (ms) were cold 9539/9854, hot CLI 5428/5729,
+hot worker 5505/5802, one-table change 5719/6140, and one-translation change 6188/5564.
+All sampled process-tree RSS values stayed below the M absolute cap (1.25 GiB).
+
+L native-fixture performance archives and other-platform archives remain to be measured.
 Task 7.1 stays open until those regression entries and clean-environment checks are complete.
