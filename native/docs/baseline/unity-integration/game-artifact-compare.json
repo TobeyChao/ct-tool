@@ -1,0 +1,422 @@
+[
+  {
+    "group": "binary",
+    "name": "data_en.bin",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Content/Config/data_en.bin",
+    "same": true,
+    "sha256": "c103127b065b5c57afad3bb3e4847c1dd73dc71d31f2cb7f23bcb941f17bbfa3"
+  },
+  {
+    "group": "binary",
+    "name": "data_ja.bin",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Content/Config/data_ja.bin",
+    "same": true,
+    "sha256": "dc4aeede8e17f6af346f6f72980a1f26b780a0176b745b7d55084f365950f203"
+  },
+  {
+    "group": "binary",
+    "name": "data_zh.bin",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Content/Config/data_zh.bin",
+    "same": true,
+    "sha256": "fffa89a2a9eebaac88049662223d0175610c52389a2ae1ab44d8784b5aa12648"
+  },
+  {
+    "group": "json",
+    "name": "CustomerDemand_en.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/CustomerDemand_en.json",
+    "same": true,
+    "sha256": "914657440db1d68b82287e09089bc23341a35d7536f3711269e633da7e645a49"
+  },
+  {
+    "group": "json",
+    "name": "CustomerDemand_ja.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/CustomerDemand_ja.json",
+    "same": true,
+    "sha256": "914657440db1d68b82287e09089bc23341a35d7536f3711269e633da7e645a49"
+  },
+  {
+    "group": "json",
+    "name": "CustomerDemand_zh.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/CustomerDemand_zh.json",
+    "same": true,
+    "sha256": "914657440db1d68b82287e09089bc23341a35d7536f3711269e633da7e645a49"
+  },
+  {
+    "group": "json",
+    "name": "CustomerType_en.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/CustomerType_en.json",
+    "same": true,
+    "sha256": "2d53b9e0746620771d8f5ef63afe43d4c7e203a01c5baf9db67e7a4c135a5d3a"
+  },
+  {
+    "group": "json",
+    "name": "CustomerType_ja.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/CustomerType_ja.json",
+    "same": true,
+    "sha256": "efee1c4cc6bc665997f4c9f8ea73e8d03383ce2a8ebb4373b46b7426372943e0"
+  },
+  {
+    "group": "json",
+    "name": "CustomerType_zh.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/CustomerType_zh.json",
+    "same": true,
+    "sha256": "2c362798898663983fb78b532f113b05208d153246dfba267918acd0db3c7123"
+  },
+  {
+    "group": "json",
+    "name": "DayDemandModifier_en.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/DayDemandModifier_en.json",
+    "same": true,
+    "sha256": "8b6c4e10f10069f88b210cd6c86df6e85d5b24ac7b6a9b960cd548de8ff1e271"
+  },
+  {
+    "group": "json",
+    "name": "DayDemandModifier_ja.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/DayDemandModifier_ja.json",
+    "same": true,
+    "sha256": "8b6c4e10f10069f88b210cd6c86df6e85d5b24ac7b6a9b960cd548de8ff1e271"
+  },
+  {
+    "group": "json",
+    "name": "DayDemandModifier_zh.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/DayDemandModifier_zh.json",
+    "same": true,
+    "sha256": "8b6c4e10f10069f88b210cd6c86df6e85d5b24ac7b6a9b960cd548de8ff1e271"
+  },
+  {
+    "group": "json",
+    "name": "DayProfile_en.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/DayProfile_en.json",
+    "same": true,
+    "sha256": "bda5203c28e8e60861ff57f971c995bf47315d617206fe51b52340fa23fa8de9"
+  },
+  {
+    "group": "json",
+    "name": "DayProfile_ja.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/DayProfile_ja.json",
+    "same": true,
+    "sha256": "6db284a0c80abde1cc16cb19f623ac2bd8b5995744c326a4d4bf1559e20cd422"
+  },
+  {
+    "group": "json",
+    "name": "DayProfile_zh.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/DayProfile_zh.json",
+    "same": true,
+    "sha256": "28ca150a84c82c155c1d46c9aa0f4cbaf7880052c9abf02745c68c32dd76576c"
+  },
+  {
+    "group": "json",
+    "name": "DayWaveSpawn_en.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/DayWaveSpawn_en.json",
+    "same": true,
+    "sha256": "11d1ad7baba145cf89bbff274424cc3e3efb4e774df7ce1466ed67326e799a45"
+  },
+  {
+    "group": "json",
+    "name": "DayWaveSpawn_ja.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/DayWaveSpawn_ja.json",
+    "same": true,
+    "sha256": "11d1ad7baba145cf89bbff274424cc3e3efb4e774df7ce1466ed67326e799a45"
+  },
+  {
+    "group": "json",
+    "name": "DayWaveSpawn_zh.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/DayWaveSpawn_zh.json",
+    "same": true,
+    "sha256": "11d1ad7baba145cf89bbff274424cc3e3efb4e774df7ce1466ed67326e799a45"
+  },
+  {
+    "group": "json",
+    "name": "DayWave_en.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/DayWave_en.json",
+    "same": true,
+    "sha256": "c935ef1a4727f4be7f616990d78105e6a7988db4cba8bd1b4207fd2c53dce0b0"
+  },
+  {
+    "group": "json",
+    "name": "DayWave_ja.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/DayWave_ja.json",
+    "same": true,
+    "sha256": "c935ef1a4727f4be7f616990d78105e6a7988db4cba8bd1b4207fd2c53dce0b0"
+  },
+  {
+    "group": "json",
+    "name": "DayWave_zh.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/DayWave_zh.json",
+    "same": true,
+    "sha256": "c935ef1a4727f4be7f616990d78105e6a7988db4cba8bd1b4207fd2c53dce0b0"
+  },
+  {
+    "group": "json",
+    "name": "ItemPurchase_en.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/ItemPurchase_en.json",
+    "same": true,
+    "sha256": "47559051871c13676510254536f6e92b76888999830d86c5fc6a7571599eafef"
+  },
+  {
+    "group": "json",
+    "name": "ItemPurchase_ja.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/ItemPurchase_ja.json",
+    "same": true,
+    "sha256": "47559051871c13676510254536f6e92b76888999830d86c5fc6a7571599eafef"
+  },
+  {
+    "group": "json",
+    "name": "ItemPurchase_zh.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/ItemPurchase_zh.json",
+    "same": true,
+    "sha256": "47559051871c13676510254536f6e92b76888999830d86c5fc6a7571599eafef"
+  },
+  {
+    "group": "json",
+    "name": "ItemShelf_en.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/ItemShelf_en.json",
+    "same": true,
+    "sha256": "0a6f590421e5e6e1783908bad49342a39cc2583bfbaaedf07713f1e14bcc3f5f"
+  },
+  {
+    "group": "json",
+    "name": "ItemShelf_ja.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/ItemShelf_ja.json",
+    "same": true,
+    "sha256": "0a6f590421e5e6e1783908bad49342a39cc2583bfbaaedf07713f1e14bcc3f5f"
+  },
+  {
+    "group": "json",
+    "name": "ItemShelf_zh.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/ItemShelf_zh.json",
+    "same": true,
+    "sha256": "0a6f590421e5e6e1783908bad49342a39cc2583bfbaaedf07713f1e14bcc3f5f"
+  },
+  {
+    "group": "json",
+    "name": "ItemType_en.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/ItemType_en.json",
+    "same": true,
+    "sha256": "329a60f343600bb5625d8b2b62de26f33f217454f69fd1d18c9ed712a864aca5"
+  },
+  {
+    "group": "json",
+    "name": "ItemType_ja.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/ItemType_ja.json",
+    "same": true,
+    "sha256": "10b2ce863f2fb813051aa714a59139feb861ae388ff874a6de2e0d19b4de357e"
+  },
+  {
+    "group": "json",
+    "name": "ItemType_zh.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/ItemType_zh.json",
+    "same": true,
+    "sha256": "10b2ce863f2fb813051aa714a59139feb861ae388ff874a6de2e0d19b4de357e"
+  },
+  {
+    "group": "json",
+    "name": "Item_en.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/Item_en.json",
+    "same": true,
+    "sha256": "822180734bb2f8cc7d5ce0a143fa2d6fb1fc76857abee0b6ab4d88d37bc6161a"
+  },
+  {
+    "group": "json",
+    "name": "Item_ja.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/Item_ja.json",
+    "same": true,
+    "sha256": "b7b9f0f7dd2eb59810c1a06a3ccfcae57ad80a72f0b88bdd6e4a879739bd4f00"
+  },
+  {
+    "group": "json",
+    "name": "Item_zh.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/Item_zh.json",
+    "same": true,
+    "sha256": "39402e1a4831a08f050a8feba6282c7327cc4a13041d0ccdc8cae06dcd8c0d65"
+  },
+  {
+    "group": "json",
+    "name": "SceneConfig_en.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/SceneConfig_en.json",
+    "same": true,
+    "sha256": "1652d21b0f7e97c61563ad344b538e1c051fb2c4e0004116f61f4893e9536157"
+  },
+  {
+    "group": "json",
+    "name": "SceneConfig_ja.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/SceneConfig_ja.json",
+    "same": true,
+    "sha256": "1652d21b0f7e97c61563ad344b538e1c051fb2c4e0004116f61f4893e9536157"
+  },
+  {
+    "group": "json",
+    "name": "SceneConfig_zh.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/SceneConfig_zh.json",
+    "same": true,
+    "sha256": "1652d21b0f7e97c61563ad344b538e1c051fb2c4e0004116f61f4893e9536157"
+  },
+  {
+    "group": "json",
+    "name": "ShelfType_en.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/ShelfType_en.json",
+    "same": true,
+    "sha256": "d023071c94658619cea593d7104df2cbf8e67cbfaa0aa2a100a04c57afdde31c"
+  },
+  {
+    "group": "json",
+    "name": "ShelfType_ja.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/ShelfType_ja.json",
+    "same": true,
+    "sha256": "e45bb8b43d0497e60589d5112ec9b5a1b27264ac58b747d4691ef0b92434a435"
+  },
+  {
+    "group": "json",
+    "name": "ShelfType_zh.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/ShelfType_zh.json",
+    "same": true,
+    "sha256": "00952f2a751577ce1b7eb84cc83f07bf3c970aaf14c51c321f6cf7536f848923"
+  },
+  {
+    "group": "json",
+    "name": "Text_en.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/Text_en.json",
+    "same": true,
+    "sha256": "662b933b22a724533575db1abd0cfe5f4956eefdc12621e37bf05c366c81d739"
+  },
+  {
+    "group": "json",
+    "name": "Text_ja.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/Text_ja.json",
+    "same": true,
+    "sha256": "39ee9d74e39ae034afdc79accf4b1ea19dff84d44a1fd3ca4afd18d010ddc425"
+  },
+  {
+    "group": "json",
+    "name": "Text_zh.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/Text_zh.json",
+    "same": true,
+    "sha256": "1cf310458f3d0d9fe3072ce982861673d9bf533ad239f6942efa213b7d9724c3"
+  },
+  {
+    "group": "json",
+    "name": "UIConfig_en.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/UIConfig_en.json",
+    "same": true,
+    "sha256": "b2b4a6baba02abd57cacb3cbfe060a71e76041e169139ef7c2b5b7b80a333151"
+  },
+  {
+    "group": "json",
+    "name": "UIConfig_ja.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/UIConfig_ja.json",
+    "same": true,
+    "sha256": "b2b4a6baba02abd57cacb3cbfe060a71e76041e169139ef7c2b5b7b80a333151"
+  },
+  {
+    "group": "json",
+    "name": "UIConfig_zh.json",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/output/json/UIConfig_zh.json",
+    "same": true,
+    "sha256": "b2b4a6baba02abd57cacb3cbfe060a71e76041e169139ef7c2b5b7b80a333151"
+  },
+  {
+    "group": "generated/lua",
+    "name": "CustomerDemandAccessor.lua",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Lua/Config/Gen/CustomerDemandAccessor.lua",
+    "same": true,
+    "sha256": "eec3d367d58603280661ea8e18a06295411a4ba81ae78f1265e525f32f027847"
+  },
+  {
+    "group": "generated/lua",
+    "name": "CustomerTypeAccessor.lua",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Lua/Config/Gen/CustomerTypeAccessor.lua",
+    "same": true,
+    "sha256": "33bcc0d559d4e2abd99cdb1bed9ee3940011f5af8345459abcb26a34e65ddf3b"
+  },
+  {
+    "group": "generated/lua",
+    "name": "DayDemandModifierAccessor.lua",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Lua/Config/Gen/DayDemandModifierAccessor.lua",
+    "same": true,
+    "sha256": "e13d315b9e8acf4272c3c130ba8e70fe1de8efe81a28e427ed732017813fe4e0"
+  },
+  {
+    "group": "generated/lua",
+    "name": "DayProfileAccessor.lua",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Lua/Config/Gen/DayProfileAccessor.lua",
+    "same": true,
+    "sha256": "f4fea86ddc033a04196bbe1d2b6a051009926f9a7e1e7bf69a71fb1d7a107c5a"
+  },
+  {
+    "group": "generated/lua",
+    "name": "DayWaveAccessor.lua",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Lua/Config/Gen/DayWaveAccessor.lua",
+    "same": true,
+    "sha256": "a660c067039c4c428da4aeda09d752ed034535ad753a12efbf160f2516f8ef31"
+  },
+  {
+    "group": "generated/lua",
+    "name": "DayWaveSpawnAccessor.lua",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Lua/Config/Gen/DayWaveSpawnAccessor.lua",
+    "same": true,
+    "sha256": "532628be5ba2428308bde1f9963a1a92eda58f914173679ab8cd1d31486bdcd8"
+  },
+  {
+    "group": "generated/lua",
+    "name": "Enums.lua",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Lua/Config/Gen/Enums.lua",
+    "same": true,
+    "sha256": "02d81b63f6afdc5ff4cbbf4d16b13cbaf1ac1d185481dc8cea931d970882ca46"
+  },
+  {
+    "group": "generated/lua",
+    "name": "ItemAccessor.lua",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Lua/Config/Gen/ItemAccessor.lua",
+    "same": true,
+    "sha256": "e5c20e1e79c61625b766b8a5f3882c8a3946b45871c64753dce89e294424b609"
+  },
+  {
+    "group": "generated/lua",
+    "name": "ItemPurchaseAccessor.lua",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Lua/Config/Gen/ItemPurchaseAccessor.lua",
+    "same": true,
+    "sha256": "6e6dcaf6ba2fedb27c4dee932292c66e43bfe67126db6dcea3848e6c973ae147"
+  },
+  {
+    "group": "generated/lua",
+    "name": "ItemShelfAccessor.lua",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Lua/Config/Gen/ItemShelfAccessor.lua",
+    "same": true,
+    "sha256": "b87011c43d0a28a00782feb95064aaed2fd38045ab7be662ee198adce64c393d"
+  },
+  {
+    "group": "generated/lua",
+    "name": "ItemTypeAccessor.lua",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Lua/Config/Gen/ItemTypeAccessor.lua",
+    "same": true,
+    "sha256": "37d4deebe40e154a37a7a32c9811a44d2e0c1c7e9e9a30341168c8cc639e05d3"
+  },
+  {
+    "group": "generated/lua",
+    "name": "SceneConfigAccessor.lua",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Lua/Config/Gen/SceneConfigAccessor.lua",
+    "same": true,
+    "sha256": "0f4780f3ab53e560bc7e5858eda56010b486bfe4aa9ee40acf0d5de460197a92"
+  },
+  {
+    "group": "generated/lua",
+    "name": "ShelfTypeAccessor.lua",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Lua/Config/Gen/ShelfTypeAccessor.lua",
+    "same": true,
+    "sha256": "db81a0aeb6c7e5dcd3d21d849ac343b08472fc201ae803d7ccda0c9b7c7fa50d"
+  },
+  {
+    "group": "generated/lua",
+    "name": "TextAccessor.lua",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Lua/Config/Gen/TextAccessor.lua",
+    "same": true,
+    "sha256": "39ac9ce13a3903584ddb34994b4b6721282c5214136999ca68568a0a7bcb1757"
+  },
+  {
+    "group": "generated/lua",
+    "name": "UIConfigAccessor.lua",
+    "target": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Lua/Config/Gen/UIConfigAccessor.lua",
+    "same": true,
+    "sha256": "7fc3362fb23f5853438ccc65110faec866275c83b85c55e3658289549aae5cd5"
+  }
+]

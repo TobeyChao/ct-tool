@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本仓库是 `ct` 配表导出工具：从 Excel + YAML Schema 生成 JSON、FlatBuffers Binary 和 C#/Lua Accessor。`ct/` 是自包含 Python 工具，`gd/` 是真实游戏数据工作区，`launcher/` 是 Flutter 桌面壳。当前只有 canonical 一套实现。
+本仓库是 `ct` 配表导出工具：从 Excel + YAML Schema 生成 JSON、FlatBuffers Binary 和 C#/Lua Accessor。`native/` 是 Rust 共享内核，`web/` 是浏览器界面，`gd/` 是真实游戏数据工作区，`launcher/` 是 Flutter 桌面壳。CLI/Web/worker 复用同一套用例。当前交付 macOS，Windows 延后、Linux 不支持。
 
 ## 工作方式与完成标准
 
@@ -12,11 +12,11 @@
 
 ## 项目约束
 
-- Python 使用 `ct/.venv`，不要全局安装。例：在仓库根目录运行 `ct/.venv/bin/python -m pytest ct/tests/app/`；Windows 使用 `ct/.venv/Scripts/python.exe`。浏览器测试需要 Playwright Chromium。
-- CLI/Web 是薄壳，复用 canonical app 用例、领域校验和存储能力；不要新增平行业务链路。配置路径通过 `cfg.resolve(...)` 相对游戏工作区解析。
+- 原生测试运行 `cargo test --manifest-path native/Cargo.toml --workspace --locked`；Web 在 `web/` 中运行 `npm ci`、`npm run test:http`、`npm test`，浏览器需要 Playwright Chromium。launcher 用 `flutter test`/`flutter analyze`，独立 C# 读取用 `test-proj/ExportAccessorVerify/prepare-native.mjs`。正式路径不安装或调用 Python。
+- CLI/Web 是薄壳，复用 `ct-app` 用例、领域校验和存储能力；不要新增平行业务链路。配置路径通过 `cfg.resolve(...)` 相对游戏工作区解析。
 - Schema 编辑走 Draft → 服务端候选/净差异 → YAML-only 保存。`schemaRevision` 与 `candidateHash` 是必需守卫；候选刷新不能替换草稿基线。保存不改 Excel、翻译、导出产物或成功账本，模板生成、导出与部署保持显式独立。
 - save/export/deploy 复用工作区锁与可恢复发布器。恢复须在加载资源前完成，既还原旧文件也清理本事务新增文件。资源创建检查名称、规范化目标路径、跨平台大小写冲突和 Excel 归属。
-- 导出先通过读取、类型、主键及 ref 校验闸门再发布。生成缓存可丢弃，成功账本只在成功后推进；修改生成器行为时更新 `exporting/build.CODEGEN_VERSION`。
+- 导出先通过读取、类型、主键及 ref 校验闸门再发布。生成缓存可丢弃，成功账本只在成功后推进；修改生成器行为时更新 `ct_export::CODEGEN_VERSION`。
 - proposal 请求只产出规划；明确要求实施后再实现。OpenSpec 任务按实际验收结果勾选，规格同步和归档不能代替实现验证。
 - 本地搜索优先 `rg`；网络搜索使用 anysearch MCP，不可用时说明并使用可用工具。
 
@@ -24,9 +24,9 @@
 
 只读取当前任务需要的内容，无需每次编辑先遍历文档。
 
-- 安装、CLI、数据目录和术语：[`ct/docs/README.md`](ct/docs/README.md)；详细目录与命令见[项目参考](ct/docs/agent-project-reference.md)。
-- 调整模块职责、数据流、i18n 或 Schema 格式：[项目参考的架构与格式说明](ct/docs/agent-project-reference.md#架构)。
-- 修改 Schema 保存、草稿恢复或旧 Apply 迁移：[`ct/docs/schema-save-migration.md`](ct/docs/schema-save-migration.md) 和 `openspec/specs/schema-editor/` 中对应规格。
+- 安装、CLI、数据目录和术语：[`docs/README.md`](docs/README.md)；详细目录与命令见[项目参考](docs/agent-project-reference.md)。
+- 调整模块职责、数据流、i18n 或 Schema 格式：[项目参考的架构与格式说明](docs/agent-project-reference.md#架构)。
+- 修改 Schema 保存、草稿恢复或旧 Apply 迁移：[`docs/schema-save-migration.md`](docs/schema-save-migration.md) 和 `openspec/specs/schema-editor/` 中对应规格。
 - 修改 Excel 表头：`openspec/specs/excel-template-styling/spec.md`；修改数据读取或模板迁移：`openspec/specs/excel-processing/spec.md`。
 - 实施 OpenSpec change：读取该 change 的 proposal、design、delta specs、tasks 及相关前置；其他任务按需查 `openspec/specs/` 中对应能力。
-- launcher 构建与分发：[项目参考](ct/docs/agent-project-reference.md#launcher-打包与分发)及 `launcher/docs/design/` 中相关设计。
+- launcher 构建与分发：[项目参考](docs/agent-project-reference.md#launcher-打包与分发)及 `launcher/docs/design/` 中相关设计。

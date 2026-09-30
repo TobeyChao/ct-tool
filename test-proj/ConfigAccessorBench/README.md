@@ -25,7 +25,7 @@
 | 偏移预取：无 | 填充率 ≥ 0.75 的定宽（uniform）表由生成器直接发射**字面量偏移**（`ROW_MODE_LITERAL`） |
 | `output/generated/csharp/` 无枚举声明 | **`Enums.cs` / `Enums.lua` 会产出**具名枚举声明 |
 
-> 现役参考实现与实测在 `test-proj/RefConfigBench/`；当前契约的权威描述见 `openspec/specs/flatbuffers-export/spec.md` 与 `ct/docs/README.md`。
+> 现役参考实现与实测在 `test-proj/RefConfigBench/`；当前契约的权威描述见 `openspec/specs/flatbuffers-export/spec.md` 与 `docs/README.md`。
 
 ## 文件
 

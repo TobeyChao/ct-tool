@@ -2,7 +2,7 @@
 
 - [x] 1.1 固定采用的 main Web 提交、native 提交及工作树差异，建立 native/docs/baseline/web-parity.md 与机器可核查场景映射；验证每个现有 Web 测试文件及有效场景有新验收目标、允许差异或明确历史说明。
 - [x] 1.2 冻结 Web HTTP 成功/失败样例、草稿与历史样例、当前 Python 发布器各阶段 journal 故障夹具及产物摘要；验证样例可独立读取、来源版本和路径占位规则明确，不依赖真实 gd/。
-- [ ] 1.3 建立 Python 依赖退役清单，覆盖 ct/、native/fixtures、bench/parity、CI、文档与 test-proj 中正式验收引用；验证每项标明替代位置或纯历史归档理由，不遗漏夹具再生链。
+- [x] 1.3 建立 Python 依赖退役清单，覆盖 ct/、native/fixtures、bench/parity、CI、文档与 test-proj 中正式验收引用；验证每项标明替代位置或纯历史归档理由，不遗漏夹具再生链。
 - [x] 1.4 协调 rust-native-core/native-flutter-workbench 的 panel 退役与 Python 删除决策，记录本 change 的接管范围、前置未验收项和规格同步顺序；验证不提前勾选旧任务、不覆盖并发实现。
 
 ## 2. 原生 Web 服务与静态资源
@@ -55,7 +55,7 @@
 - [x] 7.3 将正式验收仍调用的 test-proj Python 准备/检查入口迁至 Rust/JS 或既有目标语言；用对应入口真跑验证，纯历史实验登记为非活跃且不批量删除资料。
 - [x] 7.4 将 fingerprint、coverage matrix、bench 与 CLI 对照脚本收敛为原生清单及静态基线，退役 live-Python 必需路径；验证 ct/ 缺失时测试数量/必要场景不缩水、基线损坏明确失败。
 - [x] 7.5 更新发行自检与 macOS CI，加入 panel 静态资源/HTTP/退出 smoke 及 Node 浏览器验收；验证正式流程不安装或调用 Python，发行包不含解释器或 Flask 负载。Windows 延后，Linux 不纳入支持。
-- [ ] 7.6 迁移有效 ct/docs 文档并更新安装、开发、升级、基准说明及活跃路径引用；验证新命令可执行、链接有效，明确同源草稿限制、未知事务处理和旧同名 ct 冲突。
+- [x] 7.6 迁移有效 ct/docs 文档并更新安装、开发、升级、基准说明及活跃路径引用；验证新命令可执行、链接有效，明确同源草稿限制、未知事务处理和旧同名 ct 冲突。
 - [x] 7.7 执行 G3 干净环境门槛：临时 checkout 排除旧 ct/，受控环境无可执行 Python，完成构建、必要测试、夹具再生和 macOS 发行/panel/launcher smoke；留存环境与原始结果，任一必要缺项不得标通过。Windows 延后，Linux 不支持，不以其缺席缩减 macOS 场景。
 
 - [x] 7.8 迁移 main launcher 的运行时发现与设置，删除 Python/venv 回退且保留工作区/端口/托盘/自启行为；验证内置和显式原生路径启动参数、旧偏好迁移、运行时缺失错误与无真实 gd 默认绑定。
@@ -137,3 +137,7 @@
 L 独立五样本复验已完成：冷/热 CLI/热 worker/改单表/改译文均 regression-pass，每场景 607 产物摘要与基线一致，最大采样进程树 RSS 7,704,160 KiB < 7.5 GiB；原始结果见 bench-l-macos-native-verification.json。S/M/L macOS 留档回归已完整，其他平台留档、发行及 G3 仍未完成，7.1/7.5/7.7 保持未勾选，不删除 Python。
 
 2026-09-30 macOS 发行与 G3：按用户最新范围，Windows 延后、Linux 不支持，均不作为通过项或阻塞项。干净副本排除旧 ct/ 与构建/夹具输出，受控 PATH 无 Python 命令；Cargo 332/332、HTTP 39/39、浏览器 115/115、Flutter 15/15 和分析无问题，独立 C# 读取 127 项 0 不一致、六 Excel 夹具再生、S/M/L 从空目录再生并原生校验，三档摘要与留档一致。ZIP 权限丢失已修复并经真实解压验证；原生包、签名 app 与只读挂载 DMG 的 CLI/worker/panel/EOF 真跑及无 Python/Flask 负载检查通过。launcher HTTP 就绪后打开浏览器、81 表导出忙碌时安全停止与重启无孤儿通过。7.1/7.5/7.7/7.9 完成，G3 通过，当前 39/45；远端 CI 未执行。原始失败、修复后结果与环境见 native/docs/baseline/macos-g3-verification.md。文档/退役清单和删除后复验仍待完成，因此旧 Python 暂未删除。
+
+2026-09-30 文档与退役清单：有效文档迁入 docs/，更新根 README/AGENTS、native/Web 开发说明与独立读取引用；旧文档、截图与设计探针按版本化文件保留历史快照。312 项清单逐项登记具体替代/历史路径、来源 SHA 和删除范围（249 个旧 ct 文件、共 262 项待删除，17 历史实验保留），校验所有路径与 85 份历史测试来源摘要；九份现役文档/26 个文件链接有效，发行 ct 的十组帮助入口实际通过。1.3/7.6 完成，当前 41/45。8.1 尚未执行：用户随后明确要求“先完成 Unity 联调，再删除 Python”，不以独立 C# 读取替代。证据见 native/docs/baseline/retirement-inventory-verification.md。
+
+2026-09-30 Unity 联调：在本机 fabulous-game/Client 的 Unity 6000.5.2f1 中，原生对真实游戏输入的临时副本导出 14 表/91 产物，15 C# 与 60 Binary/JSON/Lua 文件逐字节匹配现有游戏端。真实 gd/xlua 插件直接读取新生成的三语言 Binary，四轮语言切换共 4608 个字段值、7956 次检查通过；42 项 EditMode 配置测试、2 项 PlayMode Lua 测试全部通过，0 跳过。首轮探针漏识别 Text.Note 的 server_only 字段已修正；Lua 错选 EditMode 返回零项不计通过，改用实际 PlayMode 复验。115 个受监测游戏文件内容/mtime 未变，恢复 GDNative 未加载、语言 zh、编辑器空闲；没有覆盖游戏 Assets。用户要求的实际 Unity 删除前置现已完成，证据见 native/docs/baseline/unity-integration-verification.md；8.1 尚待执行。

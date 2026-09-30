@@ -1,0 +1,29 @@
+{
+  "success": true,
+  "command": "command eval",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "code": "return new { playing = UnityEditor.EditorApplication.isPlaying, compiling = UnityEditor.EditorApplication.isCompiling, configLoaded = GDNative.IsLoaded, language = GameFramework.Config.GetLanguage(), project = UnityEngine.Application.dataPath };"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": {
+        "playing": false,
+        "compiling": false,
+        "configLoaded": false,
+        "language": "zh",
+        "project": "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets"
+      }
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "/Users/tobeychao/Documents/Projects/fabulous-game/Client"
+    }
+  },
+  "errors": [],
+  "warnings": []
+}

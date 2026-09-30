@@ -1,0 +1,77 @@
+[
+  {
+    "name": "CustomerDemandAccessor.cs",
+    "sha256": "cf08c131b62f2c91686602107f097e48076d5863e1065bf00d1e88660a33cf5a",
+    "same": true
+  },
+  {
+    "name": "CustomerTypeAccessor.cs",
+    "sha256": "1f3cdcc4048532890228c51a838e96302ce4d3da48aa725780e3f3f2e56d6e40",
+    "same": true
+  },
+  {
+    "name": "DayDemandModifierAccessor.cs",
+    "sha256": "aa39d9dc8677a36436f5df9f0bc7cb9f38c510a0b9c1ac53f0dcf9f0e1027038",
+    "same": true
+  },
+  {
+    "name": "DayProfileAccessor.cs",
+    "sha256": "45c2fe7fbefd0bbfe5f47928f5b6f62a4e9c6518c597bfc48f03fea7ed42359f",
+    "same": true
+  },
+  {
+    "name": "DayWaveAccessor.cs",
+    "sha256": "d099373bcdc911656fe88fb811a048e5f26a9d9f991a9d9dc94fabe0693e9fd0",
+    "same": true
+  },
+  {
+    "name": "DayWaveSpawnAccessor.cs",
+    "sha256": "592fafc64708bf4fc509f9e603261c42db9c3964b87bee8ab8b8c73e68d0ee28",
+    "same": true
+  },
+  {
+    "name": "Enums.cs",
+    "sha256": "4a7870499f98a70b7dd6c2552324414d2079f3ac15725472d6aa8c94bcbcd5ed",
+    "same": true
+  },
+  {
+    "name": "ItemAccessor.cs",
+    "sha256": "ba998a1e78c3611788bf80d50d30a6051ba6268fe2ce24d95f9dd16843a3cf29",
+    "same": true
+  },
+  {
+    "name": "ItemPurchaseAccessor.cs",
+    "sha256": "639a088ab7805ffc4bdd9228894f805229c89263f933b21e45ea3203ee2c1921",
+    "same": true
+  },
+  {
+    "name": "ItemShelfAccessor.cs",
+    "sha256": "5b0d5dd74ce90c4a75a12abc22ae582ca51fa2547d07037d1afd897282a11794",
+    "same": true
+  },
+  {
+    "name": "ItemTypeAccessor.cs",
+    "sha256": "dffe62490c9ded130e8effe0f56b3b28a2b6a073d971a23e657aecc83312cb1b",
+    "same": true
+  },
+  {
+    "name": "SceneConfigAccessor.cs",
+    "sha256": "bb9884a959b8e5816a6af06f38d46ba22a181c0a4716d1647e347e72911b1f77",
+    "same": true
+  },
+  {
+    "name": "ShelfTypeAccessor.cs",
+    "sha256": "11c8ef57f49014670490e2a94bfc5517f7cd1972951d3fa933c06dac4c5b4d29",
+    "same": true
+  },
+  {
+    "name": "TextAccessor.cs",
+    "sha256": "50003f6d628d4fdfc03f1b93cee77416f23f173453363253554f1d0be51c2bda",
+    "same": true
+  },
+  {
+    "name": "UIConfigAccessor.cs",
+    "sha256": "fac4dc705400728e0f823e8edca006d8d4a115f85105960ac24267a2da803c2f",
+    "same": true
+  }
+]

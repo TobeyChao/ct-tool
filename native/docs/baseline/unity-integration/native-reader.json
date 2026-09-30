@@ -1,0 +1,44 @@
+{
+  "success": true,
+  "command": "command run_script",
+  "data": {
+    "command": "run_script",
+    "parameters": {
+      "file": "Temp/CtNativeUnityVerification.cs",
+      "entry": "CtNativeUnityVerification.Run",
+      "args": "[\"/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-unity-native-kaUCCF/workspace/output\"]"
+    },
+    "result": {
+      "diagnostics": [],
+      "compileMs": 114,
+      "executeMs": 45,
+      "assemblyName": "PipelineRunScript_CtNativeUnityVerification_f46112f5fa5e443784613e6f186fa430",
+      "success": true,
+      "result": {
+        "tables": 14,
+        "checks": 7956,
+        "fields": 4608,
+        "serverOnlySkipped": 356,
+        "languages": [
+          "zh",
+          "en",
+          "ja",
+          "zh"
+        ],
+        "nativePlugin": "xlua/gd",
+        "heldRowAcrossLanguageSwitch": true,
+        "pointerAndGenerationStable": true,
+        "missingLanguageFallback": true,
+        "staleRowRejected": true,
+        "reloadedCacheFresh": true
+      }
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "/Users/tobeychao/Documents/Projects/fabulous-game/Client"
+    }
+  },
+  "errors": [],
+  "warnings": []
+}

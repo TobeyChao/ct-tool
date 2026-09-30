@@ -1,28 +1,28 @@
 {
   "schema": "ct-source-tree/2",
   "git": {
-    "commit": "2cf77967e4a76fc05d14eacc600fcd0932c2286b",
-    "dirtyPaths": 20
+    "commit": "89cb70ac8524316b49ddcfd57efdac1fef23dce6",
+    "dirtyPaths": 28
   },
   "toolchain": {
-    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "rustc": "unavailable",
     "cargoLockSha256": "c20c6e340a325f179b95c85fae87c4c5c9092cdc0d33d08f89d4c7144b86c464",
     "pythonRuntimeRequired": false
   },
   "tree": {
-    "sha256": "bd363ca227a19fcd6823c0c0028e20c21552dba532c57b885451fe60c92ccb09",
-    "files": 1125
+    "sha256": "348ec030adce8b90c844a9c54663d28bd8ba64a97424f047e337817c710e3a02",
+    "files": 1151
   },
   "scopes": {
     "native": {
-      "files": 628,
-      "bytes": 8798033,
-      "sha256": "fab1547ec4e64442729a194d2ec2cfc6b6926bf8541345c50bcef4a54dd6cc4a",
+      "files": 652,
+      "bytes": 9029065,
+      "sha256": "c40b137cd7b86451da5cadad79428dab68c499b3811600e7ed75ed5163f25808",
       "entries": {
         ".gitignore": "e899756b962f25261eca57ba87fa2e878892daa40bca86f0871d7935d038a520",
         "Cargo.lock": "c20c6e340a325f179b95c85fae87c4c5c9092cdc0d33d08f89d4c7144b86c464",
         "Cargo.toml": "7e94522a8f6dc7e44172c04a26309abfe111404afc264328d8e581c691a7ff9d",
-        "README.md": "4f1ab72c9d55becd88bd33fc4a4a11b949e38d649aa017a441eb6cadc47db57a",
+        "README.md": "92b0721c42bde349efafb07bb77628301fa9be26ac8300156681248eba6be183",
         "benches/README.md": "17dc55a29361c712551463c10c6039aac8802aaaf362cc13e12c0939f79baa65",
         "clippy.toml": "9ddbc4742f3769968c9e07ff2e9a8b9d701205b8b0714a6d77e85a171fe2d966",
         "crates/ct-app/Cargo.toml": "959a7cef8d2afcf5342f913aef4668170af7ae2f6cc7f87047c74f19cf311128",
@@ -253,6 +253,7 @@
         "docs/baseline/macos-g3/validate-l.txt": "ee0fb0d57a2fedea417f2b8c1b7521b1f16cea797b853058007db7a1cd13b963",
         "docs/baseline/macos-g3/validate-m.txt": "ee0fb0d57a2fedea417f2b8c1b7521b1f16cea797b853058007db7a1cd13b963",
         "docs/baseline/macos-g3/validate-s.txt": "ee0fb0d57a2fedea417f2b8c1b7521b1f16cea797b853058007db7a1cd13b963",
+        "docs/baseline/native-documentation-commands.txt": "30b02a65b0212cd364f00784c84f0ebe9634d76e5ecc95724824191d28083ee8",
         "docs/baseline/parity-report.md": "8c288eb627809797ee35d242e7608958f03be0d11156e743753f1963f02014b8",
         "docs/baseline/python-free-cli-parity.md": "751c2b122b7a59009a9e04e71a405ffb48ba973317a91ca712bbac783a5e7176",
         "docs/baseline/python-free-environment.json": "6c4e7ba0b4ad803e683a20d6c909bcc0cb91c402afaa852d88c2a16f3660e568",
@@ -264,14 +265,19 @@
         "docs/baseline/python-free-targeted-tests.txt": "c191e9ffb299c1755c61d3f6502f70a6ce1100f219ad5160a53856abf3086ff3",
         "docs/baseline/python-free-verification.md": "78845e367922b1d6abba4c98ed1334fe53edf87030f3b636a36348847408607c",
         "docs/baseline/python-free-workspace-tests.txt": "41869e15b8e47f1a43ddd62fa263d0e0f836d1f8cba9255051161175251b679e",
-        "docs/baseline/python-retirement-inventory.json": "57943a790e43a01d650bf5663884867437e9f1fde3d52105f9dc9a0a52bffda2",
+        "docs/baseline/python-retirement-inventory.json": "273be3c3664b6493988d5ca8289771d599f6d255a249cfcb3b4fdf85a45e0712",
+        "docs/baseline/python-retirement-inventory.json.sha256": "5b98593612746ff50a41704d53caf3d7527f1224ba2021102a1dee485b4ff31c",
         "docs/baseline/recovery-drill.md": "f20d2b3f265a975798faafc1a521e6dac504422f2cdb3ad4411ac6611bc9d9ff",
         "docs/baseline/reference-tests.json": "798ca9b70b14dce556d24246024ae368644bb79ee507f36e63dcf463bee32f65",
         "docs/baseline/reference-tests.sha256": "a93bc8596f08369717db9d43e093af3651b5fda47a674dd671bc0f0bc287424c",
+        "docs/baseline/retirement-inventory-verification.md": "e82d4868133d1f8d426e39cfcdefc62af3f8e6535ce5af7a206010dfd95eff9e",
+        "docs/baseline/source/bench-python-entry.py.txt": "4b627162b4caba05b8edf12fa9482e27584128e2a6df110b201552b440464b9b",
         "docs/baseline/source/capture-python-journals.py.txt": "f7999057ca0935c7e9e9a21ee726fd86d7b9dd30323ef8d6ef16092b77467fed",
         "docs/baseline/source/capture-web-draft-history.py.txt": "34be955d24ec02b2177cfa81e21506e60b39b414007b2f8dcb49f2b659d38af5",
         "docs/baseline/source/capture-web-http.py.txt": "0d16e26499e4af2b80c495dcf78416b186c3b355a3bddb08438c2e35ba2cae00",
         "docs/baseline/source/cli-text-diff-live.mjs.txt": "dc03037e4670bc6192a231ae97dc0af7d7ca8a44e13a6f9fa6db27c449819189",
+        "docs/baseline/source/ct-tests.yml.txt": "9bf3cfa58dcdf192312a3ab3ee9e8a2ccc7fcf1a043b78b940ae1213cebbee76",
+        "docs/baseline/source/fixture-bench-generate.py.txt": "de9e0e83db674fe5fc829a633a473972a1ee43e2f0a1bc15c406001798d99080",
         "docs/baseline/source/fixture-binary-generate.py.txt": "2ef8bc32b5cca249983422a399ebf3940af16f4b8ea9dada34c005b21929dcde",
         "docs/baseline/source/fixture-excel-generate.py.txt": "e998f14188d1162dde0d8d4c6d4b18bbf044f3851cf56b19457c4ba03b4a7220",
         "docs/baseline/source/fixture-export_pipeline-generate.py.txt": "4eeb23a35a68a6c5ed6fc791488b260762829cc769d8afdcf1864e8870df4042",
@@ -279,6 +285,8 @@
         "docs/baseline/source/fixture-schema_state-generate.py.txt": "c77a1db93c9804547eb1878a8e38d1f71860ccb10a080198db9ddcd4bb00753f",
         "docs/baseline/source/fixture-template-compare_semantics.py.txt": "5b658e642f877ef13433f078d8f280761ee145f07a6171380ce38e9dda958a73",
         "docs/baseline/source/fixture-template-generate.py.txt": "4ed807506540c5d451a357394d9852f24b6e6f22f9eacac8cefcbfe56e94f6d7",
+        "docs/baseline/source/isolation-check.mjs.txt": "c8781988c9eedb92953db6e5f9d87fdfd8ac35834c80001c5aa3215d88df3b10",
+        "docs/baseline/source/measure-panel-live.mjs.txt": "77e20fffbe7d90b209dc3eddfcbeea213882ffc90c45d51004857ede0e210afa",
         "docs/baseline/source/source-tree-native-origin.json": "631decba1d6e332d1450906becfbda9b6c4561b024c76eb1dfc262e43d2348df",
         "docs/baseline/test-proj-evidence/audit.txt": "bff19c89f2b22edf02054ffc5fe7988510fd9b556f6cd681e4af09aae0ee7d42",
         "docs/baseline/test-proj-evidence/build.txt": "3725c803309c3ebc0d25c7e470a69235c23f88194e5868c0201b6ae31bf13ce8",
@@ -292,10 +300,24 @@
         "docs/baseline/test-proj-evidence/reader.txt": "8e1da7754e82ab54219f2ff64545ef1dc40066b145ea8741126abbce2ee03e0b",
         "docs/baseline/test-proj-evidence/workspace-tests.txt": "c18e5f7be3af39e5f062d4c489b7acca423eeeb15af00ae9fa9c0e918370ece8",
         "docs/baseline/test-proj-verification.md": "4faa76fe8938d11566886236769d78acbe3b3f159cd04e7642bb20df27867cc7",
+        "docs/baseline/unity-integration-verification.md": "73a5011172bd752b9111bbe4430cabacce3582a19fdaa5ab5699b87cc26f7a9f",
+        "docs/baseline/unity-integration/accessor-compare.json": "60168817b976e1e345a2b70ca837aed5f8f68a2d882d048625a058e5ded4268c",
+        "docs/baseline/unity-integration/config-tests.json": "0596db8a95474e0b2eecd22f2e1dc92f7bfaf5a59ac7e6f95c2f261c3f176dd5",
+        "docs/baseline/unity-integration/console-after.json": "a4591bab10853dd693533c13a1f10c9f73916758011e95273308fee9c2b81305",
+        "docs/baseline/unity-integration/first-lua-editmode-zero.json": "f48b49a8834aa5656ca984c1f7494b20666d700828a8f563f594ff4f571cf758",
+        "docs/baseline/unity-integration/first-reader-failure.json": "86efd4589836131b382216a506cec824920feaea76e9468113f74976e26acd51",
+        "docs/baseline/unity-integration/game-artifact-compare.json": "f97c1c21f1105fb0527abca8700fd78f232415b4361d5ea35a8f1f4da1298494",
+        "docs/baseline/unity-integration/lua-playmode-tests.json": "a69027ad907547a15a2aada803055270d11fcbcd863851dafd0683b69e7a64cf",
+        "docs/baseline/unity-integration/native-export.txt": "bd4bd3f737c4c86f824de250f6a3c6eb82f544a805bc2d76d4766e5967cf6c16",
+        "docs/baseline/unity-integration/native-reader.json": "508ce6a6ce255bf36a1c0a1a4b5e8f98693a9726688237b67a64f90cc8d7e054",
+        "docs/baseline/unity-integration/source-before.json": "c19cdc444c84b9f5afe8a3ed001f889b4168e52dfd4d8be666dfdbade43549b7",
+        "docs/baseline/unity-integration/source-preservation.json": "dfd8ec065b244252c3c84eed83de53369a7b1069da87fced70bee9676f5d0115",
+        "docs/baseline/unity-integration/state-after.json": "d6813eb80f74ab36b3c00c00bae0200fa0ded3ff253643f6132514c188543445",
+        "docs/baseline/unity-integration/state-before.json": "1700f36c43505c47343c58f8c89943206c1a79a61a34460a1474e09529115021",
         "docs/baseline/web-http-contract.md": "9475b036e6d9178e8382f91802d40422893a2bbcf8843998244c8023c9f6854e",
         "docs/baseline/web-http-python.json": "b6698580fb0f0a10f77ceefc45207ffda79fd02bd34c16290ea43414f80afc71",
         "docs/baseline/web-parity.json": "5cac3a216da8a24ddbce86e066a4603b75ba117298a02876d677f7159e9831f0",
-        "docs/baseline/web-parity.md": "0f3ba158a832c8c2945a1c8f2eea11eba5d4d74b3095ba7e9f0ce42e832d20b8",
+        "docs/baseline/web-parity.md": "082804b5edd0846fe4a659593f8e77519c272ac8da5c2aa861ab6fcb24ed5dd9",
         "docs/baseline/web-resource-query-python.json": "f64afa82906f55f539ad5b664cfb879f837975b2b59eea6227ba959897c77fdd",
         "docs/baseline/web-resource-query.md": "6d7ad6b11c997bce2d61f9a33f9d8bac3999ae14838741c2ffd8bef1c51b4874",
         "docs/baseline/web-smoke/accessor-native-2026-09-29.txt": "f01a6509fd9b6022035bf9f703620c4b151a55205e1281f9811145250e3c4df1",
@@ -426,7 +448,7 @@
         "fixtures/accessor_verify/workspace/i18n/source/Item.json": "2161929d0a2e2ae70a4abe272b59e8385ebb8a3b9e040f5f3c8c925a788b8bb6",
         "fixtures/accessor_verify/workspace/i18n/source/ItemType.json": "e5db6ed03a8a124d2f213ba461a140300a837aafd5c7d1e2b165cf2762d2074d",
         "fixtures/accessor_verify/workspace/i18n/source/Quest.json": "f6b4996e2cdf9a0e2e240531f87caddcf9aad5e529d1b5ee5e7641c09fbfbe04",
-        "fixtures/bench/README.md": "15bdedc15f081f31d4e2b01de39e687de7940951919d00930098727476a86c4b",
+        "fixtures/bench/README.md": "29b305da12d830191d00692231045137f52a32d5dd5740a7e6044293ea939cc4",
         "fixtures/bench/generate.py": "de9e0e83db674fe5fc829a633a473972a1ee43e2f0a1bc15c406001798d99080",
         "fixtures/bench/shape-r.json": "b99db41e81562a0e5cea03833511d3cdf1063f1bcb183a777e352edcd6e94e85",
         "fixtures/binary/generate.py": "2ef8bc32b5cca249983422a399ebf3940af16f4b8ea9dada34c005b21929dcde",
@@ -644,15 +666,17 @@
         "tools/bench/measure.ps1": "f192b514b297247a06b1d5b51254f9c7b3040f0fc52a684adbe6cfe509b11a2b",
         "tools/bench/python-entry.py": "4b627162b4caba05b8edf12fa9482e27584128e2a6df110b201552b440464b9b",
         "tools/bench/recovery-drill.mjs": "78c2d434568ac1df9742981c9f11af6ff1f07af647b9e65c5865b3faf91943d5",
+        "tools/check-docs.mjs": "33b1738ad8735292f76d6026e89f3ef924326611ffbeacd05994cdc468aa2253",
         "tools/check-package.mjs": "461de9c34de00389fbf57ce86c7370653e0bf48139fdb7102801635feb2d8277",
+        "tools/check-retirement.mjs": "af90ce26dc8233acf81ed8a80de233cefe3aec18216967c0d9853aea467c43f8",
         "tools/gd-guard.mjs": "d55663be9674ab59b2f24c3287b07354e522001752a634cf7998e843418053ed",
         "tools/parity/cli-text-diff.mjs": "63b9c54ec50371702299c8346d01141c09ff7e8b29f3267e995f6b107c14ee79"
       }
     },
     "web": {
       "files": 66,
-      "bytes": 504944,
-      "sha256": "752b7bc7cd25b9b544a22a2d3d5829380fcb68f90b71887d9189cbf3e56db3fb"
+      "bytes": 504983,
+      "sha256": "01074c7d892a1f0572165ddb9ae2ac3adf679d79b77b986a3e24ac07855ca696"
     },
     "launcher": {
       "files": 81,
@@ -661,8 +685,8 @@
     },
     "openspec": {
       "files": 249,
-      "bytes": 2102540,
-      "sha256": "52b68916e0ef875d95befe5e049e029b0b96dc7c336d434c086cd98479049da0"
+      "bytes": 2104131,
+      "sha256": "a1b536520aa75adf157e5c6d24b0d0f8481d685f495313ded9b38272dc70d9b3"
     },
     ".github": {
       "files": 2,
@@ -670,9 +694,9 @@
       "sha256": "e7ce97e966cbc31bf47666125adb0f57ef48f1cd012f5621bf967ad406226943"
     },
     "test-proj": {
-      "files": 99,
-      "bytes": 16495054,
-      "sha256": "56f0a0b850dc019b3d927dd84f93a6cc616af87a9ac3cb5056191553a744b67e"
+      "files": 101,
+      "bytes": 16505213,
+      "sha256": "5a0aa8bcb7f14a8fd6bb0b2a3a75c4ce8585e5a1a7fb0a707791038cf5bb46c9"
     }
   },
   "testInventory": {

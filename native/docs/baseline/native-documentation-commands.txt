@@ -1,0 +1,104 @@
+ct 配表导出工具（原生内核）
+
+Usage: ct <COMMAND>
+
+Commands:
+  export        增量导出（--all 强制重建）
+  validate      只读校验
+  status        工作区状态概览
+  gen-template  生成/迁移 Excel 模板
+  i18n          翻译管理
+  deploy        独立部署
+  recover       显式恢复未完成的发布（返回新基线）
+  panel         原生 Web 面板
+  worker        stdio worker（供 Flutter 工作台）
+  help          Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+增量导出（--all 强制重建）
+
+Usage: ct export [OPTIONS]
+
+Options:
+      --all            强制重建所有选中产物，绕过解析/校验/生成缓存
+      --table <TABLE>  仅导出单张表（精确匹配，不接受逗号列表）
+      --lang <LANG>    仅导出单种语言
+      --for-build      部署时包含 build_targets
+      --root <ROOT>    工作区根目录（默认当前目录）
+      --verbose        DEBUG 日志
+  -h, --help           Print help
+只读校验
+
+Usage: ct validate [OPTIONS]
+
+Options:
+      --table <TABLE>  
+      --root <ROOT>    
+  -h, --help           Print help
+工作区状态概览
+
+Usage: ct status [OPTIONS]
+
+Options:
+      --root <ROOT>  
+  -h, --help         Print help
+生成/迁移 Excel 模板
+
+Usage: ct gen-template [OPTIONS]
+
+Options:
+      --table <TABLE>  
+      --all            生成所有表模板
+      --root <ROOT>    
+  -h, --help           Print help
+独立部署
+
+Usage: ct deploy [OPTIONS]
+
+Options:
+      --for-build    追加构建目标（StreamingAssets）
+      --root <ROOT>  
+  -h, --help         Print help
+原生 Web 面板
+
+Usage: ct panel [OPTIONS]
+
+Options:
+      --root <ROOT>              
+      --host <HOST>              [default: 127.0.0.1]
+      --port <PORT>              [default: 8000]
+      --no-browser               
+      --static-dir <STATIC_DIR>  开发时从此目录加载 Web 静态资源
+  -h, --help                     Print help
+从 Excel 同步译文骨架
+
+Usage: ct i18n sync [OPTIONS]
+
+Options:
+      --lang <LANG>    只更新该语言的 lang 文件（source 仍全量刷新）
+      --table <TABLE>  只处理指定表
+      --verbose        输出每个写入文件的路径与变更条目数
+      --root <ROOT>    
+  -h, --help           Print help
+翻译进度概览
+
+Usage: ct i18n status [OPTIONS]
+
+Options:
+      --lang <LANG>  只显示指定语言
+      --by-table     按表细分
+      --json         输出 JSON
+      --root <ROOT>  
+  -h, --help         Print help
+清理 orphan 条目
+
+Usage: ct i18n compact [OPTIONS]
+
+Options:
+      --lang <LANG>    只处理指定语言
+      --table <TABLE>  只处理指定表
+      --dry-run        仅打印将被删除的条目，不修改文件
+      --root <ROOT>    
+  -h, --help           Print help

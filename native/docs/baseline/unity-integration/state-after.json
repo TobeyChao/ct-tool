@@ -1,0 +1,30 @@
+{
+  "success": true,
+  "command": "command eval",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "code": "GDNative.Unload(); TableVersion.MarkFullReload(); return new { loaded = GDNative.IsLoaded, language = GameFramework.Config.GetLanguage(), playing = UnityEditor.EditorApplication.isPlaying, compiling = UnityEditor.EditorApplication.isCompiling, hasLangPreference = UnityEngine.PlayerPrefs.HasKey(\"lang\"), langPreference = UnityEngine.PlayerPrefs.GetString(\"lang\", \"zh\") };"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": {
+        "loaded": false,
+        "language": "zh",
+        "playing": false,
+        "compiling": false,
+        "hasLangPreference": true,
+        "langPreference": "zh"
+      }
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "/Users/tobeychao/Documents/Projects/fabulous-game/Client"
+    }
+  },
+  "errors": [],
+  "warnings": []
+}

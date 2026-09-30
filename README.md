@@ -4,17 +4,16 @@
 
 ## 快速开始
 
-```bash
-# 安装
-cd ct
-pip install -e .
+macOS 用户可安装 launcher DMG，选择游戏工作区并启动原生 Web。原生 ZIP 的 bin/ct
+也能直接运行；终端使用时请明确二进制路径，避免调用旧虚拟环境里的同名 ct。
+Windows 发行验证延后，Linux 不支持。
 
-# 切到数据工作空间，开始导出
-cd ../gd
-ct export
+源码开发在仓库根目录：
 
-# 查看所有命令
-ct --help
+```sh
+cargo build --manifest-path native/Cargo.toml -p ct-cli --release --locked
+native/target/release/ct panel --root /path/to/workspace
+native/target/release/ct export --root /path/to/workspace
 ```
 
 ## 常用命令
@@ -38,7 +37,9 @@ ct --help
 
 | 目录 | 说明 |
 |------|------|
-| `ct/` | 配表工具（自包含 Python 项目） |
+| `native/` | Rust 共享用例、领域、存储、CLI/Web/worker 和发行工具 |
+| `web/` | 嵌入的浏览器界面和 Node HTTP/Playwright 验收 |
+| `docs/` | 当前用户/开发/迁移文档及历史资料 |
 | `gd/` | 游戏数据工作空间（`--root` 默认当前目录，通常 cd 到这里运行） |
 | `gd/config/` | 全局配置 + 表 Schema 定义 |
 | `gd/excel/` | 策划填写的 Excel 数据表 |
@@ -73,12 +74,13 @@ deploy:
 
 ## 依赖
 
-Python >= 3.10。二进制由 `ct/src/ct/export/canonical_binary.py` 直接构建（无需 flatc）。
+用户运行只需原生运行时包或内置运行时的 launcher；无需 Python、Node、Flutter SDK 或 flatc。
+源码构建需要 Rust；Web 验收需要 Node/Chromium，桌面开发需要 Flutter/Xcode，独立读取验收需要 .NET。
 
-详细文档见 [`ct/docs/README.md`](ct/docs/README.md)。
+详细文档见 [`docs/README.md`](docs/README.md)。
 
 ## 待办（Known TODOs）
 
 - 跨项目（fabulous-game 侧 reader / 运行时）的剩余工作见
-  [`ct/docs/archive/fabulous-game-对齐清单.md`](ct/docs/archive/fabulous-game-对齐清单.md)
-  （ct-tool 侧条目均已完成，该清单已归档）；增量导出语义见 [`ct/docs/README.md`](ct/docs/README.md) 的「`ct export` 的增量语义」。
+  [`docs/archive/python-era/archive/fabulous-game-对齐清单.md`](docs/archive/python-era/archive/fabulous-game-对齐清单.md)
+  （ct-tool 侧条目均已完成，该清单已归档）；增量导出语义见 [`docs/README.md`](docs/README.md) 的「`ct export` 的增量语义」。

@@ -1,1284 +1,4095 @@
 {
-  "format": "python-retirement-inventory/1",
-  "note": "Inventory includes historical citations. Nothing here authorizes deletion; unresolved replacements remain pending.",
+  "format": "python-retirement-inventory/2",
+  "sourceCommit": "89cb70a",
+  "note": "逐项分类与替代/历史位置。remove 是最终删除范围，尚未执行；不删除未跟踪/忽略本地资料。正式 Python 分支的最后移除与删除后验收由 8.1/8.2 执行。",
+  "gates": {
+    "g1": true,
+    "g2": true,
+    "g3": true,
+    "scope": "macOS; Windows deferred; Linux unsupported"
+  },
+  "totals": {
+    "remove": 262,
+    "retain": 33,
+    "retain-historical": 17
+  },
   "items": [
     {
       "path": ".github/workflows/ct-tests.yml",
       "owner": "ci",
-      "replacement": ".github/workflows/native-web.yml",
-      "status": "pending-audit"
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        ".github/workflows/native-web.yml"
+      ],
+      "archive": [
+        "native/docs/baseline/source/ct-tests.yml.txt"
+      ],
+      "sourceSha256": "9bf3cfa58dcdf192312a3ab3ee9e8a2ccc7fcf1a043b78b940ae1213cebbee76",
+      "reason": "旧 pytest 工作流已改为手动历史入口；正式 macOS CI 已用 Rust/Node/Flutter/.NET 实际本地验收承接，最终删除时移除该入口。"
     },
     {
-      "path": "native/fixtures/schema_state/generate.py",
-      "owner": "fixture-regeneration",
-      "replacement": "Pending: Rust/JS generator with independent golden assertions",
-      "status": "pending-audit"
+      "path": ".github/workflows/native-web.yml",
+      "owner": "native-or-js-entry",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        ".github/workflows/native-web.yml"
+      ],
+      "archive": [],
+      "sourceSha256": "0fb4aa1027d598f95ee9f4b663f8ab8400eec3034d6fe64e79ce4919ee2f5258",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
     },
     {
-      "path": "native/fixtures/binary/generate.py",
-      "owner": "fixture-regeneration",
-      "replacement": "Pending: Rust/JS generator with independent golden assertions",
-      "status": "pending-audit"
+      "path": "AGENTS.md",
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "AGENTS.md"
+      ],
+      "archive": [],
+      "sourceSha256": "01f1f61f122679947a02c86088277a72b779ed6ee845ef8535d8856594b2fd4f",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
     },
     {
-      "path": "native/fixtures/fingerprints/generate.py",
-      "owner": "fixture-regeneration",
-      "replacement": "Pending: Rust/JS generator with independent golden assertions",
-      "status": "pending-audit"
+      "path": "README.md",
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "README.md"
+      ],
+      "archive": [],
+      "sourceSha256": "517b5182a1163368fa5c0ce45454956998991b423889977220677c08b4fc3b91",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
     },
     {
-      "path": "native/tools/parity/cli-text-diff.mjs",
-      "owner": "reference-or-tool",
-      "replacement": "Pending: classify active invocation vs historical citation",
-      "status": "pending-audit"
+      "path": "ct/.gitignore",
+      "owner": "legacy-installation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/Cargo.toml",
+        "docs/agent-project-reference.md"
+      ],
+      "archive": [],
+      "sourceSha256": "c4671001e6def8fb3ae97291da06a0477fa54319c9334353d559c728eaa30901",
+      "reason": "Python 安装/包配置停止进入正式链；Rust 构建与原生发行替代。未跟踪缓存/venv不在删除清单中。"
     },
     {
-      "path": "native/tools/bench/measure.ps1",
-      "owner": "reference-or-tool",
-      "replacement": "Pending: classify active invocation vs historical citation",
-      "status": "pending-audit"
+      "path": "ct/docs/README.md",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/README.md"
+      ],
+      "archive": [
+        "docs/archive/python-era/README.md"
+      ],
+      "sourceSha256": "2ad19532dbfd272506452dfbd37803951ddc7e09362120cc47c2a3dd69847d9c",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
     },
     {
-      "path": "native/tools/bench/isolation-check.mjs",
-      "owner": "reference-or-tool",
-      "replacement": "Pending: classify active invocation vs historical citation",
-      "status": "pending-audit"
+      "path": "ct/docs/agent-project-reference.md",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/agent-project-reference.md"
+      ],
+      "archive": [
+        "docs/archive/python-era/agent-project-reference.md"
+      ],
+      "sourceSha256": "7a0556211624026d732af498525b1ca45dcdb62c114102e78de5a13b2a99416d",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
     },
     {
-      "path": "native/tools/bench/python-entry.py",
-      "owner": "reference-or-tool",
-      "replacement": "Pending: classify active invocation vs historical citation",
-      "status": "pending-audit"
+      "path": "ct/docs/archive/fabulous-game-对齐清单.md",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/archive/fabulous-game-对齐清单.md"
+      ],
+      "archive": [
+        "docs/archive/python-era/archive/fabulous-game-对齐清单.md"
+      ],
+      "sourceSha256": "5ae076c5060d6fc04ef70b508b2fac5c0ef4a55c743be25599ecf53ba5cca885",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
     },
     {
-      "path": "native/tools/bench/recovery-drill.mjs",
-      "owner": "reference-or-tool",
-      "replacement": "Pending: classify active invocation vs historical citation",
-      "status": "pending-audit"
+      "path": "ct/docs/design/panel-mockup.html",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/panel-mockup.html"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/panel-mockup.html"
+      ],
+      "sourceSha256": "5f609d608f349ccdc74c821d6f29db76c9ad676df85a1c9425e2a6d580460954",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
     },
     {
-      "path": "native/fixtures/export_pipeline/generate.py",
-      "owner": "fixture-regeneration",
-      "replacement": "Pending: Rust/JS generator with independent golden assertions",
-      "status": "pending-audit"
+      "path": "ct/docs/design/responsive-app-shell-review.md",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/responsive-app-shell-review.md"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/responsive-app-shell-review.md"
+      ],
+      "sourceSha256": "579e1c40722319186de27601c91270f91cd31e7f2a1ef7078be5e3350caa88e2",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
     },
     {
-      "path": "native/fixtures/excel/generate.py",
-      "owner": "fixture-regeneration",
-      "replacement": "Pending: Rust/JS generator with independent golden assertions",
-      "status": "pending-audit"
+      "path": "ct/docs/design/responsive-app-shell.html",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/responsive-app-shell.html"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/responsive-app-shell.html"
+      ],
+      "sourceSha256": "b4a830a60db7a7c9c8ec9d74318bb7410b8da64817f60859417144687f75b6bf",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
     },
     {
-      "path": "native/fixtures/template/compare_semantics.py",
-      "owner": "fixture-regeneration",
-      "replacement": "Pending: Rust/JS generator with independent golden assertions",
-      "status": "pending-audit"
+      "path": "ct/docs/design/responsive-app-shell_e2e.py",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/responsive-app-shell_e2e.py.txt"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/responsive-app-shell_e2e.py.txt"
+      ],
+      "sourceSha256": "48e7cc5a4e60a91aca55569a7247463b2baa55610d0c18ff91862d096a912b4d",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-compact.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-compact.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-compact.png"
+      ],
+      "sourceSha256": "f51fbc4a8e90d65346f0c9f0e9dd6783e3a7c3ab8200a76ca0c0e71a9b03a819",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-export-picked.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-export-picked.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-export-picked.png"
+      ],
+      "sourceSha256": "95817059fcc3a992d0f8eae37876682f901d27a230533373bc61f3337b4bacf9",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-export.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-export.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-export.png"
+      ],
+      "sourceSha256": "441ee55855dfcbac402cd20f0cd635cc043430251acb1b37d5d96098f97d5aac",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-history.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-history.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-history.png"
+      ],
+      "sourceSha256": "220cd5a84c4805ce3ac18d43a1dde95c74afa18560030df1c816ce5a0da8478e",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-i18n-expanded.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-i18n-expanded.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-i18n-expanded.png"
+      ],
+      "sourceSha256": "4f0bb338098154ad0b54f8676e68e08e2bb606a1b691722a2bd230653eb8dee8",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-i18n-long.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-i18n-long.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-i18n-long.png"
+      ],
+      "sourceSha256": "9c6d7837e75e4bf15595ae0e44c79e90a8a40b3105e9e86cadcce6cf8102dedb",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-i18n-picktable.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-i18n-picktable.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-i18n-picktable.png"
+      ],
+      "sourceSha256": "3ff34d7cfa3e2d50fb51533ebe61f04b50a68bd3cbe3fe37ad4c4ade0354af2f",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-i18n-progress.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-i18n-progress.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-i18n-progress.png"
+      ],
+      "sourceSha256": "3059a7bac210fa95c606c95406d0ef0f5b413b647df306536696999fb9774bb7",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-i18n-table.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-i18n-table.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-i18n-table.png"
+      ],
+      "sourceSha256": "cbafd8dfe732cfe3956d67e90a7fbb5d44e538e698b8bb8fdc25ff7f50d1136e",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-i18n.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-i18n.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-i18n.png"
+      ],
+      "sourceSha256": "42550a6a111107a931683ef35b5015ff75e2079d12b734cc512625f19ff06f32",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-live-export.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-live-export.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-live-export.png"
+      ],
+      "sourceSha256": "97bec0ecd35b92548d5c81ff49cfb8bbd6d57088a6c827a6f01cf912086c1af1",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-live-history.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-live-history.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-live-history.png"
+      ],
+      "sourceSha256": "45de3a8f30b79d34cded1fab49ffbc3dac1236477e81d977cc47b73439748db7",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-live-i18n.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-live-i18n.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-live-i18n.png"
+      ],
+      "sourceSha256": "312c11be58c05ae35ed14ea99bbc27aa1b2daffa3349323185a4e95d0a94df80",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-live-logs.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-live-logs.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-live-logs.png"
+      ],
+      "sourceSha256": "755c44098421bc2f4ac301bcf92200073fb8ca7a59fd43e93896b1276fb258ce",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-live-tables.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-live-tables.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-live-tables.png"
+      ],
+      "sourceSha256": "e775536884a8ef8e0883d99e568268b283d06c490d66a2da4ad86cf41aab6c87",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-logs.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-logs.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-logs.png"
+      ],
+      "sourceSha256": "6462d6d6a28555e8ed87acdfa4b5949f640aed7a57347694b34019ba35a26691",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-overview-export.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-overview-export.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-overview-export.png"
+      ],
+      "sourceSha256": "8d116792153df4e11df90386854e5cb96bf5aefd49964b38c9ed2e3fe8b96658",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-overview-i18n.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-overview-i18n.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-overview-i18n.png"
+      ],
+      "sourceSha256": "39d23fdfaae8db58bc938f9ad9bcec797f7e285be81d21b6898bf1d761e3fb95",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-overview-tables.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-overview-tables.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-overview-tables.png"
+      ],
+      "sourceSha256": "f732af22bacc24bb0a15effc33eff4c42780528a50e8e1a37db0c78428dd1ffb",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-table-picker.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-table-picker.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-table-picker.png"
+      ],
+      "sourceSha256": "752961a03d8451990f62d59a64b1e085205f725cc890c23cdf29aac86e392b75",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-tables-create.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-tables-create.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-tables-create.png"
+      ],
+      "sourceSha256": "09ae408d29840d64c31226a615e6bce8d8bffd8c172cee405b3deacb574ea6a5",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-tables-delete.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-tables-delete.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-tables-delete.png"
+      ],
+      "sourceSha256": "95924e164f02a98d7a46c020d3593e512712204658417c0670b9ea80a2d82418",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-tables-detail.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-tables-detail.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-tables-detail.png"
+      ],
+      "sourceSha256": "d519f44c5def361e8e7ad728a6f82dcf59f2bd2216313f5fa061219ff2689147",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-tables-drift.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-tables-drift.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-tables-drift.png"
+      ],
+      "sourceSha256": "52acd796b3151a6546258d3d79aa5f39305b1af2cea7462fca819b664954ab27",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-tables-edit.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-tables-edit.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-tables-edit.png"
+      ],
+      "sourceSha256": "891be28a0564d80abfb240c555ec0a466700312c624bc4be1f7ce694f14a4b52",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-tables-empty.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-tables-empty.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-tables-empty.png"
+      ],
+      "sourceSha256": "616611231ee0dfec5bac60e0b53f0d1e51550509af3198852ed0a212a423311d",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-tables-narrow.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-tables-narrow.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-tables-narrow.png"
+      ],
+      "sourceSha256": "d6eba430952e3ceda018b96206500b25fd1ffc27604bd73797da593f1c3b294b",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-tables-scrolled.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-tables-scrolled.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-tables-scrolled.png"
+      ],
+      "sourceSha256": "385d2a9e80b53252132f901221762d808b6782c2a432e7761c72cebad77d0e60",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/design/screenshots/panel-tables.png",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/design/screenshots/panel-tables.png"
+      ],
+      "archive": [
+        "docs/archive/python-era/design/screenshots/panel-tables.png"
+      ],
+      "sourceSha256": "0b56e3e90bc262f55d638bb0145d21d63ee72903fb2e6882a75ef1ee67a9cc8e",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/research/flask-vue-stack.md",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/archive/python-era/research/flask-vue-stack.md"
+      ],
+      "archive": [
+        "docs/archive/python-era/research/flask-vue-stack.md"
+      ],
+      "sourceSha256": "9fb5ad77e4b836e7d6d52907921f17e391e3526949cafb4ec862225576f485a6",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/docs/schema-save-migration.md",
+      "owner": "documentation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "docs/schema-save-migration.md"
+      ],
+      "archive": [
+        "docs/archive/python-era/schema-save-migration.md"
+      ],
+      "sourceSha256": "ab71407a61b383365cf4bbae71cc690023f24e8e3eee7a8c01c242ffff15ce35",
+      "reason": "有效使用文档更新为原生实现；旧内容、设计与截图保留历史快照，不作为执行入口。"
+    },
+    {
+      "path": "ct/packaging/ct.spec",
+      "owner": "legacy-installation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/Cargo.toml",
+        "docs/agent-project-reference.md"
+      ],
+      "archive": [],
+      "sourceSha256": "87737a54e7065c111fa3978cb25129514c12f8e8cb5b01a1ace13a9baafe0765",
+      "reason": "Python 安装/包配置停止进入正式链；Rust 构建与原生发行替代。未跟踪缓存/venv不在删除清单中。"
     },
     {
       "path": "ct/packaging/ct_entry.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
+      "owner": "legacy-installation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/Cargo.toml",
+        "docs/agent-project-reference.md"
+      ],
+      "archive": [],
+      "sourceSha256": "f6f56d56651f578d93cb5bffee16176e913b1b521b20bd8a18f3921cd4aea0cd",
+      "reason": "Python 安装/包配置停止进入正式链；Rust 构建与原生发行替代。未跟踪缓存/venv不在删除清单中。"
     },
     {
-      "path": "ct/src/ct/export/canonical_accessor_model.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
+      "path": "ct/pyproject.toml",
+      "owner": "legacy-installation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/Cargo.toml",
+        "docs/agent-project-reference.md"
+      ],
+      "archive": [],
+      "sourceSha256": "5179b665fdfd2c5a96536d0367a440a15823c08ec64a83a98778b45c1fdad339",
+      "reason": "Python 安装/包配置停止进入正式链；Rust 构建与原生发行替代。未跟踪缓存/venv不在删除清单中。"
     },
     {
-      "path": "ct/src/ct/export/canonical_accessor.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
+      "path": "ct/requirements.txt",
+      "owner": "legacy-installation",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/Cargo.toml",
+        "docs/agent-project-reference.md"
+      ],
+      "archive": [],
+      "sourceSha256": "3d8ca59e85edd77f0b4731e9cd9426ca1aed679862e1def15223e3a50ae65e99",
+      "reason": "Python 安装/包配置停止进入正式链；Rust 构建与原生发行替代。未跟踪缓存/venv不在删除清单中。"
     },
     {
-      "path": "ct/src/ct/export/index_query.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/config.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/cli.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/data_preparation.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/exporting/prepare.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/exporting/__init__.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/exporting/models.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/exporting/service.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/exporting/build.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
+      "path": "ct/src/ct/__init__.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/Cargo.toml"
+      ],
+      "archive": [],
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
     },
     {
       "path": "ct/src/ct/app/__init__.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/canonical_workspace.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/events.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/canonical_export.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src"
+      ],
+      "archive": [],
+      "sourceSha256": "cf6a0e30450957d625f8437e135c4179f6ad1b53abb326cd9fc08dece2b1e219",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
     },
     {
       "path": "ct/src/ct/app/canonical_commands.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src"
+      ],
+      "archive": [],
+      "sourceSha256": "46ac5afb8495a6284b7fd8ab478596988c88ac04b4a800a87ba482893a32787b",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
     },
     {
-      "path": "native/fixtures/bench/README.md",
-      "owner": "fixture-regeneration",
-      "replacement": "Pending: Rust/JS generator with independent golden assertions",
-      "status": "pending-audit"
+      "path": "ct/src/ct/app/canonical_export.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src"
+      ],
+      "archive": [],
+      "sourceSha256": "9e761bc865b978e1f936cf6344026a10b2cf3d15eb139c6e7853bc59fac16372",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/app/canonical_workspace.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src"
+      ],
+      "archive": [],
+      "sourceSha256": "b5e8f46d195df8b6191f776dcb4d96940c07371cae8579e18604b3536a753927",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/app/data_preparation.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src"
+      ],
+      "archive": [],
+      "sourceSha256": "f8a4bfea237e14a6fa2390ef84414143511fed79df8a0ce75fd74efaa34d69e9",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/app/events.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src/task.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "449e13d2678ca5c7b4c9c1071d8d9e62f84543c4a5a0338a4a21b0efe8ce1c0b",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/app/exporting/__init__.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src"
+      ],
+      "archive": [],
+      "sourceSha256": "0f0901387411a741bee6f5fbc087d8b9765b36ac815b47a352e280d5a3086993",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/app/exporting/build.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src"
+      ],
+      "archive": [],
+      "sourceSha256": "0fcbb77c86fd03a1c4e16186d1d636903762dc640d63c2efa0c3c4cb05a8d909",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/app/exporting/models.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src"
+      ],
+      "archive": [],
+      "sourceSha256": "7c720dfc8b3e790f5892b01c97d9c980d5cfbec005352596e89784aadacf6f2f",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/app/exporting/prepare.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src"
+      ],
+      "archive": [],
+      "sourceSha256": "779468778a28f0970654f784b24348568f06916e4e89ced0fab27ac99a1f9a78",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/app/exporting/service.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src"
+      ],
+      "archive": [],
+      "sourceSha256": "6fbebc35580bff020821a61f072220cfad6e8f81786fd2cfb7c1cc5a664a331f",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/app/schema_workspace/__init__.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src/schema.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/app/schema_workspace/candidate.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src/schema.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "c1db67c68b6a00a3d3310afb8089bf37b4170cc1e8cd8e22f70d95ca589e5b03",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/app/schema_workspace/commands_reducer.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src/schema.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "bbe18d55e236a0191fb482faf90768cc791bdbe78772c6e9506b16e9efe52f1b",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/app/schema_workspace/legacy_apply.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src/schema.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "ddc76bc2d9db39b34a24bdc3f98a877de19fab59007936ab3f3bcffb5d7e340f",
+      "reason": "旧 Apply 自动恢复不接续；原生保留材料并拒绝未知旧事务，见当前 Schema 保存迁移说明。"
+    },
+    {
+      "path": "ct/src/ct/app/schema_workspace/netdiff.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src/schema.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "574ab71f35f44356d3b0bae5610a1e27ef94922773beae81cbae12feec478a53",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/app/schema_workspace/save.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src/schema.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "35cf7c43827b8ca22504612c52d92319992e755dba5bdc4e66e01829e7290ea4",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/app/schema_workspace/snapshot.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src/schema.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "0c35e8e3ca4a27129f2228cfead1b497d6d939b329b4115a6885be45677e1d87",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/cache/__init__.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-cache/src"
+      ],
+      "archive": [],
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/cache/artifacts.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-cache/src"
+      ],
+      "archive": [],
+      "sourceSha256": "d28bc1346c744ce63be4a200d3676d8f30986c4f2334133e4ac08ec15c49d37c",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/cache/canonical_state.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-cache/src"
+      ],
+      "archive": [],
+      "sourceSha256": "a2ea7f9e58cc16cf50435aad6a74bc661058f59a30e245670ffaa9324914def1",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/cache/fingerprints.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-cache/src"
+      ],
+      "archive": [],
+      "sourceSha256": "bbb2caa0e8df9b9438cf16fe3973acbc239c62aa21d3f93f43190064120132e5",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/cli.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-cli/src"
+      ],
+      "archive": [],
+      "sourceSha256": "4d1ef4a59758167eaa462062b908578cfeedd544e2a13279bbc886c3769a5a85",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/config.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-domain/src/config.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "da188c0fcb7c3dea7211e3d1c3a2c1ef5d183303e8e4b18f765e5fc190e0e3cb",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/contracts.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src/task.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "57b362bdf922456313a21343a96eb298c669e38f50b29aaef91bdcbfdb67fd26",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/diagnostics/__init__.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-domain/src/diagnostics.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "7aeabf6442a339da6fe0f4c7a18a0d9e958e3dda1222a0e3507b48f7c359e693",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/diagnostics/errors.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-domain/src/diagnostics.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "912483239b6e6c81949be5a9f55cc9c02ba1169342075556268347ff9def94ef",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/excel/__init__.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-excel/src"
+      ],
+      "archive": [],
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/excel/canonical_reader.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-excel/src"
+      ],
+      "archive": [],
+      "sourceSha256": "71d44107e4e8f39b1b1058872063bc8ab44eff2d624cdc0862a0efc99d15ff17",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/excel/canonical_template.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-excel/src"
+      ],
+      "archive": [],
+      "sourceSha256": "4720d350fb4197b5f3e930eec6f31b27ad8a02a3abbc46ed479a46b81ea49c96",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/excel/layout.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-excel/src"
+      ],
+      "archive": [],
+      "sourceSha256": "cf6bc5ba24bf782a823247d85a9959f700cb4dbf297ef61fbff4efb7add68128",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/excel/layout_manifest.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-excel/src"
+      ],
+      "archive": [],
+      "sourceSha256": "c5677fb00c9fc95e60b2c6f244639db25008c09e4cad073cb033610a84004eec",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/excel/planning.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-excel/src"
+      ],
+      "archive": [],
+      "sourceSha256": "c96b60ea1f6ac1bb91eda3f13785236bc495f5925910960a094ffde1644cabcd",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/excel/reading_compat.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-excel/src"
+      ],
+      "archive": [],
+      "sourceSha256": "0b6c729ca418469c7ad0443b06c90bdda3baf74f4eb0952bc79526c6817a64b7",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/export/__init__.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-export/src"
+      ],
+      "archive": [],
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/export/canonical_accessor.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-export/src"
+      ],
+      "archive": [],
+      "sourceSha256": "3ed997d3e2dcc07bf3ae5a07a228a8e899d1f9f636f058da9ac3c6466b52fab0",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/export/canonical_accessor_model.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-export/src"
+      ],
+      "archive": [],
+      "sourceSha256": "cd8da89d1193e559b9613bb7f80f3b96ed6ddb692409b3bfe78dada4a7491a5f",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/export/canonical_binary.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-export/src"
+      ],
+      "archive": [],
+      "sourceSha256": "c463d6b21eec344f0bb88a327cfe7a0c6e25e6c8989ba4527191bbcb0a31899b",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/export/canonical_fbs.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-export/src"
+      ],
+      "archive": [],
+      "sourceSha256": "69e0c4feb52b98c795d5db18b8b62673ac086528ed919f23b9091ddee1ba3db3",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/export/canonical_json.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-export/src"
+      ],
+      "archive": [],
+      "sourceSha256": "f82c4a2c5689642d1221cf0859ed961fc5c795f5c60074587b97d2e4856d9d36",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/export/deploy.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src/deploy.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "7854c10047d8cc8d1c822edea3e5109223930857b4190711601dde627bf1d5ce",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/export/i18n/__init__.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src/i18n.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
     },
     {
       "path": "ct/src/ct/export/i18n/merger.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src/i18n.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "75d8777c0a4dabf573444576ccff01f6aa679142362ca5f186fac9d1e0e1af70",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/export/i18n/state.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src/i18n.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "df5ddaef393c5b46623b83d116731d2502c5998ee575baff8b48a83d28ec2628",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/export/index_query.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-export/src"
+      ],
+      "archive": [],
+      "sourceSha256": "330eb4c6feeaf585c095ad024157491de211975ef6fba53e0b9c02ec15bf597a",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/schema/__init__.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-domain/src"
+      ],
+      "archive": [],
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/schema/commands.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-domain/src"
+      ],
+      "archive": [],
+      "sourceSha256": "785d7692ee19a569aae01dc3773e6901c8984ebe0b9e741faa960354891d303c",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/schema/hashing.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-domain/src"
+      ],
+      "archive": [],
+      "sourceSha256": "88efe031475599f85c2335534f26bae229a2db5a1fdba13cf4601e18193ff665",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/schema/identity.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-domain/src"
+      ],
+      "archive": [],
+      "sourceSha256": "0879887da8f080914cb8214d1a9482bd9554bae9c1ff89392746d852b154c196",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/schema/indexes.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-domain/src"
+      ],
+      "archive": [],
+      "sourceSha256": "755d61cfacec2cb4b67fac6064b38f66441fe27c2b872e77ae654797d20e6408",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/schema/name_validation.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-domain/src"
+      ],
+      "archive": [],
+      "sourceSha256": "52db933837f2453424d3ba9b82ec5392a46b9d9255993e4f781908a189af513b",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/schema/naming.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-domain/src"
+      ],
+      "archive": [],
+      "sourceSha256": "4e404f1bde22018cb36ed4f063ac57e1fe66834952205c66a2db885c3ac43ca6",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/schema/resource_graph.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-domain/src"
+      ],
+      "archive": [],
+      "sourceSha256": "29350397f50fef4bbcdd560b6f1b6ebf9092194102ef903d46753a6883f7f307",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/schema/resource_repository.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-domain/src"
+      ],
+      "archive": [],
+      "sourceSha256": "80603f468e300413eb9433e850446fd2800ca7751ea9df8767c70c87df9f7904",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/schema/resources.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-domain/src"
+      ],
+      "archive": [],
+      "sourceSha256": "d1aaaf9036d0e0351ea63b45b76b16cef00ab26ed9fad71e852f0364df3c19a4",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/schema/type_expression.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-domain/src"
+      ],
+      "archive": [],
+      "sourceSha256": "5cff29ad641478ef6f1ce0b2c042268ad223e96522268ae370040f3d82743563",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/storage/__init__.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-storage/src"
+      ],
+      "archive": [],
+      "sourceSha256": "3799c706d4606aeadee6c2fa3a594b4a78bed865e7d2bcdc85dddabcd4f75864",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/storage/files.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-storage/src"
+      ],
+      "archive": [],
+      "sourceSha256": "d0ad7d8c5370124273bf4bda05852e42832e1254f17fc719971661333e0e0c41",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/storage/publication.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-storage/src"
+      ],
+      "archive": [],
+      "sourceSha256": "edfb9428cf46718b2dd9c261c821901f66a47cf5e49103582236455e4ce3fad0",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/storage/workspace_lock.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-storage/src"
+      ],
+      "archive": [],
+      "sourceSha256": "92fefe9a810708076b50940cb79b84c26dfa0221f694a2f4e243c9f0823f71b4",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/storage/workspace_transaction.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-storage/src"
+      ],
+      "archive": [],
+      "sourceSha256": "e58e31189eb1b4d7eda477b95fcd4a4f39d4389a9818b3ddbf574a525035db51",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/web/__init__.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-web/src"
+      ],
+      "archive": [],
+      "sourceSha256": "166c0a3c9c8add264728adabc4053396349f34e99c716cc65d92a14f781e8fd9",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/web/app.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-web/src"
+      ],
+      "archive": [],
+      "sourceSha256": "3574ca0eb807a0a69334640b9d9d05ee89b921e6cd72038e275b121fde13bab5",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/web/history.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-web/src"
+      ],
+      "archive": [],
+      "sourceSha256": "5681306e6d52b52bee77b1aaee1f0a3b7131bd1fa05ecd795b1a141e5de97c32",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/web/logs.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-web/src"
+      ],
+      "archive": [],
+      "sourceSha256": "af851e96d29b2d9fb14c7460409b9351ef4245b0c2e8a4e4dcacad4cb079f7b5",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/web/schema_workspace_api.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-web/src"
+      ],
+      "archive": [],
+      "sourceSha256": "9d874f7574001b07eabfc38143d31ec53c3ae89bdee7bb15fbc4a2454ed5c1e2",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/web/static/index.html",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/index.html"
+      ],
+      "archive": [],
+      "sourceSha256": "ce04d2a4660c7dff0c9de307333650abff146d8809faeeea3145264e64e36f66",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/app-shell.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/app-shell.js"
+      ],
+      "archive": [],
+      "sourceSha256": "f0ef3ab65ad485b53b039fa6bfa6d086e166347b72462eecd31c068ecb19ccee",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/core/api.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/core/api.js"
+      ],
+      "archive": [],
+      "sourceSha256": "4dae7737fff0e542006bd83b2da6f69d11fc3c43a96f678e534f226c906d5ce5",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/core/dialog.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/core/dialog.js"
+      ],
+      "archive": [],
+      "sourceSha256": "c35de2f04ed01c4f0179b29e817eab3cacbbf5229b59af9c53bde07bb644d274",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/core/dom.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/core/dom.js"
+      ],
+      "archive": [],
+      "sourceSha256": "0eea796b8620a5ed41e8fe18735e24b07117a7b5bcb303904b80b1a666da99ab",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/core/draft-store.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/core/draft-store.js"
+      ],
+      "archive": [],
+      "sourceSha256": "48918f280f4b0950c7735426ee2f31a2bff66a67bb3a2d00b3221f0f068f8aa8",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/core/fuzzy.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/core/fuzzy.js"
+      ],
+      "archive": [],
+      "sourceSha256": "2ef47e780b428b2a43745915ec8e3dd0b3b5c215a4dbb69b688d84e4a94e9f21",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/core/labels.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/core/labels.js"
+      ],
+      "archive": [],
+      "sourceSha256": "39da06a5cec99f422b2be3bbe22b5183596fcb7ee27bbee3c6c17ee4afe6bc11",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/core/projection.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/core/projection.js"
+      ],
+      "archive": [],
+      "sourceSha256": "b45079c25bc125db489269880591ba7e63bca0e538ddfea7ad45ce4a48850f0f",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/core/router.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/core/router.js"
+      ],
+      "archive": [],
+      "sourceSha256": "27cd66f3fd84cc36b168283d1f20e43581944745a8a54ea17cf9a4cc0eed2b83",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/core/task.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/core/task.js"
+      ],
+      "archive": [],
+      "sourceSha256": "34dec7e7e68f5f298f6775ee435476966f95a6880818fc61119daf8309594222",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/core/virtual-list.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/core/virtual-list.js"
+      ],
+      "archive": [],
+      "sourceSha256": "ed9db3042079f330a58b7114a162e32fdb7048a9e147f7ef0a322d7722d35637",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/module-registry.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/module-registry.js"
+      ],
+      "archive": [],
+      "sourceSha256": "70d09c38cefb57f924a75f4cb7f96d1bf4a3454a3c16bdfebe48996771ac0f8c",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/modules/export.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/modules/export.js"
+      ],
+      "archive": [],
+      "sourceSha256": "1274d2d0ec1830c04344b372031a394260565068eb39d705b6530fa9d85a818a",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/modules/history.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/modules/history.js"
+      ],
+      "archive": [],
+      "sourceSha256": "4f3f7b9f97894101cad01d621b83fbe38fc2879be82534d8bb0e6ab463824e3b",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/modules/i18n.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/modules/i18n.js"
+      ],
+      "archive": [],
+      "sourceSha256": "39aefc353af5fbb2a03282d1c4b2ccd745411c4c40d89ea3a6c4f8067ce16e89",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/modules/logs.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/modules/logs.js"
+      ],
+      "archive": [],
+      "sourceSha256": "74f894a1e91822fc969f34d673161abe0a7f88c75d86d49697db1fc8bb24ff87",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/modules/schema-dialogs.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/modules/schema-dialogs.js"
+      ],
+      "archive": [],
+      "sourceSha256": "e0a2ae1e7207ff4289ae016818fe6d2813be00c31996052ec845954af2005e57",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/js/modules/schema.js",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/js/modules/schema.js"
+      ],
+      "archive": [],
+      "sourceSha256": "78257857488c3d095e83d136288f9ad98a58bcc88b299afe03c717912fda77cf",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/styles/base.css",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/styles/base.css"
+      ],
+      "archive": [],
+      "sourceSha256": "1d16933bfa1115c184e31bee6d84cb08efd09c9cd81e60da6e45e1fd6235a88c",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/styles/components.css",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/styles/components.css"
+      ],
+      "archive": [],
+      "sourceSha256": "de93086eceba4418dc7f9bd3add6c5dca47a1dd56231c0df62232a9a86f87ae0",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/styles/layout.css",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/styles/layout.css"
+      ],
+      "archive": [],
+      "sourceSha256": "06a2c92e15053dafe9a9a34cd85dc3b7ddcff1a2d8634a2857db74fb49fbd087",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/static/styles/tokens.css",
+      "owner": "web-static",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/static/styles/tokens.css"
+      ],
+      "archive": [],
+      "sourceSha256": "4296de9a8f9b2f783bbc0149eb0773448b15d07937e4829e1fbc0a93c860a5dc",
+      "reason": "原资源逐文件迁移，摘要与适配理由由 web/static-manifest.json 固定。"
+    },
+    {
+      "path": "ct/src/ct/web/task_state.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-web/src"
+      ],
+      "archive": [],
+      "sourceSha256": "ec604ef3050c3e5c8d8afdfcd8997815bea0235f34b930ebc4bab733f5b67097",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/src/ct/web/tasks.py",
+      "owner": "business-runtime",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-web/src"
+      ],
+      "archive": [],
+      "sourceSha256": "e5c9fe40eab05ee4c7db462db508177244ecbf7893403705293cf033b38152e3",
+      "reason": "CLI/Web/worker 共用 Rust 用例；必要契约由 G1/G2 及覆盖清单验证，源码摘要保留追溯。"
+    },
+    {
+      "path": "ct/tests/app/_helpers.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "bcb831081f098c7cb16ccb04eb523d56b94f963d4a8f2249146343f2592ba145",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/app/test_add_resource_atomicity.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_draft.rs",
+        "native/tests/compat/tests/schema_save.rs",
+        "native/tests/compat/tests/resource_graph.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "29df4ea583271c3df7a29f7408495c1746cab5af78387d84090f511f9bb03a98",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_add_resource_candidate.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_draft.rs",
+        "native/tests/compat/tests/schema_save.rs",
+        "native/tests/compat/tests/resource_graph.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "cc54b6a70763148548e08f6e090330da71819009890b944517a074616d0b324e",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_add_resource_commands.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_draft.rs",
+        "native/tests/compat/tests/schema_save.rs",
+        "native/tests/compat/tests/resource_graph.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "c9e7fa2823265e8ddb5cb399cde5f85ae524fff11733537f0e9b161978ffea2e",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_add_resource_netdiff.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_draft.rs",
+        "native/tests/compat/tests/schema_save.rs",
+        "native/tests/compat/tests/resource_graph.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "834728cab6c605e7ffa404359bd75518af74e71153a50bd9b770d9194dc6b266",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_add_resource_paths.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_draft.rs",
+        "native/tests/compat/tests/schema_save.rs",
+        "native/tests/compat/tests/resource_graph.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "c7c70b09849366d4e231bd9a2a4cdaea4d061fc20d73f92a54ec45b0853ba94b",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_add_resource_workflow.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_draft.rs",
+        "native/tests/compat/tests/schema_save.rs",
+        "native/tests/compat/tests/resource_graph.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "6027e7c26ea8a12e5b5fc7c755dcc5fc3c1b9a8449a647abfa08587097726384",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_canonical_export_regression.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/export_pipeline.rs",
+        "native/tests/compat/tests/publication_recovery.rs",
+        "native/tests/compat/tests/workspace_lock.rs",
+        "native/tests/protocol/tests/cancel.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "6a6f01b75298d82bbe88e4c3863a4c08d171bc4ce43f3c0bc83249cd54712315",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_canonical_i18n.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/i18n_flow.rs",
+        "native/crates/ct-cli/tests/cli.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "95f22d4b461231b412d82e2f9a6ae956742bb4c61608ecda9c510f027785a4b3",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_canonical_status.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-cli/tests/cli.rs",
+        "native/crates/ct-cli/tests/worker_chain.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "1195add7bdaaaccbddfb81af21a504642682a42a73466e6a6441b9ac66388d0a",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_canonical_validate.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/validate_gates.rs",
+        "native/tests/compat/tests/stage_profile.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "d170908201e8d78306ffeb0a095a4a0a341c65e3c22fd0b924ca1af9cf2ab7de",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_cli_and_web_service.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-cli/tests/cli.rs",
+        "native/crates/ct-cli/tests/worker_chain.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "773ec7b60bebc8d90d767a9653a43fd2f33ca5355e23fea7a383e157aac9e8b4",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_cli_filter_and_i18n_output.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-cli/tests/cli.rs",
+        "native/crates/ct-cli/tests/worker_chain.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "3b8e18427da6792a5acecb5184b35c009f6b7e093e82a09da0d43e78a0efea4e",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_enum_token_gate.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/validate_gates.rs",
+        "native/tests/compat/tests/stage_profile.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "5ce49ca1d0a0c984f4903086ecf975baf0fa26ed1792475604eba202a071808b",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_export_service.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/export_pipeline.rs",
+        "native/tests/compat/tests/publication_recovery.rs",
+        "native/tests/compat/tests/workspace_lock.rs",
+        "native/tests/protocol/tests/cancel.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "b8616db9a51311725a560f71bc590f99d5f8b3b3d8a74db7c302a209bd156174",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_exporting_models.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/export_pipeline.rs",
+        "native/tests/compat/tests/publication_recovery.rs",
+        "native/tests/compat/tests/workspace_lock.rs",
+        "native/tests/protocol/tests/cancel.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "2772e7355564d65b21f1a1795133c5548c6a774c03b6cc26fb1d009d0fe4a526",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_incremental_export.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/incremental_matrix.rs",
+        "native/tests/compat/tests/cache_artifacts.rs",
+        "native/tests/compat/tests/fingerprints.rs",
+        "native/tests/compat/tests/stage_profile.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "74b1d82f68ca4789ac1c598fa34e5e6237c8ea7cdf7bef19beebd62a86206ee5",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_input_snapshot.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/export_pipeline.rs",
+        "native/tests/compat/tests/publication_recovery.rs",
+        "native/tests/compat/tests/workspace_lock.rs",
+        "native/tests/protocol/tests/cancel.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "f5cd8590c92ba3517cfed521bc2406fa9f86af6b17efbcd20cf469441bcb9b7d",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_publication_boundary.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/export_pipeline.rs",
+        "native/tests/compat/tests/publication_recovery.rs",
+        "native/tests/compat/tests/workspace_lock.rs",
+        "native/tests/protocol/tests/cancel.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "2f1c2e333a737b67514a715ff4071314b1045a13e10676ab014e64cc2413ad52",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_reading_compat.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/layout_manifest.rs",
+        "native/tests/compat/tests/excel_edge.rs",
+        "native/tests/compat/tests/template_semantics.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "5ea9ec3fb420efd05bbcc9506e6325b9df93c11044e7dfcd0b1380c4f7613ed0",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_schema_net_diff.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_draft.rs",
+        "native/tests/compat/tests/schema_save.rs",
+        "native/tests/compat/tests/resource_graph.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "8d8a0fcf0c0a4fb502b818920d5cb32b5f78a93b50d07e79c321ce7834c75810",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_schema_save.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_draft.rs",
+        "native/tests/compat/tests/schema_save.rs",
+        "native/tests/compat/tests/resource_graph.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "984d3d9fc6497114a57b508b05846776d463408f7f72760af76345eaf327431b",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_schema_save_atomicity.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_draft.rs",
+        "native/tests/compat/tests/schema_save.rs",
+        "native/tests/compat/tests/resource_graph.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "3b8d199211c0f883d03fb9cda5d5189f7d0cf14ac462e49fb1babb6c3bc020dd",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_schema_save_workflow.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_draft.rs",
+        "native/tests/compat/tests/schema_save.rs",
+        "native/tests/compat/tests/resource_graph.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "8b63838d3286199003c91e8d1bff1f0fb761849fbcad284cd6855a9119706b70",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_schema_workspace.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_loading.rs",
+        "native/tests/compat/tests/schema_parity.rs",
+        "native/tests/compat/tests/resource_graph.rs",
+        "native/crates/ct-domain/tests/config.rs",
+        "native/crates/ct-domain/tests/type_expression.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "11efbad226dc52cba89c54cdd6c00d068670aaeea45fe996ce666a87c298d43b",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/app/test_uniform_bloat_notice.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/binary_golden.rs",
+        "native/tests/compat/tests/fbs_export.rs",
+        "native/tests/compat/tests/accessor_golden.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "ef722094e61e65fe339f4800dcbedd3ec6e3feffa2875d71d7daea1751d9c218",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/architecture/_helpers.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "native/tests/compat/tests/coverage_matrix.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "2753eca6b5a6956f44671dd94929adc73db3a71b77ccfa122cfa8b86fd6a0a01",
+      "reason": "Python 专属模块/import 架构断言停止执行；原生用例/入口职责由 Rust crate 边界承接，历史函数分母仍固定，不将 Python 源码存在当作产品能力。"
+    },
+    {
+      "path": "ct/tests/architecture/test_architecture.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "native/tests/compat/tests/coverage_matrix.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "61696a00c3564a24a4d2f3eea5daf6da3e318e97613fef783d27784ed1d35c16",
+      "reason": "Python 专属模块/import 架构断言停止执行；原生用例/入口职责由 Rust crate 边界承接，历史函数分母仍固定，不将 Python 源码存在当作产品能力。"
+    },
+    {
+      "path": "ct/tests/cache/test_canonical_state.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/incremental_matrix.rs",
+        "native/tests/compat/tests/cache_artifacts.rs",
+        "native/tests/compat/tests/fingerprints.rs",
+        "native/tests/compat/tests/stage_profile.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "88ea1dbdde74afb5c627aafa1798f9ff6da760997b65b9df16c1f259e5fc15a9",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/cache/test_fingerprints.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/incremental_matrix.rs",
+        "native/tests/compat/tests/cache_artifacts.rs",
+        "native/tests/compat/tests/fingerprints.rs",
+        "native/tests/compat/tests/stage_profile.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "78108d38929d11f64a546a3a9b451c332edb3f19fed4cf1fd0af33b721a77f88",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/cutover/test_canonical_export_smoke.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/export_pipeline.rs",
+        "native/tests/compat/tests/publication_recovery.rs",
+        "native/tests/compat/tests/workspace_lock.rs",
+        "native/tests/protocol/tests/cancel.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "740d5c8a4de39ba9ff1caeb1d43d8f0403f983ecab75397b8f360c4762cdad67",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/cutover/test_e2e_safety.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/export_pipeline.rs",
+        "native/tests/compat/tests/publication_recovery.rs",
+        "native/tests/compat/tests/workspace_lock.rs",
+        "native/tests/protocol/tests/cancel.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "a8474cd5bafaaf39325850a8c4f48b2bb00fd9b710516e708c3ad0a3f30d95e2",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/deploy/test_deploy.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/export_pipeline.rs",
+        "native/crates/ct-cli/tests/cli.rs",
+        "native/crates/ct-domain/tests/config.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "5c2b2dd84eed0d0ad5aa803167016227ec98ebf3043597a2262b58addb3ae780",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/deploy/test_sync_dir.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/export_pipeline.rs",
+        "native/crates/ct-cli/tests/cli.rs",
+        "native/crates/ct-domain/tests/config.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "39d19c8233be032368e33b19e988b8060c8616a646d430d1d6435ddb1a700fed",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/excel/__init__.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/excel/test_canonical_reader.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/canonical_read.rs",
+        "native/crates/ct-domain/tests/type_expression.rs",
+        "native/tests/compat/tests/template_semantics.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "15fce728586984b29a13d35bf9fd7cb49bafe0db130af4371fe358186ace7b88",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/excel/test_canonical_template.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/template_semantics.rs",
+        "native/tests/compat/tests/template_flow.rs",
+        "native/tests/compat/tests/template_edge.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "96c11e1ab87dd3859cf5a7830bbcd813c5e075dc78dc33f649b651ba203c9e04",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/excel/test_canonical_v2_regressions.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/layout_manifest.rs",
+        "native/tests/compat/tests/excel_edge.rs",
+        "native/tests/compat/tests/template_semantics.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "5a00e25250195dd3f0f1caa43a8d65cce23d17a3bbf5942c4d9106547abe8234",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/excel/test_layout.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/layout_manifest.rs",
+        "native/tests/compat/tests/excel_edge.rs",
+        "native/tests/compat/tests/template_semantics.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "225c55e5fdf77e9f8bffd306d72fa539af802c41248070c98668048d2a4fcf08",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/excel/test_planning.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/layout_manifest.rs",
+        "native/tests/compat/tests/excel_edge.rs",
+        "native/tests/compat/tests/template_semantics.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "fcdb6ecf764af06f6f0e34c62447013361b583ddc093eb84cd4f919993bf51eb",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/export/__init__.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/export/test_canonical_accessor.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/binary_golden.rs",
+        "native/tests/compat/tests/fbs_export.rs",
+        "native/tests/compat/tests/accessor_golden.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "4c00ec1f80fb7c5808d399e7628158faf8ac0157e741c94d4227b3b925697de2",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/export/test_canonical_binary.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/binary_golden.rs",
+        "native/tests/compat/tests/fbs_export.rs",
+        "native/tests/compat/tests/accessor_golden.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "6f9e82b1807fd2a3a6db79801a517a3f67f32ea85b43ba275a544ec0ee7a9fe6",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/export/test_canonical_fbs.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/binary_golden.rs",
+        "native/tests/compat/tests/fbs_export.rs",
+        "native/tests/compat/tests/accessor_golden.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "26c0c86620d1ed67728387c074352d0675ce033f67a4440a3bef63cad5750d27",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/export/test_canonical_json.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/json_export.rs",
+        "native/tests/compat/tests/export_pipeline.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "2a7efa1053ddd92e3c98005ba9f0cbed0c18db9a9cb70f34f2cbaa255ce5eefd",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/export/test_query_indexes.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/binary_golden.rs",
+        "native/tests/compat/tests/validate_gates.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "e9b885c40bbe071fbddc42a160885754951f936a90a62f924f0fd12a949e446a",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/export/test_uniform_layout.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/binary_golden.rs",
+        "native/tests/compat/tests/fbs_export.rs",
+        "native/tests/compat/tests/accessor_golden.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "b3749080ae2fb9a3814b6642f4b7b78ce56976dedaeec23de05c76a22b3cf3d0",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/fixtures/binary_golden.bin",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "5ea86d048d10827a9a25474d6eb32b1548ddc9ea71c1fee833564698848cef70",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/README.md",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "d3ea71ebdfa8febbb277db24d319cf4f9d49943c951245ac04a7c349fcf130ed",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/config/global.yaml",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "a3b66667afe5920c734d364aef5cfbff753618c859860ecb3561fe73b551998d",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/config/schemas/Item.yaml",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "1496b2164b6380e4a550cec2140d0d15f85b1ec20f15f5a339852e053f1fa178",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/config/schemas/ItemType.yaml",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "670243fb056e4967942266a50b4c6871657393d6f9ac194fb81f753f1ffa5312",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/config/schemas/Quest.yaml",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "8bee3518eac0faf58ad86d4bc11c8870b31aef65a18bd658634bec33012c6c44",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/config/schemas/UIConfig.yaml",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "8836f63d4c6e53df53b794bad1f93201bf3a4b0e2f4c050fad358fa4a12ba932",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/config/types/ItemDropRange.yaml",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "72fbebdf00bb7f7e1614de920b4061f48ffbddb594e1d210652abd62ab09adbd",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/config/types/ItemRarity.yaml",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "9b8ccc6ec2970415ea9153681b322ba1d7c2fed999f31f98f8605327f859146d",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/config/types/UIConfigLayer.yaml",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "535e914e6b9241a849be8644d35a39763eec43d764bcb0c56cddb3aac9e30d9e",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/excel/Item.xlsx",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "94ee132c294ef9282ea10bcf22e979d54b830e5896aaa72117c83c578b4bfd88",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/excel/ItemType.xlsx",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "813d8f1d13db55eb25a3b9a5a9b998faefae5114ae62a69aabd042361499f7df",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/excel/Quest.xlsx",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "46034974a553a4370641a9919d5b867f650a7cd587f684759fdff436fb73396f",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/excel/UIConfig.xlsx",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "73f29557c871b65fb1f2b2a90376356bab238cc70a4931ebcea890e11695abe9",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/excel/layout_manifests/Item.json",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "94c369ac3033eb292f06b48592ed2b81601b0a1c5e3230af369183f34f2da4d5",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/excel/layout_manifests/ItemType.json",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "581759817510e87473536aee2111b99b69a4f8da5fcfca20dce62eab52fb059b",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/excel/layout_manifests/Quest.json",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "42224544ba1ec3ca483986b3498afef6cc6e0a75a94e6ba3cfea31b762124e19",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/excel/layout_manifests/UIConfig.json",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "e26f0a8f24ca44ff76bf8af529d1b9e71708f411d1cabd86c83c246959d0c3a8",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/i18n/en/Item.json",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "332ddf09ff5d0202a79e38142b831726345c07b5d7e3f2e902c11c11ec32425f",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/i18n/en/ItemType.json",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "0b6668987cc805f4f7bfcf3fdb4f1adab81e0a0e4a2e4b812536bdead858f6ff",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/i18n/en/Quest.json",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "e3ae3401ccf0aac175573b33c23d592849c9b51d964711564385f10d17595604",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/i18n/ja/Item.json",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "9c46e9f54f82a81a85281ccb9e05a61159907842663585ee1799b6db72810199",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/i18n/ja/ItemType.json",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "8d5437b119a8a26b29722cb059ec64745356cd384b3f529962e338f9e66c3d96",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/i18n/ja/Quest.json",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "b09129c7443714d002e2156e803827d712462aa5acb963759b1d5d8e91274965",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/i18n/source/Item.json",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "2161929d0a2e2ae70a4abe272b59e8385ebb8a3b9e040f5f3c8c925a788b8bb6",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/i18n/source/ItemType.json",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "e5db6ed03a8a124d2f213ba461a140300a837aafd5c7d1e2b165cf2762d2074d",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/repository_cutover/workspace/i18n/source/Quest.json",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "f6b4996e2cdf9a0e2e240531f87caddcf9aad5e529d1b5ee5e7641c09fbfbe04",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/web/schema-fixed-verification.png",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "4bf9336233fdff129f1b8635243719d3293eb8d9c916de72c5b3c3e23bf7f2ec",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/fixtures/web/schema_workbench_matrix.json",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "a68714db537987abcbe5b309cf39648c6450dacd6b60605eb05b4116b4d5f924",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/i18n/__init__.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/i18n/test_state.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/i18n_flow.rs",
+        "native/crates/ct-cli/tests/cli.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "0e95bdf852889f12dc7462ffb6e0bef611bdf5f55c24a8dd8c652371c7fe4884",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/schema/_helpers.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "46d37355a4792deee9fe351c3e7a5209da1d96c80efb02b4b72a0f02572e228a",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/schema/conftest.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "f7d018de5b5bd2a082c2d1da29ef9ef9a1ca915a78defaeb04741bab45634d91",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "ct/tests/schema/test_canonical_hashing.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_draft.rs",
+        "native/tests/compat/tests/schema_save.rs",
+        "native/tests/compat/tests/resource_graph.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "9ac455ffe9e252cae88da8d02d3d4a88d295a850effcfa8fdf032aac3144e503",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/schema/test_canonical_workspace.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_loading.rs",
+        "native/tests/compat/tests/schema_parity.rs",
+        "native/tests/compat/tests/resource_graph.rs",
+        "native/crates/ct-domain/tests/config.rs",
+        "native/crates/ct-domain/tests/type_expression.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "48367a92c097034a7a3160829a73a4547e72e1f0500e78c5d587fd19a8e0a0b6",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/schema/test_commands.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_draft.rs",
+        "native/tests/compat/tests/schema_save.rs",
+        "native/tests/compat/tests/resource_graph.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "b7c8121a2daa2b4d32e7417254115b8a55c62f33fa11285f50812f4b1fc1b609",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/schema/test_enum_wire_type.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_loading.rs",
+        "native/tests/compat/tests/schema_parity.rs",
+        "native/tests/compat/tests/resource_graph.rs",
+        "native/crates/ct-domain/tests/config.rs",
+        "native/crates/ct-domain/tests/type_expression.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "4e54a6fb6eb9909097a02b3b08dd7578aaad51dce1ac1a4ada2760df6f98e6b3",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/schema/test_identity.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_loading.rs",
+        "native/tests/compat/tests/schema_parity.rs",
+        "native/tests/compat/tests/resource_graph.rs",
+        "native/crates/ct-domain/tests/config.rs",
+        "native/crates/ct-domain/tests/type_expression.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "cf9be62eb4f5b7a2d7c271712a7473e792595687cec8bcd3f6fdaf7e3b34fb7b",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/schema/test_name_validation.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_loading.rs",
+        "native/tests/compat/tests/schema_parity.rs",
+        "native/tests/compat/tests/resource_graph.rs",
+        "native/crates/ct-domain/tests/config.rs",
+        "native/crates/ct-domain/tests/type_expression.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "86d41e662ac55a6972d58c008c6f5fa471d8980f871827dc331b833cb0e9159b",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/schema/test_naming.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_loading.rs",
+        "native/tests/compat/tests/schema_parity.rs",
+        "native/tests/compat/tests/resource_graph.rs",
+        "native/crates/ct-domain/tests/config.rs",
+        "native/crates/ct-domain/tests/type_expression.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "8ffa5bbc460b9959fa7584fb0d134e5b09e9ac0c4dd416b436f4565b627fa454",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/schema/test_old_format_rejection.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_loading.rs",
+        "native/tests/compat/tests/schema_parity.rs",
+        "native/tests/compat/tests/resource_graph.rs",
+        "native/crates/ct-domain/tests/config.rs",
+        "native/crates/ct-domain/tests/type_expression.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "c50f27b0685f00919b58c1ee24f560e4c7774b84adb1d9d44a2ad95b32325af3",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/schema/test_primary_key_type.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_loading.rs",
+        "native/tests/compat/tests/schema_parity.rs",
+        "native/tests/compat/tests/resource_graph.rs",
+        "native/crates/ct-domain/tests/config.rs",
+        "native/crates/ct-domain/tests/type_expression.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "d788f8190a3002f6845bb3134ed5e730e1ff7a0f78a4bddf9ecfedaa9c5b397c",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/schema/test_resource_graph.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_loading.rs",
+        "native/tests/compat/tests/schema_parity.rs",
+        "native/tests/compat/tests/resource_graph.rs",
+        "native/crates/ct-domain/tests/config.rs",
+        "native/crates/ct-domain/tests/type_expression.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "2f2dcfb9ce0be1846e7763bfa3d4d279b4011aefb72fb5b507140470dcc1c93e",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/schema/test_resource_repository.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_loading.rs",
+        "native/tests/compat/tests/schema_parity.rs",
+        "native/tests/compat/tests/resource_graph.rs",
+        "native/crates/ct-domain/tests/config.rs",
+        "native/crates/ct-domain/tests/type_expression.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "7810f64b98bf708a41f3c0b381feb3857090393aa56d8753f6d07c10c1c7a7ff",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/schema/test_role_boundaries.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_loading.rs",
+        "native/tests/compat/tests/schema_parity.rs",
+        "native/tests/compat/tests/resource_graph.rs",
+        "native/crates/ct-domain/tests/config.rs",
+        "native/crates/ct-domain/tests/type_expression.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "3874cce023614346b16ae6a3c5f065430c326bc7fb993ed300680761c193fc8a",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/schema/test_type_expression.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/canonical_read.rs",
+        "native/crates/ct-domain/tests/type_expression.rs",
+        "native/tests/compat/tests/template_semantics.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "df4bf9d7e2bc89611ba76eeb70e19832702449341229fb2d24b3f9812bff3802",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/schema/test_uniform_layout_flag.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/schema_loading.rs",
+        "native/tests/compat/tests/schema_parity.rs",
+        "native/tests/compat/tests/resource_graph.rs",
+        "native/crates/ct-domain/tests/config.rs",
+        "native/crates/ct-domain/tests/type_expression.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "432d9236bbf9bcc3fe8f869d3bf2be64140e61982d4ae04d476c444b9511da54",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/storage/test_files.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/export_pipeline.rs",
+        "native/tests/compat/tests/publication_recovery.rs",
+        "native/tests/compat/tests/workspace_lock.rs",
+        "native/tests/protocol/tests/cancel.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "0a9a2ddcc8a341cc0f892aeec1a83a173147176826c4a94c8678c9982a9759c1",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/storage/test_publication.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/export_pipeline.rs",
+        "native/tests/compat/tests/publication_recovery.rs",
+        "native/tests/compat/tests/workspace_lock.rs",
+        "native/tests/protocol/tests/cancel.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "6b169071ccd4c6be557284e110cec832f1f953d3137a415e17f0c415be28f38e",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/storage/test_workspace_lock.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/export_pipeline.rs",
+        "native/tests/compat/tests/publication_recovery.rs",
+        "native/tests/compat/tests/workspace_lock.rs",
+        "native/tests/protocol/tests/cancel.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "088e7b54852923436cbcfa20201a8c04b961fed0e77b9f1548d5b3a243301e6c",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/storage/test_workspace_transaction.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/compat/tests/export_pipeline.rs",
+        "native/tests/compat/tests/publication_recovery.rs",
+        "native/tests/compat/tests/workspace_lock.rs",
+        "native/tests/protocol/tests/cancel.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "1b95661c07fbc99ddc575b88c9d82ff82b0e73e1bda690a672a9c61cdadca4f6",
+      "reason": "原生具体测试锚点见 compat-matrix.json；G2/G3 已实际执行，历史来源清单不随删除缩水。"
+    },
+    {
+      "path": "ct/tests/web/test_add_resource_api.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-cli/tests/panel.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "eaa66726b086cf3e9e685be3a7a240c63ae86aa6e44b7ef0c8a8b906fb762182",
+      "reason": "真实原生 HTTP/浏览器锚点逐场景见 web-parity.json，G1 全部通过。"
+    },
+    {
+      "path": "ct/tests/web/test_assets.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/tests/native-api.test.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "309b780be0333c8cf2c118f43277dee7831da12cfd16de01295d51aa16bb882c",
+      "reason": "真实原生 HTTP/浏览器锚点逐场景见 web-parity.json，G1 全部通过。"
+    },
+    {
+      "path": "ct/tests/web/test_browser_baseline.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/tests/shell-projection.spec.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "c774de10f193120b04a3e09d0d69965350f8a04c04ca85cd71436fb921a1bae2",
+      "reason": "真实原生 HTTP/浏览器锚点逐场景见 web-parity.json，G1 全部通过。"
+    },
+    {
+      "path": "ct/tests/web/test_fuzzy_browser.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/tests/fuzzy.spec.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "73b13b1289cce88dfe22176306a884e5cc5cac1b1789693087c66ba988a36617",
+      "reason": "真实原生 HTTP/浏览器锚点逐场景见 web-parity.json，G1 全部通过。"
+    },
+    {
+      "path": "ct/tests/web/test_history.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tests/protocol/tests/desktop_state.rs",
+        "native/crates/ct-cli/tests/panel.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "a8143444e181bd69e1357d978952e5c3f19fde0a5fe514fde91f80d28e72666d",
+      "reason": "真实原生 HTTP/浏览器锚点逐场景见 web-parity.json，G1 全部通过。"
+    },
+    {
+      "path": "ct/tests/web/test_logs.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src/panel_tasks.rs",
+        "web/tests/logs.spec.mjs",
+        "web/tests/i18n-entry.test.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "c5038543b9615f262719c3e79d2f2d70a42e7f64a8a9a7456222a9c8ef6c50fb",
+      "reason": "真实原生 HTTP/浏览器锚点逐场景见 web-parity.json，G1 全部通过。"
+    },
+    {
+      "path": "ct/tests/web/test_matrix_browser.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/tests/shell-projection.spec.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "a0b1b38c65cce83c980580994231fe50ea220ff2f488917fbed35a3db5d8723a",
+      "reason": "真实原生 HTTP/浏览器锚点逐场景见 web-parity.json，G1 全部通过。"
+    },
+    {
+      "path": "ct/tests/web/test_module_pages_browser.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/tests/export-tasks.spec.mjs",
+        "web/tests/template-flow.spec.mjs",
+        "web/tests/i18n-entry.spec.mjs",
+        "web/tests/logs.spec.mjs",
+        "web/tests/module-pages.spec.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "d982c1f5ea785898b5c666749e4c180b5acf0d2ac41446fb4d5703ab1f543c3a",
+      "reason": "真实原生 HTTP/浏览器锚点逐场景见 web-parity.json，G1 全部通过。"
+    },
+    {
+      "path": "ct/tests/web/test_resource_benchmark.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/tests/resource-benchmark.spec.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "dd8e87bfc7e51e917a03f279181ee0f015a7cd85a9d0eb2d413fe4be654c6a19",
+      "reason": "真实原生 HTTP/浏览器锚点逐场景见 web-parity.json，G1 全部通过。"
+    },
+    {
+      "path": "ct/tests/web/test_schema_create_browser.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/tests/schema-create.spec.mjs",
+        "web/tests/native-browser.spec.mjs",
+        "web/tests/template-flow.spec.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "0b899d086ecd4dd0e3aabf6d792ba51741865a62d0b60bf05f28e57933e1211b",
+      "reason": "真实原生 HTTP/浏览器锚点逐场景见 web-parity.json，G1 全部通过。"
+    },
+    {
+      "path": "ct/tests/web/test_schema_editor_browser.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/tests/schema-resource-browser.spec.mjs",
+        "web/tests/schema-editor-basics.spec.mjs",
+        "web/tests/schema-quick-open.spec.mjs",
+        "web/tests/schema-flow.spec.mjs",
+        "web/tests/draft-store.spec.mjs",
+        "web/tests/native-browser.spec.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "29c024c982ec6a13793aef8fae8e5f112fee67f618b08774b0c72bced575296a",
+      "reason": "真实原生 HTTP/浏览器锚点逐场景见 web-parity.json，G1 全部通过。"
+    },
+    {
+      "path": "ct/tests/web/test_schema_save_api.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/tests/native-api.test.mjs",
+        "native/crates/ct-cli/tests/panel.rs",
+        "web/tests/schema-contract.test.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "bf7f8154c8e1129b48d60b011f803b52205d38ce3408538011899aae83d324f9",
+      "reason": "真实原生 HTTP/浏览器锚点逐场景见 web-parity.json，G1 全部通过。"
+    },
+    {
+      "path": "ct/tests/web/test_schema_workspace_api.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/tests/frozen-web-contract.test.mjs",
+        "web/tests/schema-contract.test.mjs",
+        "web/tests/native-api.test.mjs",
+        "web/tests/codename-invariant.test.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "1694c7807d903273058b1396bbe37a6d20838d43e97364348b9959de70d441b7",
+      "reason": "真实原生 HTTP/浏览器锚点逐场景见 web-parity.json，G1 全部通过。"
+    },
+    {
+      "path": "ct/tests/web/test_shell_browser.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "web/tests/shell-projection.spec.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "90d60fa60e18215b24d083ce2458b90353255d3be08bf185517914542c05db72",
+      "reason": "真实原生 HTTP/浏览器锚点逐场景见 web-parity.json，G1 全部通过。"
+    },
+    {
+      "path": "ct/tests/web/test_tasks_projection.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-app/src/panel_tasks.rs",
+        "web/tests/native-api.test.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "cbaa7f4639e9a9e2680c88eff588af48bd5b70e1b9027f2e2714e940d75c9b46",
+      "reason": "真实原生 HTTP/浏览器锚点逐场景见 web-parity.json，G1 全部通过。"
+    },
+    {
+      "path": "ct/tests/web/web_helpers.py",
+      "owner": "legacy-acceptance",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/docs/baseline/reference-tests.json",
+        "web/tests/panel-helper.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "b9844ab9bf946c8c6b387b4062ca8398f5626fcb14d677289bf59ca59041725b",
+      "reason": "旧测试支撑/夹具；历史清单固定 SHA，当前临时工作区与辅助能力由原生/Node 验收承接。"
+    },
+    {
+      "path": "launcher/README.md",
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "launcher/README.md"
+      ],
+      "archive": [],
+      "sourceSha256": "a5502656ff01e4a89a46de4c5f2d782d45fd17ed3695f5dbd4afc3ada0f70dc9",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "launcher/tool/build_macos.sh",
+      "owner": "native-or-js-entry",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "launcher/tool/build_macos.sh"
+      ],
+      "archive": [],
+      "sourceSha256": "e32caa277af72c4f561bbb33cd8577aa4f057cbe895c511e16542eca964efcc4",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "launcher/tool/build_windows.ps1",
+      "owner": "native-or-js-entry",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "launcher/tool/build_windows.ps1"
+      ],
+      "archive": [],
+      "sourceSha256": "3080e56436b60efee4ca3b99f9db47c33e3766579f05b60fd403c40b8cd2e807",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "native/README.md",
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "native/README.md"
+      ],
+      "archive": [],
+      "sourceSha256": "92b0721c42bde349efafb07bb77628301fa9be26ac8300156681248eba6be183",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "native/crates/ct-xtask/src/bench.rs",
+      "owner": "benchmark-runtime",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "native/crates/ct-xtask/src/bench.rs",
+        "native/docs/baseline/bench-native-fixture-verification.md"
+      ],
+      "archive": [],
+      "sourceSha256": "03d98a84f3d25b1ed110a6097da230e4c99240362d8bdd9597b2fd0affb31171",
+      "reason": "正式基准/夹具/发行已无 Python；显式 Python 实时参照参数最终退役，历史性能报告的重算保留。"
+    },
+    {
+      "path": "native/crates/ct-xtask/src/fingerprint.rs",
+      "owner": "native-or-js-entry",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "native/crates/ct-xtask/src/fingerprint.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "e3ec482e2dd6f29bf006a725c04ad70fe06bb6ced5e643ae3bf71d64789cceb1",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "native/crates/ct-xtask/src/main.rs",
+      "owner": "benchmark-runtime",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "native/crates/ct-xtask/src/main.rs",
+        "native/docs/baseline/bench-native-fixture-verification.md"
+      ],
+      "archive": [],
+      "sourceSha256": "a601ef63f075daf642d430ba80d5b9a4d0023588ee46787d6a5a22829f003fb4",
+      "reason": "正式基准/夹具/发行已无 Python；显式 Python 实时参照参数最终退役，历史性能报告的重算保留。"
+    },
+    {
+      "path": "native/docs/baseline/cli-text-diff.md",
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "native/docs/baseline/cli-text-diff.md"
+      ],
+      "archive": [],
+      "sourceSha256": "d04c65123809e93c63105aace603e70753b5e8af0d8a628ba317996a810632d6",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "native/docs/baseline/handoff-macos-linux.md",
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "native/docs/baseline/handoff-macos-linux.md"
+      ],
+      "archive": [],
+      "sourceSha256": "5742f3e7dc0cad1d9f6442662327d55a1a026599b7f1eaa86f79784f9b207dd6",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "native/docs/baseline/isolation-check.md",
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "native/docs/baseline/isolation-check.md"
+      ],
+      "archive": [],
+      "sourceSha256": "d2d755dfea4361269f02fc8270d5e02e9657cd50ae773f50740f86e873ea36bb",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "native/docs/baseline/parity-report.md",
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "native/docs/baseline/parity-report.md"
+      ],
+      "archive": [],
+      "sourceSha256": "8c288eb627809797ee35d242e7608958f03be0d11156e743753f1963f02014b8",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "native/docs/baseline/web-parity.md",
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "native/docs/baseline/web-parity.md"
+      ],
+      "archive": [],
+      "sourceSha256": "0f3ba158a832c8c2945a1c8f2eea11eba5d4d74b3095ba7e9f0ce42e832d20b8",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "native/docs/binary-prototype-findings.md",
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "native/docs/binary-prototype-findings.md"
+      ],
+      "archive": [],
+      "sourceSha256": "ad8402ff4ab6cde61c51380d3f5543d798f819576018547e7ed48a7ff9a6f546",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "native/docs/excel-reading-findings.md",
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "native/docs/excel-reading-findings.md"
+      ],
+      "archive": [],
+      "sourceSha256": "2002b62af341a9d53589911eda051a8ac728558864ec26a1d20c189d7c51fa69",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "native/fixtures/bench/README.md",
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "native/fixtures/bench/README.md"
+      ],
+      "archive": [],
+      "sourceSha256": "15bdedc15f081f31d4e2b01de39e687de7940951919d00930098727476a86c4b",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
     },
     {
       "path": "native/fixtures/bench/generate.py",
       "owner": "fixture-regeneration",
-      "replacement": "Pending: Rust/JS generator with independent golden assertions",
-      "status": "pending-audit"
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-xtask/src/fixtures.rs",
+        "native/crates/ct-xtask/src/real_fixture.rs"
+      ],
+      "archive": [
+        "native/docs/baseline/source/fixture-bench-generate.py.txt"
+      ],
+      "sourceSha256": "de9e0e83db674fe5fc829a633a473972a1ee43e2f0a1bc15c406001798d99080",
+      "reason": "夹具必要再生走 Rust；独立输入/期望和来源文本冻结，不能由被测代码覆写 golden。S/M/L/r 是性能夹具，旧基准不冒充新分布。"
     },
     {
-      "path": "ct/src/ct/export/i18n/state.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
+      "path": "native/fixtures/binary/generate.py",
+      "owner": "fixture-regeneration",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-xtask/src/fixtures.rs",
+        "native/fixtures/compat-manifest.json"
+      ],
+      "archive": [
+        "native/docs/baseline/source/fixture-binary-generate.py.txt"
+      ],
+      "sourceSha256": "2ef8bc32b5cca249983422a399ebf3940af16f4b8ea9dada34c005b21929dcde",
+      "reason": "夹具必要再生走 Rust；独立输入/期望和来源文本冻结，不能由被测代码覆写 golden。S/M/L/r 是性能夹具，旧基准不冒充新分布。"
     },
     {
-      "path": "ct/src/ct/export/i18n/__init__.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
+      "path": "native/fixtures/excel/generate.py",
+      "owner": "fixture-regeneration",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-xtask/src/fixtures.rs",
+        "native/fixtures/compat-manifest.json"
+      ],
+      "archive": [
+        "native/docs/baseline/source/fixture-excel-generate.py.txt"
+      ],
+      "sourceSha256": "e998f14188d1162dde0d8d4c6d4b18bbf044f3851cf56b19457c4ba03b4a7220",
+      "reason": "夹具必要再生走 Rust；独立输入/期望和来源文本冻结，不能由被测代码覆写 golden。S/M/L/r 是性能夹具，旧基准不冒充新分布。"
     },
     {
-      "path": "ct/src/ct/export/canonical_fbs.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
+      "path": "native/fixtures/export_pipeline/generate.py",
+      "owner": "fixture-regeneration",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-xtask/src/fixtures.rs",
+        "native/fixtures/compat-manifest.json"
+      ],
+      "archive": [
+        "native/docs/baseline/source/fixture-export_pipeline-generate.py.txt"
+      ],
+      "sourceSha256": "4eeb23a35a68a6c5ed6fc791488b260762829cc769d8afdcf1864e8870df4042",
+      "reason": "夹具必要再生走 Rust；独立输入/期望和来源文本冻结，不能由被测代码覆写 golden。S/M/L/r 是性能夹具，旧基准不冒充新分布。"
     },
     {
-      "path": "ct/src/ct/export/canonical_json.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
+      "path": "native/fixtures/fingerprints/generate.py",
+      "owner": "fixture-regeneration",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-xtask/src/fixtures.rs",
+        "native/fixtures/compat-manifest.json"
+      ],
+      "archive": [
+        "native/docs/baseline/source/fixture-fingerprints-generate.py.txt"
+      ],
+      "sourceSha256": "b6971c6c4f685bb74cf6e3766544c79b47d9dae3c1a30b5c3428b0a524be9eac",
+      "reason": "夹具必要再生走 Rust；独立输入/期望和来源文本冻结，不能由被测代码覆写 golden。S/M/L/r 是性能夹具，旧基准不冒充新分布。"
     },
     {
-      "path": "ct/src/ct/export/__init__.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
+      "path": "native/fixtures/schema_state/generate.py",
+      "owner": "fixture-regeneration",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-xtask/src/fixtures.rs",
+        "native/fixtures/compat-manifest.json"
+      ],
+      "archive": [
+        "native/docs/baseline/source/fixture-schema_state-generate.py.txt"
+      ],
+      "sourceSha256": "c77a1db93c9804547eb1878a8e38d1f71860ccb10a080198db9ddcd4bb00753f",
+      "reason": "夹具必要再生走 Rust；独立输入/期望和来源文本冻结，不能由被测代码覆写 golden。S/M/L/r 是性能夹具，旧基准不冒充新分布。"
     },
     {
-      "path": "ct/src/ct/export/deploy.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/export/canonical_binary.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/contracts.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
+      "path": "native/fixtures/template/compare_semantics.py",
+      "owner": "fixture-regeneration",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-xtask/src/fixtures.rs",
+        "native/fixtures/compat-manifest.json",
+        "native/tests/compat/tests/template_semantics.rs"
+      ],
+      "archive": [
+        "native/docs/baseline/source/fixture-template-compare_semantics.py.txt"
+      ],
+      "sourceSha256": "5b658e642f877ef13433f078d8f280761ee145f07a6171380ce38e9dda958a73",
+      "reason": "夹具必要再生走 Rust；独立输入/期望和来源文本冻结，不能由被测代码覆写 golden。S/M/L/r 是性能夹具，旧基准不冒充新分布。"
     },
     {
       "path": "native/fixtures/template/generate.py",
       "owner": "fixture-regeneration",
-      "replacement": "Pending: Rust/JS generator with independent golden assertions",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/docs/README.md",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/schema_workspace/snapshot.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/schema_workspace/candidate.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/schema_workspace/netdiff.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/schema_workspace/__init__.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/schema_workspace/legacy_apply.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/schema_workspace/commands_reducer.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/app/schema_workspace/save.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/schema/hashing.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/schema/commands.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/schema/identity.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/schema/resources.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/schema/resource_graph.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/schema/indexes.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/schema/__init__.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/schema/name_validation.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/schema/naming.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/schema/resource_repository.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/schema/type_expression.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "native/README.md",
-      "owner": "reference-or-tool",
-      "replacement": "Pending: classify active invocation vs historical citation",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/docs/agent-project-reference.md",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/diagnostics/errors.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/diagnostics/__init__.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/docs/archive/fabulous-game-对齐清单.md",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "native/docs/excel-reading-findings.md",
-      "owner": "reference-or-tool",
-      "replacement": "Pending: classify active invocation vs historical citation",
-      "status": "pending-audit"
-    },
-    {
-      "path": "native/docs/binary-prototype-findings.md",
-      "owner": "reference-or-tool",
-      "replacement": "Pending: classify active invocation vs historical citation",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/docs/research/flask-vue-stack.md",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/storage/workspace_transaction.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/storage/publication.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/storage/workspace_lock.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/storage/__init__.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/storage/files.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/__init__.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/web/history.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/web/schema_workspace_api.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/web/task_state.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/web/app.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/docs/design/responsive-app-shell-review.md",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/docs/design/responsive-app-shell_e2e.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/i18n/test_state.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/i18n/__init__.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/excel/reading_compat.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/excel/canonical_reader.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/excel/planning.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/excel/__init__.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/excel/layout_manifest.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/excel/layout.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/excel/canonical_template.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/cache/fingerprints.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/cache/artifacts.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/cache/__init__.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/cache/canonical_state.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/excel/test_planning.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/excel/test_layout.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/excel/test_canonical_template.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/excel/test_canonical_reader.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/excel/__init__.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/excel/test_canonical_v2_regressions.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/cutover/test_canonical_export_smoke.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/cutover/test_e2e_safety.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/cache/test_canonical_state.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/cache/test_fingerprints.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/test_schema_save_api.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/test_tasks_projection.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/web_helpers.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/test_history.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/test_schema_editor_browser.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/test_schema_create_browser.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/test_logs.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/test_shell_browser.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/test_matrix_browser.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/test_browser_baseline.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/test_add_resource_api.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/test_module_pages_browser.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/test_schema_workspace_api.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/test_assets.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/test_resource_benchmark.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/web/test_fuzzy_browser.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/web-parity.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/deploy/test_sync_dir.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/deploy/test_deploy.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/storage/test_publication.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/storage/test_files.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/storage/test_workspace_lock.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/storage/test_workspace_transaction.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/web/__init__.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/web/tasks.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/src/ct/web/logs.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/_helpers.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/test_name_validation.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/test_primary_key_type.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/test_naming.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/test_identity.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/test_commands.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/test_role_boundaries.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/test_old_format_rejection.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/test_type_expression.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/test_resource_repository.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/test_enum_wire_type.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/test_resource_graph.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/test_canonical_hashing.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/conftest.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/test_uniform_layout_flag.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/schema/test_canonical_workspace.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/export/test_canonical_accessor.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/export/test_query_indexes.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/export/test_uniform_layout.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/export/test_canonical_json.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_canonical_i18n.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_schema_net_diff.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/export/__init__.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_schema_save.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_canonical_status.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_reading_compat.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/export/test_canonical_fbs.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/export/test_canonical_binary.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "native/docs/baseline/cli-text-diff.md",
-      "owner": "reference-or-tool",
-      "replacement": "Pending: classify active invocation vs historical citation",
-      "status": "pending-audit"
-    },
-    {
-      "path": "native/docs/baseline/parity-report.md",
-      "owner": "reference-or-tool",
-      "replacement": "Pending: classify active invocation vs historical citation",
-      "status": "pending-audit"
-    },
-    {
-      "path": "native/docs/baseline/handoff-macos-linux.md",
-      "owner": "reference-or-tool",
-      "replacement": "Pending: classify active invocation vs historical citation",
-      "status": "pending-audit"
-    },
-    {
-      "path": "native/docs/baseline/isolation-check.md",
-      "owner": "reference-or-tool",
-      "replacement": "Pending: classify active invocation vs historical citation",
-      "status": "pending-audit"
-    },
-    {
-      "path": "native/docs/baseline/web-parity.md",
-      "owner": "reference-or-tool",
-      "replacement": "Pending: classify active invocation vs historical citation",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_add_resource_commands.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_enum_token_gate.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_add_resource_workflow.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_export_service.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_add_resource_paths.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_add_resource_atomicity.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_schema_workspace.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/architecture/_helpers.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/_helpers.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_schema_save_atomicity.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_exporting_models.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_canonical_export_regression.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_canonical_validate.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_add_resource_candidate.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_uniform_bloat_notice.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_input_snapshot.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_incremental_export.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_cli_filter_and_i18n_output.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_cli_and_web_service.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_add_resource_netdiff.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_schema_save_workflow.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/app/test_publication_boundary.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "ct/tests/architecture/test_architecture.py",
-      "owner": "historical-python",
-      "replacement": "native/docs/baseline/compat-matrix.json",
-      "status": "pending-audit"
-    },
-    {
-      "path": "launcher/tool/build_macos.sh",
-      "owner": "launcher",
-      "replacement": "launcher/lib/services/panel_service.dart + native xtask dist",
-      "status": "pending-audit"
-    },
-    {
-      "path": "launcher/tool/build_windows.ps1",
-      "owner": "launcher",
-      "replacement": "launcher/lib/services/panel_service.dart + native xtask dist",
-      "status": "pending-audit"
-    },
-    {
-      "path": "launcher/README.md",
-      "owner": "launcher",
-      "replacement": "launcher/lib/services/panel_service.dart + native xtask dist",
-      "status": "pending-audit"
-    },
-    {
-      "path": "test-proj/RefConfigBench/OPTIMIZATION-STRATEGY.md",
-      "owner": "independent-readers",
-      "replacement": "test-proj/README.md; 历史实验报告/命令说明，已加非活跃声明，保留正文来源。",
-      "status": "historical-document"
-    },
-    {
-      "path": "test-proj/RefConfigBench/check_bundle_duplication.py",
-      "owner": "independent-readers",
-      "replacement": "native/tests/compat/tests/export_compat.rs; 旧每语言整包重复率诊断，读取 gd 旧 bundle；不参与迁移后的正式门槛。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/RefConfigBench/gen_literal_accessor.py",
-      "owner": "independent-readers",
-      "replacement": "native/tests/compat/tests/accessor_golden.rs; 旧手写字面量偏移 A/B 变体，依赖旧 ItemBench/ArrayBench；当前访问器由 canonical Rust 生成并做 golden 对照。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/RefConfigBench/check_uniform_risks.py",
-      "owner": "independent-readers",
-      "replacement": "native/tests/compat/tests/binary_golden.rs; 旧 Python uniform 探针与稀疏体积实验，包含真实 gd；当前独立稀疏/稠密字节对照在 Rust 验收。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/RefConfigBench/gen_scale_corpus.py",
-      "owner": "independent-readers",
-      "replacement": "native/crates/ct-xtask/src/fixtures.rs; 旧 2000 表/约69万行合成 C++ 对标，外部语料和不同规模；不是当前 S/M/L 基准来源。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/RefConfigBench/RUNTIME-SCHEME-REVIEW.md",
-      "owner": "independent-readers",
-      "replacement": "test-proj/README.md; 历史实验报告/命令说明，已加非活跃声明，保留正文来源。",
-      "status": "historical-document"
-    },
-    {
-      "path": "test-proj/RefConfigBench/gen_ct_bench_tables.py",
-      "owner": "independent-readers",
-      "replacement": "native/crates/ct-xtask/src/real_fixture.rs; 旧 ItemBench/ArrayBench C++ 对标形状与语料，生成本目录实验副本；正式 native 基准采用 S/M/L 和冻结 r/r-full 形状。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/RefConfigBench/pick_tables.py",
-      "owner": "independent-readers",
-      "replacement": "native/fixtures/bench/shape-r.json; 扫描 D 盘外部参考游戏生成代码的选表工具，非独立可再生的正式输入。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/RefConfigBench/eval_uniform_layout.py",
-      "owner": "independent-readers",
-      "replacement": "native/tests/compat/tests/binary_golden.rs; 旧 ItemBench/ArrayBench 定宽体积与探针布局评估，指标只属于历史报告。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/RefConfigBench/check_export_preconditions.py",
-      "owner": "independent-readers",
-      "replacement": "native/tests/compat/tests/binary_golden.rs; 旧外部读取方案前提诊断及 monkeypatch 实验，不是 canonical 原生链路。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/UniformE2EBench/gen_our_item_bench.py",
-      "owner": "independent-readers",
-      "replacement": "test-proj/ExportAccessorVerify/prepare-native.mjs; 旧 6685 行 OurItem 对标及定宽/非定宽实验，不参与现在的正式 C# 逐字段验收。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/ExportAccessorVerify/prepare.py",
-      "owner": "independent-readers",
-      "replacement": "test-proj/ExportAccessorVerify/prepare-native.mjs; 旧正式导出准备和 FNV 生成已改为原生临时工作区导出与冻结 FNV 参照。",
-      "status": "replaced"
-    },
-    {
-      "path": "test-proj/fabulous-game/README.md",
-      "owner": "independent-readers",
-      "replacement": "test-proj/README.md; 历史实验报告/命令说明，已加非活跃声明，保留正文来源。",
-      "status": "historical-document"
-    },
-    {
-      "path": "test-proj/fabulous-game/gen-big-table-fixture.py",
-      "owner": "independent-readers",
-      "replacement": "native/tests/compat/tests/accessor_golden.rs; 旧 Lua userdata 驻留量实验，写 /tmp/weak，属于外部游戏历史对标。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/fabulous-game/gen_fixtures.py",
-      "owner": "independent-readers",
-      "replacement": "test-proj/ExportAccessorVerify/prepare-native.mjs; 旧外部游戏 OurItem/OurItemOT 性能材料，显式 GAME_BENCH_DIR 输出，不是工具发行验收。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/fabulous-game/gen_bench_fixtures.py",
-      "owner": "independent-readers",
-      "replacement": "native/crates/ct-xtask/src/fixtures.rs; 旧外部 ItemBench/ArrayBench 同语料实验，不参与现在的 S/M/L/r 正式性能门槛。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/fabulous-game/migrate_excel.py",
-      "owner": "independent-readers",
-      "replacement": "native/tests/compat/tests/template_flow.rs; 已用完的一次性旧游戏 Excel 表头搬迁资料；当前模板迁移走原生显式用例。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/fabulous-game/gen-two-accessor-variants.py",
-      "owner": "independent-readers",
-      "replacement": "native/tests/compat/tests/accessor_golden.rs; 旧 Lua 槽位/字面量偏移 A/B，对外部实验副本生成，不能替代原生 golden。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/ExportAccessorVerify/gen_scalars_bench.py",
-      "owner": "independent-readers",
-      "replacement": "native/crates/ct-xtask/src/accessor_fixtures.rs; 旧正式标量生成已由 Rust 再生 Binary/C#，逐字节匹配 main 冻结参照后交给 C# 独立读取。",
-      "status": "replaced"
-    },
-    {
-      "path": "test-proj/fabulous-game/uniform-check/uniform_fixed_check.py",
-      "owner": "independent-readers",
-      "replacement": "native/tests/compat/tests/binary_golden.rs; 旧 Python patch 修复枚举槽位的证明材料，原生枚举/零值定宽已独立对照。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/fabulous-game/uniform-check/uniform_enum_check.py",
-      "owner": "independent-readers",
-      "replacement": "native/tests/compat/tests/binary_golden.rs; 刻意复现旧 Python patch 枚举布局 bug 的注入脚本，不是现役生成器。",
-      "status": "historical"
-    },
-    {
-      "path": "test-proj/fabulous-game/uniform-check/README.md",
-      "owner": "independent-readers",
-      "replacement": "test-proj/README.md; 历史实验报告/命令说明，已加非活跃声明，保留正文来源。",
-      "status": "historical-document"
-    },
-    {
-      "path": "test-proj/fabulous-game/uniform-check/real_uniform_check.py",
-      "owner": "independent-readers",
-      "replacement": "test-proj/ExportAccessorVerify/prepare-native.mjs; 旧 Python 真实导出后枚举/布局诊断，其必要当前能力由 Rust golden 和独立 C# 读取承接。",
-      "status": "historical"
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-xtask/src/fixtures.rs",
+        "native/fixtures/compat-manifest.json",
+        "native/tests/compat/tests/template_semantics.rs"
+      ],
+      "archive": [
+        "native/docs/baseline/source/fixture-template-generate.py.txt"
+      ],
+      "sourceSha256": "4ed807506540c5d451a357394d9852f24b6e6f22f9eacac8cefcbfe56e94f6d7",
+      "reason": "夹具必要再生走 Rust；独立输入/期望和来源文本冻结，不能由被测代码覆写 golden。S/M/L/r 是性能夹具，旧基准不冒充新分布。"
+    },
+    {
+      "path": "native/tools/bench/isolation-check.mjs",
+      "owner": "isolated-check",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/tools/check-package.mjs",
+        "native/crates/ct-xtask/src/dist.rs"
+      ],
+      "archive": [
+        "native/docs/baseline/source/isolation-check.mjs.txt"
+      ],
+      "sourceSha256": "c8781988c9eedb92953db6e5f9d87fdfd8ac35834c80001c5aa3215d88df3b10",
+      "reason": "旧默认 Windows/真实 gd 隔离脚本已过时；当前 runtime-check 在独立临时工作区验证实际包与 panel，避免自动使用真实游戏目录。"
+    },
+    {
+      "path": "native/tools/bench/measure.ps1",
+      "owner": "native-or-js-entry",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "native/tools/bench/measure.ps1"
+      ],
+      "archive": [],
+      "sourceSha256": "f192b514b297247a06b1d5b51254f9c7b3040f0fc52a684adbe6cfe509b11a2b",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "native/tools/bench/python-entry.py",
+      "owner": "historical-benchmark-adapter",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-xtask/src/bench.rs"
+      ],
+      "archive": [
+        "native/docs/baseline/source/bench-python-entry.py.txt"
+      ],
+      "sourceSha256": "4b627162b4caba05b8edf12fa9482e27584128e2a6df110b201552b440464b9b",
+      "reason": "显式 Python 实时参照退役，原生基准使用静态留档和摘要守卫。"
+    },
+    {
+      "path": "native/tools/bench/recovery-drill.mjs",
+      "owner": "native-or-js-entry",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "native/tools/bench/recovery-drill.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "78c2d434568ac1df9742981c9f11af6ff1f07af647b9e65c5865b3faf91943d5",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "native/tools/parity/cli-text-diff.mjs",
+      "owner": "native-or-js-entry",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "native/tools/parity/cli-text-diff.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "63b9c54ec50371702299c8346d01141c09ff7e8b29f3267e995f6b107c14ee79",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
     },
     {
       "path": "test-proj/ConfigAccessorBench/README.md",
-      "owner": "independent-readers",
-      "replacement": "test-proj/README.md; 历史实验报告/命令说明，已加非活跃声明，保留正文来源。",
-      "status": "historical-document"
-    },
-    {
-      "path": "test-proj/RefConfigBench/PERF-REPORT.md",
-      "owner": "independent-readers",
-      "replacement": "test-proj/README.md; 历史实验报告，非当前正式入口，保留来源正文。",
-      "status": "historical-document"
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "test-proj/ConfigAccessorBench/README.md"
+      ],
+      "archive": [],
+      "sourceSha256": "73fae55a7c720141f37ef13cc8b02eb52374949b72f3a82e1a26086dd78d052e",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
     },
     {
       "path": "test-proj/ConfigAccessorBench/REVIEW.md",
-      "owner": "independent-readers",
-      "replacement": "test-proj/README.md; 历史实验报告，非当前正式入口，保留来源正文。",
-      "status": "historical-document"
+      "owner": "native-or-js-entry",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "test-proj/ConfigAccessorBench/REVIEW.md"
+      ],
+      "archive": [],
+      "sourceSha256": "bd091cf32da464613a2c15b08748f209d2df3f0b0c001c5524e4d1bb06f13ddd",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "test-proj/ExportAccessorVerify/gen_scalars_bench.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "native/crates/ct-xtask/src/accessor_fixtures.rs"
+      ],
+      "archive": [
+        "native/fixtures/accessor_verify/source/gen_scalars_bench.py.txt"
+      ],
+      "sourceSha256": "e745d5ac661aa2cb294889d324df2793fbed0f6d627c38b08797116923195600",
+      "reason": "旧正式标量生成已由 Rust 再生 Binary/C#，逐字节匹配 main 冻结参照后交给 C# 独立读取。"
+    },
+    {
+      "path": "test-proj/ExportAccessorVerify/prepare.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "remove",
+      "replacement": [
+        "test-proj/ExportAccessorVerify/prepare-native.mjs"
+      ],
+      "archive": [
+        "native/fixtures/accessor_verify/source/prepare.py.txt"
+      ],
+      "sourceSha256": "5793aede49328ad3817e1371f0662aa4f1d17870b0fe0d91600ffe2b93f47c39",
+      "reason": "旧正式导出准备和 FNV 生成已改为原生临时工作区导出与冻结 FNV 参照。"
+    },
+    {
+      "path": "test-proj/RefConfigBench/OPTIMIZATION-STRATEGY.md",
+      "owner": "native-or-js-entry",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "test-proj/RefConfigBench/OPTIMIZATION-STRATEGY.md"
+      ],
+      "archive": [],
+      "sourceSha256": "ae3af72491ef8d3e737552a71bcda66a74d43d27a42a9b8cfd985e8c0c37c17b",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "test-proj/RefConfigBench/PERF-REPORT.md",
+      "owner": "native-or-js-entry",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "test-proj/RefConfigBench/PERF-REPORT.md"
+      ],
+      "archive": [],
+      "sourceSha256": "44d6c3da700d66a99908263686871625458b584a3b2f438f91239da579ae8ff9",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "test-proj/RefConfigBench/RUNTIME-SCHEME-REVIEW.md",
+      "owner": "native-or-js-entry",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "test-proj/RefConfigBench/RUNTIME-SCHEME-REVIEW.md"
+      ],
+      "archive": [],
+      "sourceSha256": "6c2fc33c0ea37e55fb17a3c419dbe79b2f9756b156928b28ea558a2046dda4ce",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "test-proj/RefConfigBench/check_bundle_duplication.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "native/tests/compat/tests/export_compat.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "6503bbeedae64c3c9ff35f8b610042edad9d67f3ec9027c7816d91357d5d7f2e",
+      "reason": "旧每语言整包重复率诊断，读取 gd 旧 bundle；不参与迁移后的正式门槛。"
+    },
+    {
+      "path": "test-proj/RefConfigBench/check_export_preconditions.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "native/tests/compat/tests/binary_golden.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "34a088d53564bff4478f2f85f9deb642f15b5e5d49c3e98d681007adbcef94ad",
+      "reason": "旧外部读取方案前提诊断及 monkeypatch 实验，不是 canonical 原生链路。"
+    },
+    {
+      "path": "test-proj/RefConfigBench/check_uniform_risks.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "native/tests/compat/tests/binary_golden.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "a3563ec52ea6adb52c21644d4f873c03b633107ba40c354f851c52eaf5fb560b",
+      "reason": "旧 Python uniform 探针与稀疏体积实验，包含真实 gd；当前独立稀疏/稠密字节对照在 Rust 验收。"
+    },
+    {
+      "path": "test-proj/RefConfigBench/eval_uniform_layout.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "native/tests/compat/tests/binary_golden.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "bde833494f342a0918201f489f2a0afb83e47c76f309c332bc8d7bd71a80ad02",
+      "reason": "旧 ItemBench/ArrayBench 定宽体积与探针布局评估，指标只属于历史报告。"
+    },
+    {
+      "path": "test-proj/RefConfigBench/gen_ct_bench_tables.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "native/crates/ct-xtask/src/real_fixture.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "5c3a8c813883235cfaa1beced2163730ac1f91aeba407b6cfa1b5ef302932cb1",
+      "reason": "旧 ItemBench/ArrayBench C++ 对标形状与语料，生成本目录实验副本；正式 native 基准采用 S/M/L 和冻结 r/r-full 形状。"
+    },
+    {
+      "path": "test-proj/RefConfigBench/gen_literal_accessor.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "native/tests/compat/tests/accessor_golden.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "cca49c952970361c6fdb5d1e7be448b58c9c53a816cafcbedcda62d077f8cf0c",
+      "reason": "旧手写字面量偏移 A/B 变体，依赖旧 ItemBench/ArrayBench；当前访问器由 canonical Rust 生成并做 golden 对照。"
+    },
+    {
+      "path": "test-proj/RefConfigBench/gen_scale_corpus.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "native/crates/ct-xtask/src/fixtures.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "4d9c3788e107244722f351c6c3489964f592e69a9dbd3a860908407f9b02ed90",
+      "reason": "旧 2000 表/约69万行合成 C++ 对标，外部语料和不同规模；不是当前 S/M/L 基准来源。"
+    },
+    {
+      "path": "test-proj/RefConfigBench/pick_tables.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "native/fixtures/bench/shape-r.json"
+      ],
+      "archive": [],
+      "sourceSha256": "35a34c27e89923b68005b5ed24fcf8553535542cb4c6673198b54513c327b695",
+      "reason": "扫描 D 盘外部参考游戏生成代码的选表工具，非独立可再生的正式输入。"
+    },
+    {
+      "path": "test-proj/UniformE2EBench/gen_our_item_bench.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "test-proj/ExportAccessorVerify/prepare-native.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "0df757fde5fc5c505afe66665d4b227a7aa41a552bc610b2c7209ecfd8adf8d6",
+      "reason": "旧 6685 行 OurItem 对标及定宽/非定宽实验，不参与现在的正式 C# 逐字段验收。"
+    },
+    {
+      "path": "test-proj/check-retirement.mjs",
+      "owner": "native-or-js-entry",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "test-proj/check-retirement.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "d6bb1328f232eeac186ba1d7cb6526e377e7c4d0e545b8d606c3e2425cc10764",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "test-proj/fabulous-game/README.md",
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "test-proj/fabulous-game/README.md"
+      ],
+      "archive": [],
+      "sourceSha256": "63e1c8cf4422b3b1060c420dc52576c07a7e4e103be016efa3458d04ecd50ff6",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "test-proj/fabulous-game/gen-big-table-fixture.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "native/tests/compat/tests/accessor_golden.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "15df4ef0c73b4618552c60c7dca6c86d6e2a8ba86cbe6833c58d4aeb1559df33",
+      "reason": "旧 Lua userdata 驻留量实验，写 /tmp/weak，属于外部游戏历史对标。"
+    },
+    {
+      "path": "test-proj/fabulous-game/gen-two-accessor-variants.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "native/tests/compat/tests/accessor_golden.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "11d235cef363f20716e3298b4279d9d246b4f61c72d8ea076578500fc3cb3a3f",
+      "reason": "旧 Lua 槽位/字面量偏移 A/B，对外部实验副本生成，不能替代原生 golden。"
+    },
+    {
+      "path": "test-proj/fabulous-game/gen_bench_fixtures.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "native/crates/ct-xtask/src/fixtures.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "bb1e74c18b8c4aa41ffc21459b8790fac14aec3d3dd7ed347dc6e01304906ca4",
+      "reason": "旧外部 ItemBench/ArrayBench 同语料实验，不参与现在的 S/M/L/r 正式性能门槛。"
+    },
+    {
+      "path": "test-proj/fabulous-game/gen_fixtures.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "test-proj/ExportAccessorVerify/prepare-native.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "fba1679340dcf9de36db2aa4362daef94401109250bf68a3ed182b4444916aba",
+      "reason": "旧外部游戏 OurItem/OurItemOT 性能材料，显式 GAME_BENCH_DIR 输出，不是工具发行验收。"
+    },
+    {
+      "path": "test-proj/fabulous-game/migrate_excel.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "native/tests/compat/tests/template_flow.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "c8dbfc3a72eec39e51f494bb3b8d19b8e3af7bd78f30823a9542cbd4d2b10492",
+      "reason": "已用完的一次性旧游戏 Excel 表头搬迁资料；当前模板迁移走原生显式用例。"
+    },
+    {
+      "path": "test-proj/fabulous-game/uniform-check/README.md",
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "test-proj/fabulous-game/uniform-check/README.md"
+      ],
+      "archive": [],
+      "sourceSha256": "c19ea0dac0102a73c8c6e3075cff74a31a1ad53ba4638c632e69ce1f8c41636f",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "test-proj/fabulous-game/uniform-check/real_uniform_check.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "test-proj/ExportAccessorVerify/prepare-native.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "3e192601a1ec20adc96e5c449bfea8015dc16f98ce9beb125f782546308f9c1a",
+      "reason": "旧 Python 真实导出后枚举/布局诊断，其必要当前能力由 Rust golden 和独立 C# 读取承接。"
+    },
+    {
+      "path": "test-proj/fabulous-game/uniform-check/uniform_enum_check.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "native/tests/compat/tests/binary_golden.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "1b0e5b4b4423133b489f838774453262fd82190263fe3bd26f028eadbf485c12",
+      "reason": "刻意复现旧 Python patch 枚举布局 bug 的注入脚本，不是现役生成器。"
+    },
+    {
+      "path": "test-proj/fabulous-game/uniform-check/uniform_fixed_check.py",
+      "owner": "test-proj",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "native/tests/compat/tests/binary_golden.rs"
+      ],
+      "archive": [],
+      "sourceSha256": "83e2e0ff0c86d4c779a6723e3a23ff0074da7e414ce328e93a48d3ce29340540",
+      "reason": "旧 Python patch 修复枚举槽位的证明材料，原生枚举/零值定宽已独立对照。"
+    },
+    {
+      "path": "test-proj/python-retirement.json",
+      "owner": "native-or-js-entry",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "test-proj/python-retirement.json"
+      ],
+      "archive": [],
+      "sourceSha256": "6fba82ca690d4232945ec1e1625e186504f0f6d268714ecc90033266de8e96a3",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "web/README.md",
+      "owner": "documentation-reference",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "web/README.md"
+      ],
+      "archive": [],
+      "sourceSha256": "4175cf7a25df68612731feb3a7feb3f70b5c3b44460d4a29885a788b789dd0ad",
+      "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "web/tools/check-static-assets.mjs",
+      "owner": "static-verification",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "web/tools/check-static-assets.mjs",
+        "web/static-manifest.json"
+      ],
+      "archive": [],
+      "sourceSha256": "5197f7742d7c093ac1a222995a6a099c160cdd9d4934ca3769cfb4353ecb7bdc",
+      "reason": "正式入口校验冻结清单，不需要旧树；live-old 历史选项随删除退役，所有 23 资源清单保留。"
+    },
+    {
+      "path": "web/tools/measure-panel.mjs",
+      "owner": "historical-comparison",
+      "status": "classified",
+      "disposition": "retain",
+      "replacement": [
+        "web/tools/measure-panel.mjs",
+        "native/docs/baseline/web-smoke/verification.md"
+      ],
+      "archive": [
+        "native/docs/baseline/source/measure-panel-live.mjs.txt"
+      ],
+      "sourceSha256": "77e20fffbe7d90b209dc3eddfcbeea213882ffc90c45d51004857ede0e210afa",
+      "reason": "默认原生性能入口已通过；显式 live-Python 分支最终退役，配对原始结果保留静态参照。"
     }
   ]
 }

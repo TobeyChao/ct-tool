@@ -1,0 +1,38 @@
+{
+  "success": true,
+  "command": "command console_status",
+  "data": {
+    "command": "console_status",
+    "parameters": {},
+    "result": {
+      "entries": [],
+      "cursor": 85,
+      "session": "79c89ca80a874666afffd11fa2d044c7",
+      "returned": 0,
+      "dropped": false,
+      "reset": false,
+      "counts": {
+        "error": 0,
+        "warn": 22,
+        "log": 63
+      },
+      "groundTruth": {
+        "sampledUtc": "2026-09-30T05:19:47.916414Z",
+        "ageMs": 249,
+        "compilationFailed": false,
+        "compiling": false,
+        "consoleErrors": 0,
+        "consoleWarnings": 0,
+        "consoleLogs": 28,
+        "seeded": true
+      }
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "/Users/tobeychao/Documents/Projects/fabulous-game/Client"
+    }
+  },
+  "errors": [],
+  "warnings": []
+}

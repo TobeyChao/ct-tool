@@ -26,4 +26,4 @@ G1 Web 全流程、G2 原生跨入口与产物回归：本机通过，见 [验�
 
 执行命令、平台、原始日志与完成边界见 [web-smoke/verification.md](web-smoke/verification.md)。146/146 旧场景已挂接实际替代锚点，`check:parity --require-complete` 无待迁移项；3 个旧 Schema/资源/保存 API 文件的 27 个场景已全部由真实原生 HTTP 测试承接。发布版与旧面板的同机性能配对、Cargo/Flutter 全量回归及原生导出后的独立 .NET 读取端已留档，G1/G2 完成；G3 尚未完成，暂不删除 Python。
 
-Python 相关路径初始清单见 `python-retirement-inventory.json`（211 项，包含历史引用；pending-audit 不表示可删除）。
+Python 相关路径清单见 `python-retirement-inventory.json`：初始 211 项已扩为 312 项，覆盖全部版本化旧树与再生/CI/文档入口；262 项登记为待删除，17 项历史实验保留。清单与验收见 retirement-inventory-verification.md，分类不表示删除已执行。

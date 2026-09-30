@@ -38,10 +38,7 @@ launcher 用 stdin EOF 请求跨平台安全退出。
 
 ```sh
 cargo test --manifest-path native/Cargo.toml --workspace
-npm ci --prefix web
-npm run test:http --prefix web
-npx --prefix web playwright install chromium
-npm test --prefix web
+(cd web && npm ci && npx playwright install chromium && npm run test:http && npm test)
 node web/tools/check-parity.mjs
 cd launcher && flutter test
 ```
@@ -86,4 +83,5 @@ fingerprint 和覆盖矩阵始终保留 main 的 85 个历史测试文件/690 �
 独立 C# 读取验收与历史实验分类见 [test-proj](../test-proj/README.md)。
 `xtask accessor-fixtures --out <临时目录>` 从冻结输入再生标量 Binary/C#，逐字节对照
 旧 main 参照；`node test-proj/ExportAccessorVerify/prepare-native.mjs` 再读取这些原生新产物。
-完整去 Python 需等 G1/G2/G3 全部通过，详见 OpenSpec `native-web-python-retirement`。
+G1/G2/G3 已通过，当前正在完成文档/退役清单与最终删除后复验。
+用户安装、Schema/数据格式和升级见 [主文档](../docs/README.md) 与 [迁移说明](../docs/native-migration.md)。

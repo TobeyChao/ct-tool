@@ -1,0 +1,577 @@
+{
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Config.asmdef": {
+    "sha256": "0d1180614f30be68901bc6194f5465e037cfe06de52c730e8a31ba65da0bf56d",
+    "bytes": 442,
+    "mtimeMs": 1787599491890.3074
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Config.asmdef.meta": {
+    "sha256": "b79e9958bb3ded8e26a4234e642fefc69d62b0efd0300eca88e4781dd0614861",
+    "bytes": 166,
+    "mtimeMs": 1780337827518.8892
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Config.cs": {
+    "sha256": "3a09e239193c10abda0865d90d6208f2f9e7d4df7d63996d39f49266f76ef57b",
+    "bytes": 9609,
+    "mtimeMs": 1790012536598.8784
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Config.cs.meta": {
+    "sha256": "e0a5f86d18d2c0509787951c0139f381f64655773a95342ee3bded7d529b78d9",
+    "bytes": 59,
+    "mtimeMs": 1781879361000
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/ConfigLoader.cs": {
+    "sha256": "816e7241c4bfb1660cc0958f18e5932d1d980d72fbc1c0250f1d563d651155dd",
+    "bytes": 8862,
+    "mtimeMs": 1789228282412.691
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/ConfigLoader.cs.meta": {
+    "sha256": "3922697a2229cfc392e8349be2d1b6d455b2f19408a5e0198865c43f9f2451ae",
+    "bytes": 59,
+    "mtimeMs": 1781879361000
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/GDNative.cs": {
+    "sha256": "dde6fc5edb37f248857fd24404d254e871744272ee85ec5c263821cf73a75c8e",
+    "bytes": 7071,
+    "mtimeMs": 1790185273189.4907
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/GDNative.cs.meta": {
+    "sha256": "1af013d54824f3ce7c763d037bf8a553a78be2904abf93aa052e0b39cb0d9f15",
+    "bytes": 59,
+    "mtimeMs": 1780336990000
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/CustomerDemandAccessor.cs": {
+    "sha256": "cf08c131b62f2c91686602107f097e48076d5863e1065bf00d1e88660a33cf5a",
+    "bytes": 3688,
+    "mtimeMs": 1790016689794.0288
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/CustomerDemandAccessor.cs.meta": {
+    "sha256": "11389ba87a661f5bf0159703f2b51b8a27c3bac1a8fe60abb264ef14ff0e65b2",
+    "bytes": 59,
+    "mtimeMs": 1790017066000
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/CustomerTypeAccessor.cs": {
+    "sha256": "1f3cdcc4048532890228c51a838e96302ce4d3da48aa725780e3f3f2e56d6e40",
+    "bytes": 10801,
+    "mtimeMs": 1790019475014.4238
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/CustomerTypeAccessor.cs.meta": {
+    "sha256": "104342cc5a5ed31e9bd575ea6a0fda405436f5bc50ca41c07e773c980c479980",
+    "bytes": 59,
+    "mtimeMs": 1790017066000
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/DayDemandModifierAccessor.cs": {
+    "sha256": "aa39d9dc8677a36436f5df9f0bc7cb9f38c510a0b9c1ac53f0dcf9f0e1027038",
+    "bytes": 4006,
+    "mtimeMs": 1790098513936.2812
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/DayDemandModifierAccessor.cs.meta": {
+    "sha256": "5b32eed7eae379f2e00abfdfc3d61ab5857bc17846c3a179c412be73149bb060",
+    "bytes": 59,
+    "mtimeMs": 1790098871000
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/DayProfileAccessor.cs": {
+    "sha256": "45c2fe7fbefd0bbfe5f47928f5b6f62a4e9c6518c597bfc48f03fea7ed42359f",
+    "bytes": 9921,
+    "mtimeMs": 1790098513936.4548
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/DayProfileAccessor.cs.meta": {
+    "sha256": "80fee3803bd9f7ad9a456a6157fbae83bac390ec72997bb12808e00deca0c533",
+    "bytes": 59,
+    "mtimeMs": 1790098871000
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/DayWaveAccessor.cs": {
+    "sha256": "d099373bcdc911656fe88fb811a048e5f26a9d9f991a9d9dc94fabe0693e9fd0",
+    "bytes": 5575,
+    "mtimeMs": 1790098513936.6086
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/DayWaveAccessor.cs.meta": {
+    "sha256": "eb4a32095c2ad6d489a5c0eb6566a71732310771143b0e9222497cc761f5da2f",
+    "bytes": 59,
+    "mtimeMs": 1790017066000
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/DayWaveSpawnAccessor.cs": {
+    "sha256": "592fafc64708bf4fc509f9e603261c42db9c3964b87bee8ab8b8c73e68d0ee28",
+    "bytes": 3669,
+    "mtimeMs": 1790016689794.6357
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/DayWaveSpawnAccessor.cs.meta": {
+    "sha256": "e44f9214f2e2de2b142bf745dea7d461c31eb4cff5795b4c84d011adf70e2eca",
+    "bytes": 59,
+    "mtimeMs": 1790017066000
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/Enums.cs": {
+    "sha256": "4a7870499f98a70b7dd6c2552324414d2079f3ac15725472d6aa8c94bcbcd5ed",
+    "bytes": 571,
+    "mtimeMs": 1789242672111.9468
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/Enums.cs.meta": {
+    "sha256": "dd5b11ca72696ccff36d063cc53cd4a0b53b80a6a10241ac3d4f280d0042f509",
+    "bytes": 59,
+    "mtimeMs": 1789197929486.394
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/ItemAccessor.cs": {
+    "sha256": "ba998a1e78c3611788bf80d50d30a6051ba6268fe2ce24d95f9dd16843a3cf29",
+    "bytes": 10149,
+    "mtimeMs": 1790012536599.762
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/ItemAccessor.cs.meta": {
+    "sha256": "053a100709271097a781fa4e510eacd02d6586e8c3136b2c0d62aa6e04ae71e3",
+    "bytes": 59,
+    "mtimeMs": 1786181497061.1594
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/ItemPurchaseAccessor.cs": {
+    "sha256": "639a088ab7805ffc4bdd9228894f805229c89263f933b21e45ea3203ee2c1921",
+    "bytes": 3667,
+    "mtimeMs": 1790012536600.1619
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/ItemPurchaseAccessor.cs.meta": {
+    "sha256": "c07f02b07b1d33e4e4f21477b3b85698df80aa28575fe9f5d6c3e93b14fb083b",
+    "bytes": 59,
+    "mtimeMs": 1790012536600.594
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/ItemShelfAccessor.cs": {
+    "sha256": "5b0d5dd74ce90c4a75a12abc22ae582ca51fa2547d07037d1afd897282a11794",
+    "bytes": 3360,
+    "mtimeMs": 1790012536601.0256
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/ItemShelfAccessor.cs.meta": {
+    "sha256": "6ec8fc018cd72668d8e8dc0c8df87e6e18a27f036e42b83bcaea5de7d56f7b94",
+    "bytes": 59,
+    "mtimeMs": 1790012536601.2656
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/ItemTypeAccessor.cs": {
+    "sha256": "dffe62490c9ded130e8effe0f56b3b28a2b6a073d971a23e657aecc83312cb1b",
+    "bytes": 9014,
+    "mtimeMs": 1789242672112.2515
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/ItemTypeAccessor.cs.meta": {
+    "sha256": "28cd0a18eb4915c65a6b1cfe7ad55a0a5910699942870215b1b326811b85ee6f",
+    "bytes": 59,
+    "mtimeMs": 1786181497061.6594
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/SceneConfigAccessor.cs": {
+    "sha256": "bb9884a959b8e5816a6af06f38d46ba22a181c0a4716d1647e347e72911b1f77",
+    "bytes": 6486,
+    "mtimeMs": 1789242672112.5479
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/SceneConfigAccessor.cs.meta": {
+    "sha256": "d8a17ceb012504eeabd7b1b435e095a809c924dade3c095aadfd08de29978903",
+    "bytes": 59,
+    "mtimeMs": 1786912535000
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/ShelfTypeAccessor.cs": {
+    "sha256": "11c8ef57f49014670490e2a94bfc5517f7cd1972951d3fa933c06dac4c5b4d29",
+    "bytes": 9029,
+    "mtimeMs": 1790012536601.5986
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/ShelfTypeAccessor.cs.meta": {
+    "sha256": "1b44071bdc3dee943495bdae72a9e6f795f9a64e223f3450a673251aca29e147",
+    "bytes": 59,
+    "mtimeMs": 1790012536601.903
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/TextAccessor.cs": {
+    "sha256": "50003f6d628d4fdfc03f1b93cee77416f23f173453363253554f1d0be51c2bda",
+    "bytes": 8970,
+    "mtimeMs": 1790012536602.2102
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/TextAccessor.cs.meta": {
+    "sha256": "e9af55dde6000c2cf414b2c5c43462a302b75af823f19ae0fd2fdd4abd2e1feb",
+    "bytes": 59,
+    "mtimeMs": 1790012536602.4836
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/UIConfigAccessor.cs": {
+    "sha256": "fac4dc705400728e0f823e8edca006d8d4a115f85105960ac24267a2da803c2f",
+    "bytes": 4847,
+    "mtimeMs": 1789242672112.6868
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen/UIConfigAccessor.cs.meta": {
+    "sha256": "ca3d37bef6076f6969eb1914dda26e4bfb23c4b5346ff6a971a83792993597f5",
+    "bytes": 59,
+    "mtimeMs": 1786181511000
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Gen.meta": {
+    "sha256": "b1c5358f20d619b3f2806feb76e70557b8b708794b541740101a19383cb9aa53",
+    "bytes": 172,
+    "mtimeMs": 1780335196741.3193
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Native/ConfigRuntime.cs": {
+    "sha256": "3b3a682982246c32e51ca0d32bd24cdfa84d5dd22913cd1277858732431b4bcc",
+    "bytes": 20745,
+    "mtimeMs": 1789228282413.1147
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Native/ConfigRuntime.cs.meta": {
+    "sha256": "31418e7e48c4655163bb91198705c2c53652275ddc9b3e0f25d14ced5292193e",
+    "bytes": 59,
+    "mtimeMs": 1789197929487.5327
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Native/WireReader.cs": {
+    "sha256": "986f58b83fbb992d378f46bf8fc8dadd261179bffc2006d9fbce633ff220edb6",
+    "bytes": 13781,
+    "mtimeMs": 1789197929487.712
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Native/WireReader.cs.meta": {
+    "sha256": "d40809f538e4a99cbdfe01573eb4054b2d99993f28c09ecb94fc2e16024f3006",
+    "bytes": 59,
+    "mtimeMs": 1787599491894.5564
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Scripts/Config/Native.meta": {
+    "sha256": "93acc45226f1de8d09284ceabd79d7d38110cc985f5792b5c7ce0c35f7192cb8",
+    "bytes": 172,
+    "mtimeMs": 1787599491894.116
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Content/Config/data_en.bin": {
+    "sha256": "c103127b065b5c57afad3bb3e4847c1dd73dc71d31f2cb7f23bcb941f17bbfa3",
+    "bytes": 6668,
+    "mtimeMs": 1790192359446.4614
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Content/Config/data_en.bin.meta": {
+    "sha256": "576036dd940f6528833f8a8f53cc8ed0dc7ff0cc30245d9ea95dac1ebea9ebd6",
+    "bytes": 155,
+    "mtimeMs": 1786180446653.8462
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Content/Config/data_ja.bin": {
+    "sha256": "dc4aeede8e17f6af346f6f72980a1f26b780a0176b745b7d55084f365950f203",
+    "bytes": 7508,
+    "mtimeMs": 1790192359446.8215
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Content/Config/data_ja.bin.meta": {
+    "sha256": "d71e6b2a0940e9732ca8cf5b8ce9d9e15ad5d713350f915a75419edf175db0ca",
+    "bytes": 155,
+    "mtimeMs": 1786180446653.9922
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Content/Config/data_zh.bin": {
+    "sha256": "fffa89a2a9eebaac88049662223d0175610c52389a2ae1ab44d8784b5aa12648",
+    "bytes": 21496,
+    "mtimeMs": 1790192359447.1724
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Client/Assets/Content/Config/data_zh.bin.meta": {
+    "sha256": "da8c325542fa199e1b7d67100a2d1186103fb3dacf435b1dc68d7f7104c7e45a",
+    "bytes": 155,
+    "mtimeMs": 1786180446654.0913
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/.DS_Store": {
+    "sha256": "2fd23815b70a6ab934b67fbc0b5cb39d3ad73c8386f066245d2661c7ba975373",
+    "bytes": 6148,
+    "mtimeMs": 1787590204026.4265
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/global.yaml": {
+    "sha256": "7be2ec0e8f88a34e905bb3f6c5e6d939366d6c62e1434fc17c40b71b182081e4",
+    "bytes": 803,
+    "mtimeMs": 1787590047467.306
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/schemas/CustomerDemand.yaml": {
+    "sha256": "71bd586ce1bc10b4d72848dc1b3749b061325e345d38553c3b885637cd1e7c03",
+    "bytes": 486,
+    "mtimeMs": 1790016593823.7012
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/schemas/CustomerType.yaml": {
+    "sha256": "9964db42cd6f6b0f6e38d596940c1a822ae3e7c3935c9a49f79b6c16302bf58e",
+    "bytes": 1024,
+    "mtimeMs": 1790019439410.2046
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/schemas/DayDemandModifier.yaml": {
+    "sha256": "9d60f7107aa01181869ae612654f55b376511754cfa87656cc890416ec1a88b7",
+    "bytes": 653,
+    "mtimeMs": 1790098267402.6404
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/schemas/DayProfile.yaml": {
+    "sha256": "ce21986f8a93a1124f4dbda669e3525eef70d213601852dde8918feb9d0303e3",
+    "bytes": 777,
+    "mtimeMs": 1790098267402.2388
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/schemas/DayWave.yaml": {
+    "sha256": "c8094b195828cc4ccc8d0ac620cb225620309f6c7ea2942652c45f0e5423224d",
+    "bytes": 599,
+    "mtimeMs": 1790098267401.5688
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/schemas/DayWaveSpawn.yaml": {
+    "sha256": "a2bbcfb15eb5b3a0318218860f6462879cb90b06fdacb10fb34c06b42af1bd9d",
+    "bytes": 479,
+    "mtimeMs": 1790016593823.3965
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/schemas/Item.yaml": {
+    "sha256": "47d4992a82a3c8d0053dabb768602bf260544d9dbdb5bb83417532a14a89410f",
+    "bytes": 853,
+    "mtimeMs": 1790012536661.6313
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/schemas/ItemPurchase.yaml": {
+    "sha256": "13406ef4c3dba1c5e90e1766b58ec1796a507dd4076cd5f5633905ea62d53235",
+    "bytes": 499,
+    "mtimeMs": 1790012536661.883
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/schemas/ItemShelf.yaml": {
+    "sha256": "861a0627f6b0bd4dd8ffc60d01c37a4ef3156d32c519d02fbac87879d19cb534",
+    "bytes": 335,
+    "mtimeMs": 1790012536662.106
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/schemas/ItemType.yaml": {
+    "sha256": "a87186580694b0a5f5e8c3485eef40af8edb4c9da60d4286662690bbb2433f80",
+    "bytes": 346,
+    "mtimeMs": 1789197930816.0315
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/schemas/SceneConfig.yaml": {
+    "sha256": "a2eaf164f13271d7c93ebbc6cd6e4c7172c30c34b0ee0db7ae66ec5816282b7b",
+    "bytes": 491,
+    "mtimeMs": 1786911334144.028
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/schemas/ShelfType.yaml": {
+    "sha256": "59c3a19ac5d0f513732f6f08f6d4d4a69b55765bf6bbd3d55df22b00f643759c",
+    "bytes": 419,
+    "mtimeMs": 1790012536662.5574
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/schemas/Text.yaml": {
+    "sha256": "fe05ebfb5deb1b72716ca46613802e1238dfe5d643745ceae826c48efb2369c2",
+    "bytes": 534,
+    "mtimeMs": 1790012536662.7915
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/schemas/UIConfig.yaml": {
+    "sha256": "5e4f13b79dbaf5be9b25c2db563f7d44b97368652884cf65fc4f166f88fb71a5",
+    "bytes": 508,
+    "mtimeMs": 1789197930816.234
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/types/ItemDropRange.yaml": {
+    "sha256": "72fbebdf00bb7f7e1614de920b4061f48ffbddb594e1d210652abd62ab09adbd",
+    "bytes": 193,
+    "mtimeMs": 1789197930816.4465
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/types/ItemRarity.yaml": {
+    "sha256": "f2bbd68e3eb483866e1af7623586777e50b04c36f822c361ee99e9a2178bcf70",
+    "bytes": 164,
+    "mtimeMs": 1789197930816.6255
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/config/types/UIConfigLayer.yaml": {
+    "sha256": "9e2f3d8586bf5f316d97cab9be60348cd64ab077490cb284e0f9cbc3783eb3a3",
+    "bytes": 513,
+    "mtimeMs": 1789197930816.751
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/CustomerDemand.xlsx": {
+    "sha256": "53d0b386c4ce7aad6fc7baf2d5439eb635a32904facdcc4734e613686eb9adf8",
+    "bytes": 6508,
+    "mtimeMs": 1790016658181.7366
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/CustomerType.xlsx": {
+    "sha256": "1e890b24cc6e5b00339e64b74cac6db48500ffd5f3f5b22b32e6e192efe002af",
+    "bytes": 6542,
+    "mtimeMs": 1790043352976.6716
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/DayDemandModifier.xlsx": {
+    "sha256": "a435bec64718065aa7dcd913ae8085112b1e18bcf7f19c34d9dd5431450838ce",
+    "bytes": 4435,
+    "mtimeMs": 1790098399863.6716
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/DayProfile.xlsx": {
+    "sha256": "f88f3ebc1d7f78398931c0b3bbc5a727535535b38a38abdab547f09ee3cb28d1",
+    "bytes": 4655,
+    "mtimeMs": 1790098399335.736
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/DayWave.xlsx": {
+    "sha256": "8cd33a50a1db8d58abd1b893cec10018f4ea56f4ebaa91410f171fc48fd699b7",
+    "bytes": 5684,
+    "mtimeMs": 1790098399587.2188
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/DayWaveSpawn.xlsx": {
+    "sha256": "3f3619f877026a7befdc4eb7fe8ac72883517cc1e56869f938631924b59112bc",
+    "bytes": 5041,
+    "mtimeMs": 1790098399753.8916
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/Item.xlsx": {
+    "sha256": "7e32f65eead9d331fc15d68841d4c173fbe8c02592987397ab242e886a3f22ac",
+    "bytes": 7541,
+    "mtimeMs": 1790012536663.1687
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/ItemPurchase.xlsx": {
+    "sha256": "6ffa2ed130016d82a0e97beed6f4fe17740273afd5aa23ab73602c94fcfe584c",
+    "bytes": 6325,
+    "mtimeMs": 1790012536663.4497
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/ItemShelf.xlsx": {
+    "sha256": "baaf52f39a73d0e2a86114a86b65fd4de916a84c505c573a627dc848b80af281",
+    "bytes": 6255,
+    "mtimeMs": 1790012536663.7136
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/ItemType.xlsx": {
+    "sha256": "49d80f7b5d2b1905d78ed3cbdceff132b6d1f4795961755b36df9fdcdae1691b",
+    "bytes": 5980,
+    "mtimeMs": 1790012536664.1318
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/SceneConfig.xlsx": {
+    "sha256": "0a407216a2366a507a1e7c0b536998d62cf823f2a60856e521c148f6a2c4ef8b",
+    "bytes": 6190,
+    "mtimeMs": 1790012536664.5815
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/ShelfType.xlsx": {
+    "sha256": "fbc6f775789aa8f164b5855cc37af46807cf484497957063413bc539e2451a7b",
+    "bytes": 6155,
+    "mtimeMs": 1790012536664.8237
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/Text.xlsx": {
+    "sha256": "18574f5b8b6473f0054fbf66e258f5de41665972dd8a43cd428593106cd625bf",
+    "bytes": 8961,
+    "mtimeMs": 1790191998345.7732
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/UIConfig.xlsx": {
+    "sha256": "902203d0dc9712470a10643a6793580a8b6012fab22b962670dbf0bae88bb482",
+    "bytes": 7956,
+    "mtimeMs": 1790017285499.5278
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/layout_manifests/CustomerDemand.json": {
+    "sha256": "708aa7f655c4306c16516dd586594107b993e802e2144d59e76344eb8bce6aa2",
+    "bytes": 2852,
+    "mtimeMs": 1790192359330.1494
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/layout_manifests/CustomerType.json": {
+    "sha256": "5a94132b4c629fb7a3a88ae61807bf5519bed4072045677a5f38d9d04b8a0fb5",
+    "bytes": 6298,
+    "mtimeMs": 1790192359330.6528
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/layout_manifests/DayDemandModifier.json": {
+    "sha256": "16326e675121a888a1482d0ed461e895d4e75be7d7156ee48ea92d8d3a1c201d",
+    "bytes": 3624,
+    "mtimeMs": 1790192359331.081
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/layout_manifests/DayProfile.json": {
+    "sha256": "9863e9a2246aa27db5d8b828302361900fa7f76cf16354ef50414551793c7932",
+    "bytes": 4319,
+    "mtimeMs": 1790192359331.7795
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/layout_manifests/DayWave.json": {
+    "sha256": "7a4c79aa1c2995b35bd89dda98c6adaeb9d8d87477613bb385ae73d1a35bd7f5",
+    "bytes": 3478,
+    "mtimeMs": 1790192359332.604
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/layout_manifests/DayWaveSpawn.json": {
+    "sha256": "4d98ea8cb7562619259f9581fca131fc79e91d1ec25289e7422f056fef14a3a0",
+    "bytes": 2825,
+    "mtimeMs": 1790192359333.4172
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/layout_manifests/Item.json": {
+    "sha256": "4d6d55f0bbd2eedfc9b921968cdfa6234692b76a88860b2aee5e37b31dbddeb9",
+    "bytes": 6872,
+    "mtimeMs": 1790192359334.2705
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/layout_manifests/ItemPurchase.json": {
+    "sha256": "7e0ca512885a5e595c22fceded1a63a05b0c89ad44ef864b88be3745d24b7312",
+    "bytes": 2861,
+    "mtimeMs": 1790192359335.0432
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/layout_manifests/ItemShelf.json": {
+    "sha256": "6b897b6ecea6a70bfe1d52eb6d8b7a249b731b203e619be1e9a317076651a870",
+    "bytes": 2102,
+    "mtimeMs": 1790192359335.6775
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/layout_manifests/ItemType.json": {
+    "sha256": "4b9da3473882aa198ba499eee86700e59735844fdaa1a42e888f86deb1ee7554",
+    "bytes": 2093,
+    "mtimeMs": 1790192359336.3528
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/layout_manifests/SceneConfig.json": {
+    "sha256": "8ab33b8926bc69fe3804678918bf344852e75c86344a38bc9de693e662e2093a",
+    "bytes": 2884,
+    "mtimeMs": 1790192359337.0483
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/layout_manifests/ShelfType.json": {
+    "sha256": "3e73776fb65c5b66ca2c55513fa3c7109ada8851b9697309b64fc9e606c0b46b",
+    "bytes": 2171,
+    "mtimeMs": 1790192359337.5977
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/layout_manifests/Text.json": {
+    "sha256": "697807fc508dbd90c4b73235b73aabefc1b77098a740cf3c04d0b267480330ff",
+    "bytes": 2734,
+    "mtimeMs": 1790192359338.1804
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/excel/layout_manifests/UIConfig.json": {
+    "sha256": "1292b1c92168629974931dfdc35b1e6b6f0fdc1df864c24f21800804e9edac67",
+    "bytes": 2875,
+    "mtimeMs": 1790192359338.7996
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/en/CustomerType.json": {
+    "sha256": "d679ddc8ea8fef96a96a20d1ec0a9600e90ce9d6e2bc430b3eff48d55cc3aa1a",
+    "bytes": 315,
+    "mtimeMs": 1790016684975.5156
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/en/DayProfile.json": {
+    "sha256": "1fe6e34c89b91e5b335142bc33f8367f5187a2a29512303694a6e62ef0d3b077",
+    "bytes": 903,
+    "mtimeMs": 1790098507804.0515
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/en/Item.json": {
+    "sha256": "9fe8a39bb50800e318c2703f875190e12842a7d332bc0b995b3c0780fee8563c",
+    "bytes": 864,
+    "mtimeMs": 1790012536667.169
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/en/ItemType.json": {
+    "sha256": "a699aa649b6e474d2de94a325a4f9fc61a485711c63da43eb39067bdb2e8b080",
+    "bytes": 105,
+    "mtimeMs": 1790012536667.5608
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/en/ShelfType.json": {
+    "sha256": "dd1ee28e50fcca9829cb43ea9d9da0095a881b280a6c7d9c2cbbce2bf30dd28a",
+    "bytes": 522,
+    "mtimeMs": 1790012536667.824
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/en/Text.json": {
+    "sha256": "052edd47e9dd8393b5e8c31407270d05488b60a082abb46c98f3aacc4984b09c",
+    "bytes": 10433,
+    "mtimeMs": 1790192342351.2053
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/ja/CustomerType.json": {
+    "sha256": "cc38bb14264c31ff16df310190ae67b146d46ae6e5eccc7882aa0a6917e4faae",
+    "bytes": 303,
+    "mtimeMs": 1790016684976.067
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/ja/DayProfile.json": {
+    "sha256": "af6e54e7e49b2271c93f4198056ec2566b22745d967ff49248aa422451f39c16",
+    "bytes": 941,
+    "mtimeMs": 1790098507805.0469
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/ja/Item.json": {
+    "sha256": "659a09771b2902160dabb3b21c091803058cd8d70083c11e5d5929cc2d4d77b1",
+    "bytes": 934,
+    "mtimeMs": 1790012536668.3936
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/ja/ItemType.json": {
+    "sha256": "8afae403744624a03228e63160c8b8ceb3d4519993297aac37ee5b07e8d1b4fa",
+    "bytes": 104,
+    "mtimeMs": 1790012536668.804
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/ja/ShelfType.json": {
+    "sha256": "134471e13be46154458e1d3d2b046d3aca53740497c81f24dc44feace426f8b8",
+    "bytes": 526,
+    "mtimeMs": 1790012536668.9973
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/ja/Text.json": {
+    "sha256": "0e065362a40566594e0b8e3ae360f1e3e966c63d25877fb3eef5f945310d39f5",
+    "bytes": 11188,
+    "mtimeMs": 1790192353565.0474
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/source/CustomerType.json": {
+    "sha256": "3219a0ef5659bdeaed1b9095749affb0717965cfd1046a301bbdcf2fc9bc22cd",
+    "bytes": 78,
+    "mtimeMs": 1790016665045.4626
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/source/DayProfile.json": {
+    "sha256": "9f7d158841e8f12cc627beebe9ec8dc955026c2ad4a6a803368dfcad422dff47",
+    "bytes": 276,
+    "mtimeMs": 1790098458598.3687
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/source/Item.json": {
+    "sha256": "fb84db3e5967beb3fac4db5b73e0e91cae873b6f2e370bf683ea8f6ffe56081f",
+    "bytes": 227,
+    "mtimeMs": 1790012536669.583
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/source/ItemType.json": {
+    "sha256": "6750257a26abb01961ba87afcb6e3e47f5644e3cb8b82b7d9b6605fc053e39b5",
+    "bytes": 28,
+    "mtimeMs": 1790012536669.8591
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/source/ShelfType.json": {
+    "sha256": "cc4580cdd29a2818e4c1e675e1c2a05e8a8b88be20868d763d275f1dd3348c1f",
+    "bytes": 128,
+    "mtimeMs": 1790012536670.1243
+  },
+  "/Users/tobeychao/Documents/Projects/fabulous-game/Config/gd/i18n/source/Text.json": {
+    "sha256": "8cb7a1f3958ed60a31ee63a8101e92c5fdaae34158dcbdb4a281e64efac640d4",
+    "bytes": 3204,
+    "mtimeMs": 1790192307976.7798
+  }
+}

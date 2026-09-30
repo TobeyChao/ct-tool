@@ -1,5 +1,10 @@
 # 真实形状基准夹具（`--sizes r` / `--sizes r-full`）
 
+当前所有档位由 Rust `xtask bench-fixtures` 生成，不执行旧 Python 生成器。S/M/L 的新分布、
+macOS 留档与回归入口见 [再生记录](../../docs/baseline/bench-native-fixture-verification.md)。
+下文 Windows 性能数字和旧 S/M/L 对照属于冻结历史证据，不代表当前平台支持或新夹具基线。
+当前 Windows 延后，Linux 不支持。
+
 这两档夹具的形状来自真实配表工作区的实测分布，而不是等宽常量。目的是让**表级 / 语言级
 固定开销**变成可测量的量：现有 S/M/L 夹具每张表同构（固定 20 列、每表相同行数、3 种语言），
 按历史 S/M/L 冷全量插值出的成本模型外推到真实形状只给出 26.9s，而回归档实测冷全量是 **422.8s**
