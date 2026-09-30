@@ -1,8 +1,8 @@
 {
   "schema": "ct-source-tree/2",
   "git": {
-    "commit": "2cec17458549191ddd36af391078d4e71de5d727",
-    "dirtyPaths": 1
+    "commit": "e135d7239a62a43946b6df8f3df22fc4af47cf63",
+    "dirtyPaths": 36
   },
   "toolchain": {
     "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
@@ -10,19 +10,19 @@
     "pythonRuntimeRequired": false
   },
   "tree": {
-    "sha256": "7279a25295742d9ed1946c6aac26a17a0e7678ffd6d9176e1071353df080be3f",
+    "sha256": "d607b92d94d41dacc3b5276cfc2b3ef22157d82e05dc4d9144b68d7198a1f4cc",
     "files": 1418
   },
   "scopes": {
     "native": {
       "files": 699,
-      "bytes": 9244503,
-      "sha256": "3528ce3c71f7e63224bba38af3407f881c83d9fbe8a2dae78072774b48950ff2",
+      "bytes": 9247007,
+      "sha256": "cfd6886696a076e4737523e56eeb311f97bb21672b33329c2e2319696902333a",
       "entries": {
-        ".gitignore": "e899756b962f25261eca57ba87fa2e878892daa40bca86f0871d7935d038a520",
+        ".gitignore": "7200e20414b515babac93b69febce1934642bbbbd7844b9dc9dc9395787f6f84",
         "Cargo.lock": "c20c6e340a325f179b95c85fae87c4c5c9092cdc0d33d08f89d4c7144b86c464",
         "Cargo.toml": "7e94522a8f6dc7e44172c04a26309abfe111404afc264328d8e581c691a7ff9d",
-        "README.md": "0d54b82c70eb244836a74dacc9d51b8179cc910b6cffa52728e925d858cc8e1e",
+        "README.md": "3288bb705032668f624bfb822f935b708cd4bec32361287c2973e2baa5a73c64",
         "benches/README.md": "17dc55a29361c712551463c10c6039aac8802aaaf362cc13e12c0939f79baa65",
         "clippy.toml": "9ddbc4742f3769968c9e07ff2e9a8b9d701205b8b0714a6d77e85a171fe2d966",
         "crates/ct-app/Cargo.toml": "959a7cef8d2afcf5342f913aef4668170af7ae2f6cc7f87047c74f19cf311128",
@@ -206,7 +206,7 @@
         "docs/baseline/compat-fixtures-verification.md": "aa0d680442f8a14dde1595e3384e6643baa09e96a850309f1c3e846a8522ddc0",
         "docs/baseline/compat-fixtures-workspace-tests.txt": "1c11fbe721e1cbdf84d32f92f3be7f04309792ca0627b567a3eaed0b89f13383",
         "docs/baseline/compat-matrix.json": "f39c33433be2d8096b18d5f8374df8c2a7ae71982caff93ce802d81258d6a010",
-        "docs/baseline/handoff-macos-linux.md": "5742f3e7dc0cad1d9f6442662327d55a1a026599b7f1eaa86f79784f9b207dd6",
+        "docs/baseline/handoff-macos-linux.md": "2bba2731b3338ab1c6a83a70ea8f7057e18c18fb8ebcaedee38211bcacfcc9b2",
         "docs/baseline/isolation-check.md": "d2d755dfea4361269f02fc8270d5e02e9657cd50ae773f50740f86e873ea36bb",
         "docs/baseline/macos-g3-verification.md": "67588b2c00e4ee1a081ccdd46708f6ac6ec899dc06b30cb7b83d15d21a676016",
         "docs/baseline/macos-g3/accessor.txt": "8e1da7754e82ab54219f2ff64545ef1dc40066b145ea8741126abbce2ee03e0b",
@@ -319,14 +319,14 @@
         "docs/baseline/python-free-targeted-tests.txt": "c191e9ffb299c1755c61d3f6502f70a6ce1100f219ad5160a53856abf3086ff3",
         "docs/baseline/python-free-verification.md": "78845e367922b1d6abba4c98ed1334fe53edf87030f3b636a36348847408607c",
         "docs/baseline/python-free-workspace-tests.txt": "41869e15b8e47f1a43ddd62fa263d0e0f836d1f8cba9255051161175251b679e",
-        "docs/baseline/python-retirement-inventory.json": "273be3c3664b6493988d5ca8289771d599f6d255a249cfcb3b4fdf85a45e0712",
-        "docs/baseline/python-retirement-inventory.json.sha256": "5b98593612746ff50a41704d53caf3d7527f1224ba2021102a1dee485b4ff31c",
-        "docs/baseline/python-retirement-verification.md": "68fa0b2605293d074fd39f5a20e28208b8a93dc07af25e88f9c7ecf587929d24",
+        "docs/baseline/python-retirement-inventory.json": "36338e8e6ba691113a0e3d07473ad051de07197a9bc76dec5bbb6e2c553d2b02",
+        "docs/baseline/python-retirement-inventory.json.sha256": "1de340c98939e89643260284986327e2bbd920b7763fa779e45a7028778a6c62",
+        "docs/baseline/python-retirement-verification.md": "b1e98480e0081e62947cc67148a1aeac0bf8849795dd11b4d04ce5d9bf5a42c8",
         "docs/baseline/recovery-drill.md": "f20d2b3f265a975798faafc1a521e6dac504422f2cdb3ad4411ac6611bc9d9ff",
         "docs/baseline/reference-tests.json": "798ca9b70b14dce556d24246024ae368644bb79ee507f36e63dcf463bee32f65",
         "docs/baseline/reference-tests.sha256": "a93bc8596f08369717db9d43e093af3651b5fda47a674dd671bc0f0bc287424c",
         "docs/baseline/retired-files.json": "e1927a9f1632b524a10be82e6d246afa62c6017cd20038b399ad3063565f24f5",
-        "docs/baseline/retirement-inventory-verification.md": "e82d4868133d1f8d426e39cfcdefc62af3f8e6535ce5af7a206010dfd95eff9e",
+        "docs/baseline/retirement-inventory-verification.md": "f3d341beafdad6ef0dd3409a487f5c5eef4f59d9ca9f9c4697a309655d454cc9",
         "docs/baseline/source/bench-python-entry.py.txt": "4b627162b4caba05b8edf12fa9482e27584128e2a6df110b201552b440464b9b",
         "docs/baseline/source/capture-python-journals.py.txt": "f7999057ca0935c7e9e9a21ee726fd86d7b9dd30323ef8d6ef16092b77467fed",
         "docs/baseline/source/capture-web-draft-history.py.txt": "34be955d24ec02b2177cfa81e21506e60b39b414007b2f8dcb49f2b659d38af5",
@@ -373,7 +373,7 @@
         "docs/baseline/web-http-contract.md": "9475b036e6d9178e8382f91802d40422893a2bbcf8843998244c8023c9f6854e",
         "docs/baseline/web-http-python.json": "b6698580fb0f0a10f77ceefc45207ffda79fd02bd34c16290ea43414f80afc71",
         "docs/baseline/web-parity.json": "5cac3a216da8a24ddbce86e066a4603b75ba117298a02876d677f7159e9831f0",
-        "docs/baseline/web-parity.md": "082804b5edd0846fe4a659593f8e77519c272ac8da5c2aa861ab6fcb24ed5dd9",
+        "docs/baseline/web-parity.md": "e56fcc963da7519d9419bd65bdda4153e29c8fb74ee4dc4cdd42589190b7bb9e",
         "docs/baseline/web-resource-query-python.json": "f64afa82906f55f539ad5b664cfb879f837975b2b59eea6227ba959897c77fdd",
         "docs/baseline/web-resource-query.md": "6d7ad6b11c997bce2d61f9a33f9d8bac3999ae14838741c2ffd8bef1c51b4874",
         "docs/baseline/web-smoke/accessor-native-2026-09-29.txt": "f01a6509fd9b6022035bf9f703620c4b151a55205e1281f9811145250e3c4df1",
@@ -472,8 +472,8 @@
         "docs/protocol/examples/workspace_open.ndjson": "c7b911f780b8d09f5ce98c7e9b684417cd57de6c1e2059c99d29fc06af6f0752",
         "docs/protocol/schema/protocol.v1.json": "7173992611151a25e5a3257a418674acef6ef49228f782a93f1903c96efc11b5",
         "docs/protocol/v1.md": "4e9f6ca5defef613467d003b6d515b106ec50709902aee347bcb0a2ee3548170",
-        "fixtures/README.md": "678e5e58291406691ea496f77ab28ab6f5f4ed60f4f3eeef854dd8a4394804ab",
-        "fixtures/accessor_verify/README.md": "c9fd2d735d27c9f4a777664c26b6cb7c82dda0f2ea8e890584975587607cc9ae",
+        "fixtures/README.md": "3b14cc43515bd5b2ee93a216afe3c62cfe66870909d9dc5b49983b179da7e9ba",
+        "fixtures/accessor_verify/README.md": "c4b2411d289e75ae8778bd9aea82f2788755c95ccf9045f53abae6603aea14f8",
         "fixtures/accessor_verify/independent-oracles.json": "6c1256367f9eac30363bf0f78912f50eaecf24885a0581e16de9cb97eb41acff",
         "fixtures/accessor_verify/independent-oracles.json.sha256": "e668b71a2454bf491dfb65735a0309bc679877e93a296959cd6606302434fc54",
         "fixtures/accessor_verify/scalars-schema.json": "adaa4aa7d93e5a02addca7a4f5108d3763e67684eed74dc396321024742d5f49",
@@ -504,7 +504,7 @@
         "fixtures/accessor_verify/workspace/i18n/source/Item.json": "2161929d0a2e2ae70a4abe272b59e8385ebb8a3b9e040f5f3c8c925a788b8bb6",
         "fixtures/accessor_verify/workspace/i18n/source/ItemType.json": "e5db6ed03a8a124d2f213ba461a140300a837aafd5c7d1e2b165cf2762d2074d",
         "fixtures/accessor_verify/workspace/i18n/source/Quest.json": "f6b4996e2cdf9a0e2e240531f87caddcf9aad5e529d1b5ee5e7641c09fbfbe04",
-        "fixtures/bench/README.md": "29b305da12d830191d00692231045137f52a32d5dd5740a7e6044293ea939cc4",
+        "fixtures/bench/README.md": "bf6d9d0963ed85fab4611734f0c910353a120127d3827e63a7a789bb6b70cc00",
         "fixtures/bench/shape-r.json": "b99db41e81562a0e5cea03833511d3cdf1063f1bcb183a777e352edcd6e94e85",
         "fixtures/binary/golden/bundle.bin": "8553d439f3c4717fce81217d88966af5137a78bae9598c928d075c3e1387bb09",
         "fixtures/binary/golden/bundle_bundle.bin": "039becbf18b821b34169e459f2ca7b923d6b8f6ea387336619e2d10052660ba2",
@@ -715,20 +715,20 @@
         "tools/bench/recovery-drill.mjs": "78c2d434568ac1df9742981c9f11af6ff1f07af647b9e65c5865b3faf91943d5",
         "tools/check-docs.mjs": "904e14eb03ac4c2176493df139d40c4463c08d88345a228a3147623ae2b71b09",
         "tools/check-package.mjs": "461de9c34de00389fbf57ce86c7370653e0bf48139fdb7102801635feb2d8277",
-        "tools/check-retirement.mjs": "af90ce26dc8233acf81ed8a80de233cefe3aec18216967c0d9853aea467c43f8",
+        "tools/check-retirement.mjs": "cb9eac8da2a9381e7134994a52ae6f5b49ab49ffa06525df59d3c2af88d2c1d8",
         "tools/gd-guard.mjs": "d55663be9674ab59b2f24c3287b07354e522001752a634cf7998e843418053ed",
         "tools/parity/cli-text-diff.mjs": "63b9c54ec50371702299c8346d01141c09ff7e8b29f3267e995f6b107c14ee79"
       }
     },
     "web": {
       "files": 66,
-      "bytes": 503809,
-      "sha256": "f87c378c7a3e7a00d24dd2ab44159eb89e8bfa3072f8623b13becfe9db376bb5"
+      "bytes": 503729,
+      "sha256": "b7fe368f6ca7c08055abf4aa6b3e0985039354b71deb7994724b89921cf6a03f"
     },
     "launcher": {
       "files": 248,
-      "bytes": 21323087,
-      "sha256": "daffeafc00888b36ad09cff408a2825995f8d09f04ceff1e157f31c3df13a169"
+      "bytes": 21323049,
+      "sha256": "1bc90abb894252e8d932a91f6f10540b995c8a4db2635aedfa389f6e4a68a8d1"
     },
     "openspec": {
       "files": 305,
@@ -742,8 +742,8 @@
     },
     "test-proj": {
       "files": 99,
-      "bytes": 16501167,
-      "sha256": "b60cd5d8f9f194a6e7120e3e7c0ee80087e8923ca33fb8a2d3f548b31587ce35"
+      "bytes": 16501110,
+      "sha256": "e1c6cd752a72fa6214490b302e585ee3a2f80caae90b70117fbaf83b2b24670c"
     }
   },
   "testInventory": {

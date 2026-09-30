@@ -11,7 +11,7 @@ import '../widgets/common.dart';
 /// 工作台「设置」模块（native-flutter-workbench 任务 2.4）。
 ///
 /// 只保留原生内核用得上的四项偏好：工作区、可选的开发期运行时路径、开机自启、托盘常驻。
-/// 旧版的面板端口/监听地址/Python 工具目录已随内核迁移废弃，仅在检测到时提示一次。
+/// 旧版的面板端口/监听地址/工具目录已废弃，仅在检测到时提示一次。
 class WorkbenchSettingsPanel extends StatefulWidget {
   const WorkbenchSettingsPanel({
     super.key,

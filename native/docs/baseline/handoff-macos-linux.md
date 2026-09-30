@@ -8,8 +8,8 @@
 ## 0. 一句话现状
 
 - 验收路径已零 Python 依赖（改名演练实测：无 `ct/` 时 cargo 277、flutter 283、`dist` 自检、负载校验全通过）。
-- 常规构建、测试、发行与留档回归不需要 Python。重新造性能夹具（`xtask bench-fixtures`）和
-  同机 Rust/Python 配对测量仍需 Python 参照；已有夹具可复制到目标机做无 Python 留档回归。
+- 常规构建、测试、发行与留档回归不需要 Python。基准夹具由 `xtask bench-fixtures` 生成；
+  同机配对测量需要一个参照 `ct` 入口，缺参照时走本机留档回归判定。
 
 ## 1. 先修代码再上真机（不需要 mac，但 mac 上必须用到）
 
@@ -54,7 +54,7 @@ TRIPLE="$(rustc -vV | sed -n 's/^host: //p')"
 node tools/bench/isolation-check.mjs "dist/ct-native-0.0.0-$TRIPLE"
 
 # 3) 任务 6.5：四场景测量
-#   3a 同机配对（最强证据；生成夹具和运行 Python 参照都需要 ct/.venv）
+#   3a 同机配对（最强证据；需要参照 `ct` 入口，缺参照时跳过）
 cargo run -p ct-xtask --release -- bench-fixtures --sizes s
 cargo run -p ct-xtask --release -- bench --size s --runs 5 \
     --python ../ct/.venv/bin/ct --out docs/baseline/bench-s-macos.json

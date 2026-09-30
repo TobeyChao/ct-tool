@@ -28,7 +28,7 @@
 
 ```sh
 cargo build --manifest-path native/Cargo.toml -p ct-cli --release --locked
-# 用明确路径避免命中旧虚拟环境的同名 ct
+# 用明确路径调用
 native/target/release/ct status --root /path/to/workspace
 native/target/release/ct panel --root /path/to/workspace
 ```

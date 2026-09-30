@@ -1,6 +1,6 @@
 # 真实形状基准夹具（`--sizes r` / `--sizes r-full`）
 
-当前所有档位由 Rust `xtask bench-fixtures` 生成，不执行旧 Python 生成器。S/M/L 的新分布、
+当前所有档位由 Rust `xtask bench-fixtures` 生成。S/M/L 的新分布、
 macOS 留档与回归入口见 [再生记录](../../docs/baseline/bench-native-fixture-verification.md)。
 下文 Windows 性能数字和旧 S/M/L 对照属于冻结历史证据，不代表当前平台支持或新夹具基线。
 当前 Windows 延后，Linux 不支持。

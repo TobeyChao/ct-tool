@@ -1,6 +1,6 @@
 # ct-tool canonical 运行时读取优化策略（v2）与实测
 
-> 2026-09-30 原生迁移登记：本文正文、Python 命令与性能数字是历史实验记录，均非现役验收入口。当前正式命令与逐脚本分类见 [test-proj 总览](../README.md)。ConfigAccessorBench 的三个 reader C# 源文件仍用于独立验收。
+> 2026-09-30 原生迁移登记：本文正文、命令与性能数字是历史实验记录，均非现役验收入口。当前正式命令与逐脚本分类见 [test-proj 总览](../README.md)。ConfigAccessorBench 的三个 reader C# 源文件仍用于独立验收。
 
 > 基准：`PERF-REPORT.md`（参考实现 原生运行时对标）暴露的差距
 > 范围：**只改 ct-tool 自有代码** —— 导出器 `canonical_binary.py`、生成器 `canonical_accessor.py`、

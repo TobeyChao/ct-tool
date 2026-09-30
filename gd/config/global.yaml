@@ -12,7 +12,7 @@ cache_dir: cache
 i18n_dir: i18n
 
 # ---- 部署到 Unity（示例；默认整段注释掉 ⇒ 与没有 deploy 时行为完全一致）----
-# 用法与路径语义详见 ct-tool 手册 ct/docs/README.md「部署到 Unity」。
+# 用法与路径语义详见 ct-tool 手册 docs/README.md「部署到 Unity」。
 # deploy:
 #   enabled: true
 #   # Unity 工程根目录：相对**工作区根**（project_root，即 --root）解析，或写绝对路径。

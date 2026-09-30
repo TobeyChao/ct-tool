@@ -9,7 +9,7 @@ HTTP 适配器直接调用 `ct-app`；不启动 Python 或 stdio worker 代理�
 所有测试创建临时工作区，不修改真实 `gd/`。
 
 迁移覆盖检查：`node web/tools/check-parity.mjs`；加 `--require-complete` 会在旧场景未全部承接时失败。
-G1/G2/G3 已通过；旧 Python 树正在按退役清单收尾，最终删除后复验尚未完成。
+G1/G2/G3 已通过。
 安装、工作区和升级说明见 [主文档](../docs/README.md)。
 
 升级时沿用原来的浏览器配置、host 和端口，才能读取同源 IndexedDB 草稿。

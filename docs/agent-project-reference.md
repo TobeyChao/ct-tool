@@ -26,10 +26,10 @@ Flutter launcher 保留桌面启动壳。当前交付支持 macOS，Windows 延�
 ## 安装与开发
 
 发行用户解压原生 ZIP 或安装 launcher DMG 即可，不需要开发 SDK。
-旧虚拟环境中的同名 `ct` 不会自动变成原生程序，终端应使用明确路径。
+终端应使用明确的原生二进制路径，不要依赖 PATH 上的同名命令。
 
 开发需要 Rust 稳定工具链；Web 测试需要 Node 22 或兼容版本与 Playwright Chromium。
-launcher 需要 Flutter/Xcode；独立读取测试使用 .NET 10。不全局安装 Python 包。
+launcher 需要 Flutter/Xcode；独立读取测试使用 .NET 10。
 
 在仓库根目录：
 
@@ -138,7 +138,7 @@ cargo run --manifest-path native/Cargo.toml -p ct-xtask --locked -- compat-fixtu
 `r/r-full` 使用冻结形状，S/M/L 使用固定种子。`xtask bench --size s --fixture-root /tmp/ct-bench`
 检查实际输入摘要并使用同档/同平台/同夹具留档，缺失或损坏明确失败。
 首次基线必须显式 `--record-baseline --out /tmp/bench-s.json`，采集不等于回归通过。
-原始 Python 期望和源码文本仅作独立历史参考，不执行或自动再生期望值。
+冻结的历史期望与源码文本仅作独立参考，不执行或自动再生期望值。
 
 验收记录见 [Web 映射](../native/docs/baseline/web-parity.md)、
 [兼容夹具](../native/docs/baseline/compat-fixtures-verification.md) 和

@@ -15,4 +15,4 @@ node test-proj/ExportAccessorVerify/prepare-native.mjs
 
 [`python-retirement.json`](python-retirement.json) 逐项记录 19 个旧脚本：`prepare.py`、`gen_scalars_bench.py` 两条正式准备入口已替代，其余 17 条为非活跃历史实验。`check-retirement.mjs` 检查路径全集、来源摘要、分类理由和现役能力位置；新增脚本或改写历史来源需重新审计。
 
-`RefConfigBench/`、`UniformE2EBench/` 和 `fabulous-game/` 保留过去的 C++/Lua/Unity 对标材料、特定语料和一次性迁移说明。它们不进入当前构建、测试、夹具再生或发行链，也不作为 G1/G2/G3 通过证据。旧规模、随机分布及外部游戏结果不能与新 S/M/L 或 r/r-full 留档混用；登记中的 successor 仅指现役相关能力。当前性能入口见 [`native/README.md`](../native/README.md)。历史 Python 命令不再受支持，本轮保留文件，不批量清理实验资料。
+`RefConfigBench/`、`UniformE2EBench/` 和 `fabulous-game/` 保留过去的 C++/Lua/Unity 对标材料、特定语料和一次性迁移说明。它们不进入当前构建、测试、夹具再生或发行链，也不作为 G1/G2/G3 通过证据。旧规模、随机分布及外部游戏结果不能与新 S/M/L 或 r/r-full 留档混用；登记中的 successor 仅指现役相关能力。当前性能入口见 [`native/README.md`](../native/README.md)。历史命令不再受支持，本轮保留文件，不批量清理实验资料。

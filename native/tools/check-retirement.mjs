@@ -8,7 +8,7 @@ const bytes=await readFile(join(root,path));
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 if(sha(bytes)!==(await readFile(join(root,path+'.sha256'),'utf8')).trim()) throw new Error('retirement inventory checksum mismatch');
 const inventory=JSON.parse(bytes), after=process.argv.includes('--after-deletion');
-if(inventory.format!=='python-retirement-inventory/2'||inventory.items.length!==312) throw new Error('incomplete retirement scope');
+if(inventory.format!=='python-retirement-inventory/2'||inventory.items.length!==313) throw new Error('incomplete retirement scope');
 const entries=new Map();
 for(const item of inventory.items){
   if(entries.has(item.path)||item.status!=='classified'||!item.reason?.trim()||!item.replacement.length) throw new Error('unclassified/duplicate retirement item');
@@ -36,5 +36,8 @@ async function scan(relative){
     }
   }
 }
-for(const scope of ['ct','native','test-proj'])await scan(scope);
-console.log(`retirement: 312 entries classified; 249 legacy ct files, 262 removals, 17 historical experiments; ${after?'deletion verified':'removal source checksums verified'}`);
+// 版本化范围全扫，避免出现清单外的“活跃 Python 文件”；跳过目录见 scan 的噪声列表。
+for(const scope of ['ct','native','test-proj','openspec','docs','web','launcher','.github'])await scan(scope);
+const dispositions=inventory.items.reduce((acc,item)=>(acc[item.disposition]=(acc[item.disposition]??0)+1,acc),{});
+const legacyCt=[...entries.keys()].filter(p=>p.startsWith('ct/')).length;
+console.log(`retirement: ${inventory.items.length} entries classified; ${legacyCt} legacy ct files, ${dispositions.remove} removals, ${dispositions['retain-historical']} retained historical paths; ${after?'deletion verified':'removal source checksums verified'}`);

@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// 桌面偏好（native-flutter-workbench 任务 2.4）。
 ///
 /// 只保留原生内核用得上的四项：工作区、可选的开发期运行时路径、开机自启、托盘常驻。
-/// 旧版的 `tool_dir`（Python 工具目录）与 `port`（面板监听端口）已废弃：
+/// 旧版的 `tool_dir`（工具目录）与 `port`（面板监听端口）已废弃：
 /// [load] 会把它们从存储中清除，并用 [migratedFromLegacy] 让界面提示一次性说明。
 class SettingsStore extends ChangeNotifier {
   static const kWorkspacePath = 'workspace_path';
@@ -54,7 +54,7 @@ class SettingsStore extends ChangeNotifier {
     // 新安装必须由用户明确选择工作区，不能自动绑定仓库里的真实 gd。
     workspacePath = prefs.getString(kWorkspacePath) ?? '';
     inferredRuntimePath = _inferNativeRuntime();
-    // main 的薄桌面壳已保存原生路径；仅迁移这个键，不读取旧 Python tool_dir。
+    // main 的薄桌面壳已保存原生路径；仅迁移这个键，不读取旧工具目录。
     const previousRuntimeKey = 'native_runtime_path';
     final savedRuntime = prefs.getString(kRuntimePath);
     final previousRuntime = prefs.getString(previousRuntimeKey);

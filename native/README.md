@@ -22,7 +22,7 @@ Windows 二进制为 `native/target/debug/ct.exe`。`panel` 默认监听 `127.0.
 launcher 用 stdin EOF 请求跨平台安全退出。
 
 `--root` 指向游戏工作区，路径按配置中的 `resolve` 规则解析。测试使用临时夹具，勿对真实 `gd/` 做测试导出。
-旧虚拟环境内的同名 `ct` 仍是 Python 版本；请使用明确的原生二进制路径。
+终端请使用明确的原生二进制路径，不要依赖 PATH 上的同名命令。
 
 ## 目录
 
@@ -44,7 +44,6 @@ cd launcher && flutter test
 ```
 
 `check-parity --require-complete` 是 Web 迁移门槛，当前 146/146 个旧场景已覆盖。
-Python 的业务和历史脚本暂留作为对照，不能将“原生运行不需要 Python”解释为“仓库已完全去 Python”。
 对等清单及执行证据见 [web-parity.md](docs/baseline/web-parity.md)。
 
 ## 发行
@@ -68,20 +67,20 @@ cargo run -p ct-xtask -- dist
 `docs/baseline/` 中从 `2d7dfc9` 引入的工作台、性能和平台记录是该分支历史证据，不能充当 main 新 Web 的验收。
 S/M/L 与 `r/r-full` 基准夹具由 Rust `xtask bench-fixtures` 生成。
 `xtask compat-fixtures` 校验六类独立参考数据并从冻结 OOXML 源再生 Excel 边界输入；
-模板完整语义比较由 `xtask template-compare` 执行。正式路径不调用历史 Python 生成器，
+模板完整语义比较由 `xtask template-compare` 执行。正式路径不执行冻结的生成器脚本，
 也不使用原生内核覆写期望值。命令及来源见 [夹具说明](fixtures/README.md)。
 新旧 S/M/L 夹具分布不同，旧性能留档不能用于回归判定；`xtask bench` 会检查夹具摘要。
 正常基准回归必须有同档、同平台、同夹具的完整留档，缺失或损坏会明确失败。
 首次采集使用 `xtask bench --size s --record-baseline --out /tmp/bench-s.json`；
 采集仅留档，不算回归通过。CLI 对照使用
 `node native/tools/parity/cli-text-diff.mjs --rust native/target/debug/ct`（Windows 加 `.exe`），
-固定检查六个独立场景，不启动 Python 或覆写基线。
+固定检查六个独立场景，不覆写基线。
 fingerprint 和覆盖矩阵始终保留 main 的 85 个历史测试文件/690 个函数；
-不存在旧 `ct/` 时也不缩减验收。当前原生清单使用 `ct-source-tree/2`，原始来源快照另行保留。
-本机无 `ct/`、无 Python PATH 的离线回归记录见
-[无 Python 验收进展](docs/baseline/python-free-verification.md)。
-独立 C# 读取验收与历史实验分类见 [test-proj](../test-proj/README.md)。
+缺少历史工具链时也不缩减验收。当前原生清单使用 `ct-source-tree/2`，原始来源快照另行保留。
+本机无 Python PATH 的离线回归记录见
+[离线验收记录](docs/baseline/python-free-verification.md)。
+独立 C# 读取验收见 [test-proj](../test-proj/README.md)。
 `xtask accessor-fixtures --out <临时目录>` 从冻结输入再生标量 Binary/C#，逐字节对照
-旧 main 参照；`node test-proj/ExportAccessorVerify/prepare-native.mjs` 再读取这些原生新产物。
-G1/G2/G3 已通过，当前正在完成文档/退役清单与最终删除后复验。
+冻结参照；`node test-proj/ExportAccessorVerify/prepare-native.mjs` 再读取这些原生新产物。
+G1/G2/G3 已通过。
 用户安装、Schema/数据格式和升级见 [主文档](../docs/README.md) 与 [迁移说明](../docs/native-migration.md)。

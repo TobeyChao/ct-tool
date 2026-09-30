@@ -5,10 +5,16 @@ The retirement checkpoint is `fea11c4`; all 262 classified versioned paths were
 removed, including all 249 files of the old ct project. [The exact list](retired-files.json)
 and [guarded inventory](python-retirement-inventory.json) remain. No cache directory,
 venv, untracked local material or user gd output was deleted. The retired local ct
-directory is ignored to prevent accidental staging of its remaining caches/builds.
-Seventeen audited, unrelated historical experiments remain non-active; no formal
-runtime, build, test or fixture entry executes Python. Archived sources/oracles are
-still checked, rather than treating the missing old implementation as a test skip.
+directory was ignored at retirement time to prevent accidental staging of its
+remaining caches/builds; it was deleted afterwards together with that ignore entry,
+and restored `ct/` sources are still rejected by `check-retirement.mjs`.
+Eighteen audited historical paths remain non-active: the seventeen test-proj
+experiments plus the archived OpenSpec baseline capture script, which a later
+repository-wide audit added to the inventory when the scan scope was widened beyond
+`ct`/`native`/`test-proj` (see the addendum in
+[retirement-inventory-verification.md](retirement-inventory-verification.md)). No
+formal runtime, build, test or fixture entry executes Python. Archived sources/oracles
+are still checked, rather than treating the missing old implementation as a test skip.
 
 The clean Git checkout at `49ef3f1c22ec5af8fcec146e3a0856d46df4f960` excluded gd and
 contained no old ct project, virtual environment, node_modules or build outputs.

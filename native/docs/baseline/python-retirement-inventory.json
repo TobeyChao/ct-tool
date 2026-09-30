@@ -11,7 +11,7 @@
   "totals": {
     "remove": 262,
     "retain": 33,
-    "retain-historical": 17
+    "retain-historical": 18
   },
   "items": [
     {
@@ -3710,6 +3710,18 @@
       "archive": [],
       "sourceSha256": "63b9c54ec50371702299c8346d01141c09ff7e8b29f3267e995f6b107c14ee79",
       "reason": "原生/Node 现役入口或文档；历史 Python 术语/路径只是来源引用，不是运行依赖。命令入口按原生链维护。"
+    },
+    {
+      "path": "openspec/changes/archive/2026-09-13-restructure-ct-application-pipeline/baseline/capture.py",
+      "owner": "historical-comparison",
+      "status": "classified",
+      "disposition": "retain-historical",
+      "replacement": [
+        "native/tools/parity/cli-text-diff.mjs"
+      ],
+      "archive": [],
+      "sourceSha256": "46814147555c06008ed6c8056b6b9d2a5e2308b87bab1f529272e268a300d984",
+      "reason": "已归档 change 的一次性基线采集脚本：把源工作区复制到临时目录后抓冷启动/热/强制导出的产物 sha256 快照；JSON 采集与 baseline.md 是该 change 的历史证据，现行六场景对照由原生 CLI 文本留档承接。"
     },
     {
       "path": "test-proj/ConfigAccessorBench/README.md",

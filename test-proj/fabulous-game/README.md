@@ -1,6 +1,6 @@
 # 为 fabulous-game 造的语料 / 验证脚手架（ct-tool 侧）
 
-> 2026-09-30 原生迁移登记：本文正文、Python 命令与性能数字是历史实验记录，均非现役验收入口。当前正式命令与逐脚本分类见 [test-proj 总览](../README.md)。ConfigAccessorBench 的三个 reader C# 源文件仍用于独立验收。
+> 2026-09-30 原生迁移登记：本文正文、命令与性能数字是历史实验记录，均非现役验收入口。当前正式命令与逐脚本分类见 [test-proj 总览](../README.md)。ConfigAccessorBench 的三个 reader C# 源文件仍用于独立验收。
 
 > 2026-09-12 建。这些脚本**从 fabulous-game 仓搬过来** —— 它们全都 `import ct.*`（要用导出器造语料），
 > 属于**工具侧的活儿**，放在这里之后 fabulous-game 不再需要 sibling checkout 才能构建/跑基准。

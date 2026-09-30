@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-// 深林绿设计令牌：**逐值对齐 web 面板的 `ct/src/ct/web/static/styles/tokens.css`**。
+// 深林绿设计令牌：**逐值对齐 web 面板的 `web/static/styles/tokens.css`**。
 // 该 CSS 文件是这套界面唯一的颜色真相源；改这里之前先改它，别在两侧各写一套。
 const Color ctBg = Color(0xFFF6F7F5);
 const Color ctSurface = Color(0xFFFFFFFF);

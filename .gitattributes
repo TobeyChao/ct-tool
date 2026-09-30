@@ -2,7 +2,9 @@
 * text=auto
 
 # 源码文件
-*.py      text diff=python
+# 保留的 .py 是冻结的历史 oracle：sha256 由 test-proj/check-retirement.mjs 按原始字节校验，
+# 故用 -text 关闭 EOL 归一化，避免换平台检出后校验失效。
+*.py      -text diff=python
 *.yaml    text
 *.yml     text
 *.json    text

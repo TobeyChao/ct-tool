@@ -1,7 +1,7 @@
 # Schema 保存迁移说明（YAML-only save）
 
-本文件说明当前原生内核的 YAML-only 保存与旧工作区处理。旧 Python 保存迁移说明保留在
-`docs/archive/python-era/schema-save-migration.md`，其旧端点与 Python 恢复步骤不作为当前运行入口。
+本文件说明当前原生内核的 YAML-only 保存与旧工作区处理。更早的保存迁移说明保留在
+`docs/archive/python-era/schema-save-migration.md`，其中的旧端点与恢复步骤不作为当前运行入口。
 
 ## 变更边界
 

@@ -1,6 +1,6 @@
 # 评审：fabulous-game「新读取方案」对照 ct-tool canonical 现状
 
-> 2026-09-30 原生迁移登记：本文正文、Python 命令与性能数字是历史实验记录，均非现役验收入口。当前正式命令与逐脚本分类见 [test-proj 总览](../README.md)。ConfigAccessorBench 的三个 reader C# 源文件仍用于独立验收。
+> 2026-09-30 原生迁移登记：本文正文、命令与性能数字是历史实验记录，均非现役验收入口。当前正式命令与逐脚本分类见 [test-proj 总览](../README.md)。ConfigAccessorBench 的三个 reader C# 源文件仍用于独立验收。
 
 > 对象：`E:\Proj\UnityProj\fabulous-game\Docs\TODO\` 三份文档 +
 > `openspec\changes\config-native-zero-copy\`（未归档 change）
