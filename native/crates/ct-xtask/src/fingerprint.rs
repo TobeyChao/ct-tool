@@ -61,6 +61,9 @@ fn sha256_hex(bytes: &[u8]) -> String {
 }
 
 fn skipped(name: &str, excludes: &[&str]) -> bool {
+    if name.eq_ignore_ascii_case(".DS_Store") {
+        return true;
+    }
     if excludes.iter().any(|skip| name.eq_ignore_ascii_case(skip)) {
         return true;
     }
@@ -405,6 +408,16 @@ mod tests {
             with["testInventory"]["totals"]["historicalPythonTestFunctions"],
             690
         );
+    }
+
+    #[test]
+    fn finder_metadata_does_not_change_source_fingerprint() {
+        let temp = tempfile::tempdir().unwrap();
+        std::fs::write(temp.path().join("source.rs"), "source").unwrap();
+        let before = collect(temp.path(), &[]).unwrap();
+        std::fs::write(temp.path().join(".DS_Store"), "Finder metadata").unwrap();
+        assert_eq!(before, collect(temp.path(), &[]).unwrap());
+        assert_eq!(before.len(), 1);
     }
 
     #[test]
