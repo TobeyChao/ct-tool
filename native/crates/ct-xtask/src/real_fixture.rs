@@ -694,7 +694,7 @@ fn write_mutations(
 
 // ---------------------------------------------------------------- 工具
 
-fn enum_map(ws: &Workspace) -> EnumMap {
+pub(crate) fn enum_map(ws: &Workspace) -> EnumMap {
     ws.resources
         .enums
         .iter()
@@ -718,7 +718,7 @@ fn enum_map(ws: &Workspace) -> EnumMap {
 }
 
 /// 定宽表的 slot_offsets（与导出路径同源，与 `ct-app::template` 同一算法）。
-fn slot_offsets(ws: &Workspace, table: &TableResource) -> Vec<(u32, u32)> {
+pub(crate) fn slot_offsets(ws: &Workspace, table: &TableResource) -> Vec<(u32, u32)> {
     if !table.uniform {
         return Vec::new();
     }
@@ -734,7 +734,7 @@ fn slot_offsets(ws: &Workspace, table: &TableResource) -> Vec<(u32, u32)> {
 }
 
 /// 输入语义摘要：忽略 xlsx 里随时间变化的文档属性，只哈希单元格内容与其余文件字节。
-fn input_digest(root: &Path) -> Result<String> {
+pub(crate) fn input_digest(root: &Path) -> Result<String> {
     let mut hasher = Sha256::new();
     let mut entries: Vec<PathBuf> = Vec::new();
     collect_files(root, &mut entries)?;
@@ -745,7 +745,11 @@ fn input_digest(root: &Path) -> Result<String> {
             .unwrap_or(&path)
             .to_string_lossy()
             .replace('\\', "/");
-        if rel.starts_with("mutations/") {
+        if rel == "FIXTURE.json"
+            || ["mutations/", "output/", "cache/", ".ct/"]
+                .iter()
+                .any(|prefix| rel.starts_with(prefix))
+        {
             continue; // 变更素材由基准按场景单独复制，不进输入摘要
         }
         hasher.update(rel.as_bytes());

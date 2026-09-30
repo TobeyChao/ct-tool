@@ -445,18 +445,11 @@ pub fn run(options: Options) -> Result<()> {
     let fixture_root = options.fixture_root.clone();
     let fixture = fixture_dir(&fixture_root, &options.size);
     if !fixture.join("FIXTURE.json").is_file() {
-        let hint = if options.size == "r" || options.size == "r-full" {
-            format!(
-                "cargo run -p ct-xtask -- bench-fixtures --sizes {}",
-                options.size
-            )
-        } else {
-            format!(
-                "native/fixtures/bench/generate.py --size {} --out {}",
-                options.size,
-                fixture_root.display()
-            )
-        };
+        let hint = format!(
+            "cargo run -p ct-xtask -- bench-fixtures --sizes {} --out {}",
+            options.size,
+            fixture_root.display()
+        );
         bail!("缺少 {} 夹具（先运行 {hint}）", fixture.display());
     }
     if !options.rust.is_file() {
@@ -467,6 +460,13 @@ pub fn run(options: Options) -> Result<()> {
     }
     let meta: Value =
         serde_json::from_str(&std::fs::read_to_string(fixture.join("FIXTURE.json"))?)?;
+    let expected_digest = meta["inputDigest"]
+        .as_str()
+        .context("夹具缺少 inputDigest；先用原生 bench-fixtures 重新生成")?;
+    let actual_digest = crate::real_fixture::input_digest(&fixture)?;
+    if actual_digest != expected_digest {
+        bail!("夹具输入摘要不匹配（记录 {expected_digest}，实际 {actual_digest}）；请重新生成");
+    }
     let mutation: Value = serde_json::from_str(&std::fs::read_to_string(
         fixture.join("mutations/mutations.json"),
     )?)?;
@@ -490,8 +490,13 @@ pub fn run(options: Options) -> Result<()> {
     }
     // 参照实现不在位时，不谎称「无法判定」：改用本机留档做回归判定。
     let reference_path = options.against.clone().unwrap_or_else(|| {
+        let suffix = if ["s", "m", "l"].contains(&options.size.as_str()) {
+            "-native"
+        } else {
+            ""
+        };
         repo_root().join(format!(
-            "native/docs/baseline/bench-{}-{}.json",
+            "native/docs/baseline/bench-{}-{}{suffix}.json",
             options.size,
             platform_tag()
         ))
@@ -499,7 +504,7 @@ pub fn run(options: Options) -> Result<()> {
     let reference = if engines.len() > 1 {
         None // 有同机配对测量就不需要回归参照
     } else {
-        match load_reference(&reference_path) {
+        match load_reference(&reference_path, meta["inputDigest"].as_str()) {
             Ok(map) => {
                 eprintln!(
                     "[bench] 无 Python 参照：改用本机留档回归判定（参照 {}）",
@@ -738,10 +743,18 @@ fn allowed_slowdown() -> f64 {
 }
 
 /// 读留档报告，得到每个场景的 Rust 中位耗时/产物摘要（不读 Python 数字：跨机器不可比）。
-fn load_reference(path: &Path) -> Result<Map<String, Value>> {
+fn load_reference(path: &Path, current_digest: Option<&str>) -> Result<Map<String, Value>> {
     let text = std::fs::read_to_string(path)
         .with_context(|| format!("留档报告不可读：{}", path.display()))?;
     let value: Value = serde_json::from_str(&text).context("留档报告不是合法 JSON")?;
+    let saved_digest = value["fixture"]["inputDigest"].as_str();
+    if saved_digest.is_none() || saved_digest != current_digest {
+        bail!(
+            "留档夹具摘要与当前夹具不一致（留档 {:?}，当前 {:?}）；需重新测量同一生成器夹具",
+            saved_digest,
+            current_digest
+        );
+    }
     let rows = value["results"]
         .as_array()
         .context("留档报告缺少 results 数组")?
@@ -840,7 +853,7 @@ pub fn recheck(report: &Path) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::{judge, rss_limits, time_limit, SCENARIOS};
+    use super::{judge, load_reference, rss_limits, time_limit, SCENARIOS};
     use serde_json::json;
 
     #[cfg(unix)]
@@ -930,6 +943,23 @@ mod tests {
         let t = judge("l", &rows, None);
         assert_eq!(t["hot-worker"]["verdict"], "no-baseline");
         assert_eq!(SCENARIOS.len(), 5);
+    }
+
+    #[test]
+    fn archived_regression_requires_the_same_fixture_digest() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("reference.json");
+        let report = json!({
+            "fixture": {"inputDigest": "sha256:new-fixture"},
+            "results": [{
+                "engine": "rust", "scenario": "table",
+                "wallMs": {"median": 100.0}, "outputSha256": "sha-output"
+            }]
+        });
+        std::fs::write(&path, serde_json::to_vec(&report).unwrap()).unwrap();
+        assert!(load_reference(&path, Some("sha256:new-fixture")).is_ok());
+        assert!(load_reference(&path, Some("sha256:old-fixture")).is_err());
+        assert!(load_reference(&path, None).is_err());
     }
 
     fn reference(wall: f64, sha: &str) -> serde_json::Map<String, serde_json::Value> {

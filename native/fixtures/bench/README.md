@@ -2,7 +2,7 @@
 
 这两档夹具的形状来自真实配表工作区的实测分布，而不是等宽常量。目的是让**表级 / 语言级
 固定开销**变成可测量的量：现有 S/M/L 夹具每张表同构（固定 20 列、每表相同行数、3 种语言），
-按 S/M/L 冷全量插值出的成本模型外推到真实形状只给出 26.9s，而回归档实测冷全量是 **422.8s**
+按历史 S/M/L 冷全量插值出的成本模型外推到真实形状只给出 26.9s，而回归档实测冷全量是 **422.8s**
 （低估 15.7×）。
 
 实测对照（同一台机器，Windows / 28 逻辑核）：
@@ -78,8 +78,8 @@ cargo run --release -p ct-xtask -- bench-shape-check      # 只读自检
 1. **强制巨型表**：Config 表按 `行数 × 字段数` 降序取前 12（同分按表名）。
 2. **分层抽样**：其余 Config 表按（行数桶 × 字段桶）分层，每层至少 1 张，按层规模比例分配；
    层内先选**引用了强制 hub 的表**，再按 `splitmix64(seed ^ fnv1a(表名))` 升序、表名升序取。
-   规则里没有 RNG 状态，任何语言/版本都能复算出同一份表集合（现有 S/M/L 的 Python 生成器依赖
-   `random.Random` 序列，这是新档位不沿用它的原因之一）。
+   规则里没有 RNG 状态，任何语言/版本都能复算出同一份表集合。历史 S/M/L Python
+   生成器使用过 `random.Random`；现行 S/M/L Rust 生成器也采用固定种子的确定性值。
 3. **Enum 全量**：654 张。
 4. 种子固定为 `20260918`。
 
@@ -125,8 +125,8 @@ cargo run --release -p ct-xtask -- bench-shape-check      # 只读自检
 ```powershell
 cd native
 cargo run --release -p ct-xtask -- bench-fixtures --sizes r            # 只写 target/
-cargo run --release -p ct-xtask -- bench --size r --runs 5 `
-  --python native/target/no-python-reference                          # 无 Python 参照 → 回归判定
+cargo run --release -p ct-xtask -- bench-fixtures --sizes s,m,l        # S/M/L 也无需 Python
+cargo run --release -p ct-xtask -- bench --size r --runs 5             # 默认原生留档回归
 cargo run --release -p ct-xtask -- bench-recheck `
   --report ../native/docs/baseline/bench-r-windows.json               # 用当前常量重算 verdict
 ```
@@ -135,6 +135,8 @@ cargo run --release -p ct-xtask -- bench-recheck `
   生成前会清空 `output/cache/.ct`，保证两个引擎都从零缓存冷启动。
 - 生成是确定性的：重复生成得到同一份输入摘要（`FIXTURE.json` 的 `inputDigest`，忽略 xlsx 里随时间
   变化的文档属性）。真实工作区与 `gd/` 不会被读写。
+- 历史 S/M/L Python 夹具与现行 Rust 夹具分布不同。旧留档不再用作新夹具的回归基准；
+  `xtask bench` 会检查 `inputDigest`，缺失或不匹配时明确标为 `no-baseline`。
 - 判定路径复用 `native-core-runtime` 已有语义：参照不在位时记
   `verdict=regression-pass|regression-fail` + `baselineMode=archived-run`，**不声称配对测量**。
   全量档可以手动跑配对测量，但不进 CI。

@@ -44,8 +44,8 @@ node web/tools/check-parity.mjs
 cd launcher && flutter test
 ```
 
-`check-parity --require-complete` 是 Web 迁移门槛。当前 146 个旧场景尚未全部迁移；
-Python 的业务、测试和再生脚本暂留作为对照，不能将“原生运行不需要 Python”解释为“仓库已完全去 Python”。
+`check-parity --require-complete` 是 Web 迁移门槛，当前 146/146 个旧场景已覆盖。
+Python 的业务、测试和部分再生脚本暂留作为对照，不能将“原生运行不需要 Python”解释为“仓库已完全去 Python”。
 对等清单及执行证据见 [web-parity.md](docs/baseline/web-parity.md)。
 
 ## 发行
@@ -67,5 +67,6 @@ cargo run -p ct-xtask -- dist
 旧 Apply journal 不猜测恢复；保留材料并阻止写入。
 
 `docs/baseline/` 中从 `2d7dfc9` 引入的工作台、性能和平台记录是该分支历史证据，不能充当 main 新 Web 的验收。
-S/M/L 基准及部分 golden 再生仍使用历史 Python 脚本，`r/r-full` 可用 Rust 生成；
+S/M/L 与 `r/r-full` 基准夹具由 Rust `xtask bench-fixtures` 生成；部分 golden 再生仍使用历史 Python 脚本。
+新旧 S/M/L 夹具分布不同，旧性能留档不能用于回归判定；`xtask bench` 会检查夹具摘要。
 完整去 Python 需等 G1/G2/G3 全部通过，详见 OpenSpec `native-web-python-retirement`。

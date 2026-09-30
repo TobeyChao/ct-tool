@@ -21,6 +21,10 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: cargo test --manifest-path native/Cargo.toml --workspace --locked
       - run: cargo build --manifest-path native/Cargo.toml -p ct-cli --locked
+      - name: Regenerate and validate native benchmark fixture
+        run: |
+          cargo run --manifest-path native/Cargo.toml -p ct-xtask --locked -- bench-fixtures --sizes s
+          cargo run --manifest-path native/Cargo.toml -p ct-cli --locked -- validate --root native/target/bench/bench-s
       - run: node web/tools/check-parity.mjs
       - run: npm ci --prefix web
       - run: npm run test:http --prefix web

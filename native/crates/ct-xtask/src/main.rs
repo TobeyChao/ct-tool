@@ -59,6 +59,7 @@ enum Command {
         runs: usize,
         #[arg(long)]
         rust: Option<PathBuf>,
+        /// 显式启用历史 Python 同机参照；默认仅做原生留档回归
         #[arg(long)]
         python: Option<PathBuf>,
         #[arg(long)]
@@ -132,14 +133,7 @@ fn main() -> anyhow::Result<()> {
                     "native/target/release/ct"
                 })
             }),
-            python: python.or_else(|| {
-                let candidate = repo_root().join(if cfg!(windows) {
-                    "ct/.venv/Scripts/ct.exe"
-                } else {
-                    "ct/.venv/bin/ct"
-                });
-                candidate.is_file().then_some(candidate)
-            }),
+            python,
             out,
             against,
         }),
