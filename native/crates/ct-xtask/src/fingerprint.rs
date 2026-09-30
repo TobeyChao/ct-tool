@@ -28,6 +28,8 @@ const SCOPES: &[(&str, &[&str])] = &[
             ".idea",
             ".flutter-plugins",
             ".flutter-plugins-dependencies",
+            // Flutter golden-test diagnostics are local outputs, not source fixtures.
+            "test/failures",
         ],
     ),
     ("openspec", &[]),
@@ -96,6 +98,17 @@ fn collect(scope_dir: &Path, excludes: &[&str]) -> Result<BTreeMap<String, Strin
                 continue;
             }
             let path = entry.path();
+            let relative = path
+                .strip_prefix(scope_dir)
+                .context("目标不在 scope 内")?
+                .to_string_lossy()
+                .replace('\\', "/");
+            if excludes
+                .iter()
+                .any(|skip| relative.eq_ignore_ascii_case(skip))
+            {
+                continue;
+            }
             let meta = std::fs::symlink_metadata(&path)?;
             if meta.is_symlink() {
                 continue;
@@ -104,11 +117,6 @@ fn collect(scope_dir: &Path, excludes: &[&str]) -> Result<BTreeMap<String, Strin
                 stack.push(path);
                 continue;
             }
-            let relative = path
-                .strip_prefix(scope_dir)
-                .context("目标不在 scope 内")?
-                .to_string_lossy()
-                .replace('\\', "/");
             out.insert(relative, sha256_hex(&source_bytes(&path)?));
         }
     }
@@ -432,6 +440,32 @@ mod tests {
         std::fs::write(temp.path().join(".DS_Store"), "Finder metadata").unwrap();
         assert_eq!(before, collect(temp.path(), &[]).unwrap());
         assert_eq!(before.len(), 1);
+    }
+
+    #[test]
+    fn launcher_golden_diagnostics_do_not_change_source_fingerprint() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        let excludes = SCOPES
+            .iter()
+            .find(|(scope, _)| *scope == "launcher")
+            .unwrap()
+            .1;
+        for relative in ["test/goldens", "lib/failures"] {
+            std::fs::create_dir_all(root.join(relative)).unwrap();
+        }
+        std::fs::write(root.join("test/goldens/workbench.png"), "golden source").unwrap();
+        std::fs::write(root.join("lib/failures/state.dart"), "source").unwrap();
+        let before = collect(root, excludes).unwrap();
+        assert_eq!(before.len(), 2, "基准图片与同名源码目录仍参与指纹");
+
+        std::fs::create_dir_all(root.join("test/failures/nested")).unwrap();
+        std::fs::write(root.join("test/failures/testImage.png"), "diagnostic").unwrap();
+        std::fs::write(root.join("test/failures/nested/diff.png"), "diagnostic").unwrap();
+        assert_eq!(before, collect(root, excludes).unwrap());
+
+        std::fs::write(root.join("test/goldens/workbench.png"), "changed golden").unwrap();
+        assert_ne!(before, collect(root, excludes).unwrap());
     }
 
     #[test]

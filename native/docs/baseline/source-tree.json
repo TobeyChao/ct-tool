@@ -1,8 +1,8 @@
 {
   "schema": "ct-source-tree/2",
   "git": {
-    "commit": "5b7097163b21e5d84c7a59c21017bc10f63415cd",
-    "dirtyPaths": null
+    "commit": "d8ac427afce075a8a4e4a3842e97379d35d5adb3",
+    "dirtyPaths": 3
   },
   "toolchain": {
     "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
@@ -10,14 +10,14 @@
     "pythonRuntimeRequired": false
   },
   "tree": {
-    "sha256": "2d159b1e3436e7d0db242af1df81d0c0d1a50dd76932d5598e7002da56b7fa87",
+    "sha256": "c62b456febbf129b921d350fce8dbc06629ebe228c0387867dcdfda4dba72acc",
     "files": 1367
   },
   "scopes": {
     "native": {
       "files": 699,
-      "bytes": 9242269,
-      "sha256": "0394f62b84dfbd75b1188231cb1622063aa7a3ddfb76ec2e94b132571ef94eae",
+      "bytes": 9244503,
+      "sha256": "3528ce3c71f7e63224bba38af3407f881c83d9fbe8a2dae78072774b48950ff2",
       "entries": {
         ".gitignore": "e899756b962f25261eca57ba87fa2e878892daa40bca86f0871d7935d038a520",
         "Cargo.lock": "c20c6e340a325f179b95c85fae87c4c5c9092cdc0d33d08f89d4c7144b86c464",
@@ -173,7 +173,7 @@
         "crates/ct-xtask/src/accessor_fixtures.rs": "2c04f2de8f9c80fcdd1c36ac08da0b54a2b8ad198656debb65300b151c09d467",
         "crates/ct-xtask/src/bench.rs": "cb3ee3b0a89994bf86bdf9f841e3994dcdcbdfb6672b3acb28ce44a557f032b0",
         "crates/ct-xtask/src/dist.rs": "05afd109a6ba4823aaa3097f28a9f36d0d26853f6ba6d4561e799f5bb3725109",
-        "crates/ct-xtask/src/fingerprint.rs": "27a4b1eed72f436f78552db0676e4ab703afc12dbb497b3bb619b588ed9d225d",
+        "crates/ct-xtask/src/fingerprint.rs": "11a65062b55b93e8595b059724c3fdd4d61729b273eb511f3ee30772aee563d2",
         "crates/ct-xtask/src/fixtures.rs": "789db1d22bf5b68a494c6e7edf3f197a16b11ef1501d133818878290680ac8d6",
         "crates/ct-xtask/src/main.rs": "fe28ea5d0ff4b951d7dee35ece220c5778407c9ae5662cf60466ba66bf54dfc8",
         "crates/ct-xtask/src/real_fixture.rs": "fc8c3bbd483565e3baef6a6189bd52ed62930381fda1f4e619493b2893f79172",
@@ -698,7 +698,7 @@
         "tests/protocol/Cargo.toml": "7ee90993f90ffd72135b3f57cafc8825578b8c4dfdde86a33f0bbf7a911243e3",
         "tests/protocol/src/lib.rs": "dd23e21c8ce9a403b5ba1554bf630f600c2575622427ac87eca954ecb43b55d9",
         "tests/protocol/tests/bigint.rs": "6b2ec6b360fd4b4a19f349088e3da9d98f6d2513c07fc0bf30188bea0476fd60",
-        "tests/protocol/tests/cancel.rs": "057a7d3c53431c0586a0af69c5beafd18b3df6d4f014360e5d8f8458e3100d39",
+        "tests/protocol/tests/cancel.rs": "91fe814103db200581948b77e4f8f3ec0430262bc62a32213cbffa34af2e0e6d",
         "tests/protocol/tests/contract_cases.rs": "c57dca296005c9bf5bb6deb47fe973c48221dee1d4a393570d2141e94cb23ded",
         "tests/protocol/tests/desktop_state.rs": "867208a138186ae08d18bfeb83e95524e6b74a04e0476a48e1b82fe59fe7bfe9",
         "tests/protocol/tests/editor_state.rs": "d18b436853fe24975e22c9b05d920886c9dc071e939d4d470d91975be3ddae09",
@@ -972,7 +972,7 @@
       "native/crates/ct-xtask/src/accessor_fixtures.rs": 2,
       "native/crates/ct-xtask/src/bench.rs": 11,
       "native/crates/ct-xtask/src/dist.rs": 3,
-      "native/crates/ct-xtask/src/fingerprint.rs": 6,
+      "native/crates/ct-xtask/src/fingerprint.rs": 7,
       "native/crates/ct-xtask/src/fixtures.rs": 0,
       "native/crates/ct-xtask/src/main.rs": 0,
       "native/crates/ct-xtask/src/real_fixture.rs": 0,
@@ -1034,7 +1034,7 @@
     },
     "totals": {
       "historicalPythonTestFunctions": 690,
-      "nativeTestFunctions": 333
+      "nativeTestFunctions": 334
     }
   }
 }

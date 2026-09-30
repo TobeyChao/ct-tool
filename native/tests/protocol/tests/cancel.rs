@@ -48,28 +48,39 @@ fn control_messages_are_served_while_a_write_task_runs() {
 
     let export_id = wire.call("export", json!({"all": true}));
     let cancel_id = wire.call("cancel", json!({"targetRequestId": export_id}));
-    let (cancel_terminal, before) = wire.until_terminal(cancel_id);
-    let state = state_of(&cancel_terminal);
-    assert!(
-        ["cancelling", "already_terminal"].contains(&state.as_str()),
-        "cancel 只能返回三态之一，实际 {state}"
-    );
-    if state == "cancelling" {
-        // 控制消息先于写任务终态返回：主循环没有被写任务阻塞
-        assert!(
-            !before.iter().any(|message| matches!(
-                message,
-                Message::Result(response) if response.request_id == export_id
-            )),
-            "取消响应必须先于导出终态：{before:?}"
-        );
+    let mut cancel_state = None;
+    let mut export_payload = None;
+    let mut saw_export_progress = false;
+    // 两个响应共用消息流；导出可在取消响应前完成，不能丢弃已读终态。
+    while cancel_state.is_none() || export_payload.is_none() {
+        match wire.message() {
+            Message::Result(response) if response.request_id == cancel_id => {
+                let state = response.payload.as_str().unwrap_or_default().to_string();
+                assert!(
+                    ["cancelling", "already_terminal"].contains(&state.as_str()),
+                    "运行中任务的取消响应应为 cancelling 或 already_terminal，实际 {state}"
+                );
+                assert!(cancel_state.is_none(), "取消请求只允许一个终态");
+                cancel_state = Some(state);
+            }
+            Message::Result(response) if response.request_id == export_id => {
+                assert!(export_payload.is_none(), "导出请求只允许一个终态");
+                export_payload = Some(response.payload);
+            }
+            Message::Progress(event) if event.request_id == export_id => {
+                saw_export_progress = true;
+            }
+            Message::Error(response)
+                if response.request_id == Some(export_id)
+                    || response.request_id == Some(cancel_id) =>
+            {
+                panic!("导出与取消都应返回 result，实际 {response:?}")
+            }
+            _ => {}
+        }
     }
-    let (export_terminal, events) = wire.until_terminal(export_id);
-    let payload = match &export_terminal {
-        // 取消也是成功终态 + outcome=cancelled，不是 error
-        Message::Result(response) => response.payload.clone(),
-        other => panic!("导出终态应为 result，实际 {other:?}"),
-    };
+    let state = cancel_state.expect("取消终态");
+    let payload = export_payload.expect("导出终态");
     if state == "cancelling" {
         // The request may arrive after the last reversible checkpoint. In
         // that case the committed export must retain its success outcome.
@@ -83,12 +94,10 @@ fn control_messages_are_served_while_a_write_task_runs() {
             "already_terminal 必须已有成功终态"
         );
     }
-    assert!(
-        events
-            .iter()
-            .any(|message| matches!(message, Message::Progress(_))),
-        "强制导出应上报阶段进度：{events:?}"
-    );
+    // 取消可在任务产生进度前生效；成功的强制导出仍必须上报进度。
+    if payload["outcome"] == "succeeded" {
+        assert!(saw_export_progress, "成功的强制导出应上报阶段进度");
+    }
     assert!(wire.line_within(QUIET).is_none(), "每个请求只允许一个终态");
     wire.shutdown();
 }
