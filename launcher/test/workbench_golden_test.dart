@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///
 /// 说明：flutter_tester 无 CJK 字体，截图中中文为占位方块；
 /// 矩阵用于验证布局、对齐与溢出，字体渲染一致性以真机运行为准（见 5.1/5.5）。
+/// 使用与 CI 一致的 Flutter 3.47.0 更新基线，避免渲染器版本造成像素差异。
 /// 更新方式：`flutter test test/workbench_golden_test.dart --update-goldens`。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

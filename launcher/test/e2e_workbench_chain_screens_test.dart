@@ -301,15 +301,18 @@ void main() {
     await settle(tester, rounds: 60);
     await shot(tester, 'chain-09-i18n', '翻译页：筛选/列显隐/分页与 sync 结果都来自内核 i18n.*。');
 
-    // Quick Open：空查询给最近打开（跨模块可达）。
-    await act(
-      tester,
-      () => tester.tap(find.byKey(const ValueKey('wb.draftQuickOpen'))),
-    );
+    // Quick Open：纯 Widget 夹具不显示桌面标题栏，走跨模块的全局快捷键。
+    await act(tester, () async {
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyP);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    });
     await settle(tester, rounds: 60);
+    expect(find.byKey(const ValueKey('wb.quickOpen.field')), findsOneWidget);
     await shot(tester, 'chain-10-quick-open', 'Quick Open：资源清单取自内核，空查询给最近打开。');
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await settle(tester, rounds: 30);
+    expect(find.byKey(const ValueKey('wb.quickOpen.field')), findsNothing);
 
     // 收尾断言：截图不是摆拍——内核状态确实变了。
     expect(repo.resources, isNotEmpty);

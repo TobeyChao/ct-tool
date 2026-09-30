@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:ct_launcher/services/protocol/protocol.dart';
@@ -53,6 +54,34 @@ class _FakeGateway implements KernelGateway {
   }
 }
 
+class _DelayedDraftStore extends DraftStore {
+  _DelayedDraftStore({required super.rootOverride, this.fail = false});
+
+  final bool fail;
+  final started = Completer<void>();
+  final release = Completer<void>();
+  final saves = <DraftEnvelope>[];
+
+  Future<void> _wait() async {
+    if (!started.isCompleted) started.complete();
+    await release.future;
+    if (fail) throw StateError('delayed persistence failure');
+  }
+
+  @override
+  Future<void> save(DraftEnvelope envelope) async {
+    saves.add(envelope);
+    await _wait();
+    await super.save(envelope);
+  }
+
+  @override
+  Future<void> clear(String workspaceKey) async {
+    await _wait();
+    await super.clear(workspaceKey);
+  }
+}
+
 void main() {
   late Directory root;
   late DraftStore store;
@@ -73,6 +102,68 @@ void main() {
 
   WorkbenchRepository repo(_FakeGateway gateway) =>
       WorkbenchRepository(worker: gateway, store: store);
+
+  test('连续编辑串行落盘，释放后仍保存最后命令与撤销游标', () async {
+    final delayed = _DelayedDraftStore(rootOverride: root);
+    final found = WorkbenchRepository(worker: _FakeGateway(), store: delayed);
+    await found.switchWorkspace(workspace);
+    var notifications = 0;
+    found.addListener(() => notifications++);
+    found.createTable('Hero');
+    await delayed.started.future;
+    found.renameResource('Hero', 'Boss');
+    found.undoDraft();
+    var settled = false;
+    final pending = found.persistSettled.then((_) => settled = true);
+    await Future<void>.delayed(Duration.zero);
+    expect(delayed.saves, hasLength(1), reason: '旧写入未结束时不得争用同一个临时文件');
+    expect(settled, isFalse, reason: '最近一次等待必须包含前面的写入');
+    final notificationsBeforeDispose = notifications;
+    found.dispose();
+    delayed.release.complete();
+    await pending;
+    expect(notifications, notificationsBeforeDispose);
+    expect(delayed.saves.map((e) => e.commands.length), [1, 2, 2]);
+    expect(delayed.saves.map((e) => e.cursor), [1, 2, 1]);
+    final restored = repo(_FakeGateway());
+    await restored.switchWorkspace(workspace);
+    expect(restored.commands, hasLength(2));
+    expect(restored.cursor, 1);
+    expect(restored.canRedo, isTrue);
+    expect(restored.resources.map((r) => r.name), contains('Hero'));
+    expect(restored.resources.map((r) => r.name), isNot(contains('Boss')));
+    restored.dispose();
+  });
+
+  for (final clear in [false, true]) {
+    for (final fail in [false, true]) {
+      test('释放后${clear ? '清理' : '保存'}${fail ? '失败' : '成功'}不会通知已释放仓库', () async {
+        final delayed = _DelayedDraftStore(rootOverride: root, fail: fail);
+        final found = WorkbenchRepository(
+          worker: _FakeGateway(),
+          store: delayed,
+        );
+        await found.switchWorkspace(workspace);
+        if (clear) {
+          found.draftPersistedChanged(false);
+          found.persistDraft();
+        } else {
+          found.createTable('Hero');
+        }
+        await delayed.started.future;
+        final pending = found.persistSettled;
+        final savedAt = found.draftSavedAt;
+        final persisted = found.draftPersisted;
+        final error = found.persistError;
+        found.dispose();
+        delayed.release.complete();
+        await pending;
+        expect(found.draftSavedAt, savedAt);
+        expect(found.draftPersisted, persisted);
+        expect(found.persistError, error);
+      });
+    }
+  }
 
   test('编辑即落盘；放弃草稿后文件被清掉', () async {
     final gateway = _FakeGateway();

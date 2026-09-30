@@ -69,6 +69,8 @@ jobs:
           echo "CT_WORKER_BIN=$GITHUB_WORKSPACE/$PACKAGE" >> "$GITHUB_ENV"
       - uses: subosito/flutter-action@v2
         with:
+          # Keep the renderer aligned with the checked-in macOS golden images.
+          flutter-version: '3.47.0'
           channel: stable
           cache: true
       - name: Flutter workbench, native worker, and static analysis

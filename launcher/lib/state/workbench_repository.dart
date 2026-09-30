@@ -27,6 +27,7 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   final DraftStore? store;
 
   int _generation = 0;
+  bool _disposed = false;
   String _root = '';
   String? _workspaceId;
   WorkspaceSnapshot? _snapshot;
@@ -1091,41 +1092,51 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   Future<void> get persistSettled => _pendingPersist ?? Future.value();
 
   /// 落盘当前草稿：空草稿删除文件；失败只警告，不清内存编辑、不谎称已保留。
-  Future<void> persistDraft() async {
+  Future<void> persistDraft() {
     final sink = store;
-    if (sink == null || draftKey.isEmpty) return;
-    final commands = _log.commands;
-    if (commands.isEmpty) {
+    final key = draftKey;
+    if (_disposed || sink == null || key.isEmpty) return Future.value();
+    final generation = _generation;
+    final commands = List<SchemaCommand>.of(_log.commands);
+    final envelope = commands.isEmpty
+        ? null
+        : DraftEnvelope(
+            formatVersion: DraftEnvelope.currentFormat,
+            workspaceKey: key,
+            baseline: _schemaBaseline,
+            commands: commands,
+            cursor: _log.cursor,
+            savedAt: DateTime.now(),
+          );
+    // 同一文件共用临时件：逐次写入，最后一次等待必须涵盖此前所有写入。
+    final pending = (_pendingPersist ?? Future<void>.value()).then((_) async {
       try {
-        await sink.clear(draftKey);
-        if (draftPersistedChanged(true)) notifyListeners();
+        if (envelope == null) {
+          await sink.clear(key);
+        } else {
+          await sink.save(envelope);
+        }
       } on Object catch (e) {
+        if (!_isCurrent(generation)) return;
+        // 内存草稿仍在，界面持续显示未持久化警告。
         _persistError = '$e';
         _draftPersisted = false;
         notifyListeners();
+        return;
       }
-      return;
-    }
-    final envelope = DraftEnvelope(
-      formatVersion: DraftEnvelope.currentFormat,
-      workspaceKey: draftKey,
-      baseline: _schemaBaseline,
-      commands: commands,
-      cursor: _log.cursor,
-      savedAt: DateTime.now(),
-    );
-    try {
-      await sink.save(envelope);
-      _draftSavedAt = envelope.savedAt;
-      _persistError = null;
-      _draftPersisted = true;
-      notifyListeners();
-    } on Object catch (e) {
-      // 内存草稿仍在，界面持续显示未持久化警告。
-      _persistError = '$e';
-      _draftPersisted = false;
-      notifyListeners();
-    }
+      // 已排队的草稿仍完成落盘；释放或换工作区后不再修改视图。
+      if (!_isCurrent(generation)) return;
+      if (envelope == null) {
+        if (draftPersistedChanged(true)) notifyListeners();
+      } else {
+        _draftSavedAt = envelope.savedAt;
+        _persistError = null;
+        _draftPersisted = true;
+        notifyListeners();
+      }
+    });
+    _pendingPersist = pending;
+    return pending;
   }
 
   bool draftPersistedChanged(bool value) {
@@ -1205,7 +1216,14 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
 
   String _detail(Object error) => worker.failureReason ?? '$error';
 
-  bool _isCurrent(int generation) => generation == _generation;
+  @override
+  void dispose() {
+    _disposed = true;
+    _generation++;
+    super.dispose();
+  }
+
+  bool _isCurrent(int generation) => !_disposed && generation == _generation;
 
   static Map<String, Object?> _map(Object? payload) =>
       payload is Map<String, Object?>
