@@ -1,0 +1,3 @@
+[fixture] s：10 张表 / 18454 个数据单元格 / /var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/fixtures/bench-s
+[fixture] m：50 张表 / 1847536 个数据单元格 / /var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/fixtures/bench-m
+[fixture] l：100 张表 / 18480119 个数据单元格 / /var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/fixtures/bench-l

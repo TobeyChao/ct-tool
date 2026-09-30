@@ -28,7 +28,10 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
   @override
   void initState() {
     super.initState();
-    _panel = PanelService(settings: widget.settings);
+    _panel = PanelService(
+      settings: widget.settings,
+      onReady: openPanelInBrowser,
+    );
     _tray = TrayService(
       panel: _panel,
       onQuit: () async {

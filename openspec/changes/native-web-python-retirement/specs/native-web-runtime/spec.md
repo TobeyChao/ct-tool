@@ -106,7 +106,7 @@
 - **THEN** 服务拒绝该访问，不返回文件内容
 
 ### Requirement: Feature parity gates Python removal
-删除 Python 工程前 SHALL 建立固定 main Web 基线、旧场景到新验收的映射及执行证据。门槛 SHALL 包含真实原生 HTTP/浏览器全流程、草稿与恢复、产物与原生 CLI/worker/Flutter 回归，以及无 Python 的构建、测试、必要夹具再生和发行检查。三平台 panel smoke SHALL 覆盖 Windows/macOS/Linux，缺少平台或必要独立读取端证据 SHALL 标记未完成，不能用测试跳过或规格校验替代。
+删除 Python 工程前 SHALL 建立固定 main Web 基线、旧场景到新验收的映射及执行证据。门槛 SHALL 包含真实原生 HTTP/浏览器全流程、草稿与恢复、产物与原生 CLI/worker/Flutter 回归，以及无 Python 的构建、测试、必要夹具再生和发行检查。本轮支持平台 SHALL 为 macOS，panel 与 launcher smoke SHALL 在 macOS 完成；Windows SHALL 标记延后，Linux SHALL 不纳入支持范围。缺少 macOS 或必要独立读取端证据 SHALL 标记未完成，不能用测试跳过或规格校验替代；Windows 延后与 Linux 不支持 SHALL 不被登记成平台验收通过。
 
 #### Scenario: Native kernel tests pass but Web tests are missing
 - **WHEN** Rust 内核测试通过，但 Web 编辑、草稿或浏览器布局场景尚无替代验收
@@ -115,4 +115,3 @@
 #### Scenario: Clean environment acceptance
 - **WHEN** 在不含 Python 和旧 ct/ 的干净 checkout 执行正式构建、验收、夹具再生及发行流程
 - **THEN** 所有必要路径完成并留存证据，不因 Python 缺失缩减必需测试
-

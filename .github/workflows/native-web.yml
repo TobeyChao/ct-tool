@@ -6,13 +6,9 @@ on:
     paths: ['native/**', 'web/**', 'launcher/**', 'test-proj/**', '.github/workflows/native-web.yml']
 jobs:
   native:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
     steps:
-      - name: Preserve byte-exact frozen references on every platform
+      - name: Preserve byte-exact frozen references
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -24,7 +20,7 @@ jobs:
       - run: cargo test --manifest-path native/Cargo.toml --workspace --locked
       - run: cargo build --manifest-path native/Cargo.toml -p ct-cli --locked
       - name: Compare six frozen CLI scenarios and artifact digests
-        run: node native/tools/parity/cli-text-diff.mjs --rust native/target/debug/ct${{ runner.os == 'Windows' && '.exe' || '' }}
+        run: node native/tools/parity/cli-text-diff.mjs --rust native/target/debug/ct
       - name: Verify independent oracles and regenerate Excel boundary inputs
         run: cargo run --manifest-path native/Cargo.toml -p ct-xtask --locked -- compat-fixtures
       - name: Regenerate and validate native benchmark fixture
@@ -36,22 +32,49 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Audit test-proj entries and run independent C# reader
         env:
-          CT_NATIVE_BIN: ${{ github.workspace }}/native/target/debug/ct${{ runner.os == 'Windows' && '.exe' || '' }}
+          CT_NATIVE_BIN: ${{ github.workspace }}/native/target/debug/ct
         run: |
           node test-proj/check-retirement.mjs
           node test-proj/ExportAccessorVerify/prepare-native.mjs
-      - run: node web/tools/check-parity.mjs
-      - run: npm ci --prefix web
-      - run: npm run test:http --prefix web
+      - run: node web/tools/check-parity.mjs --require-complete
+      - run: npm ci
+        working-directory: web
+      - run: npm run test:http
+        working-directory: web
+      - name: Build and smoke isolated native distribution
+        run: cargo run --manifest-path native/Cargo.toml -p ct-xtask --locked -- dist
+      - name: Verify native payload and use packaged panel for browser acceptance
+        run: |
+          PACKAGE=$(find native/dist -type f -path '*/bin/ct' -print | head -n 1)
+          node native/tools/check-package.mjs --package "$(dirname "$(dirname "$PACKAGE")")" --out native/dist/payload-check.json
+          echo "CT_WEB_BIN=$GITHUB_WORKSPACE/$PACKAGE" >> "$GITHUB_ENV"
+          echo "CT_LAUNCHER_TEST_BIN=$GITHUB_WORKSPACE/$PACKAGE" >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Launcher lifecycle and static analysis
+        run: |
+          cd launcher
+          flutter test
+          flutter analyze
+      - name: Package macOS launcher with checked native runtime
+        run: |
+          PACKAGE=$(find native/dist -type f -path '*/bin/ct' -print | head -n 1)
+          RUNTIME_PACKAGE="$(dirname "$(dirname "$PACKAGE")")" bash launcher/tool/build_macos.sh
       - name: Install Chromium
-        if: runner.os == 'Linux'
-        run: npx --prefix web playwright install --with-deps chromium
+        run: npx playwright install chromium
+        working-directory: web
       - name: Browser acceptance against native panel
-        if: runner.os == 'Linux'
-        run: npm test --prefix web
+        run: npm test
+        working-directory: web
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: native-web-${{ matrix.os }}
-          path: web/test-results
+          name: native-web-macos
+          path: |
+            web/test-results
+            native/dist
+            launcher/build/macos/*.dmg
+            launcher/build/macos/payload-check.json
           if-no-files-found: ignore

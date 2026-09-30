@@ -1,6 +1,6 @@
 //! 平台独立运行时包（任务 6.6）：release 构建 → 版本信息 → 无 Python 环境自检 → zip。
 //!
-//! 只打包原生 `ct` 单二进制（CLI + `ct worker`），不含任何 Python 运行时；
+//! 只打包原生 `ct` 单二进制（CLI + worker + panel），不含任何 Python 运行时；
 //! 打包后立即用「中文与空格路径 + 清洗过的 PATH」真跑一遍 CLI 与 worker 握手，
 //! 结果写进包内 `RUNTIME-CHECK.txt`，供桌面壳与人工验收核对。
 
@@ -34,6 +34,9 @@ const ENV_DENY: &[&str] = &[
     "PYTHONEXECUTABLE",
     "VIRTUAL_ENV",
     "CONDA_PREFIX",
+    "DYLD_LIBRARY_PATH",
+    "DYLD_FALLBACK_LIBRARY_PATH",
+    "LD_LIBRARY_PATH",
 ];
 
 /// 子进程环境隔离：PATH 只保留包内 bin 目录，并清掉解释器/虚拟环境变量。
@@ -112,15 +115,30 @@ fn exe_name(target: &str) -> String {
 
 fn cargo_build(target: &str) -> Result<PathBuf> {
     let status = Command::new("cargo")
-        .args(["build", "--release", "-p", "ct-cli", "--target", target])
+        .args([
+            "build",
+            "--release",
+            "--locked",
+            "-p",
+            "ct-cli",
+            "--target",
+            target,
+        ])
         .current_dir(native_dir())
         .status()
         .with_context(|| format!("无法启动 cargo（目标 {target}）"))?;
     if !status.success() {
         bail!("cargo build --release --target {target} 失败");
     }
-    let binary = native_dir()
-        .join("target")
+    let configured_target = std::env::var_os("CARGO_TARGET_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| native_dir().join("target"));
+    let target_dir = if configured_target.is_absolute() {
+        configured_target
+    } else {
+        native_dir().join(configured_target)
+    };
+    let binary = target_dir
         .join(target)
         .join("release")
         .join(exe_name(target));
@@ -346,7 +364,7 @@ fn version_info(triple: &str, binary: &Path, version: &str) -> Result<Value> {
             "cargoLockSha256": sha256_of(&native_dir().join("Cargo.lock"))?,
         },
         "cliVersionOutput": command_text(binary.to_string_lossy().as_ref(), &["--version"], None).unwrap_or_default(),
-        "contents": ["bin/ct", "VERSION.json", "RUNTIME-CHECK.txt", "README.md"],
+        "contents": [format!("bin/{}", exe_name(triple)), "VERSION.json", "RUNTIME-CHECK.txt", "README.md"],
         "files": files,
     }))
 }
@@ -354,20 +372,32 @@ fn version_info(triple: &str, binary: &Path, version: &str) -> Result<Value> {
 fn write_package_readme(path: &Path, triple: &str, version: &str) -> Result<()> {
     let text = format!(
         "# {PACKAGE_PREFIX} {version}（{triple}）\n\n\
-         独立原生运行时包：单个 `ct` 二进制同时提供命令行与 `ct worker` stdio 协议入口，\n\
+         独立原生运行时包：单个 `ct` 二进制提供命令行、worker 与 Web panel，\n\
          **不需要 Python**（不下载、不调用、也不回退到旧工具链）。\n\n\
          ## 用法\n\n\
          ```sh\n\
          bin/ct export --root <游戏配表工作区>\n\
          bin/ct validate --root <工作区> --json\n\
          bin/ct worker   # 桌面壳通过 stdin/stdout 的 NDJSON 协议驱动\n\
+         bin/ct panel --root <工作区> # 静态资源内嵌，无需 Node 或源码\n\
          ```\n\n\
          ## 自检\n\n\
-         `RUNTIME-CHECK.txt` 是打包时在同一次运行里真跑 CLI/worker 的输出：\n\
+         `RUNTIME-CHECK.txt` 是打包时真跑 CLI/worker/panel 与安全退出的输出：\n\
          中文与空格路径、清洗过 PATH 与 `PYTHON*` 变量的环境、以及 `--version` 文本。\n\
          换平台后请重新执行 `cargo run -p ct-xtask -- dist`，不要复用别的平台的自检结论。\n"
     );
     std::fs::write(path, text)?;
+    Ok(())
+}
+
+pub fn check_binary(binary: &Path, out: &Path) -> Result<()> {
+    let binary = binary.canonicalize().context("原生二进制不存在")?;
+    let text = runtime_check(&binary, &host_triple()?)?;
+    if let Some(parent) = out.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(out, text)?;
+    println!("runtime check passed: {}", binary.display());
     Ok(())
 }
 
@@ -395,7 +425,13 @@ fn zip_package(pkg_dir: &Path, zip_path: &Path) -> Result<()> {
     }
     walk(pkg_dir, pkg_dir, &mut entries)?;
     for (relative, path) in &entries {
-        writer.start_file(relative, options)?;
+        let file_options =
+            options.unix_permissions(if relative == "bin/ct" || relative == "bin/ct.exe" {
+                0o755
+            } else {
+                0o644
+            });
+        writer.start_file(relative, file_options)?;
         let bytes = std::fs::read(path)?;
         writer.write_all(&bytes)?;
     }
@@ -507,6 +543,33 @@ mod tests {
             "PYTHONHOME 应被清除：{keys:?}"
         );
     }
+
+    #[test]
+    fn distribution_zip_preserves_executable_permission_and_binary_bytes() {
+        let temp = tempfile::tempdir().unwrap();
+        let package = temp.path().join("package");
+        std::fs::create_dir_all(package.join("bin")).unwrap();
+        std::fs::write(package.join("bin/ct"), b"native payload").unwrap();
+        std::fs::write(package.join("VERSION.json"), b"metadata").unwrap();
+        let path = temp.path().join("package.zip");
+        zip_package(&package, &path).unwrap();
+        let mut archive = zip::ZipArchive::new(std::fs::File::open(path).unwrap()).unwrap();
+        let mut binary = archive.by_name("bin/ct").unwrap();
+        assert_eq!(binary.unix_mode().unwrap() & 0o777, 0o755);
+        let mut bytes = Vec::new();
+        std::io::Read::read_to_end(&mut binary, &mut bytes).unwrap();
+        assert_eq!(bytes, b"native payload");
+        drop(binary);
+        assert_eq!(
+            archive
+                .by_name("VERSION.json")
+                .unwrap()
+                .unix_mode()
+                .unwrap()
+                & 0o777,
+            0o644
+        );
+    }
 }
 
 /// Verify embedded panel assets and safe stdin-EOF shutdown in the isolated package.
@@ -549,6 +612,8 @@ fn run_panel_step(binary: &Path, workspace: &Path) -> Result<String> {
             .parse()?;
         for (path, expected) in [
             ("/", "module-registry.js"),
+            ("/static/js/module-registry.js", "mountSchema"),
+            ("/static/styles/tokens.css", ":root"),
             ("/api/service", "\"kernel\":\"native\""),
         ] {
             let mut socket = std::net::TcpStream::connect(("127.0.0.1", port))?;

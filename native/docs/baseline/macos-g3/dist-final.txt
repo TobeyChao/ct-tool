@@ -1,0 +1,30 @@
+   Compiling ct-xtask v0.0.0 (/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/checkout/native/crates/ct-xtask)
+warning: function `compute` is never used
+   --> crates/ct-xtask/src/fingerprint.rs:186:8
+    |
+186 | pub fn compute() -> Result<Value> {
+    |        ^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ct-xtask` (bin "xtask") generated 1 warning
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.96s
+     Running `native/target/debug/xtask dist --out /var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/dist`
+warning: stripping debug info with `rust-objcopy` failed: signal: 6 (SIGABRT)
+  |
+  = note: dyld[53003]: Library not loaded: @rpath/libLLVM.dylib
+            Referenced from: <AC0D75A8-23BF-301F-B7CE-3E5CC0C1BC06> /Users/tobeychao/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/rust-objcopy
+            Reason: tried: '/Users/tobeychao/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/../lib/libLLVM.dylib' (no such file), '/Users/tobeychao/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/../lib/libLLVM.dylib' (no such file), '/Users/tobeychao/Documents/Projects/ct-tool/native/target/release/deps/libLLVM.dylib' (no such file), '/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/libLLVM.dylib' (no such file), '/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/libLLVM.dylib' (no such file), '/Users/tobeychao/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libLLVM.dylib' (no such file), '/Users/tobeychao/lib/libLLVM.dylib' (no such file), '/usr/local/lib/libLLVM.dylib' (no such file), '/usr/lib/libLLVM.dylib' (no such file, not in dyld cache)
+          
+
+warning: `ct-web` (build script) generated 1 warning
+warning: stripping debug info with `rust-objcopy` failed: signal: 6 (SIGABRT)
+  |
+  = note: dyld[53032]: Library not loaded: @rpath/libLLVM.dylib
+            Referenced from: <AC0D75A8-23BF-301F-B7CE-3E5CC0C1BC06> /Users/tobeychao/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/rust-objcopy
+            Reason: tried: '/Users/tobeychao/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/../lib/libLLVM.dylib' (no such file), '/Users/tobeychao/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/../lib/libLLVM.dylib' (no such file), '/Users/tobeychao/Documents/Projects/ct-tool/native/target/release/deps/libLLVM.dylib' (no such file), '/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/libLLVM.dylib' (no such file), '/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/libLLVM.dylib' (no such file), '/Users/tobeychao/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libLLVM.dylib' (no such file), '/Users/tobeychao/lib/libLLVM.dylib' (no such file), '/usr/local/lib/libLLVM.dylib' (no such file), '/usr/lib/libLLVM.dylib' (no such file, not in dyld cache)
+          
+
+warning: `ct-cli` (bin "ct") generated 1 warning
+    Finished `release` profile [optimized] target(s) in 0.10s
+aarch64-apple-darwin: /var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/dist/ct-native-0.0.0-aarch64-apple-darwin（zip 3509790 字节，自检 通过）

@@ -20,7 +20,15 @@ const SCOPES: &[(&str, &[&str])] = &[
     ),
     (
         "launcher",
-        &["build", ".dart_tool", ".gradle", "ephemeral", ".idea"],
+        &[
+            "build",
+            ".dart_tool",
+            ".gradle",
+            "ephemeral",
+            ".idea",
+            ".flutter-plugins",
+            ".flutter-plugins-dependencies",
+        ],
     ),
     ("openspec", &[]),
     (".github", &[]),

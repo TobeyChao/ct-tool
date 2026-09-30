@@ -11,9 +11,10 @@ enum PanelStatus { stopped, starting, running, stopping, failed }
 
 /// 管理 ct panel（原生子进程）：启动 / 停止 / 实时日志。
 class PanelService extends ChangeNotifier {
-  PanelService({required this.settings});
+  PanelService({required this.settings, this.onReady});
 
   final SettingsStore settings;
+  final Future<void> Function(String url)? onReady;
 
   PanelStatus status = PanelStatus.stopped;
   String? failureReason;
@@ -24,6 +25,10 @@ class PanelService extends ChangeNotifier {
   bool _disposed = false;
   Future<void>? _starting;
   Future<void>? _stopFuture;
+  bool _checkingReady = false;
+
+  @visibleForTesting
+  int? get processId => _process?.pid;
 
   String get baseUrl => settings.baseUrl;
 
@@ -173,10 +178,48 @@ class PanelService extends ChangeNotifier {
             lower.contains('exception'));
     _append(isError ? LogLevel.error : LogLevel.info, text);
     if (!fromErr && (text.contains('面板已启动') || text.contains('已监听'))) {
-      if (status == PanelStatus.starting) {
-        _setStatus(PanelStatus.running);
-        _append(LogLevel.info, '面板服务运行中：$baseUrl');
+      final proc = _process;
+      if (status == PanelStatus.starting && !_checkingReady && proc != null) {
+        _checkingReady = true;
+        unawaited(_confirmReady(proc));
       }
+    }
+  }
+
+  Future<void> _confirmReady(Process proc) async {
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
+    try {
+      final request = await client.getUrl(Uri.parse('$baseUrl/api/service'));
+      final response = await request.close().timeout(
+        const Duration(seconds: 5),
+      );
+      final body = await response
+          .transform(utf8.decoder)
+          .join()
+          .timeout(const Duration(seconds: 5));
+      final envelope = jsonDecode(body) as Map<String, dynamic>;
+      if (response.statusCode != 200 ||
+          envelope['ok'] != true ||
+          envelope['data']['kernel'] != 'native') {
+        throw const FormatException('就绪地址未提供原生服务');
+      }
+      if (_disposed || _process != proc || status != PanelStatus.starting) {
+        return;
+      }
+      _setStatus(PanelStatus.running);
+      _append(LogLevel.info, '面板服务运行中：$baseUrl');
+      try {
+        await onReady?.call(baseUrl);
+      } catch (e) {
+        _append(LogLevel.warn, '服务已就绪，但无法自动打开浏览器：$e');
+      }
+    } catch (e) {
+      if (_process == proc && status == PanelStatus.starting) {
+        _fail('无法确认原生服务就绪：$e');
+        await proc.stdin.close();
+      }
+    } finally {
+      client.close(force: true);
     }
   }
 
@@ -186,12 +229,14 @@ class PanelService extends ChangeNotifier {
 
   Future<void> _onExit(int code) async {
     _process = null;
+    _checkingReady = false;
     if (_stopping) {
       _stopping = false;
       _append(LogLevel.info, 'ct panel 已退出 (PID 释放)，端口 ${settings.port} 已释放');
       _setStatus(PanelStatus.stopped);
       return;
     }
+    if (status == PanelStatus.failed) return;
     if (status == PanelStatus.starting) {
       _fail('服务启动失败（退出码 $code）');
     } else {

@@ -1,0 +1,84 @@
+[1/6] 定位原生运行时包（aarch64-apple-darwin）
+      内置运行时: /var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/dist/ct-native-0.0.0-aarch64-apple-darwin/bin/ct
+ct 0.0.0
+[2/6] 构建 macOS launcher（flutter build macos --release）...
+Resolving dependencies...
+Downloading packages...
+  clock 1.1.2 (1.1.3 available)
+  code_assets 1.2.1 (2.1.0 available)
+  cross_file 0.3.5+4 (0.4.0 available)
+  file_selector_android 0.5.2+9 (0.5.2+11 available)
+  file_selector_ios 0.5.3+5 (0.5.3+6 available)
+  file_selector_linux 0.9.4 (0.9.4+1 available)
+  file_selector_macos 0.9.5 (0.9.5+1 available)
+  file_selector_windows 0.9.3+5 (0.9.3+6 available)
+  hooks 2.0.2 (2.2.0 available)
+  jni_flutter 1.0.2 (1.0.3 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  objective_c 9.5.0 (9.6.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  record_use 0.6.0 (1.1.1 available)
+  shared_preferences_android 2.4.27 (2.4.28 available)
+  shared_preferences_foundation 2.5.6 (2.5.7 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.14 available)
+  tray_manager 0.5.3 (0.7.0 available)
+  url_launcher_android 6.3.32 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  vector_math 2.4.2 (2.4.3 available)
+  vm_service 15.2.0 (15.3.0 available)
+  win32 5.15.0 (6.4.0 available)
+  win32_registry 2.1.0 (3.0.3 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+30 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Building macOS application...                                   
+Xcode 27 no longer requires macOS binaries to support the x86_64 architecture. To build ARM-only macOS apps now, run: "flutter config --enable-macos-arm64-only". This will become the default behavior in a future Flutter release.
+/Users/tobeychao/.pub-cache/hosted/pub.dev/file_selector_macos-0.9.5/macos/file_selector_macos/Sources/file_selector_macos/FileSelectorPlugin.swift:127:17: warning: 'allowedFileTypes' was deprecated in macOS 12.0: Use -allowedContentTypes instead [#DeprecatedDeclaration]
+125 |         allowedTypes.append(contentsOf: acceptedTypes.utis.map({ $0 }))
+126 |         if !allowedTypes.isEmpty {
+127 |           panel.allowedFileTypes = allowedTypes
+    |                 `- warning: 'allowedFileTypes' was deprecated in macOS 12.0: Use -allowedContentTypes instead [#DeprecatedDeclaration]
+128 |         }
+129 |       }
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+/Users/tobeychao/.pub-cache/hosted/pub.dev/file_selector_macos-0.9.5/macos/file_selector_macos/Sources/file_selector_macos/FileSelectorPlugin.swift:127:17: warning: 'allowedFileTypes' was deprecated in macOS 12.0: Use -allowedContentTypes instead [#DeprecatedDeclaration]
+125 |         allowedTypes.append(contentsOf: acceptedTypes.utis.map({ $0 }))
+126 |         if !allowedTypes.isEmpty {
+127 |           panel.allowedFileTypes = allowedTypes
+    |                 `- warning: 'allowedFileTypes' was deprecated in macOS 12.0: Use -allowedContentTypes instead [#DeprecatedDeclaration]
+128 |         }
+129 |       }
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+warning: Run script build phase 'Run Script' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'Flutter Assemble' from project 'Runner')
+✓ Built build/macos/Build/Products/Release/ct_launcher.app (47.6MB)
+[3/6] 嵌入单个原生二进制到 .app/Contents/Resources/runtime/ ...
+[4/6] 复核：包内不得含解释器，且内置运行时要在无 Python 环境里真跑只读命令
+      无 Python 环境下 status 通过
+[5/6] ad-hoc 签名...
+/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/checkout/launcher/build/macos/Build/Products/Release/ct_launcher.app: replacing existing signature
+{
+  "schema": "ct-package-check/1",
+  "kind": "macos-launcher",
+  "root": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/checkout/launcher/build/macos/Build/Products/Release/ct_launcher.app",
+  "target": "aarch64-apple-darwin",
+  "binary": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/checkout/launcher/build/macos/Build/Products/Release/ct_launcher.app/Contents/Resources/runtime/ct",
+  "sha256": "47c306b913dc642185534426c8cc39de52ea2bed32553070c12ab203391c92fe",
+  "bytes": 8018960,
+  "payloadFiles": 45,
+  "pythonPayload": false,
+  "flaskPayload": false,
+  "runtimeEvidencePresent": true
+}
+[6/6] 生成带 Applications 快捷方式的 DMG...
+hdiutil: WARNING: 'hdiutil create -volname -format ...' is deprecated. Please use 'diskutil image create from/blank --volumeName --format ...' instead.
+完成：/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/checkout/launcher/build/macos/Build/Products/Release/ct_launcher.app
+      安装镜像：/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/checkout/launcher/build/macos/ct-launcher-arm64.dmg
+      桌面壳按内置 -> 显式开发路径两条来源找运行时，无 Python 回退。

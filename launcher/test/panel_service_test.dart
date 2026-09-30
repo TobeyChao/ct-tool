@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 
@@ -128,6 +129,52 @@ void main() {
   });
 
   group('真实启动', () {
+    String nativeCt() =>
+        Platform.environment['CT_LAUNCHER_TEST_BIN'] ??
+        File(
+          Platform.isWindows
+              ? '../native/target/debug/ct.exe'
+              : '../native/target/debug/ct',
+        ).absolute.path;
+
+    Future<void> waitRunning(PanelService service) async {
+      for (var i = 0; i < 100 && service.status == PanelStatus.starting; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+      expect(
+        service.status,
+        PanelStatus.running,
+        reason: service.failureReason,
+      );
+    }
+
+    Future<Map<String, dynamic>> api(
+      String base,
+      String path, [
+      Map<String, dynamic>? body,
+    ]) async {
+      final client = HttpClient();
+      try {
+        final request = await client.openUrl(
+          body == null ? 'GET' : 'POST',
+          Uri.parse('$base$path'),
+        );
+        if (body != null) {
+          request.headers.contentType = ContentType.json;
+          request.write(jsonEncode(body));
+        }
+        final response = await request.close();
+        final envelope =
+            jsonDecode(await response.transform(utf8.decoder).join())
+                as Map<String, dynamic>;
+        expect(response.statusCode, 200, reason: envelope.toString());
+        expect(envelope['ok'], true);
+        return envelope;
+      } finally {
+        client.close(force: true);
+      }
+    }
+
     Directory tempWorkspace() {
       final root = Directory.systemTemp.createTempSync('ct_ws_');
       final config = Directory('${root.path}/config')
@@ -176,20 +223,16 @@ fields:
     });
 
     test('外部原生路径回退：native ct 真实启动到 running', () async {
-      final nativeCt = File(
-        Platform.isWindows
-            ? '../native/target/debug/ct.exe'
-            : '../native/target/debug/ct',
-      ).absolute.path;
+      final nativeBinary = nativeCt();
       expect(
-        File(nativeCt).existsSync(),
+        File(nativeBinary).existsSync(),
         isTrue,
         reason: '先运行 cargo build -p ct-cli',
       );
       final ws = tempWorkspace();
       final settings = SettingsStore()
         ..workspacePath = ws.path
-        ..nativeRuntimePath = nativeCt
+        ..nativeRuntimePath = nativeBinary
         ..port = 18122;
       final svc = PanelService(settings: settings);
 
@@ -226,6 +269,138 @@ fields:
       svc.dispose();
       client.close();
       ws.deleteSync(recursive: true);
+    });
+
+    test('原生 HTTP 就绪后打开一次，导出中停止完整发布，重启不留孤儿', () async {
+      final ws = tempWorkspace();
+      final settings = SettingsStore()
+        ..workspacePath = ws.path
+        ..nativeRuntimePath = nativeCt()
+        ..port = 18123;
+      final opened = <String>[];
+      final service = PanelService(
+        settings: settings,
+        onReady: (url) async {
+          final info = await api(url, '/api/service');
+          expect(info['data']['kernel'], 'native');
+          opened.add(url);
+        },
+      );
+      addTearDown(() async {
+        await service.stop();
+        service.dispose();
+        ws.deleteSync(recursive: true);
+      });
+      await service.start();
+      expect(opened, isEmpty, reason: '进程刚创建时不能提前打开');
+      await waitRunning(service);
+      for (var i = 0; i < 50 && opened.isEmpty; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+      expect(opened, [settings.baseUrl]);
+      final firstPid = service.processId!;
+      final firstInstance = (await api(
+        settings.baseUrl,
+        '/api/service',
+      ))['data']['instanceId'];
+      for (var i = 0; i < 80; i++) {
+        final table = 'T${i.toString().padLeft(3, '0')}';
+        File('${ws.path}/config/schemas/$table.yaml').writeAsStringSync('''
+table: $table
+primary: Id
+fields:
+  - name: Id
+    type: int32
+  - name: Name
+    type: string
+''');
+        await api(settings.baseUrl, '/api/schema-workspace/gen-template', {
+          'table': table,
+        });
+      }
+      await api(settings.baseUrl, '/api/schema-workspace/gen-template', {
+        'table': 'Item',
+      });
+      final result = await api(settings.baseUrl, '/api/export', {
+        'forced': true,
+      });
+      expect(result['data']['status'], 'running');
+      // Exercise the launcher's actual EOF stop protocol, not a direct process kill.
+      await Future.wait([service.stop(), service.stop()]);
+      expect(service.status, PanelStatus.stopped);
+      expect(service.processId, isNull);
+      expect(Process.killPid(firstPid, ProcessSignal.sigcont), false);
+      expect(service.logs.any((log) => log.message.contains('安全停止')), true);
+      final ledger = jsonDecode(
+        File('${ws.path}/cache/state.json').readAsStringSync(),
+      );
+      expect((ledger['excel_hashes'] as Map).length, 81);
+      expect(
+        File('${ws.path}/.ct/export-publication.json').existsSync(),
+        false,
+      );
+      for (final table in [
+        'Item',
+        ...List.generate(80, (i) => 'T${i.toString().padLeft(3, '0')}'),
+      ]) {
+        for (final artifact in [
+          'json/${table.toLowerCase()}_zh.json',
+          'fbs/${table.toLowerCase()}.fbs',
+          'generated/csharp/${table.toLowerCase()}accessor.cs',
+          'generated/lua/${table.toLowerCase()}accessor.lua',
+        ]) {
+          expect(
+            File('${ws.path}/output/$artifact').lengthSync(),
+            greaterThan(0),
+          );
+        }
+      }
+      expect(
+        File('${ws.path}/output/binary/data_zh.bin').lengthSync(),
+        greaterThan(0),
+      );
+      await service.start();
+      await waitRunning(service);
+      final secondInstance = (await api(
+        settings.baseUrl,
+        '/api/service',
+      ))['data']['instanceId'];
+      expect(secondInstance, isNot(firstInstance));
+      final secondPid = service.processId!;
+      await service.stop();
+      expect(Process.killPid(secondPid, ProcessSignal.sigcont), false);
+    }, timeout: const Timeout(Duration(minutes: 2)));
+
+    test('浏览器打开失败保留服务运行并记录提示', () async {
+      final ws = tempWorkspace();
+      final settings = SettingsStore()
+        ..workspacePath = ws.path
+        ..nativeRuntimePath = nativeCt()
+        ..port = 18124;
+      final service = PanelService(
+        settings: settings,
+        onReady: (_) async => throw StateError('test browser unavailable'),
+      );
+      addTearDown(() async {
+        await service.stop();
+        service.dispose();
+        ws.deleteSync(recursive: true);
+      });
+      await service.start();
+      await waitRunning(service);
+      for (
+        var i = 0;
+        i < 50 && !service.logs.any((e) => e.message.contains('无法自动打开'));
+        i++
+      ) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+      expect(service.logs.any((e) => e.message.contains('无法自动打开')), true);
+      expect(service.status, PanelStatus.running);
+      expect(
+        (await api(settings.baseUrl, '/api/service'))['data']['kernel'],
+        'native',
+      );
     });
   });
 }

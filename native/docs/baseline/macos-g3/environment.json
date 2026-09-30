@@ -1,0 +1,492 @@
+{
+  "schema": "ct-macos-g3-environment/1",
+  "root": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl",
+  "oldCt": false,
+  "pythonExecutableInPath": false,
+  "clearedVariables": [
+    "PYTHONHOME",
+    "PYTHONPATH",
+    "PYTHONEXECUTABLE",
+    "VIRTUAL_ENV",
+    "CONDA_PREFIX"
+  ],
+  "versions": {
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "cargo": "cargo 1.98.1 (797e8a9bc 2026-08-05)",
+    "node": "v26.8.2",
+    "dotnet": "10.0.201",
+    "flutter": "Flutter 3.47.0 • channel stable • https://github.com/flutter/flutter.git\nFramework • revision 4cf2416426 (7 weeks ago) • 2026-08-11 11:53:49 -0700\nEngine • hash 59d54a2b2896a6bbf356c94b7fac7b9e235bdacd (revision 5f77625673) (1 months ago) • 2026-08-11 16:38:36.000Z\nTools • Dart 3.13.0 • DevTools 2.60.0",
+    "xcodebuild": "Xcode 27.0\nBuild version 27A266a"
+  },
+  "tools": [
+    {
+      "name": "ar",
+      "target": "/usr/bin/ar"
+    },
+    {
+      "name": "arch",
+      "target": "/usr/bin/arch"
+    },
+    {
+      "name": "awk",
+      "target": "/usr/bin/awk"
+    },
+    {
+      "name": "basename",
+      "target": "/usr/bin/basename"
+    },
+    {
+      "name": "bash",
+      "target": "/bin/bash"
+    },
+    {
+      "name": "bc",
+      "target": "/usr/bin/bc"
+    },
+    {
+      "name": "cargo",
+      "target": "/Users/tobeychao/.rustup/toolchains/stable-aarch64-apple-darwin/bin/cargo"
+    },
+    {
+      "name": "cat",
+      "target": "/bin/cat"
+    },
+    {
+      "name": "cc",
+      "target": "/usr/bin/cc"
+    },
+    {
+      "name": "chmod",
+      "target": "/bin/chmod"
+    },
+    {
+      "name": "clang",
+      "target": "/usr/bin/clang"
+    },
+    {
+      "name": "cmp",
+      "target": "/usr/bin/cmp"
+    },
+    {
+      "name": "codesign",
+      "target": "/usr/bin/codesign"
+    },
+    {
+      "name": "cp",
+      "target": "/bin/cp"
+    },
+    {
+      "name": "curl",
+      "target": "/usr/bin/curl"
+    },
+    {
+      "name": "cut",
+      "target": "/usr/bin/cut"
+    },
+    {
+      "name": "dart",
+      "target": "/Users/tobeychao/development/flutter/bin/dart"
+    },
+    {
+      "name": "date",
+      "target": "/bin/date"
+    },
+    {
+      "name": "defaults",
+      "target": "/usr/bin/defaults"
+    },
+    {
+      "name": "df",
+      "target": "/bin/df"
+    },
+    {
+      "name": "dirname",
+      "target": "/usr/bin/dirname"
+    },
+    {
+      "name": "diskutil",
+      "target": "/usr/sbin/diskutil"
+    },
+    {
+      "name": "ditto",
+      "target": "/usr/bin/ditto"
+    },
+    {
+      "name": "dotnet",
+      "target": "/usr/local/share/dotnet/dotnet"
+    },
+    {
+      "name": "dscl",
+      "target": "/usr/bin/dscl"
+    },
+    {
+      "name": "dsymutil",
+      "target": "/usr/bin/dsymutil"
+    },
+    {
+      "name": "du",
+      "target": "/usr/bin/du"
+    },
+    {
+      "name": "env",
+      "target": "/usr/bin/env"
+    },
+    {
+      "name": "expr",
+      "target": "/bin/expr"
+    },
+    {
+      "name": "file",
+      "target": "/usr/bin/file"
+    },
+    {
+      "name": "find",
+      "target": "/usr/bin/find"
+    },
+    {
+      "name": "flutter",
+      "target": "/Users/tobeychao/development/flutter/bin/flutter"
+    },
+    {
+      "name": "gem",
+      "target": "/opt/homebrew/bin/gem"
+    },
+    {
+      "name": "getconf",
+      "target": "/usr/bin/getconf"
+    },
+    {
+      "name": "git",
+      "target": "/usr/bin/git"
+    },
+    {
+      "name": "grep",
+      "target": "/usr/bin/grep"
+    },
+    {
+      "name": "gunzip",
+      "target": "/usr/bin/gunzip"
+    },
+    {
+      "name": "gzip",
+      "target": "/usr/bin/gzip"
+    },
+    {
+      "name": "hdiutil",
+      "target": "/usr/bin/hdiutil"
+    },
+    {
+      "name": "head",
+      "target": "/usr/bin/head"
+    },
+    {
+      "name": "id",
+      "target": "/usr/bin/id"
+    },
+    {
+      "name": "install_name_tool",
+      "target": "/usr/bin/install_name_tool"
+    },
+    {
+      "name": "kill",
+      "target": "/bin/kill"
+    },
+    {
+      "name": "ld",
+      "target": "/usr/bin/ld"
+    },
+    {
+      "name": "lipo",
+      "target": "/usr/bin/lipo"
+    },
+    {
+      "name": "ln",
+      "target": "/bin/ln"
+    },
+    {
+      "name": "ls",
+      "target": "/bin/ls"
+    },
+    {
+      "name": "mdls",
+      "target": "/usr/bin/mdls"
+    },
+    {
+      "name": "mkdir",
+      "target": "/bin/mkdir"
+    },
+    {
+      "name": "mktemp",
+      "target": "/usr/bin/mktemp"
+    },
+    {
+      "name": "mv",
+      "target": "/bin/mv"
+    },
+    {
+      "name": "nm",
+      "target": "/usr/bin/nm"
+    },
+    {
+      "name": "node",
+      "target": "/opt/homebrew/Cellar/node/26.8.2/bin/node"
+    },
+    {
+      "name": "npm",
+      "target": "/opt/homebrew/bin/npm"
+    },
+    {
+      "name": "osascript",
+      "target": "/usr/bin/osascript"
+    },
+    {
+      "name": "otool",
+      "target": "/usr/bin/otool"
+    },
+    {
+      "name": "perl",
+      "target": "/usr/bin/perl"
+    },
+    {
+      "name": "plutil",
+      "target": "/usr/bin/plutil"
+    },
+    {
+      "name": "pod",
+      "target": "/opt/homebrew/bin/pod"
+    },
+    {
+      "name": "printf",
+      "target": "/usr/bin/printf"
+    },
+    {
+      "name": "ps",
+      "target": "/bin/ps"
+    },
+    {
+      "name": "pwd",
+      "target": "/bin/pwd"
+    },
+    {
+      "name": "ranlib",
+      "target": "/usr/bin/ranlib"
+    },
+    {
+      "name": "readlink",
+      "target": "/usr/bin/readlink"
+    },
+    {
+      "name": "realpath",
+      "target": "/bin/realpath"
+    },
+    {
+      "name": "rm",
+      "target": "/bin/rm"
+    },
+    {
+      "name": "rsync",
+      "target": "/usr/bin/rsync"
+    },
+    {
+      "name": "ruby",
+      "target": "/opt/homebrew/bin/ruby"
+    },
+    {
+      "name": "rustc",
+      "target": "/Users/tobeychao/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc"
+    },
+    {
+      "name": "rustdoc",
+      "target": "/Users/tobeychao/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustdoc"
+    },
+    {
+      "name": "security",
+      "target": "/usr/bin/security"
+    },
+    {
+      "name": "sed",
+      "target": "/usr/bin/sed"
+    },
+    {
+      "name": "sh",
+      "target": "/bin/sh"
+    },
+    {
+      "name": "sips",
+      "target": "/usr/bin/sips"
+    },
+    {
+      "name": "sleep",
+      "target": "/bin/sleep"
+    },
+    {
+      "name": "sort",
+      "target": "/usr/bin/sort"
+    },
+    {
+      "name": "stat",
+      "target": "/usr/bin/stat"
+    },
+    {
+      "name": "strip",
+      "target": "/usr/bin/strip"
+    },
+    {
+      "name": "swift",
+      "target": "/usr/bin/swift"
+    },
+    {
+      "name": "sysctl",
+      "target": "/usr/sbin/sysctl"
+    },
+    {
+      "name": "tail",
+      "target": "/usr/bin/tail"
+    },
+    {
+      "name": "tee",
+      "target": "/usr/bin/tee"
+    },
+    {
+      "name": "touch",
+      "target": "/usr/bin/touch"
+    },
+    {
+      "name": "tr",
+      "target": "/usr/bin/tr"
+    },
+    {
+      "name": "uname",
+      "target": "/usr/bin/uname"
+    },
+    {
+      "name": "uniq",
+      "target": "/usr/bin/uniq"
+    },
+    {
+      "name": "unzip",
+      "target": "/usr/bin/unzip"
+    },
+    {
+      "name": "uptime",
+      "target": "/usr/bin/uptime"
+    },
+    {
+      "name": "wc",
+      "target": "/usr/bin/wc"
+    },
+    {
+      "name": "which",
+      "target": "/usr/bin/which"
+    },
+    {
+      "name": "whoami",
+      "target": "/usr/bin/whoami"
+    },
+    {
+      "name": "xargs",
+      "target": "/usr/bin/xargs"
+    },
+    {
+      "name": "xattr",
+      "target": "/usr/bin/xattr"
+    },
+    {
+      "name": "xcodebuild",
+      "target": "/usr/bin/xcodebuild"
+    },
+    {
+      "name": "xcrun",
+      "target": "/usr/bin/xcrun"
+    },
+    {
+      "name": "zip",
+      "target": "/usr/bin/zip"
+    },
+    {
+      "name": "zsh",
+      "target": "/bin/zsh"
+    }
+  ],
+  "tiers": {
+    "s": {
+      "schema": "ct-bench-fixture/1",
+      "size": "s",
+      "seed": 20260918,
+      "tables": 10,
+      "rowsPerTable": 100,
+      "columnsPerTable": 20,
+      "dataCells": 18454,
+      "translatedEntries": 4000,
+      "languages": [
+        "zh",
+        "en",
+        "ja"
+      ],
+      "uniform": "偶数表填满、奇数表含 vector<Record>/vector<int32> 且约 12% 单元格留空",
+      "mutation": {
+        "table": "T001",
+        "tableSource": "excel/T001.xlsx",
+        "i18nLang": "en",
+        "i18nTarget": "i18n/en/T001.json"
+      },
+      "inputDigest": "sha256:182fec0442aa271bb3bed162c4dd9b7d98b0dba5d9a0aa22180fb8d6f4862b7b",
+      "root": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/fixtures/bench-s"
+    },
+    "m": {
+      "schema": "ct-bench-fixture/1",
+      "size": "m",
+      "seed": 20260918,
+      "tables": 50,
+      "rowsPerTable": 2000,
+      "columnsPerTable": 20,
+      "dataCells": 1847536,
+      "translatedEntries": 400000,
+      "languages": [
+        "zh",
+        "en",
+        "ja"
+      ],
+      "uniform": "偶数表填满、奇数表含 vector<Record>/vector<int32> 且约 12% 单元格留空",
+      "mutation": {
+        "table": "T001",
+        "tableSource": "excel/T001.xlsx",
+        "i18nLang": "en",
+        "i18nTarget": "i18n/en/T001.json"
+      },
+      "inputDigest": "sha256:b3398c1d3c3479adbbcc0918bd67e6ab486a445305d1d4b93e00a8807f23dd23",
+      "root": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/fixtures/bench-m"
+    },
+    "l": {
+      "schema": "ct-bench-fixture/1",
+      "size": "l",
+      "seed": 20260918,
+      "tables": 100,
+      "rowsPerTable": 10000,
+      "columnsPerTable": 20,
+      "dataCells": 18480119,
+      "translatedEntries": 4000000,
+      "languages": [
+        "zh",
+        "en",
+        "ja"
+      ],
+      "uniform": "偶数表填满、奇数表含 vector<Record>/vector<int32> 且约 12% 单元格留空",
+      "mutation": {
+        "table": "T001",
+        "tableSource": "excel/T001.xlsx",
+        "i18nLang": "en",
+        "i18nTarget": "i18n/en/T001.json"
+      },
+      "inputDigest": "sha256:6a6c1d320315187d92b7e8bb6c7be97e01762a703303a5c6a8c71cb7e68559ad",
+      "root": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/fixtures/bench-l"
+    }
+  },
+  "scope": {
+    "macos": "required",
+    "windows": "deferred",
+    "linux": "unsupported"
+  },
+  "dependencyCaches": "Rust/Flutter/npm/.NET SDK caches reused; old ct/, generated fixtures and launcher build products excluded from source copy",
+  "chromiumInstallerNode": "v24.19.0"
+}

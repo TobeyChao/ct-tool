@@ -1,0 +1,37 @@
+[无 Python 环境] PATH 从 1 个目录收敛为包内单目录 /private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/mounted/ct_launcher.app/Contents/Resources/runtime；其中没有 python/py 可执行文件，PYTHONHOME/PYTHONPATH/VIRTUAL_ENV 等变量已清除
+[ct --version] ct --version => 退出码 0
+--- stdout ---
+ct 0.0.0
+--- stderr ---
+
+[ct validate] ct validate --root . => 退出码 0
+--- stdout ---
+校验通过
+--- stderr ---
+
+[ct status] ct status --root . => 退出码 0
+--- stdout ---
+数据变更（待导出）:
+  [changed] Item
+--- stderr ---
+
+[ct export] ct export --root . => 退出码 0
+--- stdout ---
+解析 Item（2 行）
+Item：定宽（schema 声明）｜填充率 90.0%（264 B → 252 B，0.955x）
+枚举声明 1 个 → Enums.cs / Enums.lua
+增量导出：写入 11，复用 0；生成缓存命中 0
+
+导出完成: 1 张表
+[deploy] 无文件变更
+--- stderr ---
+[deploy] 未配置或未启用，跳过
+
+[产物] output/json/Item_zh.json 已生成
+[ct worker] 握手+workspace.open+shutdown => 退出码 0；hello=true open=true shutdown=true
+--- stdout ---
+{"type":"hello","protocolVersion":1,"coreVersion":"0.0.0","capabilities":["workspace","schema","template","validate","export","deploy","i18n","history","logs","tasks","cancel","shutdown"]}
+{"type":"result","requestId":1,"workspaceId":"2ff095d356879794","seq":1,"payload":{"revision":1,"status":"ready","recovery":{"needed":false,"journals":[]},"tables":1,"records":0,"enums":1}}
+{"type":"result","requestId":2,"workspaceId":"2ff095d356879794","seq":2,"payload":{"outcome":"shutdown"}}
+
+[ct panel] 嵌入静态资源、原生 HTTP 与 stdin EOF 安全退出通过

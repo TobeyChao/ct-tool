@@ -54,5 +54,7 @@ Some compatibility builds/checks ran during the first capture, and light debug
 preparation/reader checks ran near the end of the rerun; sample spreads remain in the
 raw archives. The measured release ct executable was not rebuilt during either run.
 
-S/M/L macOS regression entries are complete. Other-platform archives remain to be
-measured; task 7.1 stays open until those entries and clean-environment checks are complete.
+S/M/L macOS regression entries are complete. Per the user's 2026-09-30 scope update,
+Windows is deferred and Linux is unsupported; their archives no longer block this change.
+The macOS clean-source regeneration completed for all three tiers with the same input
+digests and native validation; see [G3 evidence](macos-g3-verification.md). Task 7.1 is accepted.

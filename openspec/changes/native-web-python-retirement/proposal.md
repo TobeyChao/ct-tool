@@ -27,6 +27,8 @@ main 分支的 Web 工作台已有完整的浏览器编辑流程，本分支 Rus
 
 ## Impact
 
+- 按 2026-09-30 用户最新要求，本轮交付与 Python 退役门槛以 macOS 为支持平台；Windows 延后，不阻塞本轮；Linux 不纳入产品支持或 CI。保留已有可移植实现与 Windows 脚本作为后续材料，不把未运行平台登记为通过。
+
 - 拟新增 `native/crates/ct-web/`、`web/`，修改 `ct-app`、必要的公共任务基础设施、`ct-cli`、`ct-xtask`、原生发行流程及 CI；迁移 `ct/src/ct/web/static/`、`ct/tests/web/` 和仍有效的 `ct/docs/`。
 - 以本地 main `8dc7b81` 的 Web 行为为初始参照；实施前记录实际采纳提交与工作树差异。当前未提交的 native/launcher/gd 改动不由本提案覆盖或回滚。
 - 复用 `rust-native-core` 已实现能力，不重建内核。本提案取代其“不提供 ct panel / Web 退役”的范围决策，并承接最终 Python 退役门槛；不把其未完成的平台、恢复、性能或游戏端验证自动视为通过。

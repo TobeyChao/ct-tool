@@ -1,0 +1,59 @@
+{
+  "schema": "ct-macos-g3-results/1",
+  "date": "2026-09-30",
+  "platform": "macOS arm64",
+  "scope": {
+    "windows": "deferred",
+    "linux": "unsupported"
+  },
+  "cargo": {
+    "passed": 332,
+    "failed": 0,
+    "ignored": 0,
+    "targets": 77
+  },
+  "http": {
+    "passed": 39,
+    "failed": 0,
+    "skipped": 0
+  },
+  "browser": {
+    "passed": 115,
+    "failed": 0,
+    "skipped": 0
+  },
+  "flutter": {
+    "passed": 15,
+    "analysisIssues": 0
+  },
+  "independentReader": {
+    "checked": 127,
+    "mismatches": 0
+  },
+  "compatibility": {
+    "frozenFiles": 129,
+    "regeneratedWorkbooks": 6
+  },
+  "benchmarks": {
+    "regenerated": [
+      "s",
+      "m",
+      "l"
+    ],
+    "validated": [
+      "s",
+      "m",
+      "l"
+    ],
+    "archivedDigestsMatch": true
+  },
+  "delivery": {
+    "zipUnpackedRuntime": true,
+    "appRuntime": true,
+    "dmgMountedRuntime": true,
+    "pythonPayload": false,
+    "flaskPayload": false
+  },
+  "remoteCIExecuted": false,
+  "oldPythonDeleted": false
+}

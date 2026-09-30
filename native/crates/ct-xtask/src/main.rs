@@ -112,6 +112,13 @@ enum Command {
         #[arg(long)]
         skip_check: bool,
     },
+    /// 自检解压或 launcher 内置的原生二进制（隔离 PATH，CLI/worker/panel）
+    RuntimeCheck {
+        #[arg(long)]
+        binary: PathBuf,
+        #[arg(long)]
+        out: PathBuf,
+    },
     /// 固定/校验基线源码树指纹与测试清单（任务 1.1）
     Fingerprint {
         /// 只校验现有基线文件是否仍然一致
@@ -201,6 +208,7 @@ fn main() -> anyhow::Result<()> {
             out,
             skip_check,
         } => dist::run(&target, out, skip_check),
+        Command::RuntimeCheck { binary, out } => dist::check_binary(&binary, &out),
         Command::Fingerprint { check, root } => fingerprint::run(check, root),
     }
 }

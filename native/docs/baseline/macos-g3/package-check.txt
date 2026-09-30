@@ -1,0 +1,14 @@
+{
+  "schema": "ct-package-check/1",
+  "kind": "native-runtime",
+  "root": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/unpacked",
+  "target": "aarch64-apple-darwin",
+  "binary": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/unpacked/bin/ct",
+  "sha256": "47c306b913dc642185534426c8cc39de52ea2bed32553070c12ab203391c92fe",
+  "bytes": 8018960,
+  "payloadFiles": 4,
+  "pythonPayload": false,
+  "flaskPayload": false,
+  "runtimeEvidencePresent": true
+}
+runtime check passed: /private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-macos-g3-jQFotl/unpacked/bin/ct

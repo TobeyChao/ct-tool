@@ -1,0 +1,7 @@
+error: unexpected argument '--root' found
+
+  tip: a similar argument exists: '--out'
+
+Usage: xtask compat-fixtures --out <OUT>
+
+For more information, try '--help'.

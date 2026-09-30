@@ -124,6 +124,8 @@ echo "      无 Python 环境下 status 通过"
 
 echo "[5/6] ad-hoc 签名..."
 codesign --force --deep -s - "$APP"
+codesign --verify --deep --strict "$APP"
+node "$REPO_ROOT/native/tools/check-package.mjs" --app "$APP" --out "$LAUNCHER_DIR/build/macos/payload-check.json"
 
 echo "[6/6] 生成带 Applications 快捷方式的 DMG..."
 DMG_STAGE="$(mktemp -d)"

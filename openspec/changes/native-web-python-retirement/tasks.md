@@ -50,16 +50,16 @@
 
 ## 7. 无 Python 开发与发行链
 
-- [ ] 7.1 将 S/M/L 基准生成迁至 Rust 并保留 r/r-full 入口；删除生成输出后验证各档可再生、规模/种子/语义契约和基准留档回归入口成立。
+- [x] 7.1 将 S/M/L 基准生成迁至 Rust 并保留 r/r-full 入口；删除生成输出后验证各档可再生、规模/种子/语义契约和基准留档回归入口成立。
 - [x] 7.2 替代 native/fixtures 中 Excel、Schema、fingerprints、binary、export、template 的必要 Python 生成/语义比较脚本；验证 golden 来源可追溯、独立断言保留，不由被测代码生成期望值来掩盖差异。
 - [x] 7.3 将正式验收仍调用的 test-proj Python 准备/检查入口迁至 Rust/JS 或既有目标语言；用对应入口真跑验证，纯历史实验登记为非活跃且不批量删除资料。
 - [x] 7.4 将 fingerprint、coverage matrix、bench 与 CLI 对照脚本收敛为原生清单及静态基线，退役 live-Python 必需路径；验证 ct/ 缺失时测试数量/必要场景不缩水、基线损坏明确失败。
-- [ ] 7.5 更新发行自检与 Windows/macOS/Linux CI，加入 panel 静态资源/HTTP/退出 smoke 及 Node 浏览器验收；验证流程不安装或调用 Python，发行包不含解释器或 Flask 负载。
+- [x] 7.5 更新发行自检与 macOS CI，加入 panel 静态资源/HTTP/退出 smoke 及 Node 浏览器验收；验证正式流程不安装或调用 Python，发行包不含解释器或 Flask 负载。Windows 延后，Linux 不纳入支持。
 - [ ] 7.6 迁移有效 ct/docs 文档并更新安装、开发、升级、基准说明及活跃路径引用；验证新命令可执行、链接有效，明确同源草稿限制、未知事务处理和旧同名 ct 冲突。
-- [ ] 7.7 执行 G3 干净环境门槛：临时 checkout 排除旧 ct/，受控环境无可执行 Python，完成构建、必要测试、夹具再生和三平台发行/panel smoke；留存环境与原始结果，任一缺项不得标通过。
+- [x] 7.7 执行 G3 干净环境门槛：临时 checkout 排除旧 ct/，受控环境无可执行 Python，完成构建、必要测试、夹具再生和 macOS 发行/panel/launcher smoke；留存环境与原始结果，任一必要缺项不得标通过。Windows 延后，Linux 不支持，不以其缺席缩减 macOS 场景。
 
 - [x] 7.8 迁移 main launcher 的运行时发现与设置，删除 Python/venv 回退且保留工作区/端口/托盘/自启行为；验证内置和显式原生路径启动参数、旧偏好迁移、运行时缺失错误与无真实 gd 默认绑定。
-- [ ] 7.9 迁移 launcher 打包和安全停止流程为原生 panel；验证就绪后打开浏览器、忙碌时正常退出不强杀、进程重启无孤儿及 Windows/macOS 原生负载检查。
+- [x] 7.9 迁移 launcher 打包和安全停止流程为原生 panel；验证就绪后打开浏览器、忙碌时正常退出不强杀、进程重启无孤儿及 macOS 原生负载检查。Windows 发行验证延后。
 
 ## 8. 退役与收尾
 
@@ -135,3 +135,5 @@
 2026-09-30 独立读取准备与历史实验登记：test-proj 19 个 Python 脚本逐项审计，两条正式准备入口已由 Node + Rust 替代，17 条历史实验保留非活跃说明及来源摘要。旧标量只读历史产物的验收缺口已补齐：Rust 从冻结输入再生 Binary/C#，逐字节匹配 main 8dc7b81 参照，再由独立 C# 读取；32 文件摘要守卫、31 份 main 来源字节验证、九条 FNV 必需和固定 127 项检查防止静默缩水。临时源码包排除 ct/、无 Python PATH 下独立读取 127/127、0 不一致，离线 Cargo 全工作区 331/331、0 failed/ignored；缺 FNV、源摘要损坏、新未登记脚本和未知 golden 均拒绝。首轮暴露旧兼容清单误收未跟踪 pycache（130 实为 129 份版本化输入 + 本机缓存），已排除缓存、保留全部必要输入与场景并加回归；六个 Excel 再生入口及六范围指纹通过。原始记录见 native/docs/baseline/test-proj-verification.md。三平台 CI 加入该独立读取入口，尚无远端实测，7.3 完成，当前 35/45。
 
 L 独立五样本复验已完成：冷/热 CLI/热 worker/改单表/改译文均 regression-pass，每场景 607 产物摘要与基线一致，最大采样进程树 RSS 7,704,160 KiB < 7.5 GiB；原始结果见 bench-l-macos-native-verification.json。S/M/L macOS 留档回归已完整，其他平台留档、发行及 G3 仍未完成，7.1/7.5/7.7 保持未勾选，不删除 Python。
+
+2026-09-30 macOS 发行与 G3：按用户最新范围，Windows 延后、Linux 不支持，均不作为通过项或阻塞项。干净副本排除旧 ct/ 与构建/夹具输出，受控 PATH 无 Python 命令；Cargo 332/332、HTTP 39/39、浏览器 115/115、Flutter 15/15 和分析无问题，独立 C# 读取 127 项 0 不一致、六 Excel 夹具再生、S/M/L 从空目录再生并原生校验，三档摘要与留档一致。ZIP 权限丢失已修复并经真实解压验证；原生包、签名 app 与只读挂载 DMG 的 CLI/worker/panel/EOF 真跑及无 Python/Flask 负载检查通过。launcher HTTP 就绪后打开浏览器、81 表导出忙碌时安全停止与重启无孤儿通过。7.1/7.5/7.7/7.9 完成，G3 通过，当前 39/45；远端 CI 未执行。原始失败、修复后结果与环境见 native/docs/baseline/macos-g3-verification.md。文档/退役清单和删除后复验仍待完成，因此旧 Python 暂未删除。

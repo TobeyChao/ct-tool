@@ -1,8 +1,8 @@
 {
   "schema": "ct-source-tree/2",
   "git": {
-    "commit": "2cf77967e4a76fc05d14eacc600fcd0932c2286b",
-    "dirtyPaths": 20
+    "commit": "",
+    "dirtyPaths": null
   },
   "toolchain": {
     "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
@@ -10,14 +10,14 @@
     "pythonRuntimeRequired": false
   },
   "tree": {
-    "sha256": "bd363ca227a19fcd6823c0c0028e20c21552dba532c57b885451fe60c92ccb09",
-    "files": 1125
+    "sha256": "faa35247ffef1f7803868eeb99cd5d970d3e6cef59ea8b7e472f1c768134d351",
+    "files": 1080
   },
   "scopes": {
     "native": {
-      "files": 628,
-      "bytes": 8798033,
-      "sha256": "fab1547ec4e64442729a194d2ec2cfc6b6926bf8541345c50bcef4a54dd6cc4a",
+      "files": 583,
+      "bytes": 7968283,
+      "sha256": "4bebab9fd82242c709f246c7616ad0f7b65518e9fa30b7c0f488fef19481d4db",
       "entries": {
         ".gitignore": "e899756b962f25261eca57ba87fa2e878892daa40bca86f0871d7935d038a520",
         "Cargo.lock": "c20c6e340a325f179b95c85fae87c4c5c9092cdc0d33d08f89d4c7144b86c464",
@@ -190,7 +190,7 @@
         "docs/baseline/bench-m-macos.json": "a53516cb80ae81fa84b81480cbe847680f9c760d4e966ff59d3969ab6f981781",
         "docs/baseline/bench-m-windows-2026-09-18.json": "4facb61a5e533a193be739388206a92eceeeaaff1ddcf0f13f45ae0cf9e7cac4",
         "docs/baseline/bench-m-windows.json": "c1859c4234d3e577026c935da266c79ddc38940b447214e558f3b4de1d1dd675",
-        "docs/baseline/bench-native-fixture-verification.md": "17bb64f8172b518778f7207785982b261db73494608bcc2638482278ea10132b",
+        "docs/baseline/bench-native-fixture-verification.md": "ed00a79fb568509a9e52e536acd5fd97f558f68a54cece89acf59e496991db73",
         "docs/baseline/bench-r-regression-check.json": "c9f1131b0ee4661e6baa128afd859b71b9e042b315285a5bdd8d35e84fc45caf",
         "docs/baseline/bench-r-windows.json": "5002f98cbdc4c79600af57fa63ed38829d1d70688546696fbdbcce85a546d7be",
         "docs/baseline/bench-s-macos-native-verification.json": "46c98e5e634ac853cd659e7e5dcb96361ce82f08bd8d73215f3f2e6aab837ce9",
@@ -208,51 +208,6 @@
         "docs/baseline/compat-matrix.json": "63d2749ef96f143593af78f99a45369775c703d18efa50615654e6f30c3bfa40",
         "docs/baseline/handoff-macos-linux.md": "5742f3e7dc0cad1d9f6442662327d55a1a026599b7f1eaa86f79784f9b207dd6",
         "docs/baseline/isolation-check.md": "d2d755dfea4361269f02fc8270d5e02e9657cd50ae773f50740f86e873ea36bb",
-        "docs/baseline/macos-g3-verification.md": "67588b2c00e4ee1a081ccdd46708f6ac6ec899dc06b30cb7b83d15d21a676016",
-        "docs/baseline/macos-g3/accessor.txt": "8e1da7754e82ab54219f2ff64545ef1dc40066b145ea8741126abbce2ee03e0b",
-        "docs/baseline/macos-g3/analyze.txt": "a1600c0848d6bfdbb1dae35a2532f278d51904998d5e59983f2c2251aed820f2",
-        "docs/baseline/macos-g3/app-payload.json": "04f8c776b9163c0e93f3b43c69591bd06e05d7ae16a26a3e25de1205d6dca5b1",
-        "docs/baseline/macos-g3/app-runtime-command.txt": "5ac4bd7bba67a48387d57df1af43dca75180aa125a6630fb6cc9bc26c416fb7f",
-        "docs/baseline/macos-g3/app-runtime.txt": "31b624fe57bb9c80e5e22ed001fcd91e889f494341cbacb6685a68d0ebfd3a56",
-        "docs/baseline/macos-g3/browser-final.txt": "f34dd3b6e035207b62860dff782ac18d923f660f16c1df7e5afaa21aac69f45f",
-        "docs/baseline/macos-g3/browser-retry.txt": "52ca6de95738dfdbada913fad05d95cf47feefb252e9d95466bb4c460be05022",
-        "docs/baseline/macos-g3/browser.txt": "6554d43e6a92ec888e3f972eba74ea2b13ff11a034e401094708e5eafbf28c70",
-        "docs/baseline/macos-g3/cargo.txt": "5513792406ded7b81f0164665326accba8c20f6120480b588caebf16b4f91705",
-        "docs/baseline/macos-g3/chromium-retry.txt": "5b73e3baff1313419dd9ecdd2090c30837a74e7d63b2bc0f0cbc42b401868b55",
-        "docs/baseline/macos-g3/chromium.txt": "8da0ed6cca16eb9e478a6fcf8b658c7afeef03e5a23def3269b87c9a82c562e2",
-        "docs/baseline/macos-g3/compat-final.txt": "44dd2abe3957a866c254b698b2a8aa6a4a7fbd28e66fee33f76b515f9cb62b8d",
-        "docs/baseline/macos-g3/compat.txt": "307fa2994b6dcd00ed8f93207f7fa4e9d9389e263e7620f4809d73c9170b92ee",
-        "docs/baseline/macos-g3/dist-final.txt": "5e6081e01ac072849bd2091d39a15b2a284fdd8ad1391d86942683d43808ecde",
-        "docs/baseline/macos-g3/dist.txt": "34b620f059da054fe5f73d455cddf84ef9e87bceff34cd798c14d6610d1341d7",
-        "docs/baseline/macos-g3/dmg-mounted-final.txt": "bcdd642718b19c407042753c46f2092ea3467fb9fa3951392b5d37ae80a732ee",
-        "docs/baseline/macos-g3/dmg-mounted.txt": "bcdd642718b19c407042753c46f2092ea3467fb9fa3951392b5d37ae80a732ee",
-        "docs/baseline/macos-g3/dmg-payload.json": "071c9809fc7dd37961cfc8a24de3bc549f5adfd5e66460d837088e2191b1dee4",
-        "docs/baseline/macos-g3/dmg-runtime-command.txt": "fbc3e2bee1552bf5dda8b76f06694bb5b56891f286c775509ccbed82f60c3890",
-        "docs/baseline/macos-g3/dmg-runtime.txt": "c8c55b0982be00fc7ae254a38af6acdf5a9325f616750d29497d41fb9c5a82fa",
-        "docs/baseline/macos-g3/dmg-verify.txt": "fa92d4f22c3de862bf14944bd49f9daa6681fd3d3bb0866d5e7dad0b08776aa5",
-        "docs/baseline/macos-g3/environment.json": "5b0572d4ee77ee26ff2b4e31d57027821fef711ab1a35c1e557c41ca9cf9d909",
-        "docs/baseline/macos-g3/fingerprint.txt": "65ab2a68ebc1a5ac2665357b9a7c8254a587fda9cef2e26bf5d17c8bce41a396",
-        "docs/baseline/macos-g3/fixtures.txt": "7e3c09e56f60668f268a378b52017760c76e6b3855bfe9bb3fd078489855015c",
-        "docs/baseline/macos-g3/flutter.txt": "6688bcc03c1d6128b4e7a1fb119da158f16357a2623e1d953a8f21730e6d622b",
-        "docs/baseline/macos-g3/http.txt": "6103fae7e62573c59e0d378c3a679ef7d4c886be6887de25d0766c02529467db",
-        "docs/baseline/macos-g3/launcher-package-final.txt": "e0e46f0f7a85451ea4e735c59d92e153cc81a57fa3f0fe6320e59d9ad6c9e897",
-        "docs/baseline/macos-g3/launcher-package-second.txt": "7826afda545208737a4ea6e06efeefb9999a6002d59477907357d7ccde0dc24d",
-        "docs/baseline/macos-g3/launcher-package-third.txt": "12f4bc874318891b1576375b05770cecf4a336fb511f77fa96f52a2cfbdfb970",
-        "docs/baseline/macos-g3/launcher-package.txt": "20d78d8fd5772ecb399c498c9938707b10545dde99b3ceb11ce06e35ef78fa3a",
-        "docs/baseline/macos-g3/npm-final.txt": "4d00cdf1f736c47106bffdeb2eb8980cc864f5752d41da74936de56590560912",
-        "docs/baseline/macos-g3/npm.txt": "3712d5cc0d3b71542b1ca30a1a7afcc134c8afd33012890fcdff74787c625ab3",
-        "docs/baseline/macos-g3/package-check.txt": "ec607d42c7e26fdcbc8298544a3c67a5133c93eb4b65afcfa4350b6749b36542",
-        "docs/baseline/macos-g3/package-negative.txt": "6f58ec2a6d005805dc260bc2b9e8fae23e73d398fda024bf304c62dabd35201a",
-        "docs/baseline/macos-g3/parity.txt": "f869fd203fdff7e43f12a11c12eb6605be8434622c6d1083fed3697c195e994b",
-        "docs/baseline/macos-g3/pub.txt": "8f485e149e336f62855925014db4349687b85ef08baa682e8ae9834c06bc8c70",
-        "docs/baseline/macos-g3/results.json": "1b512b46b4e4d8069963f39d26593b5fc7370c56043f7b47401513aff8cee137",
-        "docs/baseline/macos-g3/test-proj-audit.txt": "bff19c89f2b22edf02054ffc5fe7988510fd9b556f6cd681e4af09aae0ee7d42",
-        "docs/baseline/macos-g3/tested-source-tree.json": "4e7f1b06936e0ea6202e43fdf6294889e51d6da46e2cde7513fceb2fad610b85",
-        "docs/baseline/macos-g3/unpacked-runtime.txt": "14a7f4566172fc67abb1ef211616ae9a53c2af624533b5c52ddb0e034723923b",
-        "docs/baseline/macos-g3/unpacked.json": "71a14c2a118eae64fab0524d24f99f9e1dd47e336931d7fb3a090051fe8f6306",
-        "docs/baseline/macos-g3/validate-l.txt": "ee0fb0d57a2fedea417f2b8c1b7521b1f16cea797b853058007db7a1cd13b963",
-        "docs/baseline/macos-g3/validate-m.txt": "ee0fb0d57a2fedea417f2b8c1b7521b1f16cea797b853058007db7a1cd13b963",
-        "docs/baseline/macos-g3/validate-s.txt": "ee0fb0d57a2fedea417f2b8c1b7521b1f16cea797b853058007db7a1cd13b963",
         "docs/baseline/parity-report.md": "8c288eb627809797ee35d242e7608958f03be0d11156e743753f1963f02014b8",
         "docs/baseline/python-free-cli-parity.md": "751c2b122b7a59009a9e04e71a405ffb48ba973317a91ca712bbac783a5e7176",
         "docs/baseline/python-free-environment.json": "6c4e7ba0b4ad803e683a20d6c909bcc0cb91c402afaa852d88c2a16f3660e568",
@@ -661,13 +616,13 @@
     },
     "openspec": {
       "files": 249,
-      "bytes": 2102540,
-      "sha256": "52b68916e0ef875d95befe5e049e029b0b96dc7c336d434c086cd98479049da0"
+      "bytes": 2101591,
+      "sha256": "f6fed3680ecc4bb9a26116910b8d5bafa943077b77bae77a8596d5d502b2bbc1"
     },
     ".github": {
       "files": 2,
-      "bytes": 4610,
-      "sha256": "e7ce97e966cbc31bf47666125adb0f57ef48f1cd012f5621bf967ad406226943"
+      "bytes": 4627,
+      "sha256": "997fb96b3c8f261e7e19ca6bffe6b4a3b360366227b089e769ba83791459cbe1"
     },
     "test-proj": {
       "files": 99,
