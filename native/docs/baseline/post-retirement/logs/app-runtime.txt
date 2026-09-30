@@ -1,0 +1,1 @@
+runtime check passed: /private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/launcher/build/macos/Build/Products/Release/ct_launcher.app/Contents/Resources/runtime/ct

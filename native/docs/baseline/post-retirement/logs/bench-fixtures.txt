@@ -1,0 +1,1 @@
+[fixture] s：10 张表 / 18454 个数据单元格 / /var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/bench/bench-s

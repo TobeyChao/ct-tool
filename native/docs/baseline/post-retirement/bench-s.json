@@ -1,0 +1,264 @@
+{
+  "schema": "ct-bench/1",
+  "size": "s",
+  "seed": 20260918,
+  "fixture": {
+    "schema": "ct-bench-fixture/1",
+    "size": "s",
+    "seed": 20260918,
+    "tables": 10,
+    "rowsPerTable": 100,
+    "columnsPerTable": 20,
+    "dataCells": 18454,
+    "translatedEntries": 4000,
+    "languages": [
+      "zh",
+      "en",
+      "ja"
+    ],
+    "uniform": "偶数表填满、奇数表含 vector<Record>/vector<int32> 且约 12% 单元格留空",
+    "mutation": {
+      "table": "T001",
+      "tableSource": "excel/T001.xlsx",
+      "i18nLang": "en",
+      "i18nTarget": "i18n/en/T001.json"
+    },
+    "inputDigest": "sha256:182fec0442aa271bb3bed162c4dd9b7d98b0dba5d9a0aa22180fb8d6f4862b7b",
+    "root": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/bench/bench-s"
+  },
+  "host": {
+    "os": "macos",
+    "arch": "aarch64",
+    "family": "macos",
+    "logicalCores": 10,
+    "measuredWithPowershell": false,
+    "rssMethod": "ps process-tree RSS polling"
+  },
+  "git": {
+    "commit": "49ef3f1c22ec5af8fcec146e3a0856d46df4f960",
+    "dirtyPaths": 0
+  },
+  "engines": {
+    "rust": {
+      "path": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/dist/ct-native-0.0.0-aarch64-apple-darwin/bin/ct",
+      "version": "ct 0.0.0",
+      "argv": "export"
+    }
+  },
+  "warmupRuns": 1,
+  "measuredRuns": 1,
+  "realWorkspaceUntouched": {
+    "gdDirtyBefore": 0,
+    "gdDirtyAfter": 0,
+    "unchanged": true
+  },
+  "results": [
+    {
+      "engine": "rust",
+      "scenario": "cold",
+      "runs": 1,
+      "artifacts": 67,
+      "outputSha256": "6a6373b2e668d800baf836081cbba0fda69656d993de98e7aa7acc25208c0510",
+      "wallMs": {
+        "median": 200.0,
+        "min": 200.0,
+        "max": 200.0,
+        "samples": [
+          200.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 33008.0,
+        "min": 33008.0,
+        "max": 33008.0,
+        "samples": [
+          33008.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 33008.0,
+        "min": 33008.0,
+        "max": 33008.0,
+        "samples": [
+          33008.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "hot-cli",
+      "runs": 1,
+      "artifacts": 67,
+      "outputSha256": "6a6373b2e668d800baf836081cbba0fda69656d993de98e7aa7acc25208c0510",
+      "wallMs": {
+        "median": 131.0,
+        "min": 131.0,
+        "max": 131.0,
+        "samples": [
+          131.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 25872.0,
+        "min": 25872.0,
+        "max": 25872.0,
+        "samples": [
+          25872.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 25872.0,
+        "min": 25872.0,
+        "max": 25872.0,
+        "samples": [
+          25872.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "hot-worker",
+      "runs": 1,
+      "artifacts": 67,
+      "outputSha256": "6a6373b2e668d800baf836081cbba0fda69656d993de98e7aa7acc25208c0510",
+      "wallMs": {
+        "median": 132.0,
+        "min": 132.0,
+        "max": 132.0,
+        "samples": [
+          132.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 27072.0,
+        "min": 27072.0,
+        "max": 27072.0,
+        "samples": [
+          27072.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 27072.0,
+        "min": 27072.0,
+        "max": 27072.0,
+        "samples": [
+          27072.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "table",
+      "runs": 1,
+      "artifacts": 67,
+      "outputSha256": "d6ed4405f4e1a6c458bf997660f2da7a86a7bae3f62a1d5b5959975b0717147a",
+      "wallMs": {
+        "median": 131.0,
+        "min": 131.0,
+        "max": 131.0,
+        "samples": [
+          131.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 29584.0,
+        "min": 29584.0,
+        "max": 29584.0,
+        "samples": [
+          29584.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 29584.0,
+        "min": 29584.0,
+        "max": 29584.0,
+        "samples": [
+          29584.0
+        ]
+      }
+    },
+    {
+      "engine": "rust",
+      "scenario": "i18n",
+      "runs": 1,
+      "artifacts": 67,
+      "outputSha256": "8b78541e1afb8de1c650eb0f6cf49d32bb9743afcd5a2361210197615b05ef56",
+      "wallMs": {
+        "median": 141.0,
+        "min": 141.0,
+        "max": 141.0,
+        "samples": [
+          141.0
+        ]
+      },
+      "peakRssKb": {
+        "median": 27888.0,
+        "min": 27888.0,
+        "max": 27888.0,
+        "samples": [
+          27888.0
+        ]
+      },
+      "peakTreeRssKb": {
+        "median": 27888.0,
+        "min": 27888.0,
+        "max": 27888.0,
+        "samples": [
+          27888.0
+        ]
+      }
+    }
+  ],
+  "thresholds": {
+    "cold": {
+      "medianRatio": null,
+      "limit": 1.1,
+      "peakRssRatio": null,
+      "peakRssLimit": 1.2,
+      "peakRssAbsLimitKb": null,
+      "verdict": "regression-pass",
+      "baselineMode": "archived-run",
+      "allowedSlowdown": 1.25
+    },
+    "hot-cli": {
+      "medianRatio": null,
+      "limit": 1.1,
+      "peakRssRatio": null,
+      "peakRssLimit": 1.2,
+      "peakRssAbsLimitKb": null,
+      "verdict": "regression-pass",
+      "baselineMode": "archived-run",
+      "allowedSlowdown": 1.25
+    },
+    "hot-worker": {
+      "medianRatio": null,
+      "limit": null,
+      "peakRssRatio": null,
+      "peakRssLimit": 1.2,
+      "peakRssAbsLimitKb": null,
+      "verdict": "regression-pass",
+      "baselineMode": "archived-run",
+      "allowedSlowdown": 1.25
+    },
+    "table": {
+      "medianRatio": null,
+      "limit": 1.1,
+      "peakRssRatio": null,
+      "peakRssLimit": 1.2,
+      "peakRssAbsLimitKb": null,
+      "verdict": "regression-pass",
+      "baselineMode": "archived-run",
+      "allowedSlowdown": 1.25
+    },
+    "i18n": {
+      "medianRatio": null,
+      "limit": 1.1,
+      "peakRssRatio": null,
+      "peakRssLimit": 1.2,
+      "peakRssAbsLimitKb": null,
+      "verdict": "regression-pass",
+      "baselineMode": "archived-run",
+      "allowedSlowdown": 1.25
+    }
+  }
+}

@@ -12,6 +12,9 @@
 *.h       text
 *.md      text
 *.txt     text
+# Acceptance logs preserve terminal output, including padding and final blank lines.
+native/docs/baseline/post-retirement/*.txt -whitespace
+native/docs/baseline/post-retirement/logs/*.txt -whitespace
 *.cfg     text
 *.toml    text
 *.ini     text

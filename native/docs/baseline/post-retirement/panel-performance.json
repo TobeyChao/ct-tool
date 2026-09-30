@@ -1,0 +1,46 @@
+{
+  "format": "panel-performance/1",
+  "at": "2026-09-30T05:52:14.523Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "node": "v26.10.0",
+  "nativeBinary": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/dist/ct-native-0.0.0-aarch64-apple-darwin/bin/ct",
+  "fixture": "one Table, empty generated workbook; 1000 i18n source entries",
+  "native": {
+    "startupMs": [
+      70,
+      9,
+      7,
+      7,
+      7,
+      7
+    ],
+    "startupMedianMs": 7,
+    "candidateMs": [
+      3,
+      2,
+      1,
+      1,
+      1,
+      1
+    ],
+    "candidateMedianMs": 1,
+    "exportMs": [
+      25,
+      24,
+      24
+    ],
+    "exportMedianMs": 24,
+    "largeResponseMs": [
+      6,
+      4,
+      4,
+      5,
+      5,
+      4
+    ],
+    "largeMedianMs": 4,
+    "largeBytes": 190920,
+    "largeDataSha256": "b7eef07e28a2008ad5379f337211c21aff63bf23efab0c50324c15793904bfb0"
+  }
+}

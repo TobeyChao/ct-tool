@@ -1,0 +1,811 @@
+   Compiling ct-domain v0.0.0 (/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/native/crates/ct-domain)
+   Compiling ct-storage v0.0.0 (/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/native/crates/ct-storage)
+   Compiling ct-export v0.0.0 (/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/native/crates/ct-export)
+   Compiling ct-excel v0.0.0 (/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/native/crates/ct-excel)
+   Compiling ct-cache v0.0.0 (/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/native/crates/ct-cache)
+   Compiling ct-app v0.0.0 (/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/native/crates/ct-app)
+   Compiling ct-protocol v0.0.0 (/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/native/crates/ct-protocol)
+   Compiling ct-test-support v0.0.0 (/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/native/crates/ct-test-support)
+   Compiling ct-tests-compat v0.0.0 (/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/native/tests/compat)
+   Compiling ct-worker v0.0.0 (/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/native/crates/ct-worker)
+   Compiling ct-tests-protocol v0.0.0 (/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/native/tests/protocol)
+   Compiling ct-web v0.0.0 (/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/native/crates/ct-web)
+   Compiling ct-cli v0.0.0 (/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/native/crates/ct-cli)
+   Compiling ct-xtask v0.0.0 (/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/native/crates/ct-xtask)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 29s
+     Running unittests src/lib.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/ct_app-e50203e424f93c76)
+
+running 9 tests
+test export::wave_budget_tests::unknown_average_falls_back_to_one_table ... ok
+test export::wave_budget_tests::wave_shrinks_to_fit_budget ... ok
+test export::wave_budget_tests::wave_never_exceeds_workers_or_remaining ... ok
+test task::tests::request_is_not_observed_until_a_safe_checkpoint ... ok
+test panel_tasks::tests::expired_error_leaves_projection_but_remains_queryable ... ok
+test panel_tasks::tests::running_stays_projected_and_cannot_be_dismissed ... ok
+test panel_tasks::tests::fresh_error_can_be_dismissed_without_losing_details ... ok
+test panel_tasks::tests::native_log_categories_and_level_names_match_panel_filters ... ok
+test panel_tasks::tests::log_buffer_is_bounded_normalizes_levels_and_filters_modules ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src/lib.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/ct_cache-6a45a362f4b8b9a8)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/ct-b410d930021560f0)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cli.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/cli-dd83247c66bf9805)
+
+running 15 tests
+test panel_command_exposes_native_web_options ... ok
+test help_lists_full_command_surface ... ok
+test gen_template_unknown_table_text_and_code ... ok
+test recover_json_output_shape ... ok
+test status_reports_missing_and_pending_journal ... ok
+test status_clean_minimal ... ok
+test validate_missing_excel_fails_readonly ... ok
+test validate_unknown_table_filter ... ok
+test recover_command_restores_and_returns_new_baseline ... ok
+test validate_and_status_report_recovery_needed ... ok
+test export_unknown_table_and_bad_lang_exit_one ... ok
+test export_validation_failure_reports_issue_list ... ok
+test deploy_without_config_reports_no_change ... ok
+test i18n_sync_status_json_and_compact_dry_run ... ok
+test export_happy_path_writes_artifacts_and_ledger ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.88s
+
+     Running tests/panel.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/panel-f4db7438064b019b)
+
+running 21 tests
+test invalid_cli_parameters_fail_without_starting_a_panel ... ok
+test embedded_assets_and_invalid_workspace_remain_accessible ... ok
+test panel_process_defaults_to_port_8000_when_available ... ok
+test candidate_applies_only_active_cursor_prefix ... ok
+test legacy_apply_blocks_writes_and_survives_recovery_attempt ... ok
+test damaged_legacy_history_or_import_write_failure_warns_without_losing_source ... ok
+test legacy_history_import_is_idempotent_and_preserves_source ... ok
+test create_three_resource_kinds_and_roundtrip_net_noop ... ok
+test malformed_resource_commands_have_domain_field_locations_on_all_endpoints ... ok
+test missing_python_backup_refuses_recovery_and_preserves_journal ... ok
+test panel_process_uses_explicit_port_and_default_bind_address ... ok
+test panel_process_uses_current_directory_by_default_and_accepts_unicode_root ... ok
+test schema_save_reports_busy_without_losing_yaml_when_cli_holds_lock ... ok
+test request_boundaries_and_port_conflict ... ok
+test schema_guards_candidate_undo_and_yaml_only_save ... ok
+test unknown_host_is_rejected_before_routing ... ok
+test translations_recompute_stale_and_reject_unsynchronized_save ... ok
+test validate_reports_unknown_commands_without_publishing ... ok
+test shared_lock_blocks_web_reads_and_cli_template_writes ... ok
+test browser_opens_only_after_successful_listen_and_no_browser_suppresses_it ... ok
+test explicit_http_recovery_consumes_frozen_python_journals_before_loading_config ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+
+     Running tests/worker_chain.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/worker_chain-c2634b52aaa03685)
+
+running 3 tests
+test busy_when_workspace_locked ... ok
+test protocol_violations_are_structured ... ok
+test full_operation_chain ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running unittests src/lib.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/ct_domain-42f78034bc453f0a)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/config.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/config-16dc574ac14e0277)
+
+running 3 tests
+test custom_dirs_resolve_against_root ... ok
+test deploy_targets_expand ... ok
+test rejects_empty_primary_lang_and_unknown_keys ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/type_expression.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/type_expression-4e840d84a51a5594)
+
+running 6 tests
+test primary_key_type_is_int32 ... ok
+test scalars_all_parse ... ok
+test named_bare_and_prefixed ... ok
+test grammar_errors ... ok
+test named_validation ... ok
+test vector_grammar ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/ct_excel-eb3b025580705452)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/layout_header_parity.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/layout_header_parity-8b7665d67d36ed05)
+
+running 2 tests
+test header_grid_inherits_record_name_for_vector_member ... ok
+test manifest_columns_match_python_reference_values ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/ct_export-6a142d5d1eb36fc6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/ct_protocol-1b9792334bf90db6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/ct_storage-07744f82cd891e99)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/ct_test_support-82231c33eb3c31c2)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/ct_tests_compat-d750fa70d2eccc79)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/accessor_golden.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/accessor_golden-01888f5394f18f9a)
+
+running 5 tests
+test enum_declarations ... ok
+test csharp_buff_i18n ... ok
+test csharp_item_uniform_literal_mode ... ok
+test lua_item_and_buff ... ok
+test csharp_item_offsets_mode ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/binary_golden.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/binary_golden-98c88a592bb72d27)
+
+running 7 tests
+test empty_table_bytes_match ... ok
+test bundle_bytes_match ... ok
+test sparse_uniform_bytes_match ... ok
+test sparse_nonuniform_bytes_match ... ok
+test item_uniform_bytes_match ... ok
+test item_nonuniform_bytes_match ... ok
+test rough_timing_smoke ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/cache_artifacts.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/cache_artifacts-39e9b8d4b54ced28)
+
+running 11 tests
+test bytes_roundtrip ... ok
+test hit_after_first_compute ... ok
+test forced_bypasses_cache ... ok
+test same_mtime_content_change_recomputes ... ok
+test prune_drops_only_unused ... ok
+test corrupted_and_tampered_entries_rebuild ... ok
+test version_bump_invalidates ... ok
+test translation_metadata_change_does_not_rebuild ... ok
+test missing_or_rewritten_output_is_repaired ... ok
+test pipeline_second_run_uses_cache_and_stays_byte_identical ... ok
+test forced_all_rewrites_and_incremental_preserves_mtime ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests/canonical_read.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/canonical_read-dd25a689fc4b6d9d)
+
+running 3 tests
+test vector_cell_grammar ... ok
+test clean_rows_match_python ... ok
+test bad_rows_match_python_issues ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/coverage_matrix.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/coverage_matrix-3150c021187378bf)
+
+running 6 tests
+test matrix_rows_match_coverage_table_row_by_row ... ok
+test baseline_fingerprint_is_pinned_and_complete ... ok
+test every_python_reference_test_is_pinned ... ok
+test native_anchors_exist_and_carry_tests ... ok
+test explicit_acceptance_checks_are_mapped ... ok
+test frozen_reference_mapping_survives_absent_retired_tree_and_rejects_corruption ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/desktop_history.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/desktop_history-d3a0557f8a7f2331)
+
+running 10 tests
+test unknown_history_format_is_ignored_then_replaced ... ok
+test history_follows_configured_cache_dir ... ok
+test two_native_exports_in_one_second_remain_two_history_events ... ok
+test corrupt_legacy_history_and_atomic_write_failure_keep_source_for_retry ... ok
+test legacy_history_merges_once_with_stable_ids_and_source_digest ... ok
+test history_appends_newest_first_and_trims_to_five ... ok
+test cli_path_does_not_write_desktop_history ... ok
+test history_write_failure_is_reported_separately ... ok
+test desktop_export_records_success_entry ... ok
+test history_failure_does_not_change_second_export_outcome ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/excel_edge.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/excel_edge-28c5442471cac57a)
+
+running 8 tests
+test serial_conversion_boundaries ... ok
+test corrupted_frozen_source_blocks_regeneration ... ok
+test fixture_rich_text ... ok
+test fixture_errors ... ok
+test fixture_formula_cache ... ok
+test fixture_dates_1900 ... ok
+test fixture_dates_1904 ... ok
+test fixture_active_sheet ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/export_compat.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/export_compat-d6ac3e89e300fcb8)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/export_pipeline.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/export_pipeline-902c725fe854326c)
+
+running 11 tests
+test deploy_preserves_meta_when_generated_name_changes_case ... ok
+test capture_verify_unit ... ok
+test input_change_directory_membership_blocks ... ok
+test input_change_during_build_blocks_publish ... ok
+test cancellation_before_publish_keeps_output_unpublished ... ok
+test input_change_translation_blocks ... ok
+test deploy_failure_keeps_ledger_untouched ... ok
+test cancellation_after_publish_boundary_preserves_success ... ok
+test deploy_syncs_and_preserves_meta ... ok
+test pipeline_matches_python_byte_for_byte ... ok
+test partial_export_keeps_other_ledger_entries ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+     Running tests/fbs_export.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/fbs_export-655ecf6002ee92b3)
+
+running 3 tests
+test structural_validation ... ok
+test types_fbs_matches_python ... ok
+test table_fbs_matches_python ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/fingerprints.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/fingerprints-7e39b6183f7eecab)
+
+running 4 tests
+test reuse_decision_matrix ... ok
+test semantics_ignore_derived_metadata ... ok
+test ref_target_primary_key_change_invalidates_schema ... ok
+test fingerprints_match_python ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/fixture_oracles.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/fixture_oracles-4af862dcdf44c07f)
+
+running 2 tests
+test frozen_inputs_and_oracles_match_their_provenance_checksums ... ok
+test optional_python_cache_cannot_become_an_oracle_but_unknown_golden_fails ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running tests/i18n_flow.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/i18n_flow-78cfb16526232f4c)
+
+running 4 tests
+test status_machine ... ok
+test merge_entry_rules ... ok
+test serialize_format_matches_python ... ok
+test sync_status_compact_roundtrip ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/incremental_matrix.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/incremental_matrix-c63bbe77cbc31813)
+
+running 8 tests
+test illegal_data_fails_both_modes_and_touches_nothing ... ok
+test inert_translation_metadata_does_not_rebuild_anything ... ok
+test python_ledger_survives_native_export_in_custom_paths ... ok
+test corrupt_cache_and_unknown_ledger_version_rebuild_without_changing_bytes ... ok
+test filtered_export_produces_the_same_selected_artifacts_as_full_export ... ok
+test effective_translation_change_updates_only_that_language ... ok
+test missing_or_rewritten_output_is_repaired_identically ... ok
+test unchanged_inputs_keep_bytes_and_mtime_but_all_rewrites ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+
+     Running tests/journal_recovery.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/journal_recovery-2c8c638fa7d60c23)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/json_export.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/json_export-6cee364b10bc56b7)
+
+running 3 tests
+test json_empty_table ... ok
+test json_single_line_records ... ok
+test json_bytes_match_python ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/layout_manifest.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/layout_manifest-6207554e9b0b75c7)
+
+running 4 tests
+test header_nodes_deterministic ... ok
+test layout_columns_match_python_golden ... ok
+test manifest_roundtrip_and_format_gate ... ok
+test manifest_payload_matches_golden ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/parallel_determinism.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/parallel_determinism-93d061cb547848bb)
+
+running 3 tests
+test diagnostics_order_stable_under_concurrency ... ok
+test peak_memory_recorded_for_bounded_parallelism ... ok
+test same_bytes_under_different_concurrency ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+
+     Running tests/path_case.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/path_case-f0b251afc34d6168)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/publication_recovery.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/publication_recovery-694eee7598d2bd78)
+
+running 11 tests
+test atomic_write_replaces_target_while_reader_has_it_open ... ok
+test out_of_scope_journal_path_rejected ... ok
+test missing_backup_keeps_materials_and_blocks ... ok
+test crash_after_prepared_cleans_private_only ... ok
+test dropping_staged_payloads_leaves_targets_untouched ... ok
+test crash_after_committed_keeps_new_version ... ok
+test crash_mid_publish_restores_content_and_mtime_and_removes_created ... ok
+test sweep_staging_respects_journal ... ok
+test staged_payload_does_not_touch_targets ... ok
+test publish_then_recover_is_noop ... ok
+test publish_failure_rolls_back_with_mtime ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/python_publication.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/python_publication-504c9ec72df58f2a)
+
+running 1 test
+test frozen_python_journals_recover_all_stages_with_content_and_nanosecond_mtime ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/resource_graph.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/resource_graph-08cf658441b7086b)
+
+running 5 tests
+test reverse_references_cover_named_and_ref ... ok
+test named_edges_sorted_and_deduped ... ok
+test ref_target_must_be_primary ... ok
+test cycle_detected_with_path ... ok
+test topological_order_named_before_tables ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/schema_draft.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/schema_draft-115f6876f819e902)
+
+running 14 tests
+test candidate_missing_and_kind_mismatched_refs ... ok
+test generated_name_conflict_detected ... ok
+test candidate_cross_kind_name_conflict ... ok
+test netdiff_field_property_details_sorted ... ok
+test netdiff_enum_ordinal_risk_details ... ok
+test add_rename_delete_replay ... ok
+test netdiff_rename_chain_reports_single_rename ... ok
+test netdiff_roundtrip_rename_is_noop ... ok
+test rename_field_rejects_primary_and_cross_table_broadcast ... ok
+test rename_rewrites_named_refs_and_cross_table_refs ... ok
+test set_enum_values_and_move_field_guards ... ok
+test netdiff_delete_then_add_is_not_rename ... ok
+test candidate_hash_is_order_independent_and_change_sensitive ... ok
+test undo_redo_cursor_semantics ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/schema_loading.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/schema_loading-f87c8517258c5a16)
+
+running 15 tests
+test primary_key_type_rule ... ok
+test duplicate_name_rejected ... ok
+test ref_on_vector_rejected ... ok
+test captured_contents_mode_ignores_disk ... ok
+test case_conflict_rejected ... ok
+test expected_kind_mismatch_rejected ... ok
+test by_id_lookup ... ok
+test custom_dirs_load_and_resolve ... ok
+test named_type_resolution ... ok
+test types_dir_kind_mismatch_rejected ... ok
+test old_shape_rejected ... ok
+test unknown_field_key_rejected ... ok
+test table_reference_rejected ... ok
+test unknown_named_type_rejected ... ok
+test vector_record_requires_excel_columns ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/schema_parity.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/schema_parity-23b96673df75453c)
+
+running 5 tests
+test resource_and_schema_hashes_match_python ... ok
+test schema_revision_matches_python ... ok
+test hash_ignores_serialization_jitter ... ok
+test candidate_hash_and_netdiff_match_python ... ok
+test dump_yaml_matches_python_bytes ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/schema_save.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/schema_save-4093dc67c3c71efc)
+
+running 14 tests
+test candidate_counts_index_only_change ... ok
+test resource_target_path_uses_kind_directories ... ok
+test save_with_candidate_issues_rejected ... ok
+test save_bad_candidate_hash_rejected ... ok
+test save_stale_revision_rejected_and_untouched ... ok
+test revision_tracks_directory_membership ... ok
+test excel_path_conflict_rejected ... ok
+test save_noop_touches_nothing ... ok
+test recovery_changes_baseline_and_rejects_pre_recovery_draft ... ok
+test unchanged_content_not_rewritten_despite_formatting_drift ... ok
+test save_delete_and_rename_move_files ... ok
+test transaction_failure_preserves_original_files ... ok
+test save_writes_only_changed_yaml ... ok
+test save_workspace_busy_and_recovery ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/stage_profile.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/stage_profile-f11f99a7e33df8a8)
+
+running 5 tests
+test failing_export_stops_progress_at_the_gate ... ok
+test validation_issues_are_carried_by_the_error_once ... ok
+test export_reports_every_stage_once ... ok
+test progress_visits_five_steps_then_the_publish_boundary ... ok
+test incremental_export_writes_nothing_and_forced_rewrites_all ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/template_edge.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/template_edge-08a0cc3eff6a4aba)
+
+running 4 tests
+test long_enum_dropdown_skipped_with_warning ... ok
+test unconvertible_type_change_blocks ... ok
+test deleted_field_with_data_blocks_and_keeps_original ... ok
+test migration_preserves_data_but_not_arbitrary_sheets ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/template_flow.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/template_flow-135af7ee51773250)
+
+running 4 tests
+test requires_scope_flag ... ok
+test missing_manifest_refuses_overwrite ... ok
+test fresh_template_and_manifest ... ok
+test migration_with_manifest_preserves_data ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/template_semantics.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/template_semantics-7492a7d455435115)
+
+running 9 tests
+test golden_input_layouts_parse ... ok
+test migration_blocked_without_manifest ... ok
+test migration_blocked_when_deleted_column_has_data ... ok
+test independent_reader_matches_frozen_openpyxl_semantics ... ok
+test template_v2a_structure ... ok
+test template_v1_structure ... ok
+test migration_matches_python_golden ... ok
+test template_readback_via_calamine ... ok
+test full_semantics_rejects_a_changed_header ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/validate_gates.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/validate_gates-f404b61b01501249)
+
+running 7 tests
+test unknown_table_filter ... ok
+test unknown_enum_token_rejected ... ok
+test duplicate_primary_key_rejected ... ok
+test codename_empty_and_duplicate_rejected ... ok
+test bad_ref_rejected_even_with_table_filter ... ok
+test clean_workspace_no_issues ... ok
+test deterministic_issue_order ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/workspace_lock.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/workspace_lock-cf2a7769f5953551)
+
+running 6 tests
+test child_holds_lock ... ok
+test in_process_mutual_exclusion ... ok
+test transaction_reports_busy ... ok
+test different_roots_are_independent ... ok
+
+running 1 test
+test transaction_recovers_pending_publish_before_work ... ok
+test cross_process_busy_and_death_release ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running unittests src/lib.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/ct_tests_protocol-da259a5d6c3fc766)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/bigint.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/bigint-2a3092ebb162245a)
+
+running 7 tests
+test preview_sample_bigint_cell_decodes ... ok
+test tagged_values_decode_back_to_exact_integers ... ok
+test in_range_integers_stay_plain_numbers ... ok
+test typed_field_uses_dual_representation ... ok
+test malformed_tags_are_left_untouched ... ok
+test out_of_range_integers_are_tagged_recursively ... ok
+test encode_then_decode_is_identity_for_boundary_values ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cancel.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/cancel-6e155e29a21d41c8)
+
+running 5 tests
+test requests_after_shutdown_are_rejected_as_busy ... ok
+test cancel_states_are_exhaustive ... ok
+test eof_disconnect_still_delivers_the_terminal_state ... ok
+test disconnect_without_reader_leaves_the_task_unknown ... ok
+test control_messages_are_served_while_a_write_task_runs ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.42s
+
+     Running tests/contract_cases.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/contract_cases-907d50a6be45c79f)
+
+running 2 tests
+test fixture_declares_current_protocol_version ... ok
+test every_case_executes_against_the_real_worker ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/desktop_state.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/desktop_state-3edc51f4e90351ec)
+
+running 10 tests
+test session_log_buffer_is_bounded_and_keeps_latest ... ok
+test worker_reads_report_busy_for_locked_root_without_blocking_another_root ... ok
+test every_response_is_attributed_to_the_same_workspace ... ok
+test imported_web_history_is_readable_through_worker_history_contract ... ok
+test pending_publication_status_never_loads_mixed_schema ... ok
+test task_issues_page_through_every_problem ... ok
+test task_issues_page_and_dismiss_are_connection_scoped ... ok
+test history_survives_worker_restart ... ok
+test module_logs_filter_by_module_and_level ... ok
+test history_write_failure_is_reported_as_issue_not_failure ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.46s
+
+     Running tests/editor_state.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/editor_state-784bd223e1b7ac32)
+
+running 2 tests
+test resources_list_reports_declared_index_kinds ... ok
+test preview_columns_carry_field_properties ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/envelope.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/envelope-5be0f243f30e5ed9)
+
+running 7 tests
+test client_sent_events_after_hello_are_rejected ... ok
+test non_object_and_missing_fields_are_malformed ... ok
+test invalid_utf8_line_is_rejected_without_killing_worker ... ok
+test truncated_json_is_rejected_and_connection_survives ... ok
+test message_exactly_at_the_limit_is_accepted ... ok
+test each_request_has_exactly_one_terminal ... ok
+test oversized_message_is_rejected_and_stream_resyncs ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.59s
+
+     Running tests/event_queue.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/event_queue-445f96e033a6ed54)
+
+running 6 tests
+test messages_are_still_delivered_after_the_reader_disappears ... ok
+test terminal_drops_unflushed_progress ... ok
+test progress_merges_to_the_latest_per_request ... ok
+test logs_are_dropped_when_the_queue_is_full ... ok
+test issue_events_block_instead_of_being_dropped ... ok
+test terminal_waits_for_queue_space_and_arrives_last ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
+     Running tests/golden.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/golden-c80fd066a8fcdcb4)
+
+running 2 tests
+test samples_cover_all_message_types ... ok
+test every_sample_line_roundtrips_through_rust_types ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/handshake.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/handshake-743fbddfbfa1916c)
+
+running 4 tests
+test handshake_declares_version_and_capabilities ... ok
+test business_message_before_hello_is_rejected ... ok
+test incompatible_version_closes_connection_without_running_business ... ok
+test empty_lines_are_tolerated_between_requests ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/json_schema.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/json_schema-e35863caba43717d)
+
+running 1 test
+test samples_validate_against_json_schema ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/method_names.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/method_names-88f9ef7d537152c5)
+
+running 2 tests
+test method_names_are_unique_and_match_documented_set ... ok
+test schema_enum_matches_method_constants ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/pagination.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/pagination-ec0a0e70179d4446)
+
+running 7 tests
+test task_issues_page_through_structured_problems ... ok
+test unknown_or_tampered_cursor_is_stale ... ok
+test preview_pages_walk_through_rows_without_mixing ... ok
+test external_edit_invalidates_pages ... ok
+test successful_write_invalidates_older_pages ... ok
+test logs_pages_are_contiguous_and_share_one_revision ... ok
+test revisions_never_regress_across_calls ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests/request_id.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/request_id-ea2ff1858c3004e5)
+
+running 4 tests
+test duplicate_read_request_is_rejected ... ok
+test big_integers_survive_both_directions ... ok
+test duplicate_write_request_executes_only_once ... ok
+test ids_are_scoped_per_connection_and_writes_are_not_replayed ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running unittests src/lib.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/ct_web-7729a01706c16204)
+
+running 1 test
+test tests::control_routes_respond_when_business_capacity_is_exhausted ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/ct_worker-db003e6c3eddf969)
+
+running 1 test
+test methods::schema::tests::net_diff_payload_keeps_rename_details ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/deps/xtask-a7167f9ad3bbf9e2)
+
+running 20 tests
+test bench::tests::absolute_memory_limits_are_size_banded ... ok
+test bench::tests::posix_rss_includes_nested_child_processes ... ok
+test bench::tests::regression_still_respects_the_absolute_peak_cap ... ok
+test bench::tests::over_band_peak_still_fails ... ok
+test bench::tests::measured_l_numbers_pass_revised_caps ... ok
+test bench::tests::time_limits_unchanged_by_the_memory_revision ... ok
+test bench::tests::regression_fails_on_slowdown_or_changed_artifacts ... ok
+test bench::tests::missing_python_baseline_is_recorded_not_passing ... ok
+test bench::tests::regression_verdict_needs_no_python ... ok
+test dist::tests::isolated_environment_only_keeps_the_package_bin_dir ... ok
+test dist::tests::package_names_follow_target_family ... ok
+test dist::tests::distribution_zip_preserves_executable_permission_and_binary_bytes ... ok
+test bench::tests::archived_regression_requires_the_same_fixture_digest ... ok
+test accessor_fixtures::tests::missing_or_changed_independent_reference_fails_before_generation ... ok
+test accessor_fixtures::tests::independent_scalars_regenerate_without_legacy_ct_and_match_main_bytes ... ok
+test fingerprint::tests::retired_tree_does_not_change_fingerprint_or_test_inventory ... ok
+test bench::tests::posix_measure_feeds_worker_input_and_records_memory ... ok
+test fingerprint::tests::fingerprint_pins_supported_trees_and_frozen_history ... ok
+test fingerprint::tests::native_entries_match_disk_hashes ... ok
+test fingerprint::tests::fingerprint_is_reproducible ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.30s
+
+   Doc-tests ct_app
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ct_cache
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ct_domain
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ct_excel
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ct_export
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ct_protocol
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ct_storage
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ct_test_support
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ct_tests_compat
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ct_tests_protocol
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ct_web
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ct_worker
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

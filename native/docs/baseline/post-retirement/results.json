@@ -1,0 +1,412 @@
+{
+  "schema": "ct-post-retirement/1",
+  "root": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ",
+  "commit": "49ef3f1c22ec5af8fcec146e3a0856d46df4f960",
+  "oldCt": false,
+  "pythonInPath": false,
+  "realGdExcluded": true,
+  "environment": {
+    "PATH": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/bin",
+    "CARGO_TARGET_DIR": "/Users/tobeychao/Documents/Projects/ct-tool/native/target",
+    "node": "v26.10.0"
+  },
+  "steps": [
+    {
+      "name": "cargo-workspace",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "native/Cargo.toml",
+        "--workspace",
+        "--locked",
+        "--offline",
+        "--no-fail-fast",
+        "-j",
+        "1"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 185392,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/cargo-workspace.txt"
+    },
+    {
+      "name": "cargo-build",
+      "command": [
+        "cargo",
+        "build",
+        "--manifest-path",
+        "native/Cargo.toml",
+        "-p",
+        "ct-cli",
+        "-p",
+        "ct-xtask",
+        "--locked",
+        "--offline"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 10939,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/cargo-build.txt"
+    },
+    {
+      "name": "retirement",
+      "command": [
+        "node",
+        "native/tools/check-retirement.mjs",
+        "--after-deletion"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 143,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/retirement.txt"
+    },
+    {
+      "name": "docs",
+      "command": [
+        "node",
+        "native/tools/check-docs.mjs"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 118,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/docs.txt"
+    },
+    {
+      "name": "test-proj-audit",
+      "command": [
+        "node",
+        "test-proj/check-retirement.mjs"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 122,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/test-proj-audit.txt"
+    },
+    {
+      "name": "fingerprint",
+      "command": [
+        "/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/xtask",
+        "fingerprint",
+        "--check",
+        "--root",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 1,
+      "signal": null,
+      "elapsedMs": 2396,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/fingerprint.txt"
+    },
+    {
+      "name": "cargo-workspace-finder-fixed",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "native/Cargo.toml",
+        "--workspace",
+        "--locked",
+        "--offline",
+        "--no-fail-fast",
+        "-j",
+        "1"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 13766,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/cargo-workspace-finder-fixed.txt"
+    },
+    {
+      "name": "cargo-build-finder-fixed",
+      "command": [
+        "cargo",
+        "build",
+        "--manifest-path",
+        "native/Cargo.toml",
+        "-p",
+        "ct-cli",
+        "-p",
+        "ct-xtask",
+        "--locked",
+        "--offline"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 997,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/cargo-build-finder-fixed.txt"
+    },
+    {
+      "name": "fingerprint",
+      "command": [
+        "/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/xtask",
+        "fingerprint",
+        "--check",
+        "--root",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 1,
+      "signal": null,
+      "elapsedMs": 2135,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/fingerprint.txt"
+    },
+    {
+      "name": "cargo-workspace-portable-final",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "native/Cargo.toml",
+        "--workspace",
+        "--locked",
+        "--offline",
+        "--no-fail-fast",
+        "-j",
+        "1"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 16649,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/cargo-workspace-portable-final.txt"
+    },
+    {
+      "name": "cargo-build-portable-final",
+      "command": [
+        "cargo",
+        "build",
+        "--manifest-path",
+        "native/Cargo.toml",
+        "-p",
+        "ct-cli",
+        "-p",
+        "ct-xtask",
+        "--locked",
+        "--offline"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 1492,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/cargo-build-portable-final.txt"
+    },
+    {
+      "name": "fingerprint",
+      "command": [
+        "/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/xtask",
+        "fingerprint",
+        "--check",
+        "--root",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 2221,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/fingerprint.txt"
+    },
+    {
+      "name": "cli-parity",
+      "command": [
+        "node",
+        "native/tools/parity/cli-text-diff.mjs",
+        "--rust",
+        "/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/ct",
+        "--out",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/cli-parity.md"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 977,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/cli-parity.txt"
+    },
+    {
+      "name": "compat-fixtures",
+      "command": [
+        "/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/xtask",
+        "compat-fixtures",
+        "--out",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/compat-excel"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 49,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/compat-fixtures.txt"
+    },
+    {
+      "name": "bench-fixtures",
+      "command": [
+        "/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/xtask",
+        "bench-fixtures",
+        "--sizes",
+        "s",
+        "--out",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/bench"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 785,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/bench-fixtures.txt"
+    },
+    {
+      "name": "bench-validate",
+      "command": [
+        "/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/ct",
+        "validate",
+        "--root",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/bench/bench-s"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 292,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/bench-validate.txt"
+    },
+    {
+      "name": "independent-reader",
+      "command": [
+        "node",
+        "test-proj/ExportAccessorVerify/prepare-native.mjs"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 5076,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/independent-reader.txt"
+    },
+    {
+      "name": "web-parity",
+      "command": [
+        "node",
+        "web/tools/check-parity.mjs",
+        "--require-complete"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 136,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/web-parity.txt"
+    },
+    {
+      "name": "web-install",
+      "command": [
+        "npm",
+        "ci",
+        "--offline"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/web",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 599,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/web-install.txt"
+    },
+    {
+      "name": "http",
+      "command": [
+        "npm",
+        "run",
+        "test:http"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/web",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 12448,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/http.txt"
+    },
+    {
+      "name": "browser",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/web",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 37750,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/browser.txt"
+    },
+    {
+      "name": "flutter-tests",
+      "command": [
+        "flutter",
+        "test"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/launcher",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 15315,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/flutter-tests.txt"
+    },
+    {
+      "name": "flutter-analyze",
+      "command": [
+        "flutter",
+        "analyze"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/launcher",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 4987,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/flutter-analyze.txt"
+    },
+    {
+      "name": "distribution",
+      "command": [
+        "/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/xtask",
+        "dist",
+        "--out",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/dist"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 28090,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/distribution.txt"
+    },
+    {
+      "name": "payload",
+      "command": [
+        "node",
+        "native/tools/check-package.mjs",
+        "--package",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/dist/ct-native-0.0.0-aarch64-apple-darwin",
+        "--out",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/payload.json"
+      ],
+      "cwd": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout",
+      "code": 0,
+      "signal": null,
+      "elapsedMs": 131,
+      "logfile": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/logs/payload.txt"
+    }
+  ],
+  "harnessRepair": "Node upgraded on host from 26.8.2 to 26.10.0; broken old allowlist symlink replaced in a new owned allowlist. Cargo successes retained.",
+  "initialCommit": "fea11c4",
+  "fingerprintFailure": "Finder .DS_Store was included in the source baseline; excluded with a regression test, then rerun at corrected revision.",
+  "lineEndingRepair": "Git CRLF checkout for Windows scripts differed from archive/source LF; normalize only ps1/bat/cmd before source fingerprinting, while frozen inputs/oracles remain byte exact.",
+  "package": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/dist/ct-native-0.0.0-aarch64-apple-darwin",
+  "complete": true,
+  "releaseSmokes": {
+    "zip": true,
+    "app": true,
+    "readonlyDmg": true,
+    "launcherPackage": true
+  },
+  "knownHarnessRepairs": [
+    "Node upgraded on host from 26.8.2 to 26.10.0; broken old allowlist symlink replaced in a new owned allowlist. Cargo successes retained.",
+    "Finder .DS_Store was included in the source baseline; excluded with a regression test, then rerun at corrected revision.",
+    "Git CRLF checkout for Windows scripts differed from archive/source LF; normalize only ps1/bat/cmd before source fingerprinting, while frozen inputs/oracles remain byte exact.",
+    "First ZIP smoke assumed an outer directory; actual archive uses bin/ct at its root. Corrected extraction-path smoke passed."
+  ]
+}

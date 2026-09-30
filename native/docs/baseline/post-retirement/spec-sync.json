@@ -1,0 +1,119 @@
+[
+  {
+    "capability": "cli-interface",
+    "operations": [
+      {
+        "operation": "ADDED",
+        "requirement": "Native ct panel command"
+      },
+      {
+        "operation": "MODIFIED",
+        "requirement": "Designer-friendly error messages"
+      }
+    ]
+  },
+  {
+    "capability": "launcher",
+    "operations": [
+      {
+        "operation": "MODIFIED",
+        "requirement": "内置运行时优先"
+      },
+      {
+        "operation": "MODIFIED",
+        "requirement": "启动行为等价"
+      },
+      {
+        "operation": "MODIFIED",
+        "requirement": "平台内置运行时布局"
+      }
+    ]
+  },
+  {
+    "capability": "native-web-runtime",
+    "operations": [
+      {
+        "operation": "ADDED",
+        "requirement": "Standalone native Web distribution"
+      },
+      {
+        "operation": "ADDED",
+        "requirement": "Web API preserves authoritative business results"
+      },
+      {
+        "operation": "ADDED",
+        "requirement": "Service-owned tasks and safe cancellation"
+      },
+      {
+        "operation": "ADDED",
+        "requirement": "Cross-entry workspace consistency"
+      },
+      {
+        "operation": "ADDED",
+        "requirement": "Existing browser drafts survive migration"
+      },
+      {
+        "operation": "ADDED",
+        "requirement": "Current workspace state migration is safe"
+      },
+      {
+        "operation": "ADDED",
+        "requirement": "Local HTTP boundary"
+      },
+      {
+        "operation": "ADDED",
+        "requirement": "Feature parity gates Python removal"
+      }
+    ]
+  },
+  {
+    "capability": "tool-workspace-separation",
+    "operations": [
+      {
+        "operation": "REMOVED",
+        "requirement": "工具源码位于根级 ct/ 项目并采用 src layout"
+      },
+      {
+        "operation": "REMOVED",
+        "requirement": "工具可从 ct/ 安装"
+      },
+      {
+        "operation": "REMOVED",
+        "requirement": "测试在 ct/ 项目内运行"
+      },
+      {
+        "operation": "ADDED",
+        "requirement": "Native and Web source separation"
+      },
+      {
+        "operation": "ADDED",
+        "requirement": "Native installation and development entry points"
+      },
+      {
+        "operation": "ADDED",
+        "requirement": "Python-free verification and fixture regeneration"
+      }
+    ]
+  },
+  {
+    "capability": "web-panel",
+    "operations": [
+      {
+        "operation": "MODIFIED",
+        "requirement": "面板服务与工作区"
+      },
+      {
+        "operation": "MODIFIED",
+        "requirement": "导出操作"
+      },
+      {
+        "operation": "MODIFIED",
+        "requirement": "表格管理"
+      },
+      {
+        "operation": "MODIFIED",
+        "requirement": "日志与历史"
+      }
+    ]
+  }
+]

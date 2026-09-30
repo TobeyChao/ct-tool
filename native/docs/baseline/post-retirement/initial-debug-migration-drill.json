@@ -1,0 +1,116 @@
+{
+  "schema": "ct-native-migration-drill/1",
+  "at": "2026-09-30T05:37:15.961Z",
+  "root": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-migration-drill-qGPdrr",
+  "binaries": {
+    "current": {
+      "path": "/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/ct",
+      "sha256": "83197aa1e65504ecd1dba5547d915c8eea1d35975f6448099a1c5c818565443e"
+    },
+    "previous": {
+      "path": "/Users/tobeychao/Documents/Projects/ct-tool/native/dist/ct-native-0.0.0-aarch64-apple-darwin/bin/ct",
+      "sha256": "aced2a4ca0a305bc0d23b886d64a7a30af5d8f3953579d2f8295d6242165bf72"
+    }
+  },
+  "customPaths": {
+    "schemas_dir": [
+      "config/schemas",
+      "input schemas"
+    ],
+    "excel_dir": [
+      "excel",
+      "sheet files"
+    ],
+    "output_dir": [
+      "output",
+      "generated files"
+    ],
+    "cache_dir": [
+      "cache",
+      "private cache"
+    ],
+    "i18n_dir": [
+      "i18n",
+      "translation files"
+    ]
+  },
+  "fullBackupFiles": 100,
+  "backupAndRestoreBytesAndMtime": true,
+  "upgradeChangedBinary": true,
+  "previousNativeReadOnlyStatusPreservedWorkspace": true,
+  "previousNativeExportMatchesOriginal": true,
+  "unknownApplyRefusedWithoutFileChanges": true,
+  "commands": [
+    {
+      "binary": "/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/ct",
+      "args": [
+        "export",
+        "--all",
+        "--root",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-migration-drill-qGPdrr/工作区 with spaces"
+      ],
+      "exit": 0,
+      "stdout": "解析 Item（4 行）\n解析 ItemType（3 行）\n解析 Quest（3 行）\n解析 UIConfig（6 行）\nItem：定宽（schema 声明）｜填充率 92.9%（436 B → 424 B，0.972x）\nItemType：定宽（schema 声明）｜填充率 100.0%（300 B → 300 B，1.000x）\nQuest：定宽（schema 声明）｜填充率 100.0%（328 B → 328 B，1.000x）\nUIConfig：变长（schema 声明）｜填充率 63.3%\n枚举声明 2 个 → Enums.cs / Enums.lua\n强制重建：写入 31，复用 0；生成缓存命中 0\n\n导出完成: 4 张表\n[deploy] 无文件变更\n",
+      "stderr": "[deploy] 未配置或未启用，跳过\n"
+    },
+    {
+      "binary": "/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/ct",
+      "args": [
+        "export",
+        "--all",
+        "--root",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-migration-drill-qGPdrr/工作区 with spaces"
+      ],
+      "exit": 0,
+      "stdout": "解析 Item（4 行）\n解析 ItemType（3 行）\n解析 Quest（3 行）\n解析 UIConfig（6 行）\nItem：定宽（schema 声明）｜填充率 92.9%（436 B → 424 B，0.972x）\nItemType：定宽（schema 声明）｜填充率 100.0%（300 B → 300 B，1.000x）\nQuest：定宽（schema 声明）｜填充率 100.0%（328 B → 328 B，1.000x）\nUIConfig：变长（schema 声明）｜填充率 63.3%\n枚举声明 2 个 → Enums.cs / Enums.lua\n强制重建：写入 31，复用 0；生成缓存命中 0\n\n导出完成: 4 张表\n[deploy] 无文件变更\n",
+      "stderr": "[deploy] 未配置或未启用，跳过\n"
+    },
+    {
+      "binary": "/Users/tobeychao/Documents/Projects/ct-tool/native/dist/ct-native-0.0.0-aarch64-apple-darwin/bin/ct",
+      "args": [
+        "status",
+        "--root",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-migration-drill-qGPdrr/工作区 with spaces"
+      ],
+      "exit": 0,
+      "stdout": "模板已过时（schema 修改后未重建）:\n  [template-stale] Quest  (建议: ct gen-template --table Quest)\n",
+      "stderr": ""
+    },
+    {
+      "binary": "/Users/tobeychao/Documents/Projects/ct-tool/native/dist/ct-native-0.0.0-aarch64-apple-darwin/bin/ct",
+      "args": [
+        "export",
+        "--all",
+        "--root",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-migration-drill-qGPdrr/工作区 with spaces"
+      ],
+      "exit": 0,
+      "stdout": "解析 Item（4 行）\n解析 ItemType（3 行）\n解析 Quest（3 行）\n解析 UIConfig（6 行）\nItem：定宽（schema 声明）｜填充率 92.9%（436 B → 424 B，0.972x）\nItemType：定宽（schema 声明）｜填充率 100.0%（300 B → 300 B，1.000x）\nQuest：定宽（schema 声明）｜填充率 100.0%（328 B → 328 B，1.000x）\nUIConfig：变长（schema 声明）｜填充率 63.3%\n枚举声明 2 个 → Enums.cs / Enums.lua\n强制重建：写入 31，复用 0；生成缓存命中 0\n\n导出完成: 4 张表\n[deploy] 无文件变更\n",
+      "stderr": "[deploy] 未配置或未启用，跳过\n"
+    },
+    {
+      "binary": "/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/ct",
+      "args": [
+        "recover",
+        "--root",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-migration-drill-qGPdrr/工作区 with spaces"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "stderr": "旧 Apply 事务材料无法可靠还原，已保留并阻止写入：/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-migration-drill-qGPdrr/工作区 with spaces/private cache/apply.journal.json\n"
+    },
+    {
+      "binary": "/Users/tobeychao/Documents/Projects/ct-tool/native/target/debug/ct",
+      "args": [
+        "gen-template",
+        "--table",
+        "Item",
+        "--root",
+        "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-migration-drill-qGPdrr/工作区 with spaces"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "stderr": "旧 Apply 事务材料无法可靠还原，已保留并阻止写入：/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-migration-drill-qGPdrr/工作区 with spaces/private cache/apply.journal.json\n"
+    }
+  ]
+}

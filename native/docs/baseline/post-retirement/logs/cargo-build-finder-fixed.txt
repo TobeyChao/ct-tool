@@ -1,0 +1,11 @@
+   Compiling ct-xtask v0.0.0 (/private/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/checkout/native/crates/ct-xtask)
+warning: function `compute` is never used
+   --> crates/ct-xtask/src/fingerprint.rs:189:8
+    |
+189 | pub fn compute() -> Result<Value> {
+    |        ^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ct-xtask` (bin "xtask") generated 1 warning
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.97s

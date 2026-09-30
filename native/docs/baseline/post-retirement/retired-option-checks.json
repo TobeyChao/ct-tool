@@ -1,0 +1,30 @@
+[
+  {
+    "command": "native/target/debug/xtask",
+    "args": [
+      "bench",
+      "--python",
+      "/missing-interpreter"
+    ],
+    "exit": 2,
+    "stderr": "error: unexpected argument '--python' found\n\nUsage: xtask bench [OPTIONS]\n\nFor more information, try '--help'.\n"
+  },
+  {
+    "command": "node",
+    "args": [
+      "web/tools/measure-panel.mjs",
+      "--live-python"
+    ],
+    "exit": 1,
+    "stderr": "file:///Users/tobeychao/Documents/Projects/ct-tool/web/tools/measure-panel.mjs:10\nif(process.argv.includes('--live-python'))throw new Error('Live Python reference retired; use the frozen performance reports');\n                                                ^\n\nError: Live Python reference retired; use the frozen performance reports\n    at file:///Users/tobeychao/Documents/Projects/ct-tool/web/tools/measure-panel.mjs:10:49\n    at ModuleJob.run (node:internal/modules/esm/module_job:569:25)\n    at async node:internal/modules/esm/loader:650:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:105:5)\n\nNode.js v26.10.0\n"
+  },
+  {
+    "command": "node",
+    "args": [
+      "web/tools/check-static-assets.mjs",
+      "--live-old"
+    ],
+    "exit": 1,
+    "stderr": "file:///Users/tobeychao/Documents/Projects/ct-tool/web/tools/check-static-assets.mjs:69\n  if (process.argv.includes('--live-old')) throw new Error('Old Web tree retired; compare against the frozen manifest');\n                                                 ^\n\nError: Old Web tree retired; compare against the frozen manifest\n    at file:///Users/tobeychao/Documents/Projects/ct-tool/web/tools/check-static-assets.mjs:69:50\n    at ModuleJob.run (node:internal/modules/esm/module_job:569:25)\n    at async node:internal/modules/esm/loader:650:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:105:5)\n\nNode.js v26.10.0\n"
+  }
+]

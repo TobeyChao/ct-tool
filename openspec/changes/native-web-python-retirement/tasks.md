@@ -64,9 +64,9 @@
 ## 8. 退役与收尾
 
 - [x] 8.1 在 G1/G2/G3 全部通过且原生相关前置验收有证据后，删除已替代的 Python 业务/HTTP/CLI、有效脚本与 pytest/安装/CI 入口；验证删除清单与覆盖映射逐项一致，保留静态留档和其他任务的本地资料。
-- [ ] 8.2 删除后从干净 checkout 复验原生构建、HTTP/浏览器、必要夹具再生与发行自检，并检查活跃依赖无 Python；确认无悬空文档引用或靠本机旧产物才能运行的路径。
-- [ ] 8.3 编写发行迁移与原生版本回滚记录，演练备份/恢复及旧未知 journal 拒绝；验证不依赖 Python 回退、不破坏用户工作区。
-- [ ] 8.4 按实际验收同步本 change 的 delta specs 并协调旧 change 的范围记录，检查后续归档不会恢复 panel 退役或 Python 目录要求；运行 OpenSpec strict 校验，保留全部真实执行证据及剩余限制，不代替其他 change 归档。
+- [x] 8.2 删除后从干净 checkout 复验原生构建、HTTP/浏览器、必要夹具再生与发行自检，并检查活跃依赖无 Python；确认无悬空文档引用或靠本机旧产物才能运行的路径。
+- [x] 8.3 编写发行迁移与原生版本回滚记录，演练备份/恢复及旧未知 journal 拒绝；验证不依赖 Python 回退、不破坏用户工作区。
+- [x] 8.4 按实际验收同步本 change 的 delta specs 并协调旧 change 的范围记录，检查后续归档不会恢复 panel 退役或 Python 目录要求；运行 OpenSpec strict 校验，保留全部真实执行证据及剩余限制，不代替其他 change 归档。
 
 ## 当前执行记录
 
@@ -143,3 +143,5 @@ L 独立五样本复验已完成：冷/热 CLI/热 worker/改单表/改译文均
 2026-09-30 Unity 联调：在本机 fabulous-game/Client 的 Unity 6000.5.2f1 中，原生对真实游戏输入的临时副本导出 14 表/91 产物，15 C# 与 60 Binary/JSON/Lua 文件逐字节匹配现有游戏端。真实 gd/xlua 插件直接读取新生成的三语言 Binary，四轮语言切换共 4608 个字段值、7956 次检查通过；42 项 EditMode 配置测试、2 项 PlayMode Lua 测试全部通过，0 跳过。首轮探针漏识别 Text.Note 的 server_only 字段已修正；Lua 错选 EditMode 返回零项不计通过，改用实际 PlayMode 复验。115 个受监测游戏文件内容/mtime 未变，恢复 GDNative 未加载、语言 zh、编辑器空闲；没有覆盖游戏 Assets。用户要求的实际 Unity 删除前置现已完成，证据见 native/docs/baseline/unity-integration-verification.md；8.1 尚待执行。
 
 2026-09-30 Python 删除：G1/G2/G3 和实际 Unity 联调通过后，按 SHA 守卫清单准确删除 262 个版本化文件（含 ct/ 全部 249 个文件），不删除任何目录、venv、缓存或未跟踪资料；17 个纯历史实验保留并仍逐项校验。旧 CI/有效 Python 生成与准备脚本删除，bench/Web 不再有实时解释器入口，历史报告仅静态读取；两个已删除 C# 准备脚本的来源 SHA 改校验 .py.txt 归档。删除清单/33 现役替代/历史来源及有效文档引用检查通过，8.1 完成；删除后干净源码复验、迁移回滚演练和规格同步仍待完成。
+
+2026-09-30 删除后验收收口：干净 Git checkout 49ef3f1、无旧 ct/ 或真实 gd/、无 Python PATH，Cargo 334/334（两个指纹可移植性回归）、HTTP 39/39、浏览器 115/115、Flutter 15/15/分析无问题、独立 C# 127 项 0 不一致，六 Excel 再生与 S 夹具再生/校验、六 CLI 留档对照、S 五场景留档回归全部通过。新原生 ZIP 实际解压、签名 app 与只读挂载 DMG 的 CLI/worker/panel/EOF 自检与无解释器 payload 检查均通过。Node 本机升级导致旧工具软链失效、Finder .DS_Store 与 Git 平台脚本换行造成指纹差异，均已修复且保留初始失败；冻结期望值仍按原始字节校验。新发行版与已验收 G3 原生版之间，在 100 文件自定义目录临时工作区真跑升级、完整备份恢复、旧原生只读检查/重导出对照与未知 Apply 拒绝，内容和 mtime 检查通过。五项主规格同步且本次规格/变更 strict 通过，全仓常规规格 22/22；全仓 strict 仍有两个未涉及历史规格的既有文字告警，不宣称全部 strict 通过。旧冲突 delta 移至历史材料，不改变其他 change 任务。8.2/8.3/8.4 完成，本 change 45/45；远端 CI、Windows、Linux、Player/IL2CPP 未运行，不记为通过。见 native/docs/baseline/python-retirement-verification.md。

@@ -1,0 +1,33 @@
+{
+  "schema": "ct-runtime-package/1",
+  "name": "ct-native",
+  "version": "0.0.0",
+  "target": "aarch64-apple-darwin",
+  "family": "macos",
+  "pythonRuntimeRequired": false,
+  "commit": "49ef3f1c22ec5af8fcec146e3a0856d46df4f960",
+  "dirtyPaths": 0,
+  "toolchain": {
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "cargoLockSha256": "c20c6e340a325f179b95c85fae87c4c5c9092cdc0d33d08f89d4c7144b86c464"
+  },
+  "cliVersionOutput": "ct 0.0.0",
+  "contents": [
+    "bin/ct",
+    "VERSION.json",
+    "RUNTIME-CHECK.txt",
+    "README.md"
+  ],
+  "files": {
+    "binary": {
+      "path": "ct",
+      "sha256": "42907c89d6e0963e88d2c3d047fcc9c29d656f9def60b9793a793bb64ea6783c",
+      "bytes": 8018960
+    },
+    "cargoLock": {
+      "path": "Cargo.lock",
+      "sha256": "c20c6e340a325f179b95c85fae87c4c5c9092cdc0d33d08f89d4c7144b86c464",
+      "bytes": 70549
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "ct-package-check/1",
+  "kind": "native-runtime",
+  "root": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/dist/ct-native-0.0.0-aarch64-apple-darwin",
+  "target": "aarch64-apple-darwin",
+  "binary": "/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-post-retirement-XMFBrJ/dist/ct-native-0.0.0-aarch64-apple-darwin/bin/ct",
+  "sha256": "42907c89d6e0963e88d2c3d047fcc9c29d656f9def60b9793a793bb64ea6783c",
+  "bytes": 8018960,
+  "payloadFiles": 4,
+  "pythonPayload": false,
+  "flaskPayload": false,
+  "runtimeEvidencePresent": true
+}

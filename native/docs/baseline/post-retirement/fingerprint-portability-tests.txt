@@ -1,0 +1,14 @@
+   Compiling ct-xtask v0.0.0 (/Users/tobeychao/Documents/Projects/ct-tool/native/crates/ct-xtask)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.54s
+     Running unittests src/main.rs (native/target/debug/deps/xtask-7241d5c32ff17bce)
+
+running 6 tests
+test fingerprint::tests::git_script_line_endings_are_canonical_but_oracles_are_exact ... ok
+test fingerprint::tests::finder_metadata_does_not_change_source_fingerprint ... ok
+test fingerprint::tests::retired_tree_does_not_change_fingerprint_or_test_inventory ... ok
+test fingerprint::tests::fingerprint_pins_supported_trees_and_frozen_history ... ok
+test fingerprint::tests::native_entries_match_disk_hashes ... ok
+test fingerprint::tests::fingerprint_is_reproducible ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 16 filtered out; finished in 3.13s
+

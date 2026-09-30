@@ -2,7 +2,7 @@
 
 当前主入口为 Rust `ct` 的 CLI/Web 和内置运行时的 Flutter launcher。
 macOS 是本轮支持与验收平台，Windows 延后，Linux 不支持；用户无需安装 Python。
-G1/G2/G3 已通过，旧源码最终退役与删除后复验仍按 OpenSpec 逐项完成。
+G1/G2/G3、真实 Unity 联调与 Python 删除后的干净源码复验已通过。
 
 ## 升级
 
@@ -37,4 +37,6 @@ IndexedDB 随 origin 隔离；把 `localhost` 换成 `127.0.0.1` 或更换端口
 缓存或 journal，恢复升级前的完整工作区备份与对应原生运行时；不要混合两次发布的文件。
 原生版本相同格式也需要核对草稿基线，不承诺浏览器草稿自动向旧版本降级。
 
-备份/恢复与未知 journal 的发布演练结果须单独留档；本使用说明不替代该验收任务。
+已用两个原生发行修订在自定义路径临时工作区演练完整备份/恢复、译文升级、旧原生版本重导出和未知 Apply 拒绝。
+100 个备份文件内容与修改时间复核通过；该演练不保证任意未来格式自动向旧版本降级。
+命令与 SHA 见 [退役验收记录](../native/docs/baseline/python-retirement-verification.md)。

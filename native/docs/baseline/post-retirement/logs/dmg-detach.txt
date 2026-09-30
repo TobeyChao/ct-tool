@@ -1,0 +1,2 @@
+"disk7" ejected.
+hdiutil: WARNING: 'hdiutil detach ...' is deprecated. Please use 'diskutil eject ...' instead.

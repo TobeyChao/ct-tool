@@ -1,0 +1,23 @@
+✓ spec/cli-interface
+✓ spec/csharp-binary-reader-test
+✓ spec/data-validation
+✓ spec/excel-processing
+✓ spec/excel-template-styling
+✓ spec/export-publication
+✓ spec/flatbuffers-export
+✓ spec/i18n-pipeline
+✓ spec/incremental-export
+✓ spec/json-export
+✓ spec/json-single-line-records
+✓ spec/launcher
+✓ spec/native-web-runtime
+✓ spec/schema-editor/query-indexes
+✓ spec/schema-editor/type-system
+✓ spec/schema-editor/workbench
+✓ spec/schema-editor/workspace-draft
+✓ spec/schema-management
+✓ spec/tool-workspace-separation
+✓ spec/unity-deploy
+✓ spec/web-panel
+✓ spec/web-panel-design-system
+Totals: 22 passed, 0 failed (22 items)
