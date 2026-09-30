@@ -88,3 +88,7 @@ $RECYCLE.BIN/
 # ============================================================
 test-artifacts/
 .vscode/
+
+# Retired Python checkout may retain user-owned local caches, builds and venv.
+# No versioned tool sources remain here; do not accidentally commit those leftovers.
+/ct/

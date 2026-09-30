@@ -29,3 +29,14 @@ launcher SHALL 保留 main 的浏览器面板启动器，优先使用内置原�
 #### Scenario: Exit during publication
 - **WHEN** 用户在发布期间退出 launcher
 - **THEN** 服务先完成提交或回滚再退出，launcher 不因固定短超时强杀服务
+
+### Requirement: 平台内置运行时布局
+内置原生运行时 SHALL 在 macOS 应用包 Contents/Resources 内按 OS/架构分发，launcher SHALL 自动发现并通过已验证的原生 panel 启动。macOS SHALL 是本轮支持与验收平台；Windows SHALL 延后，既有布局设计保留作后续材料，SHALL NOT 将其登记为已验收支持；Linux SHALL 不纳入产品支持。
+
+#### Scenario: macOS 内置布局
+- **WHEN** launcher 在受支持的 macOS 上运行且应用包包含对应架构的原生运行时
+- **THEN** 无需额外 Python 或源码即可发现运行时并启动 Web 面板
+
+#### Scenario: Windows 内置布局
+- **WHEN** 后续恢复 Windows 支持并实施其安装包验收
+- **THEN** 按可执行文件同级布局发现原生运行时；本轮保留该设计，不宣称 Windows 已通过或提供 Linux 支持

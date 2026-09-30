@@ -23,3 +23,15 @@
 时把它们覆盖回主规格。
 
 两个旧 change 的 proposal 已加本记录入口，任务状态与原分支文件保持原样。
+
+2026-09-30：G1/G2/G3 与用户追加要求的真实 Unity 联调均通过，按清单删除
+262 个版本化文件；旧 ct/ 的 249 项已退出正式源码，未跟踪资料/venv 未清理。
+本 change 的五项 capability 已同步到主规格，保留未涉及的要求/场景；新增
+native-web-runtime 明确生产入口及无 Python 门槛。旧 change 的任务状态未改变。
+
+为避免后续归档反向覆盖主规格，rust-native-core 的过渡 Python 目录 delta
+与 native-flutter-workbench 的完整桌面替换 launcher delta 已移出各自 specs/，
+原文保存在本 change 的 handoff-history/。rust-native-core 的独立运行时要求
+改为支持 macOS CLI/worker/panel，原文同样留档；其余性能、旧 Apply 自动恢复
+及原生工作台能力仍属于旧 change 未完成范围，不同步、不宣称验收通过。
+将来继续旧 change 时须以本记录和现行主规格为准，不把历史快照重新复制成 delta。

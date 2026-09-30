@@ -5,10 +5,10 @@
 ## ADDED Requirements
 
 ### Requirement: Standalone cross-platform runtime
-运行时 SHALL 在本轮受支持的 macOS 提供无需 Python 或 GUI 的独立 CLI，支持既有 export/validate/status/gen-template/i18n/deploy 命令及过滤/退出码/机器 JSON 契约，同时提供本地 worker 和原生 ct panel。panel 与内核共享业务并保留 main Web 桌面壳；其最终契约 SHALL 遵守 native-web-runtime。Windows SHALL 延后，Linux SHALL 不纳入产品支持。
+运行时 SHALL 在 Windows/macOS/Linux 提供无需 Python、浏览器、HTTP 服务或 GUI 的独立 CLI，支持既有 export/validate/status/gen-template/i18n/deploy 命令及过滤/退出码/机器 JSON 契约；同时提供桌面本地 worker 入口。旧 panel 入口不属于新 CLI 支持范围，其调用 SHALL 给出使用原生客户端的明确指引而非启动服务。
 
 #### Scenario: Clean machine CLI
-- **WHEN** 在受支持的 macOS 无 Python 环境运行完整业务命令
+- **WHEN** 在三平台无 Python 环境运行完整业务命令
 - **THEN** 命令可用，路径相对工作区解析，JSON 模式 stdout 无日志混入
 
 ### Requirement: Compatible business and output behavior

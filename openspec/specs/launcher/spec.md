@@ -6,41 +6,42 @@ launcher 作为 ct 配表工具的桌面壳，自带冻结的 ct panel 运行时
 ## Requirements
 
 ### Requirement: 内置运行时优先
-
-launcher 启动 panel 服务时 SHALL 优先使用随应用分发的 ct 运行时；当内置运行时不存在时 SHALL 回退到用户在设置中配置的工具目录；两者均不可用时 SHALL 停止启动并报告可操作的错误，不启动任何进程。
+launcher SHALL 保留 main 的浏览器面板启动器，优先使用内置原生 ct，缺失时仅使用用户显式配置的原生可执行文件。SHALL NOT 回退到 Python、venv 或旧 Python ct 包装器；不可用时 SHALL 给出原生运行时配置指引且不启动进程。旧工作区、端口、自启和托盘偏好 SHALL 保留，旧工具目录 SHALL 不被误认成有效原生入口。
 
 #### Scenario: 使用内置运行时启动
-- **WHEN** 应用包内存在内置 ct 运行时且用户点击启动
-- **THEN** launcher 使用内置运行时启动 `ct panel`，不依赖配置的工具目录
+- **WHEN** 包内存在原生运行时且用户启动服务
+- **THEN** launcher 使用内置 ct panel，仍通过浏览器呈现 Web 工作台
 
 #### Scenario: 内置缺失时回退外部工具
-- **WHEN** 应用包内没有内置运行时，但配置的工具目录存在可用的 ct 入口
-- **THEN** launcher 使用外部工具目录启动，并提示当前使用外部工具
+- **WHEN** 内置运行时不存在，用户配置了有效原生可执行文件
+- **THEN** 使用该原生入口并提示外部运行时，不搜索解释器
 
 #### Scenario: 全部缺失时报告错误
-- **WHEN** 内置运行时与外部工具目录均不可用
-- **THEN** launcher 停止启动，显示包含工具目录配置指引的错误信息，进程不残留
+- **WHEN** 原生入口均不可用或只有旧 venv 配置
+- **THEN** 显示配置原生运行时的指引，不启动 Python 或残留进程
 
 ### Requirement: 平台内置运行时布局
-
-内置运行时 SHALL 按平台约定随应用分发：macOS 位于应用包 `Contents/Resources` 内，Windows 位于可执行文件同级目录；launcher SHALL 无需用户配置即可发现该布局。
+内置原生运行时 SHALL 在 macOS 应用包 Contents/Resources 内按 OS/架构分发，launcher SHALL 自动发现并通过已验证的原生 panel 启动。macOS SHALL 是本轮支持与验收平台；Windows SHALL 延后，既有布局设计保留作后续材料，SHALL NOT 将其登记为已验收支持；Linux SHALL 不纳入产品支持。
 
 #### Scenario: macOS 内置布局
-- **WHEN** launcher 运行于 macOS 且应用包 `Contents/Resources` 内含内置运行时
-- **THEN** 无需任何配置即可发现并使用内置运行时
+- **WHEN** launcher 在受支持的 macOS 上运行且应用包包含对应架构的原生运行时
+- **THEN** 无需额外 Python 或源码即可发现运行时并启动 Web 面板
 
 #### Scenario: Windows 内置布局
-- **WHEN** launcher 运行于 Windows 且可执行文件同级目录内含内置运行时
-- **THEN** 无需任何配置即可发现并使用内置运行时
+- **WHEN** 后续恢复 Windows 支持并实施其安装包验收
+- **THEN** 按可执行文件同级布局发现原生运行时；本轮保留该设计，不宣称 Windows 已通过或提供 Linux 支持
 
 ### Requirement: 启动行为等价
-
-无论使用内置还是外部运行时，launcher SHALL 以相同参数（`--root`、`--host`、`--port`、`--no-browser`）启动 `ct panel`，日志输出与进程退出处理保持一致。
+内置与外部原生运行时 SHALL 以相同 root、host、port、no-browser 参数启动 panel；launcher SHALL 在确认就绪后允许打开浏览器，显示实时日志并正确处理退出。正常停止、退出与托盘退出 SHALL 等待原生服务到达发布安全边界，不以固定超时强杀作为正常关闭路径。SHALL 保留 main 的桌面壳，不替换为完整 Flutter 编辑工作台。
 
 #### Scenario: 参数一致
-- **WHEN** 分别使用内置运行时与外部工具目录启动 panel
-- **THEN** 传递给 panel 的命令参数一致（工作区、host、port、no-browser）
+- **WHEN** 分别使用内置与外部原生入口
+- **THEN** panel 参数一致，旧工作区和端口偏好继续生效
 
 #### Scenario: 日志与退出处理
-- **WHEN** panel 进程输出日志或退出
-- **THEN** launcher 实时显示日志并正确清理进程状态，与外部工具模式行为一致
+- **WHEN** 服务输出日志或退出
+- **THEN** 日志实时可见，launcher 收敛进程状态与端口，不留下孤儿进程
+
+#### Scenario: Exit during publication
+- **WHEN** 用户在发布期间退出 launcher
+- **THEN** 服务先完成提交或回滚再退出，launcher 不因固定短超时强杀服务

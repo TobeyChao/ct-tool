@@ -71,6 +71,19 @@ fn skipped(name: &str, excludes: &[&str]) -> bool {
     SKIP_SUFFIXES.iter().any(|suffix| lowered.ends_with(suffix))
 }
 
+// Git applies CRLF to platform scripts on checkout; git archive stores LF.
+// Canonicalize only these scripts, keeping frozen inputs/oracles byte-sensitive.
+fn source_bytes(path: &Path) -> Result<Vec<u8>> {
+    let bytes = std::fs::read(path)?;
+    if path
+        .extension()
+        .is_some_and(|ext| ext == "ps1" || ext == "bat" || ext == "cmd")
+    {
+        return Ok(String::from_utf8(bytes)?.replace("\r\n", "\n").into_bytes());
+    }
+    Ok(bytes)
+}
+
 /// 收集 scope 下参与指纹的文件：相对路径（正斜杠）→ 内容 sha256，按路径有序。
 fn collect(scope_dir: &Path, excludes: &[&str]) -> Result<BTreeMap<String, String>> {
     let mut out = BTreeMap::new();
@@ -96,7 +109,7 @@ fn collect(scope_dir: &Path, excludes: &[&str]) -> Result<BTreeMap<String, Strin
                 .context("目标不在 scope 内")?
                 .to_string_lossy()
                 .replace('\\', "/");
-            out.insert(relative, sha256_hex(&std::fs::read(&path)?));
+            out.insert(relative, sha256_hex(&source_bytes(&path)?));
         }
     }
     Ok(out)
@@ -204,7 +217,7 @@ fn compute_at(root: &Path) -> Result<Value> {
         let mut bytes = 0u64;
         let mut listed = Map::new();
         for (relative, hash) in &entries {
-            bytes += std::fs::metadata(root.join(format!("{scope}/{relative}")))?.len();
+            bytes += source_bytes(&root.join(format!("{scope}/{relative}")))?.len() as u64;
             if *scope == FILE_LIST_SCOPE {
                 listed.insert(relative.clone(), json!(hash));
             }
@@ -418,6 +431,17 @@ mod tests {
         std::fs::write(temp.path().join(".DS_Store"), "Finder metadata").unwrap();
         assert_eq!(before, collect(temp.path(), &[]).unwrap());
         assert_eq!(before.len(), 1);
+    }
+
+    #[test]
+    fn git_script_line_endings_are_canonical_but_oracles_are_exact() {
+        let temp = tempfile::tempdir().unwrap();
+        let script = temp.path().join("build.ps1");
+        std::fs::write(&script, "line\r\n").unwrap();
+        assert_eq!(source_bytes(&script).unwrap(), b"line\n");
+        let oracle = temp.path().join("reference.txt");
+        std::fs::write(&oracle, "line\r\n").unwrap();
+        assert_eq!(source_bytes(&oracle).unwrap(), b"line\r\n");
     }
 
     #[test]

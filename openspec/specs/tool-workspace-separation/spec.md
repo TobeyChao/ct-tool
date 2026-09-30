@@ -18,23 +18,27 @@
 - **WHEN** 在 `gd/` 目录下执行 `ct export`
 - **THEN** 工具正常读取 `config/`、`excel/`，输出写入 `output/`，与迁移前行为一致
 
-### Requirement: 工具源码位于根级 ct/ 项目并采用 src layout
-仓库根目录 SHALL 包含自包含的 `ct/` 项目目录：Python 包位于 `ct/src/ct/`，`pyproject.toml`、`requirements.txt`、`tests/`、`docs/` 随项目存放。
+### Requirement: Native and Web source separation
+正式内核与 CLI/HTTP/worker 源码 SHALL 位于 native/，Web 静态资源与浏览器验收 SHALL 位于 web/，Flutter SHALL 保持 launcher/；游戏工作区 SHALL 保持纯数据。Python 工程 SHALL 仅在功能对等与独立验收通过后删除，有效文档和夹具 SHALL 先迁移且修复活跃引用。
 
-#### Scenario: 目录结构符合规范
-- **WHEN** 查看仓库根目录与 `ct/` 项目
-- **THEN** 存在 `ct/src/ct/` 包目录，且 `ct/` 下同时包含 `pyproject.toml`、`requirements.txt`、`tests/`、`docs/`，根目录不存在平铺的 `tests/`、`docs/` 或 `pytest.ini`
+#### Scenario: Post-retirement repository
+- **WHEN** 查看完成迁移后的正式源码结构
+- **THEN** native/、web/、launcher/ 各自具有明确入口，不依赖旧 ct/；gd/ 不含工具源码或构建依赖
 
-### Requirement: 工具可从 ct/ 安装
-开发者 SHALL 能够通过在 `ct/` 目录下执行 `pip install -e .` 完成工具安装，安装后 `ct` 命令可在任意目录使用。
+### Requirement: Native installation and development entry points
+用户 SHALL 可通过平台原生发行包获得 ct CLI、worker 和 panel，并在任意目录使用 --root 指定工作区。开发者 SHALL 可从 native/ 构建；安装与升级文档 SHALL 说明旧 Python ct 的路径冲突和新入口，不要求 pip、venv 或全局 Python。
 
-#### Scenario: 从 ct/ 安装后命令可用
-- **WHEN** 在 `ct/` 目录下执行 `pip install -e .`
-- **THEN** 命令 `ct --help` 返回正常输出，无报错
+#### Scenario: Install and run without Python
+- **WHEN** 用户安装原生发行包并指定工作区运行 export 或 panel
+- **THEN** 两条入口均使用原生内核，静态资源可用且不访问旧 Python 工程
 
-### Requirement: 测试在 ct/ 项目内运行
-开发者 SHALL 能够在 `ct/` 目录下执行 `pytest` 运行全部测试，无需任何 `pythonpath` 配置。
+### Requirement: Python-free verification and fixture regeneration
+正式构建、内核/API 测试、浏览器测试、Flutter 回归、性能回归、必要夹具再生与发行校验 SHALL 不需要 Python。旧测试 SHALL 有替代覆盖映射，缺失旧工程 SHALL 不成为跳过必要验收的理由。Python 来源的静态留档与纯历史实验 SHALL 可保留，但不得作为正式流程的隐藏可执行依赖；仍被正式验收调用的实验脚本 SHALL 被替代。
 
-#### Scenario: 项目内跑通全量测试
-- **WHEN** 在 `ct/` 目录下执行 `pytest`
-- **THEN** 全部测试通过，仓库根目录不存在 `pytest.ini`
+#### Scenario: Run the supported verification entries
+- **WHEN** 干净环境使用 Rust、Node/浏览器和适用的 Flutter 工具链执行各自入口
+- **THEN** 全部必要验证使用临时工作区并独立完成，无需 Python 路径或真实 gd/ 夹具
+
+#### Scenario: Regenerate required fixtures
+- **WHEN** 删除可再生测试/基准输出后执行正式夹具生成入口
+- **THEN** 所需规模和边界夹具可重建，摘要或语义符合冻结契约，不调用遗留 Python 生成器
