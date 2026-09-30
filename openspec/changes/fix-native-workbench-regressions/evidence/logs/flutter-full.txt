@@ -1,0 +1,457 @@
+00:00 +0: loading /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_kernel_test.dart
+00:00 +0: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/ct_button_test.dart: CtButton.accent enabled=true behavior, semantics and colors
+00:00 +1: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/ct_button_test.dart: CtButton.accent enabled=true behavior, semantics and colors
+00:00 +2: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/ct_button_test.dart: CtButton.accent enabled=true behavior, semantics and colors
+00:00 +3: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/ct_button_test.dart: CtButton.accent enabled=true behavior, semantics and colors
+00:00 +4: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/ct_button_test.dart: CtButton.accent enabled=true behavior, semantics and colors
+00:00 +5: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/ct_button_test.dart: CtButton.accent enabled=true behavior, semantics and colors
+00:00 +6: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/ct_button_test.dart: CtButton.accent enabled=true behavior, semantics and colors
+00:00 +7: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/ct_button_test.dart: CtButton.accent enabled=true behavior, semantics and colors
+00:00 +8: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/ct_button_test.dart: CtButton.accent enabled=true behavior, semantics and colors
+00:00 +9: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/ct_button_test.dart: CtButton.accent enabled=true behavior, semantics and colors
+00:00 +10: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/ct_button_test.dart: CtButton.accent enabled=true behavior, semantics and colors
+00:00 +11: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/ct_button_test.dart: CtButton.accent enabled=true behavior, semantics and colors
+00:00 +12: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/ct_button_test.dart: CtButton.accent enabled=true behavior, semantics and colors
+00:00 +13: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/type_picker_test.dart: 类型选择器可搜索数百个具名类型并用回车确认
+00:00 +14: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/type_picker_test.dart: 类型选择器可搜索数百个具名类型并用回车确认
+00:00 +15: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/type_picker_test.dart: 类型选择器可搜索数百个具名类型并用回车确认
+00:00 +16: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/type_picker_test.dart: 类型选择器可搜索数百个具名类型并用回车确认
+00:00 +17: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/workbench_draft_bar_test.dart: 草稿条常驻跨模块：草稿步数与净差异计数都来自内核
+00:01 +18: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/workbench_draft_bar_test.dart: 草稿条常驻跨模块：草稿步数与净差异计数都来自内核
+00:01 +19: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/workbench_navigation_test.dart: 类型链接跳到 Enum 资源，返回栈跳回原表
+00:01 +20: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/workbench_navigation_test.dart: 类型链接跳到 Enum 资源，返回栈跳回原表
+00:01 +21: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/workbench_navigation_test.dart: 类型链接跳到 Enum 资源，返回栈跳回原表
+00:01 +22: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/workbench_navigation_test.dart: 类型链接跳到 Enum 资源，返回栈跳回原表
+00:01 +23: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/workbench_navigation_test.dart: 类型链接跳到 Enum 资源，返回栈跳回原表
+00:01 +24: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/workbench_navigation_test.dart: 类型链接跳到 Enum 资源，返回栈跳回原表
+00:01 +25: /private/tmp/ct-tool-native-fix-20260930/launcher/test/ui/workbench_navigation_test.dart: 类型链接跳到 Enum 资源，返回栈跳回原表
+00:02 +26: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:02 +27: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:02 +28: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:02 +29: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:02 +30: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:02 +31: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:02 +32: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:03 +33: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:03 +34: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:03 +35: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:03 +36: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:03 +37: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:03 +38: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:03 +39: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:03 +40: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:03 +41: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:03 +42: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:03 +43: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:03 +44: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:03 +45: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:03 +46: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +47: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +48: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +49: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +50: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +51: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +52: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +53: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +54: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +55: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +56: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +57: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +58: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +59: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +60: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +61: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +62: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +63: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +64: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +65: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:04 +66: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:05 +67: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:05 +68: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:05 +69: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:05 +70: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:05 +71: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:05 +72: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:05 +73: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 创建 → 草稿步骤 → 净差异 → 模板 → 导出 → 翻译 → Quick Open
+00:05 +74: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_desktop_panel_test.dart: 日志页有界分页：可滚动并继续加载，筛选由内核执行
+00:05 +75: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_desktop_panel_test.dart: 日志页有界分页：可滚动并继续加载，筛选由内核执行
+00:05 +76: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_desktop_panel_test.dart: 日志页有界分页：可滚动并继续加载，筛选由内核执行
+00:05 +77: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_desktop_panel_test.dart: 日志页有界分页：可滚动并继续加载，筛选由内核执行
+00:05 +78: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:05 +79: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:05 +80: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:05 +81: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:05 +82: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:05 +83: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:05 +84: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +85: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +86: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +87: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +88: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +89: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +90: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +91: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +92: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +93: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +94: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +95: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +96: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +97: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +98: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +99: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +100: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +101: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +102: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +103: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +104: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +105: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +106: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +107: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +108: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +109: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +110: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +111: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +112: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +113: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +114: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +115: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +116: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:06 +117: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +118: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +119: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +120: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +121: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +122: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +123: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +124: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +125: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +126: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +127: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +128: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +129: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +130: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +131: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +132: /private/tmp/ct-tool-native-fix-20260930/launcher/test/e2e_workbench_chain_screens_test.dart: 模块矩阵：1024x700 的 100%/150% 逐模块截图
+00:07 +133: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +134: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +135: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +136: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +137: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +138: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +139: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +140: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +141: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +142: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +143: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +144: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +145: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +146: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +147: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +148: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +149: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +150: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +151: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +152: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +153: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +154: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +155: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +156: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +157: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +158: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +159: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +160: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +161: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +162: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +163: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:07 +164: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +165: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +166: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +167: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +168: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +169: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +170: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +171: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +172: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +173: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +174: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +175: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +176: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +177: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +178: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +179: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +180: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +181: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +182: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +183: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: 界面显示的就是内核给的非默认路径（无 StatsService 兜底）
+00:08 +184: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_custom_dirs_kernel_test.dart: (tearDownAll)
+00:08 +184: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/export_runner_test.dart: 导出参数按内核契约拼装：table/lang 只带选中的，all 显式送
+00:08 +185: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/export_runner_test.dart: 导出不会顺带部署；独立部署是另一条 deploy 请求
+00:08 +186: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/export_runner_test.dart: 未配置部署时如实显示「未写入」
+00:08 +187: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/export_runner_test.dart: progress/issue 事件按任务归属与 seq 单调汇入
+00:08 +188: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/export_runner_test.dart: 取消只转达意图：带 targetRequestId，且不把成功改写成取消
+00:08 +189: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/export_runner_test.dart: 取消已取消的终态如实显示为已取消
+00:08 +190: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/export_runner_test.dart: busy 不覆盖状态：回到原阶段并只给提示
+00:08 +191: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/export_runner_test.dart: 内核结构化失败交出问题明细供定位
+00:08 +192: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/export_runner_test.dart: 断连标为终态未知，且不自动重放写请求
+00:08 +193: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/export_runner_test.dart: 未在运行时收到事件一律丢弃
+00:08 +194: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/schema_draft_kernel_test.dart: 空工作区里创建三类资源：内核候选无阻塞问题
+00:08 +195: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/schema_draft_kernel_test.dart: 同一草稿内的类型相互引用可被内核接受
+00:08 +196: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/schema_draft_kernel_test.dart: 未声明的类型由内核拒绝，客户端不自创校验
+00:08 +197: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/schema_draft_kernel_test.dart: 改名命令走内核级联：引用方类型文本随之更新
+00:08 +198: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_faults_test.dart: 保存是原子的：不留临时件，重复保存以最后一次为准
+00:08 +199: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 候选请求各归自己的代次，迟到的旧响应不得覆盖当前 hash
+00:08 +200: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 候选请求各归自己的代次，迟到的旧响应不得覆盖当前 hash
+00:08 +201: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 候选请求各归自己的代次，迟到的旧响应不得覆盖当前 hash
+00:08 +202: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 候选请求各归自己的代次，迟到的旧响应不得覆盖当前 hash
+00:08 +203: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_preview_test.dart: 预览行按可见索引格式化，翻页不一次转换全部单元格
+00:08 +204: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_preview_test.dart: 预览行按可见索引格式化，翻页不一次转换全部单元格
+00:08 +205: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 保存进行中冻结编辑：任何编辑入口都不改草稿并给出可见原因
+00:08 +206: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_faults_test.dart: 目录不可用（权限类失败）：save 抛错、load 返回 none 而不崩
+00:08 +207: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_faults_test.dart: 目录不可用（权限类失败）：save 抛错、load 返回 none 而不崩
+00:08 +208: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 绑定后自动选语言并取第一页，筛选条件都随请求送内核
+00:08 +209: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 绑定后自动选语言并取第一页，筛选条件都随请求送内核
+00:08 +210: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 绑定后自动选语言并取第一页，筛选条件都随请求送内核
+00:08 +211: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 绑定后自动选语言并取第一页，筛选条件都随请求送内核
+00:08 +212: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 绑定后自动选语言并取第一页，筛选条件都随请求送内核
+00:08 +213: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 绑定后自动选语言并取第一页，筛选条件都随请求送内核
+00:08 +214: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 绑定后自动选语言并取第一页，筛选条件都随请求送内核
+00:08 +215: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 绑定后自动选语言并取第一页，筛选条件都随请求送内核
+00:08 +216: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 绑定后自动选语言并取第一页，筛选条件都随请求送内核
+00:08 +217: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 状态筛选与分页都由内核执行；切表与保存行之后筛选保留
+00:08 +218: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 加载更多带上一次游标，末页之后不再可加载
+00:08 +219: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 行内保存只发一条请求，状态取内核回包
+00:08 +220: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 未改动的行不产生写请求；取消编辑只清高亮
+00:08 +221: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 同步范围由参数决定，本表同步带上表名
+00:08 +222: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 清理必须先预检：dry-run 不回写，显式执行才删
+00:08 +223: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 写任务被内核拒绝时给出错误码，不谎报成功
+00:08 +224: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 换工作区后旧请求的回声不进当前视图
+00:08 +225: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 专注编辑器维护选中条目、多行草稿与取消
+00:08 +226: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 专注编辑器显式保存固定 confirmed=true 并更新状态
+00:08 +227: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 未改译文仍能单独确认，已确认条目不重复写入
+00:08 +228: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 专注编辑器保存失败保留草稿和选中条目
+00:08 +229: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_repository_test.dart: 有未保存草稿时切换上下文被拒绝，放弃后可切换
+00:09 +230: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/desktop_state_test.dart: bind 一次拉齐日志/历史/任务三张表
+00:09 +231: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/desktop_state_test.dart: 加载更多走下一页游标，末页之后不再可加载
+00:09 +232: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/desktop_state_test.dart: 模块/级别筛选回到第一页并带上参数
+00:09 +233: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/desktop_state_test.dart: 翻页遇到 stale-page 自动整页重查，不谎报丢事件
+00:09 +234: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/desktop_state_test.dart: 任务问题按需分页；关闭通知后重读任务列表
+00:09 +235: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/desktop_state_test.dart: 切换工作区后旧回包与旧事件都不进当前视图
+00:09 +236: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/desktop_state_test.dart: 当前工作区的终态事件触发任务与历史重查
+00:09 +237: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/desktop_state_test.dart: 实时日志事件按当前工作区追加进有界列表
+00:09 +238: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/desktop_state_test.dart: 未绑定工作区时不发任何请求
+00:09 +239: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: same target across stores queues complete saves in call order
+00:09 +240: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: save then clear cannot resurrect a discarded draft
+00:09 +241: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +242: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +243: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +244: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +245: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +246: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +247: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +248: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +249: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +250: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +251: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +252: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +253: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +254: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +255: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +256: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +257: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +258: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +259: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/translation_kernel_test.dart: 译文条目与状态由内核给出，状态筛选在内核执行
+00:09 +260: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 资源区保持新建入口，资源右键菜单提供常用操作
+00:09 +261: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 资源区保持新建入口，资源右键菜单提供常用操作
+00:09 +262: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 资源区保持新建入口，资源右键菜单提供常用操作
+00:09 +263: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 资源区保持新建入口，资源右键菜单提供常用操作
+00:09 +264: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 资源区保持新建入口，资源右键菜单提供常用操作
+00:09 +265: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 资源区保持新建入口，资源右键菜单提供常用操作
+00:09 +266: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 资源区保持新建入口，资源右键菜单提供常用操作
+00:09 +267: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 资源区保持新建入口，资源右键菜单提供常用操作
+00:09 +268: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 资源区保持新建入口，资源右键菜单提供常用操作
+00:09 +269: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 资源区保持新建入口，资源右键菜单提供常用操作
+00:10 +270: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_draft_banners_test.dart: 基线冲突只提示并允许显式丢弃，不自动套用
+00:10 +271: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_draft_banners_test.dart: 基线冲突只提示并允许显式丢弃，不自动套用
+00:10 +272: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_draft_banners_test.dart: 基线冲突只提示并允许显式丢弃，不自动套用
+00:11 +273: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_draft_banners_test.dart: 基线冲突只提示并允许显式丢弃，不自动套用
+00:11 +274: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: 未选中字段时显示资源与索引状态（来自内核清单）
+00:11 +275: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: 未选中字段时显示资源与索引状态（来自内核清单）
+00:11 +276: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_live_test.dart: 只读预览入口按内核游标追加下一页
+00:11 +277: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_live_test.dart: 只读预览入口按内核游标追加下一页
+00:11 +278: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_live_test.dart: 只读预览入口按内核游标追加下一页
+00:11 +279: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_draft_banners_test.dart: 损坏草稿给出路径并保留供查看
+00:11 +280: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 空工作区的 enum 按钮复用真实草稿创建流程
+00:11 +281: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: codename 索引开关可打开也可关闭
+00:11 +282: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: codename 索引开关可打开也可关闭
+00:11 +283: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: codename 索引开关可打开也可关闭
+00:11 +284: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: codename 索引开关可打开也可关闭
+00:11 +285: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: codename 索引开关可打开也可关闭
+00:11 +286: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_draft_banners_test.dart: 同基线重启自动恢复命令与游标，不出现冲突提示
+00:11 +287: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_draft_banners_test.dart: 同基线重启自动恢复命令与游标，不出现冲突提示
+00:11 +288: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 资源列表空态的新建菜单也可加入草稿
+00:11 +289: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 资源列表空态的新建菜单也可加入草稿
+00:11 +290: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 资源列表空态的新建菜单也可加入草稿
+00:11 +291: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: 选中字段后可改类型与属性，改动只进草稿
+00:12 +292: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: 选中字段后可改类型与属性，改动只进草稿
+00:12 +293: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: 选中字段后可改类型与属性，改动只进草稿
+00:12 +294: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: 选中字段后可改类型与属性，改动只进草稿
+00:12 +295: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: 选中字段后可改类型与属性，改动只进草稿
+00:12 +296: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: 选中字段后可改类型与属性，改动只进草稿
+00:12 +297: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: 选中字段后可改类型与属性，改动只进草稿
+00:12 +298: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: 选中字段后可改类型与属性，改动只进草稿
+00:12 +299: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 加字段用工作区具名类型与 vector 选择器，不再手填类型
+00:12 +300: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_schema_editor_test.dart: 加字段用工作区具名类型与 vector 选择器，不再手填类型
+00:12 +301: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +302: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +303: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +304: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +305: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +306: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +307: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +308: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +309: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +310: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +311: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +312: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +313: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +314: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +315: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +316: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:12 +317: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:13 +318: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:13 +319: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:13 +320: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:13 +321: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:13 +322: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:13 +323: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:13 +324: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:13 +325: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 筛选栏与译文表由内核数据驱动，分页按 nextCursor 决定
+00:13 +326: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_test.dart: 三区壳渲染：资源区/编辑区/属性区
+00:13 +327: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_test.dart: 三区壳渲染：资源区/编辑区/属性区
+00:13 +328: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_test.dart: 三区壳渲染：资源区/编辑区/属性区
+00:13 +329: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_test.dart: 三区壳渲染：资源区/编辑区/属性区
+00:13 +330: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_test.dart: 三区壳渲染：资源区/编辑区/属性区
+00:13 +331: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_test.dart: 三区壳渲染：资源区/编辑区/属性区
+00:14 +332: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_test.dart: 三区壳渲染：资源区/编辑区/属性区
+00:14 +333: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_test.dart: 三区壳渲染：资源区/编辑区/属性区
+00:14 +334: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_test.dart: 三区壳渲染：资源区/编辑区/属性区
+00:14 +335: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 状态筛选送内核，列显隐即时生效并在切表后保留
+00:14 +336: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 状态筛选送内核，列显隐即时生效并在切表后保留
+00:14 +337: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 状态筛选送内核，列显隐即时生效并在切表后保留
+00:14 +338: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 状态筛选送内核，列显隐即时生效并在切表后保留
+00:14 +339: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 状态筛选送内核，列显隐即时生效并在切表后保留
+00:14 +340: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 状态筛选送内核，列显隐即时生效并在切表后保留
+00:14 +341: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 状态筛选送内核，列显隐即时生效并在切表后保留
+00:14 +342: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 状态筛选送内核，列显隐即时生效并在切表后保留
+00:14 +343: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 状态筛选送内核，列显隐即时生效并在切表后保留
+00:14 +344: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 状态筛选送内核，列显隐即时生效并在切表后保留
+00:14 +345: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 状态筛选送内核，列显隐即时生效并在切表后保留
+00:14 +346: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 状态筛选送内核，列显隐即时生效并在切表后保留
+00:14 +347: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 状态筛选送内核，列显隐即时生效并在切表后保留
+00:14 +348: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_i18n_view_test.dart: 状态筛选送内核，列显隐即时生效并在切表后保留
+00:14 +349: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_test.dart: 生产标题栏不渲染旧菜单与侧栏品牌头
+00:14 +350: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_test.dart: 生产标题栏不渲染旧菜单与侧栏品牌头
+00:14 +351: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_test.dart: 生产标题栏不渲染旧菜单与侧栏品牌头
+00:14 +352: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: 字段行右键菜单可直接切换属性并显示完整动作
+00:14 +353: /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_field_editor_test.dart: 字段行右键菜单可直接切换属性并显示完整动作
+00:14 +354: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:14 +355: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:14 +356: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:14 +357: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:14 +358: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:14 +359: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:14 +360: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:14 +361: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:14 +362: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:14 +363: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:14 +364: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +365: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +366: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +367: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +368: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +369: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +370: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +371: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +372: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +373: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +374: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +375: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +376: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +377: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +378: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +379: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +380: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +381: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +382: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +383: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +384: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:15 +385: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +386: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +387: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +388: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +389: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +390: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +391: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +392: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +393: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +394: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +395: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +396: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +397: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +398: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +399: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +400: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +401: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +402: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +403: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:16 +404: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +405: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +406: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +407: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +408: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +409: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +410: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +411: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +412: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +413: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +414: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +415: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +416: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +417: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +418: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +419: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +420: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:17 +421: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +422: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +423: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +424: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +425: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +426: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +427: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +428: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +429: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +430: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +431: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +432: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +433: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +434: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +435: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +436: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +437: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:18 +438: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:19 +439: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:19 +440: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: worker 握手与写入口门禁 worker 不回 hello → 超时后报失败，不谎称就绪
+00:29 +441: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: 请求关联与终态 只读终态不进入广播流，避免刷新请求回环
+00:29 +442: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: 请求关联与终态 终态同时进入广播流，供桌面自动刷新任务和历史
+00:29 +443: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: 请求关联与终态 requestId 唯一、乱序终态各归其主
+00:29 +444: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: 请求关联与终态 失败终态抛结构化异常并带明细
+00:29 +445: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: 请求关联与终态 连接级 error（无 requestId）整体置失败并禁用写入
+00:29 +446: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: 请求关联与终态 对端断开时挂起请求以 transport-closed 结束，不悬挂
+00:29 +447: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: 关闭与取消 重复 stop 共用一次 shutdown 与传输关闭
+00:29 +448: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: 关闭与取消 启动中 stop 等待连接建立后安全关闭
+00:29 +449: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: 关闭与取消 stdio EOF 后等待超过旧强杀时限的发布收尾
+00:35 +450: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: 关闭与取消 stop 先发 shutdown 再关传输
+00:35 +451: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: 关闭与取消 cancel 走独立请求并带上目标 requestId
+00:35 +452: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: 真实 worker 进程 握手 + workspace.open + 安全 shutdown，stderr 不混入协议
+00:35 +453: /private/tmp/ct-tool-native-fix-20260930/launcher/test/services/worker_service_test.dart: 真实 worker 进程 分页：同代次连续翻页，篡改令牌报 stale-page
+00:35 +454: All tests passed!

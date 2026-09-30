@@ -12,10 +12,10 @@ import 'package:ct_launcher/state/translation_repository.dart';
 import 'package:ct_launcher/state/workbench_repository.dart';
 import 'package:ct_launcher/theme.dart';
 import 'package:ct_launcher/ui/widgets/common.dart';
+import 'package:ct_launcher/ui/workbench/workbench_schema_editor.dart';
 import 'package:ct_launcher/ui/workbench/workbench_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -193,7 +193,8 @@ void main() {
             settings: settings,
             onExitRequested: () {},
             workspaceKey: 'shots',
-            bannerLabel: '已连接原生内核（截图证据）',
+            showDesktopTitleBar: true,
+            bannerLabel: '原生内核已连接 · 截图证据',
           ),
         ),
       ),
@@ -301,18 +302,47 @@ void main() {
     await settle(tester, rounds: 60);
     await shot(tester, 'chain-09-i18n', '翻译页：筛选/列显隐/分页与 sync 结果都来自内核 i18n.*。');
 
-    // Quick Open：纯 Widget 夹具不显示桌面标题栏，走跨模块的全局快捷键。
-    await act(tester, () async {
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
-      await tester.sendKeyEvent(LogicalKeyboardKey.keyP);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
-    });
+    // Quick Open：从翻译页的可见标题栏入口，空查询给最近打开。
+    final quickOpen = find.byKey(const ValueKey('ct.titleBar.quickOpen'));
+    final quickOpenField = find.byKey(const ValueKey('wb.quickOpen.field'));
+    final recentItem = find.byKey(const ValueKey('wb.quickOpen.row.Item.0'));
+    expect(find.byKey(const ValueKey('wb.i18nActionsMenu')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wb.schemaEditor')), findsNothing);
+    expect(quickOpen.hitTestable(), findsOneWidget);
+    expect(find.byKey(const ValueKey('wb.draftQuickOpen')), findsNothing);
+    final commandsBeforeQuickOpen = repo.commands
+        .map((c) => c.toJson())
+        .toList();
+    final cursorBeforeQuickOpen = repo.cursor;
+    expect(commandsBeforeQuickOpen, isNotEmpty);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getStringList('wb.shots.recents')?.first, 'Item');
+    await act(tester, () => tester.tap(quickOpen));
     await settle(tester, rounds: 60);
-    expect(find.byKey(const ValueKey('wb.quickOpen.field')), findsOneWidget);
+    expect(quickOpenField, findsOneWidget);
+    expect(tester.widget<TextField>(quickOpenField).controller!.text, isEmpty);
+    expect(find.byKey(const ValueKey('wb.quickOpen.results')), findsOneWidget);
+    expect(recentItem.hitTestable(), findsOneWidget);
     await shot(tester, 'chain-10-quick-open', 'Quick Open：资源清单取自内核，空查询给最近打开。');
-    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await act(tester, () => tester.tap(recentItem));
     await settle(tester, rounds: 30);
-    expect(find.byKey(const ValueKey('wb.quickOpen.field')), findsNothing);
+    expect(quickOpenField, findsNothing);
+    expect(find.byKey(const ValueKey('wb.i18nActionsMenu')), findsNothing);
+    expect(
+      tester
+          .widget<WorkbenchSchemaEditor>(
+            find.byKey(const ValueKey('wb.schemaEditor')),
+          )
+          .selected,
+      'Item',
+      reason: '选中最近资源后必须从翻译页进入 Schema 并选中 Item',
+    );
+    expect(
+      repo.commands.map((c) => c.toJson()).toList(),
+      commandsBeforeQuickOpen,
+    );
+    expect(repo.cursor, cursorBeforeQuickOpen);
+    expect(prefs.getStringList('wb.shots.recents')?.first, 'Item');
 
     // 收尾断言：截图不是摆拍——内核状态确实变了。
     expect(repo.resources, isNotEmpty);
@@ -358,6 +388,7 @@ void main() {
                 settings: settings,
                 onExitRequested: () {},
                 workspaceKey: 'matrix',
+                showDesktopTitleBar: true,
                 bannerLabel: '已连接原生内核（矩阵截图）',
               ),
             ),

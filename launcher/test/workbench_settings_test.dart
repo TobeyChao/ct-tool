@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:ct_launcher/services/protocol/protocol.dart';
+import 'package:ct_launcher/ui/workbench/workbench_settings.dart';
 import 'package:ct_launcher/services/settings_store.dart';
 import 'package:ct_launcher/services/worker_service.dart';
 import 'package:ct_launcher/state/workbench_repository.dart';
@@ -75,8 +78,8 @@ Future<void> _pumpLive(
           '内核状态：已连接（core 0.0.0）',
           '运行时来源：应用包内置 C:\\Apps\\runtime\\ct.exe',
         ],
-        onWorkspaceChanged: (_) {},
-        onRuntimeChanged: (_) {},
+        onWorkspaceChanged: (_) async {},
+        onRuntimeChanged: (_) async {},
         onReloadWorkspace: onReload,
         onExitRequested: onExit,
         workspaceKey: 'settings-test',
@@ -102,6 +105,47 @@ void main() {
     await settings.load();
     return settings;
   }
+
+  testWidgets('自动推断等待shell决定，不提前清除运行时偏好', (tester) async {
+    final settings = await loadStore({'runtime_path': '/tmp/ct-explicit'});
+    final initialRuntime = settings.runtimePath;
+    final completed = Completer<void>();
+    var calls = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: WorkbenchSettingsPanel(
+            settings: settings,
+            workspacePath: '',
+            onUseInferredRuntime: () {
+              calls++;
+              return completed.future;
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final button = find.byKey(const ValueKey('settings.inferredRuntime'));
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pump();
+    expect(calls, 1);
+    expect(settings.runtimePath, initialRuntime);
+    expect(
+      (await SharedPreferences.getInstance()).getString('runtime_path'),
+      '/tmp/ct-explicit',
+    );
+    // The shell may stay after a failed flush without applying any preference.
+    completed.complete();
+    await tester.pumpAndSettle();
+    expect(settings.runtimePath, initialRuntime);
+    expect(
+      (await SharedPreferences.getInstance()).getString('runtime_path'),
+      '/tmp/ct-explicit',
+    );
+    expect(find.text('已改用指定运行时并重连内核'), findsNothing);
+  });
 
   testWidgets('设置模块显示内核来源与工作区，且不再出现端口/Python 配置', (tester) async {
     final settings = await loadStore({

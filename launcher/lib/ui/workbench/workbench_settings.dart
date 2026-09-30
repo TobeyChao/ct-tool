@@ -36,9 +36,9 @@ class WorkbenchSettingsPanel extends StatefulWidget {
   /// 内核连接摘要：来源、路径、状态与失败原因，逐行展示。
   final List<String> kernelSummary;
 
-  final ValueChanged<String>? onWorkspaceChanged;
-  final ValueChanged<String>? onRuntimeChanged;
-  final VoidCallback? onUseInferredRuntime;
+  final Future<void> Function(String)? onWorkspaceChanged;
+  final Future<void> Function(String)? onRuntimeChanged;
+  final Future<void> Function()? onUseInferredRuntime;
   final VoidCallback? onReload;
 
   /// 显式退出（任务 4.7）：由壳层走退出守卫与安全 shutdown，不在面板里自己收尾。
@@ -80,20 +80,14 @@ class _WorkbenchSettingsPanelState extends State<WorkbenchSettingsPanel> {
           : null,
     );
     if (path == null || path.isEmpty) return;
-    widget.onWorkspaceChanged?.call(path);
-    if (mounted) {
-      showCtToast(context, '已切换工作区，正在从内核重新读取');
-    }
+    await widget.onWorkspaceChanged?.call(path);
   }
 
   Future<void> _pickRuntime() async {
     final picked = await openFile();
     final path = picked?.path;
     if (path == null || path.isEmpty) return;
-    widget.onRuntimeChanged?.call(path);
-    if (mounted) {
-      showCtToast(context, '已改用指定运行时并重连内核');
-    }
+    await widget.onRuntimeChanged?.call(path);
   }
 
   Future<void> _toggleAutostart(bool value) async {
@@ -233,8 +227,7 @@ class _WorkbenchSettingsPanelState extends State<WorkbenchSettingsPanel> {
                                     'settings.inferredRuntime',
                                   ),
                                   onPressed: () async {
-                                    await s.useInferredRuntimePath();
-                                    widget.onUseInferredRuntime?.call();
+                                    await widget.onUseInferredRuntime?.call();
                                   },
                                 ),
                               ],

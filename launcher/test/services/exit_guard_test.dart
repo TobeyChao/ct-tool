@@ -42,6 +42,60 @@ Future<void> pumpTrigger(
 }
 
 void main() {
+  for (final choice in {
+    'wb.exitRetry': ExitPersistenceDecision.retry,
+    'wb.exitPersistenceStay': ExitPersistenceDecision.stay,
+    'wb.exitDiscard': ExitPersistenceDecision.discard,
+  }.entries) {
+    testWidgets('落盘失败明确选择 ${choice.value}', (tester) async {
+      ExitPersistenceDecision? got;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildCtTheme(),
+          home: Builder(
+            builder: (context) => Center(
+              child: CtButton.accent(
+                'go',
+                onPressed: () async =>
+                    got = await confirmExitPersistenceFailure(context),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('go'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('wb.exitPersistenceDialog')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('草稿写入或清理失败'), findsOneWidget);
+      expect(find.textContaining('下次启动仍能看到草稿'), findsNothing);
+      await tester.tap(find.byKey(ValueKey(choice.key)));
+      await tester.pumpAndSettle();
+      expect(got, choice.value);
+    });
+  }
+
+  testWidgets('关闭失败对话框等同留下', (tester) async {
+    ExitPersistenceDecision? got;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () async =>
+                got = await confirmExitPersistenceFailure(context),
+            child: const Text('go'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('go'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(6, 6));
+    await tester.pumpAndSettle();
+    expect(got, ExitPersistenceDecision.stay);
+  });
   test('只有未保存草稿或在跑写任务才需要征询', () {
     expect(needsExitPrompt(hasDraft: false, runningTask: false), isFalse);
     expect(needsExitPrompt(hasDraft: true, runningTask: false), isTrue);

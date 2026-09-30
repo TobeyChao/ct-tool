@@ -1,0 +1,90 @@
+00:00 +0: loading /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart
+00:00 +0: same target across stores queues complete saves in call order
+00:00 +0 -1: same target across stores queues complete saves in call order [E]
+  Expected: [null, null]
+    Actual: [
+              null,
+              PathNotFoundException:PathNotFoundException: Cannot rename file to '/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-draft-ordering-IJyQyw/drafts/draft-c5af1afeebed663a.json', path = '/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-draft-ordering-IJyQyw/drafts/draft-c5af1afeebed663a.json.tmp' (OS Error: No such file or directory, errno = 2)
+            ]
+     Which: at location [1] is PathNotFoundException:<PathNotFoundException: Cannot rename file to '/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-draft-ordering-IJyQyw/drafts/draft-c5af1afeebed663a.json', path = '/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-draft-ordering-IJyQyw/drafts/draft-c5af1afeebed663a.json.tmp' (OS Error: No such file or directory, errno = 2)> instead of <null>
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/state/draft_store_ordering_test.dart 142:9     main.<fn>
+
+00:00 +0 -1: save then clear cannot resurrect a discarded draft
+00:00 +0 -2: save then clear cannot resurrect a discarded draft [E]
+  Expected: false
+    Actual: <true>
+  clear must wait for the older save
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/state/draft_store_ordering_test.dart 162:7     main.<fn>
+
+00:00 +0 -2: load waits for publication and never deletes an active temp
+00:00 +0 -3: load waits for publication and never deletes an active temp [E]
+  Expected: null
+    Actual: PathNotFoundException:<PathNotFoundException: Cannot rename file to '/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-draft-ordering-Bn4fNu/drafts/draft-c5af1afeebed663a.json', path = '/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-draft-ordering-Bn4fNu/drafts/draft-c5af1afeebed663a.json.tmp' (OS Error: No such file or directory, errno = 2)>
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/state/draft_store_ordering_test.dart 185:7     main.<fn>
+
+00:00 +0 -3: preserve waits for save and archives its completed envelope
+00:00 +0 -4: preserve waits for save and archives its completed envelope [E]
+  Expected: false
+    Actual: <true>
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/state/draft_store_ordering_test.dart 207:7     main.<fn>
+
+00:00 +0 -4: directory resolution order cannot reorder public calls
+00:00 +0 -5: directory resolution order cannot reorder public calls [E]
+  Expected: [null, null]
+    Actual: [
+              null,
+              PathNotFoundException:PathNotFoundException: Cannot rename file to '/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-draft-ordering-n2pGlC/drafts/draft-c5af1afeebed663a.json', path = '/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-draft-ordering-n2pGlC/drafts/draft-c5af1afeebed663a.json.tmp' (OS Error: No such file or directory, errno = 2)
+            ]
+     Which: at location [1] is PathNotFoundException:<PathNotFoundException: Cannot rename file to '/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-draft-ordering-n2pGlC/drafts/draft-c5af1afeebed663a.json', path = '/var/folders/44/g9chsr856qg5kkv0bnx8gmqc0000gn/T/ct-draft-ordering-n2pGlC/drafts/draft-c5af1afeebed663a.json.tmp' (OS Error: No such file or directory, errno = 2)> instead of <null>
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/state/draft_store_ordering_test.dart 240:7     main.<fn>
+
+00:00 +0 -5: save captures nested payload and command list at the call
+00:00 +0 -6: save captures nested payload and command list at the call [E]
+  Expected: {
+              'formatVersion': 1,
+              'workspaceKey': 'D:/game/A',
+              'baseline': 'base-1',
+              'cursor': 1,
+              'savedAt': '2026-09-30T00:00:00.000',
+              'commands': [
+                {'kind': 'add_resource', 'payload': {'resource': {'table': 'Original'}}},
+                {'kind': 'rename_field', 'payload': {'field': 'hp'}}
+              ]
+            }
+    Actual: {
+              'formatVersion': 1,
+              'workspaceKey': 'D:/game/A',
+              'baseline': 'base-1',
+              'cursor': 1,
+              'savedAt': '2026-09-30T00:00:00.000',
+              'commands': [{'kind': 'add_resource', 'payload': {'resource': {'table': 'Mutated'}}}]
+            }
+     Which: at location ['commands'][0]['payload']['resource']['table'] is 'Mutated' instead of 'Original'
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/state/draft_store_ordering_test.dart 263:5     main.<fn>
+
+00:00 +0 -6: Some tests failed.
+
+Failing tests:
+  /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: directory resolution order cannot reorder public calls
+  /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: load waits for publication and never deletes an active temp
+  /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: preserve waits for save and archives its completed envelope
+  /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: same target across stores queues complete saves in call order
+  ... and 2 more

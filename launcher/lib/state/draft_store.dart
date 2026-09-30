@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -106,11 +107,31 @@ class DraftLoad {
   bool get hasDraft => envelope != null && envelope!.commands.isNotEmpty;
 }
 
+/// 草稿使用的文件访问边界，可由其他存储适配器提供同样的文件操作。
+class DraftFileAccess {
+  const DraftFileAccess();
+
+  bool exists(File file) => file.existsSync();
+  Future<String> read(File file) => file.readAsString();
+  Future<void> write(File file, String contents) async {
+    await file.writeAsString(contents, flush: true);
+  }
+
+  Future<void> rename(File file, String target) async {
+    await file.rename(target);
+  }
+
+  Future<void> delete(File file) async {
+    await file.delete();
+  }
+}
+
 /// 按工作区隔离的用户目录草稿存储：临时文件 + rename 原子落盘。
 class DraftStore {
-  DraftStore({this.rootOverride});
+  DraftStore({this.rootOverride, this.fileAccess = const DraftFileAccess()});
 
   final Directory? rootOverride;
+  final DraftFileAccess fileAccess;
 
   static const dirName = 'ct/drafts';
 
@@ -144,47 +165,125 @@ class DraftStore {
   Future<File> fileFor(String workspaceKey) async =>
       File('${(await directory()).path}/${fileName(workspaceKey)}');
 
+  // Admission tails only cover identity resolution, not file I/O. Register
+  // synchronously so a later store cannot overtake an unresolved earlier call.
+  // Once admitted, operations on different real files run independently.
+  static final _admissions = <String, Future<void>>{};
+  static final _fileTails = <String, Future<void>>{};
+
+  Future<T> _enqueue<T>(
+    String workspaceKey,
+    Future<T> Function(File) operation, {
+    T Function(Object)? onDirectoryError,
+  }) {
+    final name = fileName(workspaceKey);
+    final admitted = Completer<void>();
+    final predecessor = _admissions[name];
+    _admissions[name] = admitted.future;
+    final target = Future<File>.sync(() => fileFor(workspaceKey));
+
+    Future<T> schedule() async {
+      File? file;
+      String? identity;
+      Object? failure;
+      StackTrace? failureStack;
+      try {
+        final requested = await target;
+        // Resolve aliases (including symlinked roots) before choosing a queue.
+        final realDirectory = requested.parent.resolveSymbolicLinksSync();
+        identity = '$realDirectory/${requested.uri.pathSegments.last}';
+        file = requested;
+      } on Object catch (error, stack) {
+        failure = error;
+        failureStack = stack;
+      }
+      // Even failed resolution must retain its admission position: releasing
+      // it early would let the next call skip an older unresolved operation.
+      if (predecessor != null) await predecessor;
+      late final Future<T> result;
+      try {
+        if (failure != null) {
+          if (onDirectoryError != null) return onDirectoryError(failure);
+          Error.throwWithStackTrace(failure, failureStack!);
+        }
+        final resolved = file!;
+        final queueKey = identity!;
+        final previous = _fileTails[queueKey] ?? Future<void>.value();
+        result = previous.then((_) => operation(resolved));
+        // The caller receives result's original failure. Only the internal
+        // tail settles successfully so subsequent operations can continue.
+        final settled = result.then<void>(
+          (_) {},
+          onError: (Object error, StackTrace stack) {},
+        );
+        _fileTails[queueKey] = settled;
+        unawaited(
+          settled.then((_) {
+            if (identical(_fileTails[queueKey], settled)) {
+              _fileTails.remove(queueKey);
+            }
+          }),
+        );
+      } finally {
+        admitted.complete();
+        if (identical(_admissions[name], admitted.future)) {
+          _admissions.remove(name);
+        }
+      }
+      return result;
+    }
+
+    return schedule();
+  }
+
   /// 原子写入：先写 `.tmp` 并 flush，再 rename 覆盖正式件；任何失败都抛给调用方，
   /// 由界面持续警告——半截内容永远不会成为正式信封。
   Future<void> save(DraftEnvelope envelope) async {
-    final file = await fileFor(envelope.workspaceKey);
-    final tmp = File('${file.path}.tmp');
-    await tmp.writeAsString(
-      const JsonEncoder.withIndent('  ').convert(envelope.toJson()),
-      flush: true,
-    );
-    await tmp.rename(file.path);
+    // Encoding before the first await also snapshots nested mutable payloads
+    // and the full command list; queued writes never inspect the live envelope.
+    final contents = const JsonEncoder.withIndent(
+      '  ',
+    ).convert(envelope.toJson());
+    return _enqueue(envelope.workspaceKey, (file) async {
+      final tmp = File('${file.path}.tmp');
+      await fileAccess.write(tmp, contents);
+      await fileAccess.rename(tmp, file.path);
+    });
   }
 
   /// 空草稿即删除文件；删不掉也不影响内存编辑。
-  Future<void> clear(String workspaceKey) async {
-    final file = await fileFor(workspaceKey);
-    if (file.existsSync()) await file.delete();
-  }
+  Future<void> clear(String workspaceKey) =>
+      _enqueue(workspaceKey, (file) async {
+        if (fileAccess.exists(file)) await fileAccess.delete(file);
+      });
 
   Future<DraftLoad> load({
     required String workspaceKey,
     required String baseline,
+  }) => _enqueue(
+    workspaceKey,
+    (file) => _loadFile(file, workspaceKey: workspaceKey, baseline: baseline),
+    // 保持既有目录失败反馈，调用方据此显示「未持久化」警告。
+    onDirectoryError: (e) => DraftLoad(DraftOutcome.none, reason: '草稿目录不可用：$e'),
+  );
+
+  Future<DraftLoad> _loadFile(
+    File file, {
+    required String workspaceKey,
+    required String baseline,
   }) async {
-    final File file;
-    try {
-      file = await fileFor(workspaceKey);
-    } on Object catch (e) {
-      // 目录本身不可用（被文件占用、权限、只读介质）：如实报告而不是抛穿，
-      // 调用方据此显示「未持久化」警告。
-      return DraftLoad(DraftOutcome.none, reason: '草稿目录不可用：$e');
-    }
-    // 中断留下的临时件：正式信封永远不读它，读的时候顺手清走并如实报告。
+    // 进入队列后才清理遗留临时件，不会误删正在写入的 `.tmp`。
+    // 正式信封永远不读临时件，清理时仍如实报告。
     final tmp = File('${file.path}.tmp');
-    final leftover = tmp.existsSync();
+    final leftover = fileAccess.exists(tmp);
     if (leftover) {
       try {
-        tmp.deleteSync();
+        await fileAccess.delete(tmp);
       } on FileSystemException {
         // 清不掉也不影响读取，交给下一次保存覆盖
       }
     }
-    if (!file.existsSync()) {
+    if (!fileAccess.exists(file)) {
       return DraftLoad(
         DraftOutcome.none,
         path: file.path,
@@ -193,7 +292,7 @@ class DraftStore {
     }
     Map<String, Object?> json;
     try {
-      json = jsonDecode(file.readAsStringSync())! as Map<String, Object?>;
+      json = jsonDecode(await fileAccess.read(file))! as Map<String, Object?>;
     } on Object catch (e) {
       return DraftLoad(
         DraftOutcome.damaged,
@@ -239,12 +338,12 @@ class DraftStore {
   }
 
   /// 不可靠的草稿保留供查看：改名留档，不静默清空。
-  Future<String?> preserve(String workspaceKey) async {
-    final file = await fileFor(workspaceKey);
-    if (!file.existsSync()) return null;
-    final kept =
-        '${file.path}.damaged-${DateTime.now().millisecondsSinceEpoch}';
-    await file.rename(kept);
-    return kept;
-  }
+  Future<String?> preserve(String workspaceKey) =>
+      _enqueue(workspaceKey, (file) async {
+        if (!fileAccess.exists(file)) return null;
+        final kept =
+            '${file.path}.damaged-${DateTime.now().millisecondsSinceEpoch}';
+        await fileAccess.rename(file, kept);
+        return kept;
+      });
 }

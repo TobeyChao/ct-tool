@@ -1,0 +1,55 @@
+00:00 +0: loading /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_persistence_ordering_test.dart
+00:00 +0: latest snapshot remains pending while earlier save finishes
+00:00 +0 -1: latest snapshot remains pending while earlier save finishes [E]
+  Expected: false
+    Actual: <true>
+
+  package:matcher                                           expect
+  package:flutter_test/src/widget_tester.dart 473:18        expect
+  test/state/workbench_persistence_ordering_test.dart 72:5  main.<fn>
+
+00:00 +0 -1: persistSettled waits every operation even if last completes first
+00:00 +0 -2: persistSettled waits every operation even if last completes first [E]
+  Expected: false
+    Actual: <true>
+
+  package:matcher                                           expect
+  package:flutter_test/src/widget_tester.dart 473:18        expect
+  test/state/workbench_persistence_ordering_test.dart 93:5  main.<fn>
+
+00:00 +0 -2: persistSettled includes requests registered while awaiting
+00:00 +0 -3: persistSettled includes requests registered while awaiting [E]
+  Expected: false
+    Actual: <true>
+
+  package:matcher                                            expect
+  package:flutter_test/src/widget_tester.dart 473:18         expect
+  test/state/workbench_persistence_ordering_test.dart 109:5  main.<fn>
+
+00:00 +0 -3: late restore cannot replace edits made after load started
+00:00 +0 -4: late restore cannot replace edits made after load started [E]
+  Expected: contains 'Fresh'
+    Actual: MappedListIterable<WorkbenchResource, String>:['Old']
+     Which: does not contain 'Fresh'
+
+  package:matcher                                            expect
+  package:flutter_test/src/widget_tester.dart 473:18         expect
+  test/state/workbench_persistence_ordering_test.dart 129:5  main.<fn>
+
+00:00 +0 -4: discard failure preserves conflict identity and reason
+00:00 +0 -5: discard failure preserves conflict identity and reason [E]
+  Expected: true
+    Actual: <false>
+
+  package:matcher                                            expect
+  package:flutter_test/src/widget_tester.dart 473:18         expect
+  test/state/workbench_persistence_ordering_test.dart 151:5  main.<fn>
+
+00:00 +0 -5: Some tests failed.
+
+Failing tests:
+  /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_persistence_ordering_test.dart: discard failure preserves conflict identity and reason
+  /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_persistence_ordering_test.dart: late restore cannot replace edits made after load started
+  /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_persistence_ordering_test.dart: latest snapshot remains pending while earlier save finishes
+  /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_persistence_ordering_test.dart: persistSettled includes requests registered while awaiting
+  /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_persistence_ordering_test.dart: persistSettled waits every operation even if last completes first

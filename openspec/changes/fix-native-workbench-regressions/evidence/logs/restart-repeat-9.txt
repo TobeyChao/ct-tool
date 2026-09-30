@@ -1,0 +1,3 @@
+00:00 +0: loading /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_draft_test.dart
+00:00 +0: 同基线重启：命令与撤销游标原样恢复，不重放已撤销步骤
+00:00 +1: All tests passed!

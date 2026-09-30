@@ -187,6 +187,29 @@ void main() {
     repo.dispose();
   });
 
+  test(
+    'flush waits in-flight YAML save before draft cleanup and exit',
+    () async {
+      final gate = _Gate()..heldSave = Completer<Object?>();
+      final repo = await opened(gate);
+      await repo.requestCandidate();
+      final saving = repo.saveDraft();
+      var settled = false;
+      final flush = repo.flushDraft().then((value) {
+        settled = true;
+        return value;
+      });
+      await pump();
+      expect(settled, isFalse);
+      expect(repo.hasDraftHistory, isTrue);
+      gate.heldSave!.complete(null);
+      await saving;
+      expect(await flush, isTrue);
+      expect(repo.hasDraftHistory, isFalse);
+      repo.dispose();
+    },
+  );
+
   test('净差异为零时禁用保存：空事务不该占用一次提交', () async {
     final gate = _Gate(netDiffChanged: false);
     final repo = await opened(gate);

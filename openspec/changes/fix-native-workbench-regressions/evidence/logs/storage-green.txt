@@ -1,0 +1,34 @@
+00:00 +0: loading /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_test.dart
+00:00 +0: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_test.dart: 信封带全四要素：格式版本、工作区身份、基线、命令与游标
+00:00 +1: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_faults_test.dart: 保存是原子的：不留临时件，重复保存以最后一次为准
+00:00 +2: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: same target across stores queues complete saves in call order
+00:00 +3: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: same target across stores queues complete saves in call order
+00:00 +4: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: same target across stores queues complete saves in call order
+00:00 +5: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_test.dart: 落盘是原子的：不留临时文件，内容是合法 JSON
+00:00 +6: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_test.dart: 落盘是原子的：不留临时文件，内容是合法 JSON
+00:00 +7: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: save then clear cannot resurrect a discarded draft
+00:00 +8: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_faults_test.dart: 正式信封被写坏：判为不可靠、保留文件并给出路径
+00:00 +9: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_faults_test.dart: 正式信封被写坏：判为不可靠、保留文件并给出路径
+00:00 +10: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: load waits for publication and never deletes an active temp
+00:00 +11: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_test.dart: 空草稿即删除文件；clear 之后再读是 none
+00:00 +12: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_test.dart: 空草稿即删除文件；clear 之后再读是 none
+00:00 +13: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: preserve waits for save and archives its completed envelope
+00:00 +14: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_faults_test.dart: 目录不可用（权限类失败）：save 抛错、load 返回 none 而不崩
+00:00 +15: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_test.dart: 无法解析或格式不认识：判为 damaged 并可留档查看，不静默清空
+00:00 +16: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: directory resolution order cannot reorder public calls
+00:00 +17: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_faults_test.dart: 清空草稿即删除文件；再次读取是 none（不残留待恢复材料）
+00:00 +18: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_test.dart: 信封缺字段一律按不可靠处理，不猜成空草稿
+00:00 +19: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: save captures nested payload and command list at the call
+00:00 +20: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_test.dart: 归属与工作区身份不一致的草稿判为 damaged（防止串档）
+00:00 +21: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: directory failure releases admission for later save (load=false)
+00:00 +22: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: directory failure releases admission for later save (load=true)
+00:00 +23: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: write failure reaches caller while queued retry succeeds
+00:00 +24: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: rename failure reaches caller while queued retry succeeds
+00:00 +25: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: delete failure reaches caller while queued retry succeeds
+00:00 +26: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: different files run while another publication is blocked
+00:00 +27: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: same filename in different real directories runs in parallel
+00:00 +28: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: symlink aliases share the same real file queue
+00:00 +29: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: requests added to an active tail survive earlier tail cleanup
+00:00 +30: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: failed preserve retains file and does not poison later operations
+00:00 +31: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/draft_store_ordering_test.dart: legacy temp deletion failure still reports and restores formal file
+00:00 +32: All tests passed!

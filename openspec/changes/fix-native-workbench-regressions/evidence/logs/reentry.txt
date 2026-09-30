@@ -1,0 +1,21 @@
+00:00 +0: loading /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_persistence_ordering_test.dart
+00:00 +0: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_persistence_ordering_test.dart: latest snapshot remains pending while earlier save finishes
+00:00 +1: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 候选请求各归自己的代次，迟到的旧响应不得覆盖当前 hash
+00:00 +2: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 候选请求各归自己的代次，迟到的旧响应不得覆盖当前 hash
+00:00 +3: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 候选请求各归自己的代次，迟到的旧响应不得覆盖当前 hash
+00:00 +4: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 候选请求各归自己的代次，迟到的旧响应不得覆盖当前 hash
+00:00 +5: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 候选请求各归自己的代次，迟到的旧响应不得覆盖当前 hash
+00:00 +6: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_persistence_ordering_test.dart: switch waits pending save and retains A after failure
+00:00 +7: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 保存进行中冻结编辑：任何编辑入口都不改草稿并给出可见原因
+00:00 +8: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 保存进行中冻结编辑：任何编辑入口都不改草稿并给出可见原因
+00:00 +9: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 保存进行中冻结编辑：任何编辑入口都不改草稿并给出可见原因
+00:00 +10: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_persistence_ordering_test.dart: A restore arriving after switch cannot replace B state
+00:00 +11: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 不能重复提交：保存进行中的第二次保存直接返回 null
+00:00 +12: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_persistence_ordering_test.dart: discard preserves memory until clear succeeds and retry releases it
+00:00 +13: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 保存成功后刷新失败：报状态暂不可用，不恢复草稿、不要求重存
+00:00 +14: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 保存成功后刷新失败：报状态暂不可用，不恢复草稿、不要求重存
+00:00 +15: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: flush waits in-flight YAML save before draft cleanup and exit
+00:00 +16: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_persistence_ordering_test.dart: listener edit follows admitted clear and is not deleted by it
+00:00 +17: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 净差异为零时禁用保存：空事务不该占用一次提交
+00:00 +18: /private/tmp/ct-tool-native-fix-20260930/launcher/test/state/workbench_repository_gate_test.dart: 守卫失配被拒：草稿保留、旧候选作废、基线刷新为内核值
+00:00 +19: All tests passed!

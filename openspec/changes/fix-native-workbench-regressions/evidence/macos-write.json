@@ -1,0 +1,1 @@
+{"phase":"write","appPid":18505,"commands":[{"kind":"add_resource","payload":{"kind":"table","resource":{"table":"RestartHero","primary":"Id","fields":[{"name":"Id","type":"int32"}]}}},{"kind":"rename_resource","payload":{"old":"RestartHero","new":"RestartBoss"}}],"cursor":1,"redo":true,"resources":["Item","Rarity","RestartHero"],"persisted":true,"workerExitCode":0}

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:ct_launcher/services/protocol/protocol.dart';
@@ -54,30 +55,44 @@ class _FakeGateway implements KernelGateway {
   }
 }
 
-class _DelayedDraftStore extends DraftStore {
-  _DelayedDraftStore({required super.rootOverride, this.fail = false});
-
+class _DelayedDraftFiles extends DraftFileAccess {
+  _DelayedDraftFiles({this.fail = false});
   final bool fail;
   final started = Completer<void>();
   final release = Completer<void>();
   final saves = <DraftEnvelope>[];
 
-  Future<void> _wait() async {
+  Future<void> wait() async {
     if (!started.isCompleted) started.complete();
     await release.future;
     if (fail) throw StateError('delayed persistence failure');
   }
 
   @override
-  Future<void> save(DraftEnvelope envelope) async {
-    saves.add(envelope);
-    await _wait();
-    await super.save(envelope);
+  Future<void> write(File file, String contents) async {
+    saves.add(
+      DraftEnvelope.fromJson(jsonDecode(contents) as Map<String, Object?>),
+    );
+    await wait();
+    await super.write(file, contents);
   }
+}
+
+class _DelayedDraftStore extends DraftStore {
+  factory _DelayedDraftStore({
+    required Directory rootOverride,
+    bool fail = false,
+  }) => _DelayedDraftStore._(rootOverride, _DelayedDraftFiles(fail: fail));
+  _DelayedDraftStore._(Directory root, this.files)
+    : super(rootOverride: root, fileAccess: files);
+  final _DelayedDraftFiles files;
+  Completer<void> get started => files.started;
+  Completer<void> get release => files.release;
+  List<DraftEnvelope> get saves => files.saves;
 
   @override
   Future<void> clear(String workspaceKey) async {
-    await _wait();
+    await files.wait();
     await super.clear(workspaceKey);
   }
 }
@@ -145,7 +160,6 @@ void main() {
         );
         await found.switchWorkspace(workspace);
         if (clear) {
-          found.draftPersistedChanged(false);
           found.persistDraft();
         } else {
           found.createTable('Hero');

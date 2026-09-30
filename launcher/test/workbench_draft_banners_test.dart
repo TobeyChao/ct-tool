@@ -206,7 +206,13 @@ void main() {
     expect(find.byKey(const ValueKey('wb.draftConflict')), findsOneWidget);
     expect(find.textContaining('基线已变'), findsOneWidget);
 
-    conflictRepo.discardStoredDraft();
+    await tester.runAsync(() => conflictRepo.discardStoredDraft());
+    expect(
+      (await tester.runAsync(
+        () => store.fileFor(conflictWorkspace),
+      ))!.existsSync(),
+      isFalse,
+    );
     for (var i = 0; i < 6; i++) {
       await tester.pump(const Duration(milliseconds: 20));
     }

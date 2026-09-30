@@ -7,7 +7,9 @@
 /// **任何保存拒绝都保留草稿**，只作废候选。
 library;
 
+import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
@@ -27,7 +29,6 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   final DraftStore? store;
 
   int _generation = 0;
-  bool _disposed = false;
   String _root = '';
   String? _workspaceId;
   WorkspaceSnapshot? _snapshot;
@@ -49,6 +50,7 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   bool _candidateBusy = false;
 
   bool _saving = false;
+  Completer<void>? _saveSettled;
   String? _saveError;
   String? _refreshError;
   SchemaSaveResult? _lastSave;
@@ -57,7 +59,35 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   bool _draftPersisted = true;
   String? _persistError;
   DateTime? _draftSavedAt;
-  Future<void>? _pendingPersist;
+  final Set<Future<void>> _pendingPersists = {};
+  int _persistRevision = 0;
+  int _editFreezeDepth = 0;
+  int _switchFreezeDepth = 0;
+  int _switchRequest = 0;
+  bool _disposed = false;
+
+  /// 包括已撤销的重做分支，退出不能只看 active command。
+  bool get hasDraftHistory => _log.commands.isNotEmpty;
+
+  void freezeDraftEditing() {
+    if (_disposed) return;
+    _editFreezeDepth++;
+    notifyListeners();
+  }
+
+  void unfreezeDraftEditing() {
+    if (_disposed || _editFreezeDepth == 0) return;
+    _editFreezeDepth--;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _generation++;
+    super.dispose();
+  }
+
   DraftEnvelope? _conflictingDraft;
   String? _conflictReason;
   String? _damagedPath;
@@ -195,6 +225,12 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
 
   /// 清空当前工作区（未绑定或用户移除目录）：不发请求，视图回到空态。
   void clearWorkspace() {
+    if (_disposed ||
+        editingFrozen ||
+        !draftPersisted ||
+        _pendingPersists.isNotEmpty) {
+      return;
+    }
     _generation++;
     _root = '';
     _workspaceId = null;
@@ -209,8 +245,30 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   }
 
   /// 切换工作区：先清空旧视图与草稿，再读快照与清单；旧请求的回包一律丢弃。
-  Future<void> switchWorkspace(String root) async {
+  Future<bool> switchWorkspace(String root) async {
+    if (_disposed || _editFreezeDepth > 0 || _saving) return false;
+    final request = ++_switchRequest;
+    if (_root.isNotEmpty) {
+      _switchFreezeDepth++;
+      notifyListeners();
+      final flushed = await flushDraft();
+      _switchFreezeDepth--;
+      if (_disposed || request != _switchRequest) return false;
+      if (!flushed) {
+        notifyListeners();
+        return false;
+      }
+    }
+    if (_disposed || request != _switchRequest) return false;
     final generation = ++_generation;
+    _persistRevision++;
+    _draftPersisted = true;
+    _persistError = null;
+    _draftSavedAt = null;
+    _conflictingDraft = null;
+    _conflictReason = null;
+    _damagedPath = null;
+    _damagedReason = null;
     _root = root;
     _workspaceId = null;
     _snapshot = null;
@@ -229,12 +287,12 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
     _lastSave = null;
     _loading = root.isNotEmpty;
     notifyListeners();
-    if (root.isEmpty) return;
+    if (root.isEmpty) return true;
     try {
       await _reload(generation: generation, clearDraft: true);
       if (_isCurrent(generation)) await restoreDraft();
     } on Object catch (e) {
-      if (!_isCurrent(generation)) return;
+      if (!_isCurrent(generation)) return false;
       _error = _readFailure(e);
     } finally {
       if (_isCurrent(generation)) {
@@ -242,6 +300,7 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
         notifyListeners();
       }
     }
+    return _isCurrent(generation);
   }
 
   // ---- 异常退出恢复（任务 4.7） ----
@@ -481,17 +540,19 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
 
   /// 保存进行中禁止编辑：否则保存请求携带的命令集与提交后的状态不一致，
   /// 用户会看到"已保存"却又冒出新的草稿。
-  bool get editingFrozen => _saving;
+  bool get editingFrozen =>
+      _saving || _loading || _editFreezeDepth > 0 || _switchFreezeDepth > 0;
 
   String? get refreshError => _refreshError;
 
   void _schedulePersist() {
-    _pendingPersist = persistDraft();
+    unawaited(persistDraft());
   }
 
   bool _frozenWhileSaving() {
-    if (!_saving) return false;
-    _draftError = '保存进行中，编辑已冻结（等本次提交结束）';
+    if (_disposed) return true;
+    if (!editingFrozen) return false;
+    _draftError = _saving ? '保存进行中，编辑已冻结（等本次提交结束）' : '正在保留草稿，编辑暂时冻结';
     notifyListeners();
     return true;
   }
@@ -711,7 +772,9 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   /// （候选计算中与净差异为零也要禁：前者结论未出，后者是空事务，不该占用一次保存。
   bool get canSave {
     final found = _candidate;
-    if (found == null || _saving || _candidateBusy || _loading) return false;
+    if (found == null || editingFrozen || _candidateBusy || _loading) {
+      return false;
+    }
     final diff = found.netDiff;
     return hasDraft &&
         found.problems.isEmpty &&
@@ -732,6 +795,8 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
       cursor: '${_log.cursor}',
     );
     _saving = true;
+    final saveSettled = Completer<void>();
+    _saveSettled = saveSettled;
     _saveError = null;
     notifyListeners();
     try {
@@ -785,6 +850,8 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
         _saving = false;
         notifyListeners();
       }
+      saveSettled.complete();
+      if (identical(_saveSettled, saveSettled)) _saveSettled = null;
     }
   }
 
@@ -1078,7 +1145,7 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   String get draftPersistLabel {
     if (store == null) return '未开启用户目录持久化';
     if (!_draftPersisted) {
-      return "未落盘：${_persistError ?? '未知原因'}";
+      return _persistError == null ? '待落盘' : "未落盘：$_persistError";
     }
     if (_log.commands.isEmpty) return '无草稿';
     final at = _draftSavedAt;
@@ -1088,77 +1155,151 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
     return "已落盘 $hh:$mm";
   }
 
-  /// 等最近一次落盘结束（测试与界面用）。
-  Future<void> get persistSettled => _pendingPersist ?? Future.value();
-
-  /// 落盘当前草稿：空草稿删除文件；失败只警告，不清内存编辑、不谎称已保留。
-  Future<void> persistDraft() {
-    final sink = store;
-    final key = draftKey;
-    if (_disposed || sink == null || key.isEmpty) return Future.value();
-    final generation = _generation;
-    final commands = List<SchemaCommand>.of(_log.commands);
-    final envelope = commands.isEmpty
-        ? null
-        : DraftEnvelope(
-            formatVersion: DraftEnvelope.currentFormat,
-            workspaceKey: key,
-            baseline: _schemaBaseline,
-            commands: commands,
-            cursor: _log.cursor,
-            savedAt: DateTime.now(),
-          );
-    // 同一文件共用临时件：逐次写入，最后一次等待必须涵盖此前所有写入。
-    final pending = (_pendingPersist ?? Future<void>.value()).then((_) async {
-      try {
-        if (envelope == null) {
-          await sink.clear(key);
-        } else {
-          await sink.save(envelope);
-        }
-      } on Object catch (e) {
-        if (!_isCurrent(generation)) return;
-        // 内存草稿仍在，界面持续显示未持久化警告。
-        _persistError = '$e';
-        _draftPersisted = false;
-        notifyListeners();
-        return;
-      }
-      // 已排队的草稿仍完成落盘；释放或换工作区后不再修改视图。
-      if (!_isCurrent(generation)) return;
-      if (envelope == null) {
-        if (draftPersistedChanged(true)) notifyListeners();
-      } else {
-        _draftSavedAt = envelope.savedAt;
-        _persistError = null;
-        _draftPersisted = true;
-        notifyListeners();
-      }
-    });
-    _pendingPersist = pending;
-    return pending;
+  /// 排空全部此前请求；等待期间新增任务时继续等待稳定队尾。
+  Future<void> get persistSettled async {
+    while (_pendingPersists.isNotEmpty) {
+      await Future.wait(_pendingPersists.toList());
+    }
   }
 
-  bool draftPersistedChanged(bool value) {
-    if (_draftPersisted == value && _persistError == null) return false;
-    _draftPersisted = value;
+  Future<bool> flushDraft() async {
+    // YAML 保存成功后会追加草稿清理；退出必须一起等完。
+    await _saveSettled?.future;
+    await persistSettled;
+    return !_disposed && draftPersisted;
+  }
+
+  bool _acceptsPersistence(int generation, int revision) =>
+      _isCurrent(generation) && revision == _persistRevision;
+
+  /// 入队时捕获完整信封，重试也参与相同的等待和状态守卫。
+  Future<void> persistDraft() {
+    if (_disposed) return Future.value();
+    final sink = store;
+    final key = draftKey;
+    if (sink == null || key.isEmpty) return Future.value();
+    final generation = _generation;
+    final revision = ++_persistRevision;
+    final copied =
+        jsonDecode(jsonEncode(_log.commands.map((c) => c.toJson()).toList()))
+            as List;
+    final envelope = DraftEnvelope(
+      formatVersion: DraftEnvelope.currentFormat,
+      workspaceKey: key,
+      baseline: _schemaBaseline,
+      commands: copied
+          .map((c) => SchemaCommand.fromJson(c as Map<String, Object?>))
+          .toList(growable: false),
+      cursor: _log.cursor,
+      savedAt: DateTime.now(),
+    );
+    _draftPersisted = false;
     _persistError = null;
-    return true;
+    final operation = envelope.commands.isEmpty
+        ? sink.clear(key)
+        : sink.save(envelope);
+    final tracked = _completePersistence(
+      operation,
+      generation,
+      revision,
+      envelope.savedAt,
+    );
+    // Listeners may synchronously edit again or flush. Register this operation
+    // before publishing pending state so nested requests keep their order.
+    notifyListeners();
+    return tracked;
+  }
+
+  Future<void> _completePersistence(
+    Future<void> operation,
+    int generation,
+    int revision,
+    DateTime? savedAt, {
+    void Function()? onSuccess,
+  }) {
+    final completed = Completer<void>();
+    final tracked = completed.future;
+    _pendingPersists.add(tracked);
+    () async {
+      Object? failure;
+      try {
+        await operation;
+      } on Object catch (error) {
+        failure = error;
+      }
+      try {
+        if (_acceptsPersistence(generation, revision)) {
+          _draftPersisted = failure == null;
+          _persistError = failure?.toString();
+          if (failure == null) {
+            _draftSavedAt = savedAt;
+            onSuccess?.call();
+          }
+          notifyListeners();
+        }
+      } finally {
+        _pendingPersists.remove(tracked);
+        completed.complete();
+      }
+    }();
+    return tracked;
+  }
+
+  /// 明确放弃：文件清理成功前保留内存和冲突身份，失败允许重试。
+  Future<bool> discardDraftAndPersist() async {
+    if (_disposed) return false;
+    final sink = store;
+    final key = draftKey;
+    if (sink == null || key.isEmpty) {
+      _clearDiscardedDraft();
+      notifyListeners();
+      return true;
+    }
+    final generation = _generation;
+    final revision = ++_persistRevision;
+    _draftPersisted = false;
+    _persistError = null;
+    final tracked = _completePersistence(
+      sink.clear(key),
+      generation,
+      revision,
+      null,
+      onSuccess: _clearDiscardedDraft,
+    );
+    notifyListeners();
+    await tracked;
+    return _acceptsPersistence(generation, revision) && draftPersisted;
+  }
+
+  void _clearDiscardedDraft() {
+    _log.clear();
+    _candidate = null;
+    _rejectedProblems = const [];
+    _draftError = null;
+    _saveError = null;
+    _conflictingDraft = null;
+    _conflictReason = null;
+    _damagedPath = null;
+    _damagedReason = null;
+    _draftPersisted = true;
+    _persistError = null;
   }
 
   /// 重启/换工作区后尝试恢复：只有工作区与基线都匹配才套用；
   /// 基线不同或格式不认识一律保留原文件并提示，绝不静默套用或删除。
   Future<DraftOutcome> restoreDraft() async {
+    final sink = store;
+    if (_disposed || sink == null || draftKey.isEmpty) return DraftOutcome.none;
+    final generation = _generation;
+    final revision = _persistRevision;
+    final key = draftKey;
+    final baseline = _schemaBaseline;
+    final loaded = await sink.load(workspaceKey: key, baseline: baseline);
+    if (!_acceptsPersistence(generation, revision)) return DraftOutcome.none;
     _conflictingDraft = null;
     _conflictReason = null;
     _damagedPath = null;
     _damagedReason = null;
-    final sink = store;
-    if (sink == null || draftKey.isEmpty) return DraftOutcome.none;
-    final loaded = await sink.load(
-      workspaceKey: draftKey,
-      baseline: _schemaBaseline,
-    );
     switch (loaded.outcome) {
       case DraftOutcome.none:
         // 读不到目录不等于「没有草稿」：要说成「没能持久化」，否则用户会以为
@@ -1193,19 +1334,7 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
 
   /// 用户显式丢弃保留的草稿文件（冲突或损坏）；不删掉就不算处理完。
   Future<void> discardStoredDraft() async {
-    final sink = store;
-    _conflictingDraft = null;
-    _conflictReason = null;
-    _damagedPath = null;
-    _damagedReason = null;
-    // 状态先落地重绘，文件操作在后台完成：界面不能停在旧提示上。
-    notifyListeners();
-    try {
-      if (sink != null) await sink.clear(draftKey);
-    } on Object catch (e) {
-      _persistError = '$e';
-    }
-    notifyListeners();
+    await discardDraftAndPersist();
   }
 
   String _readFailure(Object error) {
@@ -1215,13 +1344,6 @@ class WorkbenchRepository extends ChangeNotifier implements WorkbenchData {
   }
 
   String _detail(Object error) => worker.failureReason ?? '$error';
-
-  @override
-  void dispose() {
-    _disposed = true;
-    _generation++;
-    super.dispose();
-  }
 
   bool _isCurrent(int generation) => !_disposed && generation == _generation;
 

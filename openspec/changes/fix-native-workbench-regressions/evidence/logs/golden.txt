@@ -1,0 +1,19 @@
+00:00 +0: loading /private/tmp/ct-tool-native-fix-20260930/launcher/test/workbench_golden_test.dart
+00:00 +0: workbench normal 1440x900 s100
+00:00 +1: workbench normal 1440x900 s125
+00:01 +2: workbench normal 1440x900 s150
+00:01 +3: workbench normal 1280x800 s100
+00:01 +4: workbench normal 1280x800 s125
+00:01 +5: workbench normal 1280x800 s150
+00:01 +6: workbench normal 1024x700 s100
+00:01 +7: workbench normal 1024x700 s125
+00:01 +8: workbench normal 1024x700 s150
+00:02 +9: workbench scenario normal
+00:02 +10: workbench scenario empty
+00:02 +11: workbench scenario loadError
+00:02 +12: workbench scenario longText
+00:02 +13: workbench scenario busy
+00:02 +14: workbench scenario conflict
+00:02 +15: workbench 1024x700 panels expanded longText
+00:02 +16: component gallery
+00:02 +17: All tests passed!

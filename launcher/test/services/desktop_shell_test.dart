@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:io';
+
+import 'package:ct_launcher/app.dart';
 
 import 'package:ct_launcher/services/settings_store.dart';
 import 'package:ct_launcher/services/single_instance_lock.dart';
@@ -9,6 +12,187 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// 桌面壳入口条件（任务 2.5）：单实例、可调窗口、不继承旧固定尺寸设置。
 void main() {
+  test('switch failure leaves preferences and worker at A', () async {
+    SharedPreferences.setMockInitialValues({'workspace_path': '/tmp/A'});
+    final settings = SettingsStore();
+    await settings.load();
+    var connected = '/tmp/A';
+    final events = <String>[];
+    expect(
+      await switchShellWorkspace(
+        '/tmp/B',
+        switchWorkspace: (root) async {
+          events.add('switch:$root');
+          return false;
+        },
+        persistWorkspace: settings.setWorkspacePath,
+        connectWorkspace: (root) async => connected = root,
+      ),
+      isFalse,
+    );
+    expect(settings.workspacePath, '/tmp/A');
+    expect(
+      (await SharedPreferences.getInstance()).getString('workspace_path'),
+      '/tmp/A',
+    );
+    expect(connected, '/tmp/A');
+    expect(events, ['switch:/tmp/B']);
+  });
+
+  test(
+    'preferences and matching worker change only after repository success',
+    () async {
+      SharedPreferences.setMockInitialValues({'workspace_path': '/tmp/A'});
+      final settings = SettingsStore();
+      await settings.load();
+      final switching = Completer<bool>();
+      var connected = '/tmp/A';
+      final events = <String>[];
+      final operation = switchShellWorkspace(
+        '/tmp/B',
+        switchWorkspace: (root) {
+          events.add('switch:$root');
+          return switching.future;
+        },
+        persistWorkspace: (root) async {
+          events.add('prefs:$root');
+          await settings.setWorkspacePath(root);
+        },
+        connectWorkspace: (root) async {
+          expect(settings.workspacePath, root);
+          events.add('worker:$root');
+          connected = root;
+        },
+      );
+      expect(settings.workspacePath, '/tmp/A');
+      expect(connected, '/tmp/A');
+      expect(events, ['switch:/tmp/B']);
+      switching.complete(true);
+      expect(await operation, isTrue);
+      expect(settings.workspacePath, '/tmp/B');
+      expect(connected, '/tmp/B');
+      expect(events, ['switch:/tmp/B', 'prefs:/tmp/B', 'worker:/tmp/B']);
+    },
+  );
+
+  test(
+    'failed workspace switch can retry with the original preference intact',
+    () async {
+      var preference = 'A';
+      var worker = 'A';
+      var attempts = 0;
+      Future<bool> attempt() => switchShellWorkspace(
+        'B',
+        switchWorkspace: (_) async => ++attempts > 1,
+        persistWorkspace: (root) async => preference = root,
+        connectWorkspace: (root) async => worker = root,
+      );
+      expect(await attempt(), isFalse);
+      expect(preference, 'A');
+      expect(worker, 'A');
+      expect(await attempt(), isTrue);
+      expect(preference, 'B');
+      expect(worker, 'B');
+    },
+  );
+
+  test(
+    'preference failure still binds B with old A services detached',
+    () async {
+      var repository = 'A';
+      var runner = 'A';
+      var translation = 'A';
+      var savedPreference = 'A';
+      final reports = <String>[];
+      final preference = Completer<void>();
+      final preferenceStarted = Completer<void>();
+      final operation = switchShellWorkspace(
+        'B',
+        switchWorkspace: (root) async {
+          repository = root;
+          return true;
+        },
+        onAccepted: () async {
+          runner = '';
+          translation = '';
+        },
+        persistWorkspace: (_) {
+          preferenceStarted.complete();
+          return preference.future;
+        },
+        connectWorkspace: (root) async {
+          runner = root;
+          translation = root;
+        },
+        onFailure: (stage, error) => reports.add('$stage:$error'),
+      );
+      await preferenceStarted.future;
+      expect(repository, 'B');
+      expect(runner, '');
+      expect(translation, '');
+      preference.completeError(StateError('disk full'));
+      expect(await operation, isFalse);
+      expect(savedPreference, 'A');
+      expect(repository, 'B');
+      expect(runner, 'B');
+      expect(translation, 'B');
+      expect(reports.single, contains('preferences:Bad state: disk full'));
+    },
+  );
+
+  test(
+    'connection failure reports failure and cannot revive A services',
+    () async {
+      var repository = 'A';
+      var runner = 'A';
+      var translation = 'A';
+      var preference = 'A';
+      final reports = <String>[];
+      expect(
+        await switchShellWorkspace(
+          'B',
+          switchWorkspace: (root) async {
+            repository = root;
+            return true;
+          },
+          onAccepted: () async {
+            runner = '';
+            translation = '';
+          },
+          persistWorkspace: (root) async => preference = root,
+          connectWorkspace: (_) async => throw StateError('worker unavailable'),
+          onFailure: (stage, error) => reports.add('$stage:$error'),
+        ),
+        isFalse,
+      );
+      expect(repository, 'B');
+      expect(preference, 'B');
+      expect(runner, '');
+      expect(translation, '');
+      expect(
+        reports.single,
+        contains('connection:Bad state: worker unavailable'),
+      );
+    },
+  );
+
+  test(
+    'preference error without a reporting callback propagates after binding B',
+    () async {
+      var connected = 'A';
+      await expectLater(
+        switchShellWorkspace(
+          'B',
+          switchWorkspace: (_) async => true,
+          persistWorkspace: (_) async => throw StateError('preferences'),
+          connectWorkspace: (root) async => connected = root,
+        ),
+        throwsStateError,
+      );
+      expect(connected, 'B');
+    },
+  );
+
   test('单实例锁状态自洽：release 之后才可再接管', () async {
     final dir = await Directory.systemTemp.createTemp('ct-single-');
     addTearDown(() {

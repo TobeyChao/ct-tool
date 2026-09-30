@@ -7,6 +7,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'services/settings_store.dart';
 import 'services/exit_guard.dart';
+import 'services/exit_coordinator.dart';
 import 'services/tray_service.dart';
 import 'services/protocol/protocol.dart';
 import 'services/worker_service.dart';
@@ -50,8 +51,11 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
   StreamSubscription<Message>? _eventSub;
   late final TrayService _tray;
   late final AppLifecycleListener _lifecycleListener;
-  Future<void>? _shutdownFuture;
-  bool _exiting = false;
+  late final ExitCoordinator _exitCoordinator;
+  final _navigatorKey = GlobalKey<NavigatorState>();
+  Future<void>? _workspaceFuture;
+  Future<void>? _quitFuture;
+  String? _workspaceFailure;
   bool _windowMaximized = false;
 
   @override
@@ -69,14 +73,36 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
       onShowWindow: _reveal,
       onReload: () => _openWorkspace(force: true),
     );
-    // Cmd+Q / Dock 退出：先过退出守卫，再给 worker 发 shutdown，避免留下未完成的写任务。
+    _exitCoordinator = ExitCoordinator(
+      freezeEditing: _repo.freezeDraftEditing,
+      unfreezeEditing: _repo.unfreezeDraftEditing,
+      decide: () async {
+        await _workspaceFuture;
+        return _askExit();
+      },
+      flushDraft: _repo.flushDraft,
+      retryDraft: _repo.persistDraft,
+      discardDraft: _repo.discardDraftAndPersist,
+      onPersistenceFailure: () {
+        final dialogContext = _navigatorKey.currentContext;
+        if (!mounted || dialogContext == null) {
+          return Future.value(ExitPersistenceDecision.stay);
+        }
+        return confirmExitPersistenceFailure(dialogContext);
+      },
+      stopWorker: () async {
+        _runner?.markDisconnected();
+        await _worker.stop();
+      },
+    );
+    // Cmd+Q / Dock 共用确认与 flush，但由平台完成进程退出。
     _lifecycleListener = AppLifecycleListener(
       onExitRequested: () async {
-        if (await _askExit() == ExitDecision.stay) {
-          return AppExitResponse.cancel;
-        }
-        await _shutdown();
-        return AppExitResponse.exit;
+        final decision = await _exitCoordinator.request();
+        if (decision == ExitDecision.hideToTray) await _hideToTray();
+        return decision == ExitDecision.exitNow
+            ? AppExitResponse.exit
+            : AppExitResponse.cancel;
       },
     );
     windowManager.addListener(this);
@@ -121,22 +147,105 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
 
   Future<void> _closeWindow() => windowManager.close();
 
-  /// 启动/重连内核并加载当前工作区。[force] 时先停旧连接再起。
-  Future<void> _openWorkspace({bool force = false}) async {
-    final root = widget.settings.workspacePath;
-    if (root.isEmpty) {
-      await _repo.switchWorkspace('');
-      _desktop.bind('');
-      await _translations.bind('');
-      _rebuildRunner('');
-      return;
+  /// 壳层操作串行：退出冻结后不接受新的切换、重载或运行时修改。
+  Future<void> _workspaceOperation(Future<void> Function() operation) {
+    if (_exitCoordinator.pending || _repo.editingFrozen) {
+      return Future.value();
     }
-    if (force && _worker.status != WorkerStatus.stopped) {
-      await _worker.stop();
+    final pending = _workspaceFuture;
+    if (pending != null) return pending;
+    final result = Completer<void>();
+    _workspaceFuture = result.future;
+    if (mounted) setState(() => _workspaceFailure = null);
+    unawaited(() async {
+      try {
+        await operation();
+      } catch (error) {
+        _workspaceFailure = '工作区操作失败：$error';
+      } finally {
+        _workspaceFuture = null;
+        if (mounted) setState(() {});
+        result.complete();
+      }
+    }());
+    return result.future;
+  }
+
+  /// 启动/重连先排空草稿，避免重载清空尚未落盘的内存历史。
+  Future<void> _openWorkspace({
+    bool force = false,
+    String? runtimePath,
+    bool useInferredRuntime = false,
+  }) => _workspaceOperation(() async {
+    final root = _repo.workspaceRoot.isNotEmpty
+        ? _repo.workspaceRoot
+        : widget.settings.workspacePath;
+    _repo.freezeDraftEditing();
+    try {
+      if (!await _repo.flushDraft()) return;
+      if (useInferredRuntime) {
+        await widget.settings.useInferredRuntimePath();
+      }
+      if (runtimePath != null) {
+        await widget.settings.setRuntimePath(runtimePath);
+      }
+      if (force && _worker.status != WorkerStatus.stopped) {
+        await _worker.stop();
+      }
+      if (root.isNotEmpty) await _worker.start(workspaceRoot: root);
+    } finally {
+      _repo.unfreezeDraftEditing();
     }
-    await _worker.start(workspaceRoot: root);
-    await _repo.switchWorkspace(root);
-    // 先建导出/模板运行器并刷新壳层，再加载日志与翻译；后两者失败不能把导出页卡在 MOCK。
+    if (_exitCoordinator.pending) return;
+    if (!await _repo.switchWorkspace(root)) return;
+    await _bindWorkspace(root);
+  });
+
+  Future<void> _changeWorkspace(String root) => _workspaceOperation(() async {
+    // 未绑定时也需要可用的 worker 才能读取候选工作区。
+    await _worker.start(workspaceRoot: _repo.workspaceRoot);
+    if (_exitCoordinator.pending) return;
+    var accepted = false;
+    try {
+      await switchShellWorkspace(
+        root,
+        switchWorkspace: _repo.switchWorkspace,
+        onAccepted: () async {
+          accepted = true;
+          _repo.freezeDraftEditing();
+          // B 已生效：在偏好/连接等待期间也不能留下 A 的写入口。
+          _rebuildRunner('');
+          await _desktop.bind('');
+          await _translations.bind('');
+        },
+        persistWorkspace: widget.settings.setWorkspacePath,
+        connectWorkspace: (root) async {
+          await _worker.stop();
+          if (root.isNotEmpty) {
+            await _worker.start(workspaceRoot: root);
+            if (_worker.status != WorkerStatus.ready) {
+              throw StateError(_worker.failureReason ?? '内核连接失败');
+            }
+          }
+          await _bindWorkspace(root);
+        },
+        onFailure: (stage, error) {
+          final message = stage == 'preferences'
+              ? '工作区已切换，但偏好未保存：$error'
+              : '工作区已切换，但内核连接未完成：$error';
+          _workspaceFailure = [
+            _workspaceFailure,
+            message,
+          ].whereType<String>().join('；');
+        },
+      );
+    } finally {
+      if (accepted) _repo.unfreezeDraftEditing();
+    }
+  });
+
+  Future<void> _bindWorkspace(String root) async {
+    // 先刷新运行器，日志和翻译的加载失败不能把导出页卡在 MOCK。
     _rebuildRunner(root);
     await _desktop.bind(root);
     await _translations.bind(root);
@@ -161,46 +270,34 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
     await windowManager.focus();
   }
 
-  /// 所有退出入口等待同一次关闭；发布未完成时不得超时退出或强杀。
-  Future<void> _shutdown() => _shutdownFuture ??= _worker.stop();
-
-  Future<void> _quit() async {
-    await _shutdown();
+  Future<void> _quit() => _quitFuture ??= () async {
     await windowManager.destroy();
     exit(0);
-  }
+  }();
 
-  /// 退出意图的唯一入口（托盘「退出」、设置里的「退出应用」、关闭窗口都走这里）。
+  /// 窗口/设置/托盘适配：只有协调器成功落盘并停止 worker 后才销毁窗口。
   Future<void> _requestExit() async {
-    if (_exiting) return;
-    _exiting = true;
-    try {
-      final decision = await _askExit();
-      switch (decision) {
-        case ExitDecision.stay:
-          return;
-        case ExitDecision.hideToTray:
-          await _hideToTray();
-          return;
-        case ExitDecision.exitNow:
-          break;
-      }
-      // 用户确认退出：在途任务从此没有终态，标为未知而不是假装取消/成功。
-      _runner?.markDisconnected();
-      await _quit();
-    } finally {
-      _exiting = false;
+    switch (await _exitCoordinator.request()) {
+      case ExitDecision.stay:
+        return;
+      case ExitDecision.hideToTray:
+        await _hideToTray();
+      case ExitDecision.exitNow:
+        await _quit();
     }
   }
 
   /// 守卫的问题本身：没有草稿也没有在跑任务时直接放行，不打扰。
   Future<ExitDecision> _askExit() {
-    if (!mounted) return Future.value(ExitDecision.exitNow);
+    final dialogContext = _navigatorKey.currentContext;
+    if (!mounted || dialogContext == null) {
+      return Future.value(ExitDecision.stay);
+    }
     return confirmExit(
-      context,
-      hasDraft: _repo.draftCount > 0,
+      dialogContext,
+      hasDraft: _repo.hasDraftHistory,
       runningTask: _runner?.running ?? false,
-      draftNotPersisted: _repo.draftCount > 0 && !_repo.draftPersisted,
+      draftNotPersisted: !_repo.draftPersisted,
       trayResident: widget.settings.trayResident,
     );
   }
@@ -256,47 +353,55 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
   Widget build(BuildContext context) {
     final banner = _bannerLabel();
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: 'ct 工作台',
       theme: buildCtTheme(),
       debugShowCheckedModeBanner: false,
-      home: WorkbenchScreen(
-        data: _repo,
-        refresh: Listenable.merge([_repo, _worker, widget.settings]),
-        desktop: _desktop,
-        settings: widget.settings,
-        onWorkspaceChanged: (root) async {
-          await widget.settings.setWorkspacePath(root);
-          await _openWorkspace();
-        },
-        onRuntimeChanged: (path) async {
-          await widget.settings.setRuntimePath(path);
-          await _openWorkspace(force: true);
-        },
-        onReloadWorkspace: () => _openWorkspace(force: true),
-        onExitRequested: _requestExit,
-        kernelSummary: _kernelSummary(),
-        draft: _repo,
-        runner: _runner,
-        translations: _translations,
-        template: _template,
-        writeBlockReason: _worker.writeBlockReason(method: Methods.export),
-        bannerLabel: banner,
-        bannerTone: switch (_worker.status) {
-          WorkerStatus.ready => CtBadgeTone.ok,
-          WorkerStatus.starting => CtBadgeTone.busy,
-          WorkerStatus.failed => CtBadgeTone.danger,
-          WorkerStatus.stopped => CtBadgeTone.warn,
-        },
-        workspaceKey: _repo.workspaceRoot.isEmpty
-            ? 'unbound'
-            : _repo.workspaceRoot,
-        showDesktopTitleBar: Platform.isWindows || Platform.isMacOS,
-        windowMaximized: _windowMaximized,
-        showWindowControls: Platform.isWindows,
-        titleBarLeadingInset: Platform.isMacOS ? 80 : 0,
-        onWindowMinimize: _minimizeWindow,
-        onWindowToggleMaximize: _toggleWindowMaximized,
-        onWindowClose: _closeWindow,
+      home: AbsorbPointer(
+        absorbing: _workspaceFuture != null,
+        child: ExcludeFocus(
+          excluding: _workspaceFuture != null,
+          child: WorkbenchScreen(
+            data: _repo,
+            refresh: Listenable.merge([_repo, _worker, widget.settings]),
+            desktop: _desktop,
+            settings: widget.settings,
+            onWorkspaceChanged: _changeWorkspace,
+            onRuntimeChanged: (path) =>
+                _openWorkspace(force: true, runtimePath: path),
+            onUseInferredRuntime: () =>
+                _openWorkspace(force: true, useInferredRuntime: true),
+            onReloadWorkspace: () => _openWorkspace(force: true),
+            onExitRequested: _requestExit,
+            kernelSummary: _kernelSummary(),
+            draft: _repo,
+            runner: _runner,
+            translations: _translations,
+            template: _template,
+            writeBlockReason: _workspaceFuture != null
+                ? '正在切换或重连工作区'
+                : _worker.writeBlockReason(method: Methods.export),
+            bannerLabel: banner,
+            bannerTone: _workspaceFailure != null
+                ? CtBadgeTone.danger
+                : switch (_worker.status) {
+                    WorkerStatus.ready => CtBadgeTone.ok,
+                    WorkerStatus.starting => CtBadgeTone.busy,
+                    WorkerStatus.failed => CtBadgeTone.danger,
+                    WorkerStatus.stopped => CtBadgeTone.warn,
+                  },
+            workspaceKey: _repo.workspaceRoot.isEmpty
+                ? 'unbound'
+                : _repo.workspaceRoot,
+            showDesktopTitleBar: Platform.isWindows || Platform.isMacOS,
+            windowMaximized: _windowMaximized,
+            showWindowControls: Platform.isWindows,
+            titleBarLeadingInset: Platform.isMacOS ? 80 : 0,
+            onWindowMinimize: _minimizeWindow,
+            onWindowToggleMaximize: _toggleWindowMaximized,
+            onWindowClose: _closeWindow,
+          ),
+        ),
       ),
     );
   }
@@ -327,10 +432,13 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
     }
     final failure = _worker.failureReason;
     if (failure != null) lines.add('最近失败：$failure');
+    if (_workspaceFailure != null) lines.add(_workspaceFailure!);
     return lines;
   }
 
   String _bannerLabel() {
+    if (_workspaceFailure != null) return _workspaceFailure!;
+    if (_workspaceFuture != null) return '正在切换或重连工作区…';
     if (_repo.workspaceRoot.isEmpty) return '尚未绑定工作区 · 在「设置」里选择配表工作区';
     return switch (_worker.status) {
       WorkerStatus.ready => '原生内核已连接 · ${_worker.coreVersion} · 可保存、导出',
@@ -339,6 +447,42 @@ class _LauncherAppState extends State<LauncherApp> with WindowListener {
       WorkerStatus.stopped => '内核已断开',
     };
   }
+}
+
+/// 仓库确认出站草稿安全后，才提交偏好并重连对应 worker。
+Future<bool> switchShellWorkspace(
+  String root, {
+  required Future<bool> Function(String) switchWorkspace,
+  required Future<void> Function(String) persistWorkspace,
+  required Future<void> Function(String) connectWorkspace,
+  Future<void> Function()? onAccepted,
+  void Function(String stage, Object error)? onFailure,
+}) async {
+  if (!await switchWorkspace(root)) return false;
+  await onAccepted?.call();
+  Object? failure;
+  StackTrace? failureStack;
+  try {
+    await persistWorkspace(root);
+  } catch (error, stack) {
+    failure = error;
+    failureStack = stack;
+    onFailure?.call('preferences', error);
+  }
+  // Repository already displays B. Even a preference error must finish binding
+  // B instead of leaving A's write services attached to the new view.
+  try {
+    await connectWorkspace(root);
+  } catch (error, stack) {
+    failure ??= error;
+    failureStack ??= stack;
+    onFailure?.call('connection', error);
+  }
+  if (failure != null) {
+    if (onFailure == null) Error.throwWithStackTrace(failure, failureStack!);
+    return false;
+  }
+  return true;
 }
 
 /// 便于测试断言：工作台是否仍在用样板数据。

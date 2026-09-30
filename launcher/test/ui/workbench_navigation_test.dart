@@ -309,6 +309,44 @@ void main() {
     expect(values, ['High']);
   });
 
+  for (final modifier in [
+    LogicalKeyboardKey.controlLeft,
+    LogicalKeyboardKey.metaLeft,
+  ]) {
+    testWidgets('Quick Open ${modifier.keyLabel}：资源区关闭时搜索、Esc 与焦点恢复', (
+      tester,
+    ) async {
+      await pumpNav(tester);
+      await tester.tap(find.byKey(const ValueKey('wb.collapse.resource')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('wb.resourcePanel')), findsNothing);
+      final previousFocus = FocusManager.instance.primaryFocus;
+      expect(previousFocus, isNotNull);
+      await _ctrl(tester, LogicalKeyboardKey.keyP, modifier: modifier);
+      final field = find.byKey(const ValueKey('wb.quickOpen.field'));
+      expect(field, findsOneWidget);
+      await tester.enterText(field, 'qua');
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('wb.quickOpen.row.Quality.0')),
+        findsOneWidget,
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(field, findsNothing);
+      expect(FocusManager.instance.primaryFocus, same(previousFocus));
+      expect(find.byKey(const ValueKey('wb.resourcePanel')), findsNothing);
+
+      await _ctrl(tester, LogicalKeyboardKey.keyP, modifier: modifier);
+      await tester.enterText(field, 'qua');
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(field, findsNothing);
+      expect(find.byKey(const ValueKey('wb.enumAddItem')), findsOneWidget);
+    });
+  }
+
   testWidgets('Quick Open：Esc 关闭，最近打开按工作区持久化', (tester) async {
     await pumpNav(tester);
     await focusBody(tester);

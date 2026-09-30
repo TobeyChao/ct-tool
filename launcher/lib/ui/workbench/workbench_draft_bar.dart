@@ -572,7 +572,14 @@ Future<void> confirmWorkbenchDiscard(
       ],
     ),
   );
-  if (ok == true) repo.discardDraft();
+  if (ok == true) {
+    repo.freezeDraftEditing();
+    try {
+      await repo.discardDraftAndPersist();
+    } finally {
+      repo.unfreezeDraftEditing();
+    }
+  }
 }
 
 Widget _group({

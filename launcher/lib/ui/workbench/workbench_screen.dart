@@ -57,6 +57,7 @@ class WorkbenchScreen extends StatefulWidget {
     this.kernelSummary = const [],
     this.onWorkspaceChanged,
     this.onRuntimeChanged,
+    this.onUseInferredRuntime,
     this.onReloadWorkspace,
     this.desktop,
     this.draft,
@@ -89,8 +90,9 @@ class WorkbenchScreen extends StatefulWidget {
   /// 内核连接摘要，逐行显示在设置模块里。
   final List<String> kernelSummary;
 
-  final ValueChanged<String>? onWorkspaceChanged;
-  final ValueChanged<String>? onRuntimeChanged;
+  final Future<void> Function(String)? onWorkspaceChanged;
+  final Future<void> Function(String)? onRuntimeChanged;
+  final Future<void> Function()? onUseInferredRuntime;
   final VoidCallback? onReloadWorkspace;
 
   /// 真实草稿仓库：非空时资源区挂上「新建/改名/删除/字段/候选」编辑面板。
@@ -807,7 +809,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen> {
       kernelSummary: widget.kernelSummary,
       onWorkspaceChanged: widget.onWorkspaceChanged,
       onRuntimeChanged: widget.onRuntimeChanged,
-      onUseInferredRuntime: widget.onReloadWorkspace,
+      onUseInferredRuntime: widget.onUseInferredRuntime,
       onReload: widget.onReloadWorkspace,
       onExit: widget.onExitRequested,
       onOpenDocs: _openDocs,
