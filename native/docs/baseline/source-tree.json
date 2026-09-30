@@ -1,8 +1,8 @@
 {
   "schema": "ct-source-tree/2",
   "git": {
-    "commit": "e33c0cf5d9ec9999c6253fe813ec96cbb9e74025",
-    "dirtyPaths": 10
+    "commit": "e64c121fb2622e2c1d4619abd7f6249c225634d2",
+    "dirtyPaths": 3
   },
   "toolchain": {
     "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
@@ -10,8 +10,8 @@
     "pythonRuntimeRequired": false
   },
   "tree": {
-    "sha256": "b9a30e2c91799524b26d7814ad5b74e7853f2e38a5d9c0ada3492d2c0a8b8f41",
-    "files": 1367
+    "sha256": "efb77d9ed2d9cbf888dd5fb2171413438bb81c4475e3ad98e82d4a34bbdbc541",
+    "files": 1370
   },
   "scopes": {
     "native": {
@@ -726,9 +726,9 @@
       "sha256": "f87c378c7a3e7a00d24dd2ab44159eb89e8bfa3072f8623b13becfe9db376bb5"
     },
     "launcher": {
-      "files": 237,
-      "bytes": 21200122,
-      "sha256": "3cb62478d41e0e62297edc9e0ee808a24b54aee71b1d08abb39f42312bbb0c45"
+      "files": 240,
+      "bytes": 21206401,
+      "sha256": "201d98172886592f55d4067cb67ae32020caf02378c16af8385d163ad668db44"
     },
     "openspec": {
       "files": 265,
