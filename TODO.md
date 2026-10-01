@@ -19,3 +19,19 @@
 - [ ] 复核并提交本地已有修复、回归测试、使用说明和对应源码指纹；保护其他任务的改动，不修改真实游戏工作区作为测试夹具。
 - [ ] 在最终提交上确认 `flutter test`、`flutter analyze`、Dart 格式检查、Rust workspace 测试以及 Native Web CI 通过，记录结果后勾选上述交付事项。
 - [ ] 桌面交付前，用临时工作区人工验证切换、冲突处理、重复启动和退出重启。现有自动化结果不替代发行包 GUI 验收。
+
+## 导出内存占用（每格约 2.3 KB）
+
+> 测量方法、原始数据与结构归因见 [`native/docs/export-memory-findings.md`](native/docs/export-memory-findings.md)
+> （2026-10-01 实测，M1 Pro / `2c9ffdb`：m 档冷导出 986 MB，l 档 7,225 MB，l 档官方绝对上限是 7.5 GiB）。
+
+- [ ] **R2（P2）：解析行去掉每格的字段名克隆。** `canonical.rs` 的 `result.insert(field.name.clone(), value)`
+      与 `value_by_path` 的 `stable_path.clone()` 让每个格子至少多一次堆分配；改用字段索引/共享键，
+      作为低风险第一步，先量收益再决定是否继续投 R1。
+- [ ] **R1（P2）：解析结果换 typed/columnar 表示。** 目标把 `parsed_rows` 从 199 MiB 量级降到 20–30 MiB 量级
+      （端到端每格 2.3 KB → 数十字节）；会动 `canonical` 层与全部消费方（校验、生成器、FBS 构建），需先出原型与对照。
+- [ ] **R3（P3）：引用闭包或流式保留。** 跨表引用校验要求解析结果整批常驻，增量导出也不省这部分内存；
+      若要让峰值随表数亚线性增长，需要重新界定校验语义。
+- [ ] **R5（P3）：修 `--table` 报错文案并标注 memdiag 口径。** 选中带引用的表时实际原因是
+      "引用表未纳入本次选择"，却报 `Excel 文件不存在: <表>.xlsx`；`CT_MEMDIAG` 输出建议注明"净字节估算"。
+- [ ] **R4（P3）：评估"解析→产物字节"直接构造（不留 JSON 树）。** 与 R1 重叠，先看 R1 结果再定。
