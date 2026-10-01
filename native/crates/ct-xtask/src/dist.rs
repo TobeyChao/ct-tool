@@ -113,6 +113,42 @@ fn exe_name(target: &str) -> String {
     }
 }
 
+/// 发行包不该带构建机路径：把 cargo registry 与本仓根映射为固定前缀后再编译。
+///
+/// 这就是 GCC/Clang `-ffile-prefix-map`、Rust `--remap-path-prefix` 的惯例用法
+/// （reproducible-builds 的 “Build path” 一节）；Rust 的自动方案 `trim-paths`（RFC 3127）
+/// 在 stable 上仍是 feature，故显式传参。依赖 crate 的 panic 位置原本带绝对 registry 路径，
+/// 不 remap 就会随 `strings` 一起发出去。
+fn reproducible_rustflags() -> String {
+    let mut flags: Vec<String> = std::env::var("CARGO_ENCODED_RUSTFLAGS")
+        .map(|raw| {
+            raw.split('\u{1f}')
+                .filter(|flag| !flag.is_empty())
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_else(|_| {
+            std::env::var("RUSTFLAGS")
+                .unwrap_or_default()
+                .split_whitespace()
+                .map(str::to_string)
+                .collect()
+        });
+    let cargo_home = std::env::var_os("CARGO_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cargo")));
+    if let Some(registry) = cargo_home.map(|home| home.join("registry")) {
+        if registry.is_dir() {
+            flags.push(format!(
+                "--remap-path-prefix={}=.cargo/registry",
+                registry.display()
+            ));
+        }
+    }
+    flags.push(format!("--remap-path-prefix={}=.", repo_root().display()));
+    flags.join("\u{1f}")
+}
+
 fn cargo_build(target: &str) -> Result<PathBuf> {
     let status = Command::new("cargo")
         .args([
@@ -124,6 +160,8 @@ fn cargo_build(target: &str) -> Result<PathBuf> {
             "--target",
             target,
         ])
+        .env("CARGO_ENCODED_RUSTFLAGS", reproducible_rustflags())
+        .env_remove("RUSTFLAGS")
         .current_dir(native_dir())
         .status()
         .with_context(|| format!("无法启动 cargo（目标 {target}）"))?;
@@ -289,9 +327,13 @@ fn python_free_path_report(bin_dir: &Path) -> Result<String> {
     if !leftovers.is_empty() {
         bail!("包内 bin 目录不该出现解释器：{leftovers:?}");
     }
+    // 证据文本随包分发，只写包内相对位置，不写打包机绝对路径（同 cargo_build 的 remap 意图）。
+    let package_bin = bin_dir
+        .file_name()
+        .map(|name| format!("{}/", name.to_string_lossy()))
+        .unwrap_or_else(|| "bin/".to_string());
     Ok(format!(
-        "PATH 从 {original} 个目录收敛为包内单目录 {}；其中没有 python/py 可执行文件，PYTHONHOME/PYTHONPATH/VIRTUAL_ENV 等变量已清除",
-        bin_dir.display()
+        "PATH 从 {original} 个目录收敛为包内单目录 {package_bin}（相对运行时包根）；其中没有 python/py 可执行文件，PYTHONHOME/PYTHONPATH/VIRTUAL_ENV 等变量已清除"
     ))
 }
 
