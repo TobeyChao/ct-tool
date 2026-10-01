@@ -189,6 +189,11 @@ fn native_test_inventory(root: &Path) -> Result<(Map<String, Value>, usize)> {
     Ok((map, total))
 }
 
+/// 运行命令并返回裁剪后的标准输出；只有执行失败或非零退出才是 `None`。
+///
+/// 空输出是有意义的结果：`git status --porcelain` 在干净工作树上什么都不打印，
+/// 而那仍代表「0 条脏路径」。把它折叠成 `None` 会让干净工作树生成 `dirtyPaths: null`
+/// 的指纹，直接被 `baseline_fingerprint_is_pinned_and_complete` 拒绝。
 fn command_line(program: &str, args: &[&str], cwd: Option<&Path>) -> Option<String> {
     let mut command = std::process::Command::new(program);
     command.args(args);
@@ -199,11 +204,7 @@ fn command_line(program: &str, args: &[&str], cwd: Option<&Path>) -> Option<Stri
     if !output.status.success() {
         return None;
     }
-    let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if text.is_empty() {
-        return None;
-    }
-    Some(text)
+    Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
 /// 计算基线指纹（无时间戳，可逐字节重放）。
@@ -342,6 +343,19 @@ mod tests {
         let first = render(&compute().expect("计算基线")).expect("序列化");
         let second = render(&compute().expect("计算基线")).expect("序列化");
         assert_eq!(first, second, "同一源码树两次计算必须逐字节一致");
+    }
+
+    #[test]
+    fn git_metadata_is_optional_but_a_clean_tree_still_counts_zero() {
+        let value = compute().expect("计算基线");
+        let commit = value["git"]["commit"].as_str().unwrap_or_default();
+        let dirty_paths = &value["git"]["dirtyPaths"];
+        // 干净工作树的 `git status --porcelain` 没有输出，但它仍是 0 条脏路径；
+        // 只有完全没有 Git 元数据时才允许 commit 与 dirtyPaths 同时缺省。
+        assert!(
+            dirty_paths.is_u64() || (commit.is_empty() && dirty_paths.is_null()),
+            "有 Git 元数据时脏路径数必须是数字（干净工作树记 0），实际 {dirty_paths}"
+        );
     }
 
     #[test]

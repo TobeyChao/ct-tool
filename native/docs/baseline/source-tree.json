@@ -1,8 +1,8 @@
 {
   "schema": "ct-source-tree/2",
   "git": {
-    "commit": "2c9ffdb6bfa426db89a38e0d995200d8649eaadc",
-    "dirtyPaths": null
+    "commit": "3002dc27e6de706ce3d11d42112da8bd8bf9643e",
+    "dirtyPaths": 1
   },
   "toolchain": {
     "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
@@ -10,14 +10,14 @@
     "pythonRuntimeRequired": false
   },
   "tree": {
-    "sha256": "c1e74d72f732e0385f14670d55755d06c3a1dec6d71878517805c202777458e1",
+    "sha256": "1dd9d9b914898bc0fb60f99451cd5bd12d265c76970c37752b1a76bc2b0d6ab5",
     "files": 1418
   },
   "scopes": {
     "native": {
       "files": 699,
-      "bytes": 9248935,
-      "sha256": "776e46f60108a005fd7433109acded7dd424703daecf8617ef81667a806d629b",
+      "bytes": 9249956,
+      "sha256": "0d97e662ca762c0fd9ffa43d62600ecef1bbd442ad3d2ed29ffd9c62a03b7806",
       "entries": {
         ".gitignore": "7200e20414b515babac93b69febce1934642bbbbd7844b9dc9dc9395787f6f84",
         "Cargo.lock": "c20c6e340a325f179b95c85fae87c4c5c9092cdc0d33d08f89d4c7144b86c464",
@@ -173,7 +173,7 @@
         "crates/ct-xtask/src/accessor_fixtures.rs": "2c04f2de8f9c80fcdd1c36ac08da0b54a2b8ad198656debb65300b151c09d467",
         "crates/ct-xtask/src/bench.rs": "cb3ee3b0a89994bf86bdf9f841e3994dcdcbdfb6672b3acb28ce44a557f032b0",
         "crates/ct-xtask/src/dist.rs": "ee3fa8521661031a34dd96bb3126464040bd3578ecc3a803f9873a3f97c85b5f",
-        "crates/ct-xtask/src/fingerprint.rs": "11a65062b55b93e8595b059724c3fdd4d61729b273eb511f3ee30772aee563d2",
+        "crates/ct-xtask/src/fingerprint.rs": "fa4f161ea4ea6ea1769705d9ad2c704680cbdf14200a36ec5edd016782cb21b5",
         "crates/ct-xtask/src/fixtures.rs": "789db1d22bf5b68a494c6e7edf3f197a16b11ef1501d133818878290680ac8d6",
         "crates/ct-xtask/src/main.rs": "fe28ea5d0ff4b951d7dee35ece220c5778407c9ae5662cf60466ba66bf54dfc8",
         "crates/ct-xtask/src/real_fixture.rs": "fc8c3bbd483565e3baef6a6189bd52ed62930381fda1f4e619493b2893f79172",
@@ -972,7 +972,7 @@
       "native/crates/ct-xtask/src/accessor_fixtures.rs": 2,
       "native/crates/ct-xtask/src/bench.rs": 11,
       "native/crates/ct-xtask/src/dist.rs": 3,
-      "native/crates/ct-xtask/src/fingerprint.rs": 7,
+      "native/crates/ct-xtask/src/fingerprint.rs": 8,
       "native/crates/ct-xtask/src/fixtures.rs": 0,
       "native/crates/ct-xtask/src/main.rs": 0,
       "native/crates/ct-xtask/src/real_fixture.rs": 0,
@@ -1034,7 +1034,7 @@
     },
     "totals": {
       "historicalPythonTestFunctions": 690,
-      "nativeTestFunctions": 334
+      "nativeTestFunctions": 335
     }
   }
 }
