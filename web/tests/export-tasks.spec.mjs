@@ -29,7 +29,7 @@ test('export is service-owned across two tabs and refresh; explicit cancel keeps
   const panel = await startPanel();
   let second;
   try {
-    await manyTables(panel, 100);
+    await manyTables(panel, 300);
     const ledgerBefore = await readFile(join(panel.root, 'cache/state.json')).catch(() => null);
     await page.goto(panel.url);
     await page.locator('#export-force').click();
@@ -49,6 +49,10 @@ test('export is service-owned across two tabs and refresh; explicit cancel keeps
     await page.reload();
     await expect(page.locator('#export-badge')).toHaveText('导出中');
     expect((await panel.request('/api/export/progress')).data.started_at).toBe(startedAt);
+    // 取消必须落在任务仍在运行时。表数按“导出明显慢于上面的跨标签/刷新断言”取值：
+    // 发布版二进制导出 100 张表不到 1s，CI 上会先于这些断言结束，取消点就变成
+    // 任务早已 done（旧用例因此把 status=done 误报为取消失效）。
+    expect((await panel.request('/api/export/progress')).data.status).toBe('running');
     await second.locator('#export-cancel').click();
     const result = await terminal(panel);
     expect(result.status).toBe('cancelled');

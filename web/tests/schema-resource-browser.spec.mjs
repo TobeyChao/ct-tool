@@ -392,20 +392,25 @@ test('inspector resize widens the pane and saves its preferred width',async({pag
   await openSchema(page,panel);
   await page.locator('.ct-side-tab').click();
   const handle=page.locator('.ct-resize-handle.right');
-  await expect.poll(()=>page.locator('.ct-side').evaluate(el=>el.getBoundingClientRect().width)).toBeGreaterThan(290);
-  const before=await page.locator('.ct-side').evaluate(el=>el.getBoundingClientRect().width);
+  const width=()=>page.locator('.ct-side').evaluate(el=>el.getBoundingClientRect().width);
+  await expect.poll(width).toBeGreaterThan(290);
+  // 工作区列宽带 200ms 的 grid 过渡。不等它落定，before 会取在动画中途，手柄也会在
+  // mousedown 前继续滑动：拖动落空后仅靠剩余动画就能满足宽度断言，而 localStorage
+  // 从未被写入（CI 上表现为 Number(null) === 0）。
+  await expect.poll(async()=>{const first=await width();await page.waitForTimeout(60);return Math.abs(await width()-first)<0.5;}).toBe(true);
+  const before=await width();
   const box=await handle.boundingBox();
   await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
   await page.mouse.down();
   await page.mouse.move(box.x-80,box.y+box.height/2,{steps:5});
   await page.mouse.up();
-  await expect.poll(()=>page.locator('.ct-side').evaluate(el=>el.getBoundingClientRect().width)).toBeGreaterThan(before);
-  const saved=await page.evaluate(()=>localStorage.getItem('ct-side-w-wide'));
-  expect(Number(saved)).toBeGreaterThan(before);
+  // 必须真被拖宽 80px 量级；过渡余量不足以满足这个门槛。
+  await expect.poll(width).toBeGreaterThan(before+40);
+  await expect.poll(async()=>Number(await page.evaluate(()=>localStorage.getItem('ct-side-w-wide')))).toBeGreaterThan(before);
   await page.reload();
   await page.locator('.ct-sitem[data-module="schema"]').click();
   await page.locator('.ct-side-tab').click();
-  await expect.poll(()=>page.locator('.ct-side').evaluate(el=>el.getBoundingClientRect().width)).toBeGreaterThan(before);
+  await expect.poll(width).toBeGreaterThan(before+40);
  }finally{await panel.close();}
 });
 
