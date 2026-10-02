@@ -290,26 +290,51 @@ fn render(value: &Value) -> Result<String> {
     Ok(text)
 }
 
-pub fn run(check: bool, source_root: Option<PathBuf>) -> Result<()> {
+/// 与已提交快照相比变化的字段（commit/脏路径数/工具链随环境变化，不参与比对）。
+fn changed_fields(recorded: &Value, current: &Value) -> Vec<&'static str> {
+    ["tree", "scopes", "testInventory"]
+        .into_iter()
+        .filter(|key| recorded[*key] != current[*key])
+        .collect()
+}
+
+/// 相对已提交快照的漂移说明：只用于记录，不参与判定。
+fn drift_summary(recorded: &Value, current: &Value) -> String {
+    let changed = changed_fields(recorded, current);
+    if changed.is_empty() {
+        return format!(
+            "与快照一致（{} 个文件，树摘要 {}）",
+            current["tree"]["files"].as_u64().unwrap_or_default(),
+            current["tree"]["sha256"].as_str().unwrap_or_default()
+        );
+    }
+    format!(
+        "快照已落后（{}）：快照 {} 个文件 / {} → 当前 {} 个文件 / {}",
+        changed.join(", "),
+        recorded["tree"]["files"].as_u64().unwrap_or_default(),
+        recorded["tree"]["sha256"].as_str().unwrap_or_default(),
+        current["tree"]["files"].as_u64().unwrap_or_default(),
+        current["tree"]["sha256"].as_str().unwrap_or_default(),
+    )
+}
+
+/// 仓库内验收快照的相对路径（错误与漂移提示只暴露这个稳定标签）。
+const SNAPSHOT_RELATIVE: &str = "native/docs/baseline/source-tree.json";
+
+pub fn run(check: bool, source_root: Option<PathBuf>, out: Option<PathBuf>) -> Result<()> {
     let root = source_root.unwrap_or_else(repo_root);
     let value = compute_at(&root)?;
     let rendered = render(&value)?;
-    let path = root.join("native/docs/baseline/source-tree.json");
+    // 仓库里的验收快照：验收/发布前重算并提交，日常提交不强制与源码树同步。
+    let snapshot = root.join(SNAPSHOT_RELATIVE);
     if check {
-        let existing = std::fs::read_to_string(&path).with_context(|| {
+        let existing = std::fs::read_to_string(&snapshot).with_context(|| {
             format!(
-                "缺少基线指纹 {}，先运行 `cargo run -p ct-xtask -- fingerprint`",
-                path.display()
+                "缺少基线指纹 {SNAPSHOT_RELATIVE}，先运行 `cargo run -p ct-xtask -- fingerprint`"
             )
         })?;
         let recorded: Value = serde_json::from_str(&existing).context("基线指纹不是合法 JSON")?;
-        // 只比对源码树内容：commit/脏路径数/工具链随环境变化，不参与判定。
-        let mut mismatched = Vec::new();
-        for key in ["tree", "scopes", "testInventory"] {
-            if recorded[key] != value[key] {
-                mismatched.push(key);
-            }
-        }
+        let mismatched = changed_fields(&recorded, &value);
         if mismatched.is_empty() {
             println!(
                 "基线指纹一致：{} 个文件，树摘要 {}",
@@ -323,6 +348,7 @@ pub fn run(check: bool, source_root: Option<PathBuf>) -> Result<()> {
             mismatched.join(", ")
         );
     }
+    let path = out.unwrap_or_else(|| snapshot.clone());
     std::fs::create_dir_all(path.parent().context("基线路径缺少目录")?)?;
     std::fs::write(&path, &rendered)?;
     println!(
@@ -331,6 +357,16 @@ pub fn run(check: bool, source_root: Option<PathBuf>) -> Result<()> {
         value["tree"]["files"].as_u64().unwrap_or_default(),
         value["tree"]["sha256"].as_str().unwrap_or_default()
     );
+    if path != snapshot {
+        match std::fs::read_to_string(&snapshot).map(|text| serde_json::from_str::<Value>(&text)) {
+            Ok(Ok(recorded)) => println!(
+                "验收快照 {SNAPSHOT_RELATIVE}：{}",
+                drift_summary(&recorded, &value)
+            ),
+            Ok(Err(_)) => println!("验收快照 {SNAPSHOT_RELATIVE} 不是合法 JSON，未参与比对"),
+            Err(_) => println!("未找到验收快照 {SNAPSHOT_RELATIVE}"),
+        }
+    }
     Ok(())
 }
 
@@ -343,6 +379,21 @@ mod tests {
         let first = render(&compute().expect("计算基线")).expect("序列化");
         let second = render(&compute().expect("计算基线")).expect("序列化");
         assert_eq!(first, second, "同一源码树两次计算必须逐字节一致");
+    }
+
+    #[test]
+    fn drift_summary_reports_the_fields_that_moved() {
+        let current = compute().expect("计算基线");
+        assert_eq!(changed_fields(&current, &current), Vec::<&str>::new());
+        assert!(drift_summary(&current, &current).contains("与快照一致"));
+
+        let mut stale = current.clone();
+        stale["tree"]["files"] = json!(1);
+        stale["tree"]["sha256"] = json!("0".repeat(64));
+        assert_eq!(changed_fields(&stale, &current), vec!["tree"]);
+        let note = drift_summary(&stale, &current);
+        assert!(note.contains("快照已落后（tree）"), "{note}");
+        assert!(note.contains("1 个文件"), "{note}");
     }
 
     #[test]

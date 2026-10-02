@@ -1,8 +1,8 @@
 {
   "schema": "ct-source-tree/2",
   "git": {
-    "commit": "3002dc27e6de706ce3d11d42112da8bd8bf9643e",
-    "dirtyPaths": 1
+    "commit": "2f5c54fe5097ecc47b9392ef99023aa6a8ccbaac",
+    "dirtyPaths": 7
   },
   "toolchain": {
     "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
@@ -10,19 +10,19 @@
     "pythonRuntimeRequired": false
   },
   "tree": {
-    "sha256": "1dd9d9b914898bc0fb60f99451cd5bd12d265c76970c37752b1a76bc2b0d6ab5",
-    "files": 1418
+    "sha256": "6bca8f0a12bb24165b85b47232e3554b991f9aa731585a8c9813d85fdf90ce43",
+    "files": 1419
   },
   "scopes": {
     "native": {
-      "files": 699,
-      "bytes": 9249956,
-      "sha256": "0d97e662ca762c0fd9ffa43d62600ecef1bbd442ad3d2ed29ffd9c62a03b7806",
+      "files": 700,
+      "bytes": 9260828,
+      "sha256": "d38aa4101a6a546e60773c8a4947387d690b07c257eb9bd2c1de22a21f928d22",
       "entries": {
         ".gitignore": "7200e20414b515babac93b69febce1934642bbbbd7844b9dc9dc9395787f6f84",
         "Cargo.lock": "c20c6e340a325f179b95c85fae87c4c5c9092cdc0d33d08f89d4c7144b86c464",
         "Cargo.toml": "7e94522a8f6dc7e44172c04a26309abfe111404afc264328d8e581c691a7ff9d",
-        "README.md": "3288bb705032668f624bfb822f935b708cd4bec32361287c2973e2baa5a73c64",
+        "README.md": "a5e67c6ba793fe69a38d8b364ef8567520de5ab8f6382db1389143a615f691a8",
         "benches/README.md": "17dc55a29361c712551463c10c6039aac8802aaaf362cc13e12c0939f79baa65",
         "clippy.toml": "9ddbc4742f3769968c9e07ff2e9a8b9d701205b8b0714a6d77e85a171fe2d966",
         "crates/ct-app/Cargo.toml": "959a7cef8d2afcf5342f913aef4668170af7ae2f6cc7f87047c74f19cf311128",
@@ -173,9 +173,9 @@
         "crates/ct-xtask/src/accessor_fixtures.rs": "2c04f2de8f9c80fcdd1c36ac08da0b54a2b8ad198656debb65300b151c09d467",
         "crates/ct-xtask/src/bench.rs": "cb3ee3b0a89994bf86bdf9f841e3994dcdcbdfb6672b3acb28ce44a557f032b0",
         "crates/ct-xtask/src/dist.rs": "ee3fa8521661031a34dd96bb3126464040bd3578ecc3a803f9873a3f97c85b5f",
-        "crates/ct-xtask/src/fingerprint.rs": "fa4f161ea4ea6ea1769705d9ad2c704680cbdf14200a36ec5edd016782cb21b5",
+        "crates/ct-xtask/src/fingerprint.rs": "a47b320469563688185dbc00d5895b81a169af5697f25009021468d04a265b34",
         "crates/ct-xtask/src/fixtures.rs": "789db1d22bf5b68a494c6e7edf3f197a16b11ef1501d133818878290680ac8d6",
-        "crates/ct-xtask/src/main.rs": "fe28ea5d0ff4b951d7dee35ece220c5778407c9ae5662cf60466ba66bf54dfc8",
+        "crates/ct-xtask/src/main.rs": "4c9df468dc5f3c07b9e2e7ecfa97444e3e2389563a0b85a94967399768fa0435",
         "crates/ct-xtask/src/real_fixture.rs": "fc8c3bbd483565e3baef6a6189bd52ed62930381fda1f4e619493b2893f79172",
         "crates/ct-xtask/src/samples.rs": "a7d6023683c5abcb158e1a396a20a6a4434b4ff9560e2b9c844b6f336bb77de2",
         "crates/ct-xtask/src/shape.rs": "126e9313066b026e15625f557d4ba4746125fb0a119ef8a67e354a5c10ea95a3",
@@ -206,7 +206,7 @@
         "docs/baseline/compat-fixtures-verification.md": "aa0d680442f8a14dde1595e3384e6643baa09e96a850309f1c3e846a8522ddc0",
         "docs/baseline/compat-fixtures-workspace-tests.txt": "1c11fbe721e1cbdf84d32f92f3be7f04309792ca0627b567a3eaed0b89f13383",
         "docs/baseline/compat-matrix.json": "f39c33433be2d8096b18d5f8374df8c2a7ae71982caff93ce802d81258d6a010",
-        "docs/baseline/handoff-macos-linux.md": "2bba2731b3338ab1c6a83a70ea8f7057e18c18fb8ebcaedee38211bcacfcc9b2",
+        "docs/baseline/handoff-macos-linux.md": "f69a0b198f88367e6f3448140e368deba92d1f2c688d2a66d5952fa272769402",
         "docs/baseline/isolation-check.md": "d2d755dfea4361269f02fc8270d5e02e9657cd50ae773f50740f86e873ea36bb",
         "docs/baseline/macos-g3-verification.md": "67588b2c00e4ee1a081ccdd46708f6ac6ec899dc06b30cb7b83d15d21a676016",
         "docs/baseline/macos-g3/accessor.txt": "8e1da7754e82ab54219f2ff64545ef1dc40066b145ea8741126abbce2ee03e0b",
@@ -254,7 +254,7 @@
         "docs/baseline/macos-g3/validate-m.txt": "ee0fb0d57a2fedea417f2b8c1b7521b1f16cea797b853058007db7a1cd13b963",
         "docs/baseline/macos-g3/validate-s.txt": "ee0fb0d57a2fedea417f2b8c1b7521b1f16cea797b853058007db7a1cd13b963",
         "docs/baseline/native-documentation-commands.txt": "0b0bf9c0cb99281378a456e4fe888f8f32e1869e152d52f747debe48a96a8d72",
-        "docs/baseline/parity-report.md": "8c288eb627809797ee35d242e7608958f03be0d11156e743753f1963f02014b8",
+        "docs/baseline/parity-report.md": "b4fa1a5838dbf063fc38564f69acfcf0c6c0ad5ac73cd03f2a6c2e6ad0da37f5",
         "docs/baseline/post-retirement/RUNTIME-CHECK.txt": "f2f105db9bdfd9ba7611363faa6a2c723aa4ed67af356b142959ea7f1ec6c88b",
         "docs/baseline/post-retirement/VERSION.json": "cd8175d352fbdc11021b97e5fc1e882131e183f1751daefcf12092dc7c0858b2",
         "docs/baseline/post-retirement/app-runtime-check.txt": "398969751874bdecbbd695c316f0e6415990a75d5a700219ebbe9b3f5328d58f",
@@ -458,6 +458,7 @@
         "docs/binary-prototype-findings.md": "ad8402ff4ab6cde61c51380d3f5543d798f819576018547e7ed48a7ff9a6f546",
         "docs/excel-reading-findings.md": "2002b62af341a9d53589911eda051a8ac728558864ec26a1d20c189d7c51fa69",
         "docs/excel-writing-findings.md": "319a5b839d924535450b05b640e4c700035f769bcd28bf25e7ea4e538634cd8a",
+        "docs/export-memory-findings.md": "9a2616a533019f165964acfd968cc58b9932ca7a7f5d700cb1ea1af2c388ca2c",
         "docs/protocol/examples/duplicate_request_id.ndjson": "99fa72aaddf5d75243e6d340e1346eea683bc9ac985bf84c0603d85c071b7ced",
         "docs/protocol/examples/export_cancel.ndjson": "de384adce0b48dad89b2fb764a58d301e2e882fd02f2cc1c42ea4bce9e317de5",
         "docs/protocol/examples/export_progress.ndjson": "20053a520d24d1b95063c3d3ea47d8785e4488561abbb0ea918327165f575e34",
@@ -737,8 +738,8 @@
     },
     ".github": {
       "files": 1,
-      "bytes": 4969,
-      "sha256": "27b3f3b1e355db3cf83a78eb78102f8889f3fb30e63dbf2819783daac5414a63"
+      "bytes": 5355,
+      "sha256": "9bb0c1ec62ddfb897a80f2c2386c2d583d6a9694ffd8f6f2979cf4e37798f2d0"
     },
     "test-proj": {
       "files": 99,
@@ -972,7 +973,7 @@
       "native/crates/ct-xtask/src/accessor_fixtures.rs": 2,
       "native/crates/ct-xtask/src/bench.rs": 11,
       "native/crates/ct-xtask/src/dist.rs": 3,
-      "native/crates/ct-xtask/src/fingerprint.rs": 8,
+      "native/crates/ct-xtask/src/fingerprint.rs": 9,
       "native/crates/ct-xtask/src/fixtures.rs": 0,
       "native/crates/ct-xtask/src/main.rs": 0,
       "native/crates/ct-xtask/src/real_fixture.rs": 0,
@@ -1034,7 +1035,7 @@
     },
     "totals": {
       "historicalPythonTestFunctions": 690,
-      "nativeTestFunctions": 335
+      "nativeTestFunctions": 336
     }
   }
 }

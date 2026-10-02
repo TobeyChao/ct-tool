@@ -124,6 +124,9 @@ enum Command {
         /// 显式源码 checkout（默认当前仓库，供无旧 ct/ 的独立验收）
         #[arg(long)]
         root: Option<PathBuf>,
+        /// 输出路径（默认覆写仓库内的验收快照 `native/docs/baseline/source-tree.json`）
+        #[arg(long)]
+        out: Option<PathBuf>,
     },
 }
 
@@ -204,7 +207,7 @@ fn main() -> anyhow::Result<()> {
             skip_check,
         } => dist::run(&target, out, skip_check),
         Command::RuntimeCheck { binary, out } => dist::check_binary(&binary, &out),
-        Command::Fingerprint { check, root } => fingerprint::run(check, root),
+        Command::Fingerprint { check, root, out } => fingerprint::run(check, root, out),
     }
 }
 

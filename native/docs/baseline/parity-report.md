@@ -17,7 +17,7 @@ cargo run -p ct-xtask -- dist                            # 无 Python 环境自�
 
 | 项目 | 值 |
 |---|---|
-| 基线源码树指纹 | `native/docs/baseline/source-tree.json` 的 `tree.sha256`（1000+ 个文件；该文件本身不参与自身摘要） |
+| 基线源码树指纹 | `native/docs/baseline/source-tree.json` 的 `tree.sha256`（1000+ 个文件；该文件本身不参与自身摘要）。这是本报告时点钉住的验收快照，随验收/发布重算；CI 每次推送只把当前源码树的摘要记进运行摘要与 artifact，不要求日常提交同步该文件 |
 | 业务兼容矩阵 | `native/docs/baseline/compat-matrix.json`（21 行，逐行对应 `coverage.md` 表格，由 `tests/compat/tests/coverage_matrix.rs` 校验） |
 | Python 参照测试 | `ct/tests/**` 687 个测试函数；矩阵外（Web/架构）目录被显式排除并留档 |
 | 原生测试 | 50 个含 `#[test]` 的文件；`cargo test --workspace` 最近一次 **275 passed / 0 failed**（`cargo clippy --workspace --all-targets -- -D warnings` 干净、`cargo fmt --check` 通过） |

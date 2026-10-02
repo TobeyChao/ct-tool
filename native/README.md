@@ -77,6 +77,8 @@ S/M/L 与 `r/r-full` 基准夹具由 Rust `xtask bench-fixtures` 生成。
 固定检查六个独立场景，不覆写基线。
 fingerprint 和覆盖矩阵始终保留 main 的 85 个历史测试文件/690 个函数；
 缺少历史工具链时也不缩减验收。当前原生清单使用 `ct-source-tree/2`，原始来源快照另行保留。
+[验收快照](docs/baseline/source-tree.json)在验收/发布前用 `xtask fingerprint` 重算并提交；
+日常提交不要求与源码树同步，CI 只记录当前摘要（`xtask fingerprint --out`），漂移不阻塞。
 本机无 Python PATH 的离线回归记录见
 [离线验收记录](docs/baseline/python-free-verification.md)。
 独立 C# 读取验收见 [test-proj](../test-proj/README.md)。

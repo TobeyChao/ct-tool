@@ -63,7 +63,8 @@ cargo run -p ct-xtask --release -- bench --size s --runs 5 \
     --against docs/baseline/bench-s-macos.json --out target/bench/bench-s-regression.json
 cargo run -p ct-xtask --release -- bench-recheck --report docs/baseline/bench-s-macos.json
 
-# 4) 基线指纹（任何 native/openspec 改动后必须重算）
+# 4) 验收快照指纹（验收/发布前重算并提交；日常提交不再要求同步，
+#    CI 只把当前源码树摘要写进运行摘要，漂移不阻塞）
 cargo run -p ct-xtask --release -- fingerprint
 cargo run -p ct-xtask --release -- fingerprint --check
 
